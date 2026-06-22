@@ -1,20 +1,14 @@
 <script setup lang="ts">
 import { useUiStore } from '../stores/ui'
-import { useLiveriesStore } from '../stores/liveries'
+import { useCardsStore } from '../stores/cards'
 
 const ui = useUiStore()
-const store = useLiveriesStore()
-
-const sections = [
-  { key: 'inspiration', label: 'Inspiration' },
-  { key: 'notes', label: 'Design Notes' },
-  { key: 'recipe', label: 'Recipe' },
-] as const
+const store = useCardsStore()
 </script>
 
 <template>
   <p class="bug-flyout-label">Show sections</p>
-  <label v-for="s in sections" :key="s.key" class="bug-check">
+  <label v-for="s in store.allSectionKeys()" :key="s.key" class="bug-check">
     <input
       type="checkbox"
       :checked="ui.sectionExpanded[s.key]"

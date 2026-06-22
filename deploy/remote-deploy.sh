@@ -21,7 +21,7 @@ echo "==> Updating static frontend"
 sudo rsync -a --delete "$STAGE/static/" "$APP_DIR/static/"
 
 echo "==> Updating seed data"
-sudo install -m 0644 "$STAGE/seed/liveries.json" "$APP_DIR/seed/liveries.json"
+sudo install -m 0644 "$STAGE/seed/cards.json" "$APP_DIR/seed/cards.json"
 
 # Populate seed images on first deploy; never clobber images uploaded via the app.
 echo "==> Seeding images (no-clobber)"

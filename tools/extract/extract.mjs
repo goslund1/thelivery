@@ -12,7 +12,7 @@ const repoRoot = resolve(__dirname, '../..');
 // The original single-file app, retired to archive/ after the Vue migration.
 const HTML = resolve(repoRoot, 'archive/livery_catalog_edited.html');
 const UPLOADS = resolve(repoRoot, 'backend/uploads');
-const SEED = resolve(repoRoot, 'backend/seed/liveries.json');
+const SEED = resolve(repoRoot, 'backend/seed/cards.json');
 
 mkdirSync(UPLOADS, { recursive: true });
 mkdirSync(dirname(SEED), { recursive: true });
@@ -51,7 +51,7 @@ function saveImage(buf, baseName) {
   return `/uploads/${filename}`;
 }
 
-const liveries = [];
+const cards = [];
 
 $('.card').each((_, cardEl) => {
   const $card = $(cardEl);
@@ -69,15 +69,16 @@ $('.card').each((_, cardEl) => {
     .split(',').map(s => s.trim()).filter(Boolean);
   const tags = $card.find('.tag-cloud .tag.chip').map((_, e) => chipText(e)).get();
 
-  // Gallery images come from the stage; data-index = order, .active = lead.
+  // Gallery images come from the stage; data-index = order. The lead image is
+  // the one shown first (order 0) — no separate isLead flag (single source of
+  // truth: lead === order 0).
   const images = [];
   $card.find('.stage img').each((_, img) => {
     const order = parseInt($(img).attr('data-index') || '0', 10);
-    const isLead = $(img).hasClass('active');
     const buf = decodeDataUri($(img).attr('src'));
     if (!buf) return;
     const path = saveImage(buf, `${id}-${order}`);
-    images.push({ id: `${id}-${order}`, path, isLead, order });
+    images.push({ id: `${id}-${order}`, path, order });
   });
   images.sort((a, b) => a.order - b.order);
 
@@ -117,20 +118,27 @@ $('.card').each((_, cardEl) => {
     description: txt($(li).find('span').first()),
   })).get();
 
-  liveries.push({
+  // Generic, ordered, type-dispatched sections (so new section types can be
+  // added without changing the card schema).
+  const sections = [
+    { type: 'text', key: 'inspiration', label: 'Inspiration', body: inspiration.body, ...(inspiration.figurePath ? { figurePath: inspiration.figurePath } : {}) },
+    { type: 'text', key: 'notes', label: 'Design Notes', body: designNotes.body, ...(designNotes.figurePath ? { figurePath: designNotes.figurePath } : {}) },
+    { type: 'forza_recipe', key: 'recipe', label: 'Tune / Build Parts', tuneName, shareCode, coreSpecs, upgrades, adjustments },
+  ];
+
+  cards.push({
     id, catalogNumber, name, subtitle, isFavorite, isLegend,
-    collections, tags, images,
-    inspiration, designNotes,
-    recipe: { tuneName, shareCode, coreSpecs, upgrades, adjustments },
+    collections, tags, images, sections,
   });
 });
 
-writeFileSync(SEED, JSON.stringify(liveries, null, 2));
+writeFileSync(SEED, JSON.stringify(cards, null, 2));
 
 // Report
-const imgTotal = liveries.reduce((n, l) => n + l.images.length, 0);
-console.log(`Wrote ${liveries.length} liveries -> ${SEED}`);
+const imgTotal = cards.reduce((n, c) => n + c.images.length, 0);
+console.log(`Wrote ${cards.length} cards -> ${SEED}`);
 console.log(`Decoded ${imgTotal} gallery images -> ${UPLOADS}`);
-for (const l of liveries) {
-  console.log(`  [${l.id}] ${l.name}  (#${l.catalogNumber}) imgs=${l.images.length} tags=${l.tags.length} upgrades=${l.recipe.upgrades.length} adj=${l.recipe.adjustments.length}${l.isLegend ? '  (LEGEND)' : ''}`);
+for (const c of cards) {
+  const recipe = c.sections.find((s) => s.type === 'forza_recipe');
+  console.log(`  [${c.id}] ${c.name}  (#${c.catalogNumber}) imgs=${c.images.length} tags=${c.tags.length} sections=${c.sections.length} upgrades=${recipe?.upgrades.length ?? 0} adj=${recipe?.adjustments.length ?? 0}${c.isLegend ? '  (LEGEND)' : ''}`);
 }

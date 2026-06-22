@@ -1,29 +1,30 @@
 <script setup lang="ts">
-import type { Livery } from '../types'
-import { useLiveriesStore } from '../stores/liveries'
+import type { Card } from '../types'
+import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 
-const props = defineProps<{ livery: Livery }>()
-const store = useLiveriesStore()
+// recipeKey is the dom-id key of the card's forza_recipe section, if any.
+const props = defineProps<{ card: Card; recipeKey?: string }>()
+const store = useCardsStore()
 const ui = useUiStore()
 
 const emit = defineEmits<{ buildIt: [] }>()
 
 function removeTag(t: string) {
-  store.removeTag(props.livery.id, t)
-  ui.markCardDirty(props.livery.id)
+  store.removeTag(props.card.id, t)
+  ui.markCardDirty(props.card.id)
 }
 </script>
 
 <template>
   <div class="tag-cloud">
     <span
-      v-for="t in livery.tags"
+      v-for="t in card.tags"
       :key="t"
       class="tag chip"
       data-chip-type="tag"
     >{{ t }}<button class="chip-remove" type="button" @click="removeTag(t)">×</button></span>
-    <button class="chip-add" data-chip-type="tag" type="button" @click="ui.openChipPicker(livery.id, 'tag')">+</button>
-    <a class="build-it" :href="`#recipe-${livery.id}`" v-tip="'Jump to the build/tune recipe'" @click="emit('buildIt')">Build It →</a>
+    <button class="chip-add" data-chip-type="tag" type="button" @click="ui.openChipPicker(card.id, 'tag')">+</button>
+    <a v-if="recipeKey" class="build-it" :href="`#${recipeKey}-${card.id}`" v-tip="'Jump to the build/tune recipe'" @click="emit('buildIt')">Build It →</a>
   </div>
 </template>

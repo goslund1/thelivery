@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue'
 import { useUiStore } from '../stores/ui'
-import { useLiveriesStore } from '../stores/liveries'
+import { useCardsStore } from '../stores/cards'
 
 const ui = useUiStore()
-const store = useLiveriesStore()
+const store = useCardsStore()
 const newValue = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
 
@@ -12,21 +12,21 @@ const ctx = computed(() => ui.chipPicker)
 const isTag = computed(() => ctx.value?.type === 'tag')
 const title = computed(() => (isTag.value ? 'Add a tag' : 'Add a collection'))
 
-// Existing chip values across the catalog, minus the ones already on this livery.
+// Existing chip values across the catalog, minus the ones already on this card.
 const options = computed(() => {
   if (!ctx.value) return []
-  const livery = store.byId(ctx.value.liveryId)
-  const onLivery = new Set(isTag.value ? livery?.tags : livery?.collections)
+  const card = store.byId(ctx.value.cardId)
+  const onCard = new Set(isTag.value ? card?.tags : card?.collections)
   const all = isTag.value ? store.allTagValues() : store.allCollectionValues()
-  return all.filter((v) => !onLivery.has(v))
+  return all.filter((v) => !onCard.has(v))
 })
 
 function add(value: string) {
   const c = ctx.value
   if (!c || !value.trim()) return
-  if (c.type === 'tag') store.addTag(c.liveryId, value.trim())
-  else store.addCollection(c.liveryId, value.trim())
-  ui.markCardDirty(c.liveryId)
+  if (c.type === 'tag') store.addTag(c.cardId, value.trim())
+  else store.addCollection(c.cardId, value.trim())
+  ui.markCardDirty(c.cardId)
   ui.closeChipPicker()
 }
 function createNew() {

@@ -1,6 +1,6 @@
 // Thin API client for the Rust backend. Uses relative URLs (dev server proxies
 // /api and /uploads to :8787; in prod they are same-origin).
-import type { Livery } from './types'
+import type { Card } from './types'
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${await res.text()}`)
@@ -8,26 +8,26 @@ async function json<T>(res: Response): Promise<T> {
 }
 
 export const api = {
-  listLiveries: () => fetch('/api/liveries').then(json<Livery[]>),
+  listCards: () => fetch('/api/cards').then(json<Card[]>),
 
-  getLivery: (id: string) => fetch(`/api/liveries/${id}`).then(json<Livery>),
+  getCard: (id: string) => fetch(`/api/cards/${id}`).then(json<Card>),
 
-  saveLivery: (livery: Livery) =>
-    fetch(`/api/liveries/${livery.id}`, {
+  saveCard: (card: Card) =>
+    fetch(`/api/cards/${card.id}`, {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(livery),
-    }).then(json<Livery>),
+      body: JSON.stringify(card),
+    }).then(json<Card>),
 
-  createLivery: (livery: Livery) =>
-    fetch('/api/liveries', {
+  createCard: (card: Card) =>
+    fetch('/api/cards', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(livery),
-    }).then(json<Livery>),
+      body: JSON.stringify(card),
+    }).then(json<Card>),
 
-  deleteLivery: (id: string) =>
-    fetch(`/api/liveries/${id}`, { method: 'DELETE' }).then((r) => {
+  deleteCard: (id: string) =>
+    fetch(`/api/cards/${id}`, { method: 'DELETE' }).then((r) => {
       if (!r.ok) throw new Error(`delete failed: ${r.status}`)
     }),
 

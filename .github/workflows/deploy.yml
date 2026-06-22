@@ -63,7 +63,7 @@ jobs:
           mkdir -p bundle/seed bundle/static bundle/seed-uploads
           cp "backend/target/$TARGET/release/livery-backend" bundle/
           cp -r frontend/dist/. bundle/static/
-          cp backend/seed/liveries.json bundle/seed/
+          cp backend/seed/cards.json bundle/seed/
           cp -r backend/uploads/. bundle/seed-uploads/
           cp deploy/thelivery.service bundle/
 

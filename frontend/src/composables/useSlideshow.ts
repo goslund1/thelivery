@@ -1,5 +1,5 @@
 import { ref, computed, onMounted, onBeforeUnmount, type Ref } from 'vue'
-import type { LiveryImage } from '../types'
+import type { CardImage } from '../types'
 
 // Slideshow timing — mirrors the constants in the original single-file app.
 const SOLID = 2
@@ -16,7 +16,7 @@ const DIM_FADE = 1
 // choreography. Ports the original getImages/showSlide/play/pause/startProgress
 // plus the IntersectionObserver reveal sequence.
 export function useSlideshow(
-  images: Ref<LiveryImage[]>,
+  images: Ref<CardImage[]>,
   stageRef: Ref<HTMLElement | null>,
   barRef: Ref<HTMLElement | null>,
   toggleRef: Ref<HTMLElement | null>,
@@ -33,9 +33,9 @@ export function useSlideshow(
   let userPaused = false // explicit pause/thumb-click; don't auto-resume on scroll
   let visible = false
 
+  // The lead/feature image is order 0 — i.e. the first in the ordered list.
   function leadIndex() {
-    const i = ordered.value.findIndex((x) => x.isLead)
-    return i >= 0 ? i : 0
+    return 0
   }
   function show(i: number) {
     const n = ordered.value.length

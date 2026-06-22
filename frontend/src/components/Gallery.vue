@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, toRef } from 'vue'
-import type { Livery } from '../types'
-import { useLiveriesStore } from '../stores/liveries'
+import type { Card } from '../types'
+import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 import { useSlideshow } from '../composables/useSlideshow'
 
-const props = defineProps<{ livery: Livery }>()
-const store = useLiveriesStore()
+const props = defineProps<{ card: Card }>()
+const store = useCardsStore()
 const ui = useUiStore()
 
-const images = toRef(props.livery, 'images')
+const images = toRef(props.card, 'images')
 const stageRef = ref<HTMLElement | null>(null)
 const barRef = ref<HTMLElement | null>(null)
 const toggleRef = ref<HTMLElement | null>(null)
@@ -63,19 +63,19 @@ function onDragStart(i: number) {
 }
 function onDrop(i: number) {
   if (dragFrom >= 0 && dragFrom !== i) {
-    store.reorderImages(props.livery.id, dragFrom, i)
-    ui.markCardDirty(props.livery.id)
+    store.reorderImages(props.card.id, dragFrom, i)
+    ui.markCardDirty(props.card.id)
   }
   dragFrom = -1
 }
 function setLead(imageId: string) {
-  store.setLeadImage(props.livery.id, imageId)
-  ui.markCardDirty(props.livery.id)
+  store.setLeadImage(props.card.id, imageId)
+  ui.markCardDirty(props.card.id)
 }
 </script>
 
 <template>
-  <div class="stage" ref="stageRef" :data-group="livery.id">
+  <div class="stage" ref="stageRef" :data-group="card.id">
     <div class="progress" ref="barRef"></div>
     <img
       v-for="(img, i) in ordered"
@@ -100,7 +100,7 @@ function setLead(imageId: string) {
         v-for="(img, i) in ordered"
         :key="img.id"
         class="thumb"
-        :class="{ active: i === index, lead: img.isLead }"
+        :class="{ active: i === index }"
         :data-index="i"
         draggable="true"
         title="View this photo"

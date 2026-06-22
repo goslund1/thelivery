@@ -45,6 +45,14 @@ export function hideTip() {
   tipEl.style.opacity = '0'
 }
 
+// Rule B: when a control's click changes state, sync the tip's text to the new
+// state immediately — even while hidden — so it's never stale the next time it
+// shows. (Updating a hidden tip's text is harmless; v-tip also re-evaluates on
+// the next hover, so this only matters for keeping a currently-visible tip live.)
+export function refreshTip(text: string) {
+  if (innerEl) innerEl.textContent = text
+}
+
 // The tip is positioned at open time only; if the page scrolls it would strand
 // itself, so just close it.
 if (typeof window !== 'undefined') {

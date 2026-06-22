@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { Recipe } from '../types'
+import type { ForzaRecipeSection } from '../types'
 import { useUiStore } from '../stores/ui'
 import EditableText from './EditableText.vue'
 
-const props = defineProps<{ recipe: Recipe }>()
+const props = defineProps<{ recipe: ForzaRecipeSection }>()
 const ui = useUiStore()
 
 const specKeys = computed(() => Object.keys(props.recipe.coreSpecs))

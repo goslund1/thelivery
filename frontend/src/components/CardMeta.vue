@@ -1,23 +1,26 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Livery } from '../types'
-import { useLiveriesStore } from '../stores/liveries'
+import type { Card } from '../types'
+import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 import EditableText from './EditableText.vue'
+import { refreshTip } from '../composables/tooltip'
 
-const props = defineProps<{ livery: Livery }>()
-const store = useLiveriesStore()
+const props = defineProps<{ card: Card }>()
+const store = useCardsStore()
 const ui = useUiStore()
 
-const catalogNo = computed(() => String(props.livery.catalogNumber).padStart(3, '0'))
+const catalogNo = computed(() => String(props.card.catalogNumber).padStart(3, '0'))
 
 function toggleFav() {
-  store.toggleFavorite(props.livery.id)
-  ui.markCardDirty(props.livery.id)
+  store.toggleFavorite(props.card.id)
+  ui.markCardDirty(props.card.id)
+  // Star stays in place → sync its tooltip text to the new state (Rule B).
+  refreshTip(props.card.isFavorite ? 'Unmark as favorite' : 'Mark as favorite')
 }
 function removeCollection(c: string) {
-  store.removeCollection(props.livery.id, c)
-  ui.markCardDirty(props.livery.id)
+  store.removeCollection(props.card.id, c)
+  ui.markCardDirty(props.card.id)
 }
 </script>
 
@@ -27,25 +30,25 @@ function removeCollection(c: string) {
       <p class="card-number">
         CATALOG <span>NO. {{ catalogNo }}</span>
         <span
-          v-for="c in livery.collections"
+          v-for="c in card.collections"
           :key="c"
           class="collection-badge chip"
           data-chip-type="collection"
         >{{ c }}<button class="chip-remove" type="button" @click="removeCollection(c)">×</button></span>
-        <button class="chip-add" data-chip-type="collection" type="button" @click="ui.openChipPicker(livery.id, 'collection')">+</button>
+        <button class="chip-add" data-chip-type="collection" type="button" @click="ui.openChipPicker(card.id, 'collection')">+</button>
       </p>
-      <EditableText tag="h2" class="card-title" v-model="livery.name" />
-      <EditableText tag="p" class="card-sub" v-model="livery.subtitle" />
+      <EditableText tag="h2" class="card-title" v-model="card.name" />
+      <EditableText tag="p" class="card-sub" v-model="card.subtitle" />
     </div>
     <div class="card-meta-actions">
-      <button class="fav-star" :class="{ favorited: livery.isFavorite }" aria-label="Favorite this livery" v-tip="() => livery.isFavorite ? 'Unmark as favorite' : 'Mark as favorite'" @click="toggleFav">★</button>
+      <button class="fav-star" :class="{ favorited: card.isFavorite }" aria-label="Favorite this card" v-tip="() => card.isFavorite ? 'Unmark as favorite' : 'Mark as favorite'" @click="toggleFav">★</button>
       <button
         v-if="ui.isEditing"
         class="card-save-btn"
-        :class="{ 'has-changes': ui.isCardDirty(livery.id) }"
-        :disabled="!ui.isCardDirty(livery.id) || ui.saving"
-        @click="ui.saveCard(livery.id)"
-      >{{ ui.isCardDirty(livery.id) ? 'Save ↓' : 'Saved' }}</button>
+        :class="{ 'has-changes': ui.isCardDirty(card.id) }"
+        :disabled="!ui.isCardDirty(card.id) || ui.saving"
+        @click="ui.saveCard(card.id)"
+      >{{ ui.isCardDirty(card.id) ? 'Save ↓' : 'Saved' }}</button>
     </div>
   </div>
 </template>

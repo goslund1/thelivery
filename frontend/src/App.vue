@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
-import { useLiveriesStore } from './stores/liveries'
+import { useCardsStore } from './stores/cards'
 import { useUiStore } from './stores/ui'
 import SideBug from './components/SideBug.vue'
 import Filters from './components/Filters.vue'
-import LiveryCard from './components/LiveryCard.vue'
+import CardView from './components/CardView.vue'
 import EditBar from './components/EditBar.vue'
 import Lightbox from './components/Lightbox.vue'
 import ChipPicker from './components/ChipPicker.vue'
@@ -12,7 +12,7 @@ import ImagePicker from './components/ImagePicker.vue'
 import ExitConfirmModal from './components/ExitConfirmModal.vue'
 import CustomTip from './components/CustomTip.vue'
 
-const store = useLiveriesStore()
+const store = useCardsStore()
 const ui = useUiStore()
 
 function onKey(e: KeyboardEvent) {
@@ -47,11 +47,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
     <p v-if="store.loading">Loading…</p>
     <p v-else-if="store.error">Failed to load: {{ store.error }}</p>
     <template v-else>
-      <LiveryCard
-        v-for="l in store.liveries"
-        :key="l.id"
-        :livery="l"
-        v-show="ui.isLiveryVisible(l.collections, l.isFavorite)"
+      <CardView
+        v-for="c in store.cards"
+        :key="c.id"
+        :card="c"
+        v-show="ui.isCardVisible(c.collections, c.isFavorite)"
       />
     </template>
   </div>

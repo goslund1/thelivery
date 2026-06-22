@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, nextTick, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useUiStore } from '../stores/ui'
-import { useLiveriesStore } from '../stores/liveries'
+import { useCardsStore } from '../stores/cards'
 import { onClickOutside } from '../composables/onClickOutside'
+import { hideTip, refreshTip } from '../composables/tooltip'
 import type { Theme } from '../types'
 
 const ui = useUiStore()
-const store = useLiveriesStore()
+const store = useCardsStore()
 
 // Inline SVGs for each theme (matches the original theme-flyout icons).
 const themeIcons: Record<Theme, string> = {
@@ -36,6 +37,7 @@ onClickOutside(bugRef, () => (open.value = null))
 const themeIcon = computed(() => themeIcons[ui.theme])
 
 async function toggle(name: Exclude<FlyoutName, null>, anchor: HTMLElement) {
+  hideTip() // Rule A: opening a flyout dismisses the tooltip immediately
   if (open.value === name) { open.value = null; return }
   open.value = name
   await nextTick()
@@ -76,16 +78,27 @@ onMounted(() => {
 })
 onBeforeUnmount(() => window.removeEventListener('resize', positionSideBug))
 // Reposition once cards have loaded (catalog column width can change).
-watch(() => store.liveries.length, () => nextTick(positionSideBug))
+watch(() => store.cards.length, () => nextTick(positionSideBug))
 
 function pickTheme(t: Theme) { ui.theme = t; open.value = null }
 function pickDelta(d: number) { ui.textDelta = d; open.value = null }
+
+// Edit-mode key opens the edit bar / exit-confirm modal → hide tooltip (Rule A).
+function onEditClick() {
+  hideTip()
+  ui.toggleEdit()
+}
+// Expand/collapse-all stays in place → sync its visible tooltip text (Rule B).
+function onToggleAll() {
+  ui.toggleAll()
+  refreshTip(ui.allExpanded ? 'Collapse All Sections' : 'Expand All Sections')
+}
 </script>
 
 <template>
   <div ref="bugRef">
     <div class="side-bug" ref="sideBugEl">
-      <button class="bug-btn" :class="{ active: ui.isEditing }" aria-label="Edit mode" v-tip="() => ui.isEditing ? 'Exit edit mode' : 'Enter edit mode'" @click="ui.toggleEdit">
+      <button class="bug-btn" :class="{ active: ui.isEditing }" aria-label="Edit mode" v-tip="() => ui.isEditing ? 'Exit edit mode' : 'Enter edit mode'" @click="onEditClick">
         <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
           <g transform="rotate(225 12 12)">
             <path d="M12 5 L7 8 L10.5 11.5 L10.5 21"></path>
@@ -107,7 +120,7 @@ function pickDelta(d: number) { ui.textDelta = d; open.value = null }
           <text x="10" y="13.5" text-anchor="middle" font-size="9" font-family="Oswald, sans-serif" font-weight="600" fill="currentColor">T</text>
         </svg>
       </button>
-      <button class="bug-btn bug-toggle-all" :class="{ 'all-expanded': ui.allExpanded }" aria-label="Expand or collapse all" v-tip="() => ui.allExpanded ? 'Collapse All Sections' : 'Expand All Sections'" @click="ui.toggleAll">
+      <button class="bug-btn bug-toggle-all" :class="{ 'all-expanded': ui.allExpanded }" aria-label="Expand or collapse all" v-tip="() => ui.allExpanded ? 'Collapse All Sections' : 'Expand All Sections'" @click="onToggleAll">
         <span class="bug-tri"></span>
       </button>
     </div>

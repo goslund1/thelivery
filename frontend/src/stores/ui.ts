@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import type { Theme } from '../types'
-import { useLiveriesStore } from './liveries'
+import { useCardsStore } from './cards'
 
 const THEMES: Theme[] = ['dark', 'light', 'rainbow', 'clouds', 'stormy']
 
@@ -14,7 +14,7 @@ export const useUiStore = defineStore('ui', () => {
   const isEditing = ref(false)
 
   // --- Per-card unsaved-changes tracking --------------------------------------
-  // The set of livery ids edited since their last save. Each card has its own
+  // The set of card ids edited since their last save. Each card has its own
   // save button; the exit prompt fires only if any card is still dirty.
   const dirtyIds = ref<Set<string>>(new Set())
   const hasUnsavedChanges = computed(() => dirtyIds.value.size > 0)
@@ -41,17 +41,15 @@ export const useUiStore = defineStore('ui', () => {
   // Per the original: the section checkboxes EXPAND/COLLAPSE all sections of a
   // type (they don't hide them), and expand-all flips everything together.
   const allExpanded = ref(false)
-  const sectionExpanded = ref<Record<string, boolean>>({
-    inspiration: false,
-    notes: false,
-    recipe: false,
-  })
+  // Keyed by section key (e.g. "inspiration", "notes", "recipe"); populated
+  // dynamically from the cards' sections. Missing key = collapsed.
+  const sectionExpanded = ref<Record<string, boolean>>({})
   const upgradesExpanded = ref(false) // the "Upgrades Installed" sub-list
 
   function toggleAll() {
     allExpanded.value = !allExpanded.value
     const v = allExpanded.value
-    Object.keys(sectionExpanded.value).forEach((k) => (sectionExpanded.value[k] = v))
+    for (const { key } of useCardsStore().allSectionKeys()) sectionExpanded.value[key] = v
     upgradesExpanded.value = v
   }
   function setSectionExpanded(key: string, v: boolean) {
@@ -62,9 +60,9 @@ export const useUiStore = defineStore('ui', () => {
   const favoritesOnly = ref(false)
   const disabledCollections = ref<Set<string>>(new Set()) // collections turned OFF
 
-  // A livery's card is visible if it passes the favorites + collection filters.
+  // A card is visible if it passes the favorites + collection filters.
   // Mirrors the original recalcCardVisibility logic.
-  function isLiveryVisible(collections: string[], isFavorite: boolean) {
+  function isCardVisible(collections: string[], isFavorite: boolean) {
     if (favoritesOnly.value && !isFavorite) return false
     if (!collections.length) return true
     return collections.some((c) => !disabledCollections.value.has(c))
@@ -82,13 +80,10 @@ export const useUiStore = defineStore('ui', () => {
   // Lightbox
   const lightboxSrc = ref<string | null>(null)
 
-  // Chip picker (add a tag/collection to a livery)
-  const chipPicker = ref<{ liveryId: string; type: 'tag' | 'collection' } | null>(null)
-  // Image picker (set a feature/gutter image, or upload). `target` says where.
-  const imagePicker = ref<{
-    liveryId: string
-    target: 'inspiration' | 'notes'
-  } | null>(null)
+  // Chip picker (add a tag/collection to a card)
+  const chipPicker = ref<{ cardId: string; type: 'tag' | 'collection' } | null>(null)
+  // Image picker (set a section's figure image, or upload). `sectionKey` says where.
+  const imagePicker = ref<{ cardId: string; sectionKey: string } | null>(null)
 
   // Apply theme + text size to <html> reactively (CSS variables drive the rest).
   watch(theme, (t) => document.documentElement.setAttribute('data-theme', t), { immediate: true })
@@ -101,7 +96,7 @@ export const useUiStore = defineStore('ui', () => {
 
   // --- Edit lifecycle ---------------------------------------------------------
   function enterEdit() {
-    useLiveriesStore().takeSnapshot()
+    useCardsStore().takeSnapshot()
     clearAllDirty()
     isEditing.value = true
   }
@@ -117,7 +112,7 @@ export const useUiStore = defineStore('ui', () => {
   async function saveCard(id: string) {
     saving.value = true
     try {
-      await useLiveriesStore().save(id)
+      await useCardsStore().save(id)
       clearCardDirty(id)
     } finally {
       saving.value = false
@@ -128,7 +123,7 @@ export const useUiStore = defineStore('ui', () => {
     saving.value = true
     try {
       const ids = [...dirtyIds.value]
-      await Promise.all(ids.map((id) => useLiveriesStore().save(id)))
+      await Promise.all(ids.map((id) => useCardsStore().save(id)))
       clearAllDirty()
     } finally {
       saving.value = false
@@ -140,7 +135,7 @@ export const useUiStore = defineStore('ui', () => {
     isEditing.value = false
   }
   function confirmDiscardAndExit() {
-    useLiveriesStore().restoreSnapshot()
+    useCardsStore().restoreSnapshot()
     clearAllDirty()
     exitConfirmOpen.value = false
     isEditing.value = false
@@ -154,14 +149,14 @@ export const useUiStore = defineStore('ui', () => {
   function closeLightbox() {
     lightboxSrc.value = null
   }
-  function openChipPicker(liveryId: string, type: 'tag' | 'collection') {
-    chipPicker.value = { liveryId, type }
+  function openChipPicker(cardId: string, type: 'tag' | 'collection') {
+    chipPicker.value = { cardId, type }
   }
   function closeChipPicker() {
     chipPicker.value = null
   }
-  function openImagePicker(liveryId: string, target: 'inspiration' | 'notes') {
-    imagePicker.value = { liveryId, target }
+  function openImagePicker(cardId: string, sectionKey: string) {
+    imagePicker.value = { cardId, sectionKey }
   }
   function closeImagePicker() {
     imagePicker.value = null
@@ -172,7 +167,7 @@ export const useUiStore = defineStore('ui', () => {
     dirtyIds, hasUnsavedChanges, markCardDirty, isCardDirty, clearCardDirty, clearAllDirty,
     allExpanded, sectionExpanded, upgradesExpanded, toggleAll, setSectionExpanded,
     favoritesOnly, disabledCollections,
-    isLiveryVisible, toggleCollection,
+    isCardVisible, toggleCollection,
     exitConfirmOpen, saving,
     lightboxSrc, chipPicker, imagePicker,
     THEMES,

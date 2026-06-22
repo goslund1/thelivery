@@ -1,0 +1,905 @@
+[
+  {
+    "id": "legend",
+    "catalogNumber": 0,
+    "name": "Livery Name",
+    "subtitle": "Make/Model (game-accurate) · Base Coat or Technique · Rally / Race / Track / Aero / Drag / Off-Road / Cross-Country / Specialty / Jumper / Endo · Rims: Rim Name (if relevant to the look)",
+    "isFavorite": false,
+    "isLegend": true,
+    "collections": [
+      "FH5",
+      "Drift"
+    ],
+    "tags": [
+      "Cloud",
+      "Tags",
+      "Here"
+    ],
+    "images": [
+      {
+        "id": "legend-0",
+        "path": "/uploads/legend-0.png",
+        "order": 0
+      },
+      {
+        "id": "legend-1",
+        "path": "/uploads/legend-1.png",
+        "order": 1
+      },
+      {
+        "id": "legend-2",
+        "path": "/uploads/legend-2.png",
+        "order": 2
+      }
+    ],
+    "sections": [
+      {
+        "type": "text",
+        "key": "inspiration",
+        "label": "Inspiration",
+        "body": "This is where the creative-fiction origin story lives — the why/how/when behind the build, told with some license. Doesn't need to be literally true, just true to the car.",
+        "figurePath": "/uploads/legend-inspiration.png"
+      },
+      {
+        "type": "text",
+        "key": "notes",
+        "label": "Design Notes",
+        "body": "This is where technique commentary lives — how it was actually built in the livery editor, material/layering choices, anything the tools fought you on."
+      },
+      {
+        "type": "forza_recipe",
+        "key": "recipe",
+        "label": "Tune / Build Parts",
+        "tuneName": "Tune Name (the name it's saved under in-game)",
+        "shareCode": "000 000 000",
+        "coreSpecs": {
+          "Drivetrain": "e.g. AWD",
+          "Engine": "e.g. stock",
+          "Transmission": "e.g. stock",
+          "Tires": "e.g. Rally",
+          "Suspension": "e.g. Rally"
+        },
+        "upgrades": [
+          {
+            "category": "Engine",
+            "parts": [
+              "e.g. Race Exhaust",
+              "e.g. Race Fuel System"
+            ]
+          },
+          {
+            "category": "Platform & Handling",
+            "parts": [
+              "e.g. Race Brakes"
+            ]
+          }
+        ],
+        "adjustments": [
+          {
+            "name": "Adjustment name",
+            "description": "the specific change, one of usually only 5–8 touched out of 50+ possible"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "1",
+    "catalogNumber": 1,
+    "name": "Smokin",
+    "subtitle": "Ferrari 599 GTB Fiorano (Formula Drift 599D) · matte olive & gold pinstripe · Drift",
+    "isFavorite": false,
+    "isLegend": false,
+    "collections": [
+      "FH5",
+      "Drift"
+    ],
+    "tags": [
+      "Drift",
+      "Black Out"
+    ],
+    "images": [
+      {
+        "id": "1-0",
+        "path": "/uploads/1-0.jpg",
+        "order": 0
+      },
+      {
+        "id": "1-1",
+        "path": "/uploads/1-1.jpg",
+        "order": 1
+      },
+      {
+        "id": "1-2",
+        "path": "/uploads/1-2.jpg",
+        "order": 2
+      }
+    ],
+    "sections": [
+      {
+        "type": "text",
+        "key": "inspiration",
+        "label": "Inspiration",
+        "body": "[Dummy copy] Built late one night after losing a Stunt Park lobby in something far less subtle, this one was about proving restraint could still look mean. The olive and gold were picked to feel like a getaway car that's already won the chase before it started — quiet until it isn't."
+      },
+      {
+        "type": "text",
+        "key": "notes",
+        "label": "Design Notes",
+        "body": "Confirmed via the Forza Wiki: it's the 2007 Formula Drift #117 599 GTB Fiorano — nicknamed \"Fiorella\" — built by Federico Sceriffo, with twin positive-displacement superchargers (not turbos) pushing the V12 to roughly 917 hp, a Hollinger 6-speed sequential replacing the stock semi-automatic F1 transmission, Öhlins coilovers, and at 3,208 lb it's the heaviest car in Formula Drift's Forza roster. Front-mid-engine layout gives it a rear-biased 47/53 weight split; custom control arms and wide fenders were fitted specifically to increase steering angle — the whole point of the car."
+      },
+      {
+        "type": "forza_recipe",
+        "key": "recipe",
+        "label": "Tune / Build Parts",
+        "tuneName": "Smokin (599D)",
+        "shareCode": "TBD",
+        "coreSpecs": {
+          "Drivetrain": "RWD",
+          "Engine": "V12 + Twin Supercharger",
+          "Transmission": "Hollinger 6-Speed Sequential",
+          "Tires": "Drift",
+          "Suspension": "Öhlins Coilovers (Race)"
+        },
+        "upgrades": [
+          {
+            "category": "Bodykits and Conversion",
+            "parts": [
+              "Twin Supercharger Conversion",
+              "Wide Fenders"
+            ]
+          },
+          {
+            "category": "Drivetrain",
+            "parts": [
+              "Race Differential",
+              "Race Driveline"
+            ]
+          },
+          {
+            "category": "Engine",
+            "parts": [
+              "Race Cams & Valves",
+              "Race Engine Block",
+              "Race Pistons / Compression",
+              "Race Ignition",
+              "Race Fuel System",
+              "Race Intake",
+              "Race Exhaust",
+              "Race Flywheel"
+            ]
+          },
+          {
+            "category": "Platform & Handling",
+            "parts": [
+              "Race Springs & Dampers",
+              "Race Brakes",
+              "Race Front Anti-Roll Bar",
+              "Race Rear Anti-Roll Bar",
+              "Race Chassis Reinforcement",
+              "Custom Control Arms (steering angle)"
+            ]
+          },
+          {
+            "category": "Tires & Rims",
+            "parts": [
+              "Drift Tire Compound"
+            ]
+          }
+        ],
+        "adjustments": [
+          {
+            "name": "Front camber",
+            "description": "maxed for additional steering angle on entry"
+          },
+          {
+            "name": "Rear toe",
+            "description": "set positive to help the rear step out predictably"
+          },
+          {
+            "name": "Differential (rear lock)",
+            "description": "raised to hold angle through the clip"
+          },
+          {
+            "name": "Anti-roll bars",
+            "description": "rear softened relative to front for easier transitions"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "2",
+    "catalogNumber": 2,
+    "name": "Lolita",
+    "subtitle": "Mazda MX-5 Miata FE · Damascus Steel · Rally · Rims: BBS RS Turbofan",
+    "isFavorite": false,
+    "isLegend": false,
+    "collections": [
+      "FH6",
+      "Drift"
+    ],
+    "tags": [
+      "Drift",
+      "Rally",
+      "All-Rounder"
+    ],
+    "images": [
+      {
+        "id": "2-0",
+        "path": "/uploads/2-0.jpg",
+        "order": 0
+      },
+      {
+        "id": "2-1",
+        "path": "/uploads/2-1.jpg",
+        "order": 1
+      },
+      {
+        "id": "2-2",
+        "path": "/uploads/2-2.jpg",
+        "order": 2
+      },
+      {
+        "id": "2-3",
+        "path": "/uploads/2-3.jpg",
+        "order": 3
+      },
+      {
+        "id": "2-4",
+        "path": "/uploads/2-4.jpg",
+        "order": 4
+      },
+      {
+        "id": "2-5",
+        "path": "/uploads/2-5.jpg",
+        "order": 5
+      },
+      {
+        "id": "2-6",
+        "path": "/uploads/2-6.jpg",
+        "order": 6
+      },
+      {
+        "id": "2-7",
+        "path": "/uploads/2-7.jpg",
+        "order": 7
+      },
+      {
+        "id": "2-8",
+        "path": "/uploads/2-8.jpg",
+        "order": 8
+      },
+      {
+        "id": "2-9",
+        "path": "/uploads/2-9.jpg",
+        "order": 9
+      }
+    ],
+    "sections": [
+      {
+        "type": "text",
+        "key": "inspiration",
+        "label": "Inspiration",
+        "body": "Lolita is set up with rally tires and suspension. I'll have to get back to you on the tuning, as that's a next-tier initiative to include specific tunings that go with the cars. But the idea with this setup is that it can do most everything. It can drift pretty well — rally tires are, in my opinion, the second-best for drifting — and obviously they give improved speed and traction on the dirt road speed zones. Basically, it's a pretty good car to do Stunt Party and many of the PR Events. It's not the fastest possible, but it definitely will test your limits of control."
+      },
+      {
+        "type": "text",
+        "key": "notes",
+        "label": "Design Notes",
+        "body": "Built on the Mazda MX-5 Miata Forza Edition shell — stock, that's a V10-swapped drag special. Lolita's been pulled in a completely different direction: converted to AWD, dropped onto rally rubber. The damascus-steel wrap reads almost like a topographic map at a glance, which is exactly why it took a second look to realize it wasn't one — the rippling forge-pattern and contour lines share that same swirling logic."
+      },
+      {
+        "type": "forza_recipe",
+        "key": "recipe",
+        "label": "Tune / Build Parts",
+        "tuneName": "MX-5 Miata Forza Edition (placeholder — confirm the actual saved tune name)",
+        "shareCode": "TBD",
+        "coreSpecs": {
+          "Drivetrain": "AWD (converted)",
+          "Engine": "8.4L V10 (swapped) + Twin Turbo",
+          "Transmission": "9-Speed Racing",
+          "Tires": "Rally",
+          "Suspension": "Rally"
+        },
+        "upgrades": [
+          {
+            "category": "Bodykits and Conversion",
+            "parts": [
+              "AWD Drivetrain Conversion",
+              "8.4L V10 Engine Swap",
+              "Twin Turbo"
+            ]
+          },
+          {
+            "category": "Drivetrain",
+            "parts": [
+              "9-Speed Racing Transmission",
+              "Race Differential",
+              "Race Driveline"
+            ]
+          },
+          {
+            "category": "Engine",
+            "parts": [
+              "Race Intake",
+              "Race Exhaust",
+              "Race Fuel System",
+              "Race Ignition"
+            ]
+          },
+          {
+            "category": "Platform & Handling",
+            "parts": [
+              "Rally Springs & Dampers",
+              "Race Brakes",
+              "Race Front Anti-Roll Bar",
+              "Race Rear Anti-Roll Bar",
+              "Full Cage"
+            ]
+          },
+          {
+            "category": "Tires & Rims",
+            "parts": [
+              "Rally Tire Compound",
+              "BBS RS Turbofan (front & rear)"
+            ]
+          }
+        ],
+        "adjustments": [
+          {
+            "name": "Front anti-roll bar",
+            "description": "softened two clicks from stock"
+          },
+          {
+            "name": "Rear toe",
+            "description": "−0.3° for easier rotation"
+          },
+          {
+            "name": "Tire pressure",
+            "description": "28 psi front / 26 psi rear"
+          },
+          {
+            "name": "Differential (rear lock)",
+            "description": "raised to ~65%"
+          },
+          {
+            "name": "Final drive",
+            "description": "shortened slightly for dirt acceleration"
+          },
+          {
+            "name": "Ride height",
+            "description": "min-maxed for forward tilt — 9.8\" front / 14.8\" rear"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "catalogNumber": 3,
+    "name": "Tune In Tokyo",
+    "subtitle": "Roadster · neon sunburst wrap · turbo widebody",
+    "isFavorite": false,
+    "isLegend": false,
+    "collections": [
+      "FH6",
+      "Drift"
+    ],
+    "tags": [
+      "Drift"
+    ],
+    "images": [
+      {
+        "id": "3-0",
+        "path": "/uploads/3-0.jpg",
+        "order": 0
+      },
+      {
+        "id": "3-1",
+        "path": "/uploads/3-1.jpg",
+        "order": 1
+      },
+      {
+        "id": "3-2",
+        "path": "/uploads/3-2.jpg",
+        "order": 2
+      },
+      {
+        "id": "3-3",
+        "path": "/uploads/3-3.jpg",
+        "order": 3
+      },
+      {
+        "id": "3-4",
+        "path": "/uploads/3-4.jpg",
+        "order": 4
+      },
+      {
+        "id": "3-5",
+        "path": "/uploads/3-5.jpg",
+        "order": 5
+      },
+      {
+        "id": "3-6",
+        "path": "/uploads/3-6.jpg",
+        "order": 6
+      }
+    ],
+    "sections": [
+      {
+        "type": "text",
+        "key": "inspiration",
+        "label": "Inspiration",
+        "body": "[Dummy copy] Imagined as the car that never makes it home before the lights come back on — built for the loop between Shibuya crossing reruns and a back-alley meet that only exists because three friends agreed to text the location at the same time. The sunburst is the moment the camera flash actually lands."
+      },
+      {
+        "type": "text",
+        "key": "notes",
+        "label": "Design Notes",
+        "body": "[Dummy copy] The neon gradient was built in layers from the inside out, exposed-engine cutaway included partly for shock value and partly because the underlying widebody kit left room to show it off. Turbo placement dictated where the brightest colors could actually sit without clipping into panel gaps."
+      },
+      {
+        "type": "forza_recipe",
+        "key": "recipe",
+        "label": "Tune / Build Parts",
+        "tuneName": "[Dummy data] Neon Drift Spec",
+        "shareCode": "[Dummy] TBD",
+        "coreSpecs": {
+          "Drivetrain": "RWD",
+          "Engine": "Stock Turbo (Upgraded)",
+          "Transmission": "6-Speed Racing",
+          "Tires": "Drift",
+          "Suspension": "Race"
+        },
+        "upgrades": [
+          {
+            "category": "Engine",
+            "parts": [
+              "Race Intake",
+              "Race Exhaust",
+              "Race Intercooler",
+              "Race Ignition"
+            ]
+          },
+          {
+            "category": "Platform & Handling",
+            "parts": [
+              "Race Springs & Dampers",
+              "Race Front Anti-Roll Bar",
+              "Race Rear Anti-Roll Bar"
+            ]
+          },
+          {
+            "category": "Tires & Rims",
+            "parts": [
+              "Drift Tire Compound"
+            ]
+          }
+        ],
+        "adjustments": [
+          {
+            "name": "[Dummy] Rear toe",
+            "description": "set positive for easier initiation"
+          },
+          {
+            "name": "[Dummy] Front camber",
+            "description": "increased for steering response mid-drift"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "4",
+    "catalogNumber": 4,
+    "name": "Photo Safari: Discover Japan",
+    "subtitle": "Off-road trophy truck · novelty smiley wrap",
+    "isFavorite": false,
+    "isLegend": false,
+    "collections": [
+      "FH6",
+      "Photo Safari"
+    ],
+    "tags": [],
+    "images": [
+      {
+        "id": "4-0",
+        "path": "/uploads/4-0.jpg",
+        "order": 0
+      },
+      {
+        "id": "4-1",
+        "path": "/uploads/4-1.jpg",
+        "order": 1
+      },
+      {
+        "id": "4-2",
+        "path": "/uploads/4-2.jpg",
+        "order": 2
+      },
+      {
+        "id": "4-3",
+        "path": "/uploads/4-3.jpg",
+        "order": 3
+      },
+      {
+        "id": "4-4",
+        "path": "/uploads/4-4.jpg",
+        "order": 4
+      },
+      {
+        "id": "4-5",
+        "path": "/uploads/4-5.jpg",
+        "order": 5
+      },
+      {
+        "id": "4-6",
+        "path": "/uploads/4-6.jpg",
+        "order": 6
+      },
+      {
+        "id": "4-7",
+        "path": "/uploads/4-7.jpg",
+        "order": 7
+      },
+      {
+        "id": "4-8",
+        "path": "/uploads/4-8.jpg",
+        "order": 8
+      },
+      {
+        "id": "4-9",
+        "path": "/uploads/4-9.jpg",
+        "order": 9
+      },
+      {
+        "id": "4-10",
+        "path": "/uploads/4-10.jpg",
+        "order": 10
+      }
+    ],
+    "sections": [
+      {
+        "type": "text",
+        "key": "inspiration",
+        "label": "Inspiration",
+        "body": "[Dummy copy] Started as a joke about how serious every other build in this catalog had gotten. The smiley face was supposed to be temporary — a placeholder livery for a single screenshot — and then it just never came off, because something about a trophy truck grinning through a mountain pass was funnier every time it got photographed again."
+      },
+      {
+        "type": "text",
+        "key": "notes",
+        "label": "Design Notes",
+        "body": "[Dummy copy] The smiley itself is a built-in decal, not hand-painted, scaled up to cover most of the rear quarter panel. The challenge was less the face and more keeping the rest of the livery quiet enough that the one goofy element actually reads as the point rather than competing with anything else going on."
+      },
+      {
+        "type": "forza_recipe",
+        "key": "recipe",
+        "label": "Tune / Build Parts",
+        "tuneName": "[Dummy data] Safari Smile",
+        "shareCode": "[Dummy] TBD",
+        "coreSpecs": {
+          "Drivetrain": "AWD",
+          "Engine": "Stock (Upgraded)",
+          "Transmission": "6-Speed Off-Road",
+          "Tires": "Off-Road",
+          "Suspension": "Rally"
+        },
+        "upgrades": [
+          {
+            "category": "Platform & Handling",
+            "parts": [
+              "Rally Springs & Dampers",
+              "Off-Road Front Bumper",
+              "Full Cage"
+            ]
+          },
+          {
+            "category": "Tires & Rims",
+            "parts": [
+              "Off-Road Tire Compound"
+            ]
+          }
+        ],
+        "adjustments": [
+          {
+            "name": "[Dummy] Ride height",
+            "description": "raised for clearance over rough terrain"
+          },
+          {
+            "name": "[Dummy] Differential",
+            "description": "front/rear lock balanced for traction"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "5",
+    "catalogNumber": 5,
+    "name": "Violet",
+    "subtitle": "Toyota GR Supra · violet cloud wrap · green forged wheels",
+    "isFavorite": false,
+    "isLegend": false,
+    "collections": [
+      "FH6",
+      "Drift"
+    ],
+    "tags": [
+      "Drift"
+    ],
+    "images": [
+      {
+        "id": "5-0",
+        "path": "/uploads/5-0.jpg",
+        "order": 0
+      },
+      {
+        "id": "5-1",
+        "path": "/uploads/5-1.jpg",
+        "order": 1
+      },
+      {
+        "id": "5-2",
+        "path": "/uploads/5-2.jpg",
+        "order": 2
+      },
+      {
+        "id": "5-3",
+        "path": "/uploads/5-3.jpg",
+        "order": 3
+      },
+      {
+        "id": "5-4",
+        "path": "/uploads/5-4.jpg",
+        "order": 4
+      },
+      {
+        "id": "5-5",
+        "path": "/uploads/5-5.jpg",
+        "order": 5
+      },
+      {
+        "id": "5-6",
+        "path": "/uploads/5-6.jpg",
+        "order": 6
+      },
+      {
+        "id": "5-7",
+        "path": "/uploads/5-7.jpg",
+        "order": 7
+      }
+    ],
+    "sections": [
+      {
+        "type": "text",
+        "key": "inspiration",
+        "label": "Inspiration",
+        "body": "[Dummy copy] Named for the color before anything else about it existed — the cloud pattern, the green wheels, even the car choice came after deciding the only non-negotiable was that exact shade of violet showing up under stadium lights at night."
+      },
+      {
+        "type": "text",
+        "key": "notes",
+        "label": "Design Notes",
+        "body": "[Dummy copy] Cloud shapes were built freehand rather than pulled from a preset pattern, which took longer but kept the edges soft in a way the built-in cloud decals don't quite manage. Green wheels were chosen specifically to clash on purpose against the violet rather than complement it."
+      },
+      {
+        "type": "forza_recipe",
+        "key": "recipe",
+        "label": "Tune / Build Parts",
+        "tuneName": "[Dummy data] Violet Haze",
+        "shareCode": "[Dummy] TBD",
+        "coreSpecs": {
+          "Drivetrain": "RWD",
+          "Engine": "2JZ Swap + TT",
+          "Transmission": "6-Speed Racing",
+          "Tires": "Drift",
+          "Suspension": "Race"
+        },
+        "upgrades": [
+          {
+            "category": "Bodykits and Conversion",
+            "parts": [
+              "2JZ Engine Swap",
+              "Twin Turbo"
+            ]
+          },
+          {
+            "category": "Drivetrain",
+            "parts": [
+              "Race Differential"
+            ]
+          },
+          {
+            "category": "Engine",
+            "parts": [
+              "Race Fuel System",
+              "Race Ignition",
+              "Race Intercooler"
+            ]
+          },
+          {
+            "category": "Platform & Handling",
+            "parts": [
+              "Race Springs & Dampers",
+              "Race Front Anti-Roll Bar"
+            ]
+          },
+          {
+            "category": "Tires & Rims",
+            "parts": [
+              "Drift Tire Compound"
+            ]
+          }
+        ],
+        "adjustments": [
+          {
+            "name": "[Dummy] Rear toe",
+            "description": "positive for initiation ease"
+          },
+          {
+            "name": "[Dummy] Anti-roll bars",
+            "description": "softened rear relative to front"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "6",
+    "catalogNumber": 6,
+    "name": "A Better A-Team",
+    "subtitle": "GMC Vandura · Matte Black & Carbon Roof · Street · Rims: Fifteen52 Forged 3PC Formula TR",
+    "isFavorite": false,
+    "isLegend": false,
+    "collections": [
+      "FH5",
+      "Street"
+    ],
+    "tags": [
+      "Replica",
+      "Black Out",
+      "Stunt"
+    ],
+    "images": [
+      {
+        "id": "6-0",
+        "path": "/uploads/6-0.jpg",
+        "order": 0
+      },
+      {
+        "id": "6-1",
+        "path": "/uploads/6-1.jpg",
+        "order": 1
+      },
+      {
+        "id": "6-2",
+        "path": "/uploads/6-2.jpg",
+        "order": 2
+      },
+      {
+        "id": "6-3",
+        "path": "/uploads/6-3.jpg",
+        "order": 3
+      },
+      {
+        "id": "6-4",
+        "path": "/uploads/6-4.jpg",
+        "order": 4
+      },
+      {
+        "id": "6-5",
+        "path": "/uploads/6-5.jpg",
+        "order": 5
+      },
+      {
+        "id": "6-6",
+        "path": "/uploads/6-6.jpg",
+        "order": 6
+      },
+      {
+        "id": "6-7",
+        "path": "/uploads/6-7.jpg",
+        "order": 7
+      },
+      {
+        "id": "6-8",
+        "path": "/uploads/6-8.jpg",
+        "order": 8
+      },
+      {
+        "id": "6-9",
+        "path": "/uploads/6-9.jpg",
+        "order": 9
+      },
+      {
+        "id": "6-10",
+        "path": "/uploads/6-10.jpg",
+        "order": 10
+      }
+    ],
+    "sections": [
+      {
+        "type": "text",
+        "key": "inspiration",
+        "label": "Inspiration",
+        "body": "Although B.A. Baracus famously feared flying, this van can catch plenty of air and look badass doin' it! Upgraded carbon fiber body and authentic bullet holes in the rear panel — you'll have plenty of muscle to get away from the bad guys, and with that mean stance, you'll look like you're going a hundred miles an hour standing still.",
+        "figurePath": "/uploads/6-inspiration.jpg"
+      },
+      {
+        "type": "text",
+        "key": "notes",
+        "label": "Design Notes",
+        "body": "Built on the GMC Vandura shell as a direct callback to the actual A-Team van, but pushed further than the show ever did: the roof gets a carbon-fiber texture instead of plain sheet metal, the red pinstripe is sharpened into a single clean diagonal rather than the original's slightly softer line, and the wheels are swapped to a red-lipped aftermarket style instead of the steelies the real van wore. The rear panel carries \"Pity the fool\" in script — a Mr. T line that never actually appeared on the van itself, added here as the kind of detail a fan would want but the show never gave them."
+      },
+      {
+        "type": "forza_recipe",
+        "key": "recipe",
+        "label": "Tune / Build Parts",
+        "tuneName": "A-Team (10-Spd)",
+        "shareCode": "TBD",
+        "coreSpecs": {
+          "Drivetrain": "AWD",
+          "Engine": "7.7L V12 + TT",
+          "Transmission": "10-Speed Racing",
+          "Tires": "Sport",
+          "Suspension": "Race"
+        },
+        "upgrades": [
+          {
+            "category": "Bodykits and Conversion",
+            "parts": [
+              "AWD Drivetrain Conversion",
+              "7.7L V12 Engine Swap",
+              "Twin Turbo"
+            ]
+          },
+          {
+            "category": "Drivetrain",
+            "parts": [
+              "10-Speed Racing Transmission",
+              "Race Differential",
+              "Race Driveline"
+            ]
+          },
+          {
+            "category": "Engine",
+            "parts": [
+              "Race Intake",
+              "Race Exhaust",
+              "Race Fuel System",
+              "Race Ignition"
+            ]
+          },
+          {
+            "category": "Platform & Handling",
+            "parts": [
+              "Race Springs & Dampers",
+              "Race Brakes",
+              "Race Front Anti-Roll Bar",
+              "Race Rear Anti-Roll Bar",
+              "Race Chassis Reinforcement"
+            ]
+          },
+          {
+            "category": "Tires & Rims",
+            "parts": [
+              "Sport Tire Compound",
+              "Fifteen52 Forged 3PC Formula TR (front & rear)"
+            ]
+          }
+        ],
+        "adjustments": [
+          {
+            "name": "Suspension",
+            "description": "modified race suspension"
+          },
+          {
+            "name": "Ride height",
+            "description": "min-maxed for forward tilt — 9.8\" front / 14.8\" rear"
+          }
+        ]
+      }
+    ]
+  }
+]

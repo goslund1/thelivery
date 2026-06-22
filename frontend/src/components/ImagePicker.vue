@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useUiStore } from '../stores/ui'
-import { useLiveriesStore } from '../stores/liveries'
+import { useCardsStore } from '../stores/cards'
 import { api } from '../api'
 
 const ui = useUiStore()
-const store = useLiveriesStore()
+const store = useCardsStore()
 
 const ctx = computed(() => ui.imagePicker)
-const livery = computed(() => (ctx.value ? store.byId(ctx.value.liveryId) : undefined))
-const gallery = computed(() => [...(livery.value?.images ?? [])].sort((a, b) => a.order - b.order))
+const card = computed(() => (ctx.value ? store.byId(ctx.value.cardId) : undefined))
+const gallery = computed(() => [...(card.value?.images ?? [])].sort((a, b) => a.order - b.order))
 
 function pick(path: string) {
   const c = ctx.value
   if (!c) return
-  store.setFigure(c.liveryId, c.target, path)
-  ui.markCardDirty(c.liveryId)
+  store.setFigure(c.cardId, c.sectionKey, path)
+  ui.markCardDirty(c.cardId)
   ui.closeImagePicker()
 }
 
@@ -24,8 +24,8 @@ async function onUpload(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!c || !file) return
   const { path } = await api.uploadImage(file)
-  store.setFigure(c.liveryId, c.target, path)
-  ui.markCardDirty(c.liveryId)
+  store.setFigure(c.cardId, c.sectionKey, path)
+  ui.markCardDirty(c.cardId)
   ui.closeImagePicker()
 }
 </script>

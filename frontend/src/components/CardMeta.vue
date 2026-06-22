@@ -38,7 +38,7 @@ function removeCollection(c: string) {
       <EditableText tag="p" class="card-sub" v-model="livery.subtitle" />
     </div>
     <div class="card-meta-actions">
-      <button class="fav-star" :class="{ favorited: livery.isFavorite }" aria-label="Favorite this livery" @click="toggleFav">★</button>
+      <button class="fav-star" :class="{ favorited: livery.isFavorite }" aria-label="Favorite this livery" v-tip="() => livery.isFavorite ? 'Unmark as favorite' : 'Mark as favorite'" @click="toggleFav">★</button>
       <button
         v-if="ui.isEditing"
         class="card-save-btn"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick, toRef } from 'vue'
+import { ref, watch, nextTick, toRef } from 'vue'
 import type { Livery } from '../types'
 import { useLiveriesStore } from '../stores/liveries'
 import { useUiStore } from '../stores/ui'
@@ -12,7 +12,13 @@ const ui = useUiStore()
 const images = toRef(props.livery, 'images')
 const stageRef = ref<HTMLElement | null>(null)
 const barRef = ref<HTMLElement | null>(null)
-const { ordered, index, playing, toggle, onThumb } = useSlideshow(images, stageRef, barRef)
+const toggleRef = ref<HTMLElement | null>(null)
+const { ordered, index, toggleIcon, toggleLabel, toggle, onThumb } = useSlideshow(
+  images,
+  stageRef,
+  barRef,
+  toggleRef,
+)
 
 const thumbsRef = ref<HTMLElement | null>(null)
 const canLeft = ref(false)
@@ -50,8 +56,6 @@ watch(index, async () => {
   updateArrows()
 })
 
-const playLabel = computed(() => (playing.value ? 'Playing' : 'Paused'))
-
 // Drag-to-reorder (only meaningful in edit mode; thumbs are draggable).
 let dragFrom = -1
 function onDragStart(i: number) {
@@ -79,12 +83,12 @@ function setLead(imageId: string) {
       :src="img.path"
       :class="{ active: i === index }"
       :data-index="i"
-      @click="playing && toggle()"
+      @click="toggle"
     />
     <div class="stage-controls">
-      <button class="play-toggle" :title="'Pause or resume the slideshow'" @click="toggle">
-        <span class="icon">{{ playing ? '❙❙' : '▶' }}</span>
-        <span class="label">{{ playLabel }}</span>
+      <button class="play-toggle" ref="toggleRef" title="Pause or resume the slideshow" @click="toggle">
+        <span class="icon" v-if="toggleIcon">{{ toggleIcon }}</span>
+        <span class="label">{{ toggleLabel }}</span>
       </button>
     </div>
   </div>

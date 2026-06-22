@@ -85,7 +85,7 @@ function pickDelta(d: number) { ui.textDelta = d; open.value = null }
 <template>
   <div ref="bugRef">
     <div class="side-bug" ref="sideBugEl">
-      <button class="bug-btn" :class="{ active: ui.isEditing }" aria-label="Edit mode" @click="ui.toggleEdit">
+      <button class="bug-btn" :class="{ active: ui.isEditing }" aria-label="Edit mode" v-tip="() => ui.isEditing ? 'Exit edit mode' : 'Enter edit mode'" @click="ui.toggleEdit">
         <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
           <g transform="rotate(225 12 12)">
             <path d="M12 5 L7 8 L10.5 11.5 L10.5 21"></path>
@@ -94,20 +94,20 @@ function pickDelta(d: number) { ui.textDelta = d; open.value = null }
           </g>
         </svg>
       </button>
-      <button ref="hamburgerBtn" class="bug-btn" aria-label="Section menu" @click="(e) => toggle('menu', e.currentTarget as HTMLElement)">
+      <button ref="hamburgerBtn" class="bug-btn" aria-label="Section menu" v-tip="() => open === 'menu' ? 'Close section filters' : 'Open section filters'" @click="(e) => toggle('menu', e.currentTarget as HTMLElement)">
         <span class="bug-lines"><span></span><span></span><span></span></span>
       </button>
-      <button class="bug-btn" aria-label="Theme" @click="(e) => toggle('theme', e.currentTarget as HTMLElement)">
+      <button class="bug-btn" aria-label="Theme" v-tip="() => 'Theme: ' + themeLabels[ui.theme]" @click="(e) => toggle('theme', e.currentTarget as HTMLElement)">
         <span class="theme-icon-slot" v-html="themeIcon"></span>
       </button>
-      <button class="bug-btn" aria-label="Text size" @click="(e) => toggle('text', e.currentTarget as HTMLElement)">
+      <button class="bug-btn" aria-label="Text size" v-tip="'Text Size'" @click="(e) => toggle('text', e.currentTarget as HTMLElement)">
         <svg class="bug-text-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none">
           <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="2"></circle>
           <line x1="15" y1="15" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
           <text x="10" y="13.5" text-anchor="middle" font-size="9" font-family="Oswald, sans-serif" font-weight="600" fill="currentColor">T</text>
         </svg>
       </button>
-      <button class="bug-btn bug-toggle-all" :class="{ 'all-expanded': ui.allExpanded }" aria-label="Expand or collapse all" @click="ui.toggleAll">
+      <button class="bug-btn bug-toggle-all" :class="{ 'all-expanded': ui.allExpanded }" aria-label="Expand or collapse all" v-tip="() => ui.allExpanded ? 'Collapse All Sections' : 'Expand All Sections'" @click="ui.toggleAll">
         <span class="bug-tri"></span>
       </button>
     </div>

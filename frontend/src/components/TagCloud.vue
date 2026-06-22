@@ -24,6 +24,6 @@ function removeTag(t: string) {
       data-chip-type="tag"
     >{{ t }}<button class="chip-remove" type="button" @click="removeTag(t)">×</button></span>
     <button class="chip-add" data-chip-type="tag" type="button" @click="ui.openChipPicker(livery.id, 'tag')">+</button>
-    <a class="build-it" :href="`#recipe-${livery.id}`" @click="emit('buildIt')">Build It →</a>
+    <a class="build-it" :href="`#recipe-${livery.id}`" v-tip="'Jump to the build/tune recipe'" @click="emit('buildIt')">Build It →</a>
   </div>
 </template>

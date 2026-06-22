@@ -10,6 +10,7 @@ import Lightbox from './components/Lightbox.vue'
 import ChipPicker from './components/ChipPicker.vue'
 import ImagePicker from './components/ImagePicker.vue'
 import ExitConfirmModal from './components/ExitConfirmModal.vue'
+import CustomTip from './components/CustomTip.vue'
 
 const store = useLiveriesStore()
 const ui = useUiStore()
@@ -59,4 +60,5 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
   <ChipPicker />
   <ImagePicker />
   <ExitConfirmModal />
+  <CustomTip />
 </template>

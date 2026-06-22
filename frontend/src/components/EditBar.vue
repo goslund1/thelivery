@@ -10,7 +10,7 @@ const unsavedCount = computed(() => ui.dirtyIds.size)
 
 <template>
   <div class="edit-action-row" :class="{ open: ui.isEditing }" v-show="ui.isEditing">
-    <button class="exit-edit-btn" aria-label="Exit edit mode" @click="ui.requestExit()">×</button>
+    <button class="exit-edit-btn" aria-label="Exit edit mode" v-tip="'Exit edit mode'" @click="ui.requestExit()">×</button>
     <span v-if="unsavedCount" class="edit-unsaved-count">
       {{ unsavedCount }} card{{ unsavedCount === 1 ? '' : 's' }} unsaved
     </span>

@@ -5,29 +5,38 @@ import type { LiveryImage } from '../types'
 const SOLID = 2
 const DISSOLVE = 2
 const SLIDE = SOLID + DISSOLVE // seconds each slide is shown
-const REVEAL = 2 // delay after the card scrolls into view before autoplay starts
+const BUTTON_REVEAL = 2 // "Autoplaying" button lingers this long before fading
+const BUTTON_FADE = 2 // how long the button's fade-out takes
 const BRIGHT = 1
 const DIM = 0.25
 const DIM_FADE = 1
 
-// Drives one card's gallery: current slide, autoplay timer, progress bar, and
-// the "start autoplay when scrolled into view" behavior. Replaces the original
-// getImages/showSlide/nextSlide/play/pause/startProgress functions + the
-// IntersectionObserver reveal.
+// Drives one card's gallery: current slide, autoplay (only while the card is on
+// screen), the progress bar, and the in-frame play button's reveal→dissolve
+// choreography. Ports the original getImages/showSlide/play/pause/startProgress
+// plus the IntersectionObserver reveal sequence.
 export function useSlideshow(
   images: Ref<LiveryImage[]>,
   stageRef: Ref<HTMLElement | null>,
   barRef: Ref<HTMLElement | null>,
+  toggleRef: Ref<HTMLElement | null>,
 ) {
   const ordered = computed(() => [...images.value].sort((a, b) => a.order - b.order))
   const index = ref(0)
   const playing = ref(false)
+  const toggleIcon = ref('▶')
+  const toggleLabel = ref('Paused')
+
   let timer: number | undefined
   let revealTimer: number | undefined
-  let userPaused = false // user explicitly paused; don't auto-resume on scroll
+  let fadeTimer: number | undefined
+  let userPaused = false // explicit pause/thumb-click; don't auto-resume on scroll
   let visible = false
-  let revealed = false // the first-time reveal delay has already elapsed
 
+  function leadIndex() {
+    const i = ordered.value.findIndex((x) => x.isLead)
+    return i >= 0 ? i : 0
+  }
   function show(i: number) {
     const n = ordered.value.length
     if (!n) return
@@ -38,7 +47,7 @@ export function useSlideshow(
     startProgress()
   }
 
-  // Progress bar: flash bright + full width with no transition.
+  // Progress bar: flash bright + full width with no transition (an anchor point).
   function groundProgress() {
     const bar = barRef.value
     if (!bar) return
@@ -65,6 +74,20 @@ export function useSlideshow(
     bar.style.opacity = '0'
   }
 
+  function setSettled(on: boolean) {
+    stageRef.value?.classList.toggle('settled', on)
+  }
+  function updateToggle() {
+    toggleIcon.value = playing.value ? '❙❙' : '▶'
+    toggleLabel.value = playing.value ? 'Playing' : 'Paused'
+  }
+  function clearTimers() {
+    if (timer) clearInterval(timer)
+    if (revealTimer) clearTimeout(revealTimer)
+    if (fadeTimer) clearTimeout(fadeTimer)
+    timer = revealTimer = fadeTimer = undefined
+  }
+
   function play() {
     if (playing.value || ordered.value.length < 2) return
     playing.value = true
@@ -73,60 +96,76 @@ export function useSlideshow(
   }
   function pause() {
     playing.value = false
-    if (timer) clearInterval(timer)
-    timer = undefined
+    if (timer) {
+      clearInterval(timer)
+      timer = undefined
+    }
     stopProgress()
   }
 
-  // Begin/resume autoplay because the card is on screen (and the user hasn't
-  // manually paused). The very first reveal waits REVEAL seconds; later
-  // re-entries into view resume immediately.
-  function resumeAutoplay() {
-    if (playing.value || userPaused || ordered.value.length < 2) return
-    if (!revealed) {
-      revealed = true
-      groundProgress()
-      revealTimer = window.setTimeout(() => {
-        revealTimer = undefined
-        if (visible && !userPaused) play()
-      }, REVEAL * 1000)
-    } else {
-      play()
-    }
-  }
-  // Stop advancing because the card scrolled off screen. Not a user pause, so
-  // it will resume automatically when the card comes back into view.
-  function suspendAutoplay() {
-    if (revealTimer) {
-      clearTimeout(revealTimer)
+  // Reveal choreography: show the button ("Autoplaying") over a grounded bar;
+  // after BUTTON_REVEAL the button slow-fades out as autoplay starts; after
+  // BUTTON_FADE the toggle text settles into its normal playing state.
+  function beginReveal() {
+    clearTimers()
+    playing.value = false
+    setSettled(false)
+    toggleIcon.value = ''
+    toggleLabel.value = 'Autoplaying'
+    groundProgress()
+    if (ordered.value.length < 2) return // single image: nothing to autoplay
+    revealTimer = window.setTimeout(() => {
       revealTimer = undefined
-    }
+      const btn = toggleRef.value
+      if (btn) btn.style.transition = `opacity ${BUTTON_FADE}s ease` // slow, just this once
+      setSettled(true)
+      play()
+      fadeTimer = window.setTimeout(() => {
+        fadeTimer = undefined
+        updateToggle()
+        if (btn) btn.style.transition = '' // restore the fast default for hover
+      }, BUTTON_FADE * 1000)
+    }, BUTTON_REVEAL * 1000)
+  }
+
+  function resumeAutoplay() {
+    if (userPaused || playing.value) return
+    beginReveal()
+  }
+  function suspendAutoplay() {
+    clearTimers()
     pause()
+    setSettled(false)
+    show(leadIndex())
+    updateToggle()
   }
 
   // The play/pause button: an explicit user action that sticks across scrolling.
   function toggle() {
+    clearTimers()
+    setSettled(false)
     if (playing.value) {
       userPaused = true
       pause()
     } else {
       userPaused = false
-      revealed = true
-      if (visible) play()
+      play()
     }
+    updateToggle()
   }
   // Clicking a thumbnail is an explicit pause + jump (won't auto-resume).
   function onThumb(i: number) {
+    clearTimers()
     userPaused = true
-    suspendAutoplay()
+    pause()
+    setSettled(false)
     show(i)
+    updateToggle()
   }
 
   onMounted(() => {
-    const leadIdx = ordered.value.findIndex((i) => i.isLead)
-    index.value = leadIdx >= 0 ? leadIdx : 0
-
-    // Autoplay only while the card is visible: resume on enter, suspend on exit.
+    index.value = leadIndex()
+    // Autoplay only while the card is visible: reveal on enter, suspend on exit.
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
@@ -135,15 +174,14 @@ export function useSlideshow(
           else suspendAutoplay()
         })
       },
-      { threshold: 0.4 },
+      { threshold: 0.5 },
     )
     if (stageRef.value) obs.observe(stageRef.value)
     onBeforeUnmount(() => {
       obs.disconnect()
-      if (timer) clearInterval(timer)
-      if (revealTimer) clearTimeout(revealTimer)
+      clearTimers()
     })
   })
 
-  return { ordered, index, playing, show, next, toggle, onThumb }
+  return { ordered, index, playing, toggleIcon, toggleLabel, toggle, onThumb }
 }

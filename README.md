@@ -73,7 +73,9 @@ Pushing to `main` triggers `.github/workflows/deploy.yml`, which:
    the systemd unit, rsyncs it to the droplet, and runs `deploy/remote-deploy.sh`.
 
 In production the **single Rust binary serves everything** — the API, `/uploads`,
-and the SPA — on **port 80**, managed by systemd as the `thelivery` service.
+and the SPA — listening on **`127.0.0.1:8787`**, managed by systemd as the
+`thelivery` service. **Caddy** terminates HTTPS on 443 and reverse-proxies to it
+(see TLS below).
 
 ### One-time droplet prerequisites
 
@@ -101,8 +103,30 @@ ssh <user>@<host> 'journalctl -u thelivery -n 50'  # logs
 
 Persistent state on the droplet lives at `/opt/thelivery/data.db` and
 `/opt/thelivery/uploads/`; deploys never overwrite them (seed images are copied
-in only if missing). **HTTPS is not included** — front it with Caddy, nginx, or
-Cloudflare if you want TLS.
+in only if missing).
+
+### HTTPS / TLS (Caddy)
+
+The backend listens only on `127.0.0.1:8787`; **Caddy** sits in front, terminates
+TLS on 443, redirects 80→443, and auto-renews a Let's Encrypt certificate.
+
+One-time setup on the droplet (after at least one deploy, so the backend is
+running on 8787):
+
+1. Point your domain's **DNS A record** at the droplet's IP.
+2. Open ports **80 and 443** in the droplet / DO cloud firewall.
+3. Run the setup script as root, passing your domain:
+
+   ```bash
+   sudo bash /path/to/deploy/setup-caddy.sh your-domain.com
+   ```
+
+   (Or copy `deploy/setup-caddy.sh` to the droplet and run it there.)
+
+That installs Caddy, writes `/etc/caddy/Caddyfile` (`your-domain.com →
+reverse_proxy 127.0.0.1:8787`), and obtains the certificate on first reload.
+Caddy renews it automatically; no cron needed. Then visit
+`https://your-domain.com`.
 
 ## Database migrations
 

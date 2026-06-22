@@ -73,15 +73,27 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
+          # Validate the private key parses (fails loudly if the secret is
+          # truncated/mangled) and print the matching public key so it can be
+          # compared against the droplet's authorized_keys.
+          echo "Deploy key fingerprint:"; ssh-keygen -l -f ~/.ssh/id_deploy
+          echo "Matching public key (must be in the droplet's authorized_keys):"
+          ssh-keygen -y -f ~/.ssh/id_deploy
           ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Test SSH connection
+        run: |
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o BatchMode=yes \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            'echo "SSH OK as $(whoami)@$(hostname)"'
 
       - name: Rsync bundle to droplet
         run: |
-          rsync -az --delete -e "ssh -i ~/.ssh/id_deploy" \
+          rsync -az --delete -e "ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes" \
             bundle/ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:~/thelivery-stage/"
 
       - name: Run remote deploy
         run: |
-          ssh -i ~/.ssh/id_deploy \
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             'bash -s' < deploy/remote-deploy.sh

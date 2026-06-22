@@ -7,15 +7,14 @@ Type=simple
 User=thelivery
 Group=thelivery
 WorkingDirectory=/opt/thelivery
-# Serve everything on port 80; CAP_NET_BIND_SERVICE lets the non-root service
-# user bind a privileged port without running as root.
-Environment=PORT=80
+# Listen on localhost only; Caddy terminates TLS on 443 and reverse-proxies here.
+Environment=BIND_ADDR=127.0.0.1
+Environment=PORT=8787
 Environment=DATABASE_PATH=/opt/thelivery/data.db
 Environment=UPLOADS_DIR=/opt/thelivery/uploads
 Environment=SEED_PATH=/opt/thelivery/seed/liveries.json
 Environment=FRONTEND_DIR=/opt/thelivery/static
 ExecStart=/opt/thelivery/livery-backend
-AmbientCapabilities=CAP_NET_BIND_SERVICE
 Restart=on-failure
 RestartSec=3
 

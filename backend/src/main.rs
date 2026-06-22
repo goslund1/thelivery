@@ -81,7 +81,10 @@ async fn main() -> anyhow::Result<()> {
         .layer(CorsLayer::permissive())
         .with_state(state);
 
-    let addr = format!("0.0.0.0:{port}");
+    // Bind address: 0.0.0.0 in dev; set to 127.0.0.1 in production so only the
+    // local reverse proxy (Caddy) can reach the backend.
+    let bind = std::env::var("BIND_ADDR").unwrap_or_else(|_| "0.0.0.0".into());
+    let addr = format!("{bind}:{port}");
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("livery-backend listening on http://{addr}");
     axum::serve(listener, app).await?;

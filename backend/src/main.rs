@@ -20,7 +20,10 @@ use axum::{
 };
 use serde_json::{json, Value};
 use sqlx::{sqlite::SqliteConnectOptions, Row, SqlitePool};
-use tower_http::{cors::CorsLayer, services::ServeDir};
+use tower_http::{
+    cors::CorsLayer,
+    services::{ServeDir, ServeFile},
+};
 
 #[derive(Clone)]
 struct AppState {
@@ -41,6 +44,10 @@ async fn main() -> anyhow::Result<()> {
     let db_path = std::env::var("DATABASE_PATH").unwrap_or_else(|_| "data.db".into());
     let uploads_dir = PathBuf::from(std::env::var("UPLOADS_DIR").unwrap_or_else(|_| "uploads".into()));
     let seed_path = std::env::var("SEED_PATH").unwrap_or_else(|_| "seed/liveries.json".into());
+    // Directory of the built Vue frontend (Vite `dist`). Empty/missing in dev,
+    // where Vite serves the app instead; set in production so this binary serves
+    // the SPA itself.
+    let frontend_dir = std::env::var("FRONTEND_DIR").unwrap_or_else(|_| "static".into());
     let port: u16 = std::env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8787);
 
     std::fs::create_dir_all(&uploads_dir)?;
@@ -55,6 +62,12 @@ async fn main() -> anyhow::Result<()> {
 
     let state = AppState { pool, uploads_dir: uploads_dir.clone() };
 
+    // Serve the built SPA: real files (index.html at "/", hashed assets) are
+    // served directly; any other path falls back to index.html. (This app has no
+    // client-side router, so "/" is the only real entry point.)
+    let spa = ServeDir::new(&frontend_dir)
+        .not_found_service(ServeFile::new(format!("{frontend_dir}/index.html")));
+
     let app = Router::new()
         .route("/api/health", get(|| async { "ok" }))
         .route("/api/liveries", get(list_liveries).post(create_livery))
@@ -64,6 +77,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .route("/api/images", post(upload_image))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
+        .fallback_service(spa)
         .layer(CorsLayer::permissive())
         .with_state(state);
 

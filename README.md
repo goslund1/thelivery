@@ -62,6 +62,48 @@ npm run extract      # regenerates backend/seed/liveries.json and backend/upload
 | POST | `/api/images` | multipart upload, returns `{ path }` |
 | GET | `/uploads/*` | static images |
 
+## Deployment
+
+Pushing to `main` triggers `.github/workflows/deploy.yml`, which:
+
+1. builds a static `x86_64-unknown-linux-musl` release binary (no glibc-version
+   issues on the droplet),
+2. builds the Vue frontend (`npm run build`),
+3. bundles binary + `static/` (the SPA) + `seed/liveries.json` + seed images +
+   the systemd unit, rsyncs it to the droplet, and runs `deploy/remote-deploy.sh`.
+
+In production the **single Rust binary serves everything** — the API, `/uploads`,
+and the SPA — on **port 80**, managed by systemd as the `thelivery` service.
+
+### One-time droplet prerequisites
+
+- `rsync` installed (`apt-get install -y rsync`).
+- The SSH/deploy user has **passwordless sudo** (the deploy script creates the
+  service user, installs the unit, and restarts the service).
+- Port **80** open in the droplet firewall / DO cloud firewall.
+- (The `thelivery` service user, `/opt/thelivery`, and the systemd unit are
+  created automatically on the first deploy.)
+
+### Required GitHub repository secrets
+
+| Secret | Value |
+|---|---|
+| `DEPLOY_SSH_KEY` | Private SSH key authorized on the droplet (the full PEM) |
+| `DEPLOY_HOST` | Droplet IP or hostname |
+| `DEPLOY_USER` | SSH user with passwordless sudo |
+
+### After deploy
+
+```bash
+ssh <user>@<host> 'systemctl status thelivery'   # service health
+ssh <user>@<host> 'journalctl -u thelivery -n 50'  # logs
+```
+
+Persistent state on the droplet lives at `/opt/thelivery/data.db` and
+`/opt/thelivery/uploads/`; deploys never overwrite them (seed images are copied
+in only if missing). **HTTPS is not included** — front it with Caddy, nginx, or
+Cloudflare if you want TLS.
+
 ## Database migrations
 
 SQLx migrations live in `backend/migrations/`. To change the schema, add a new

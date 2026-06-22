@@ -1,0 +1,8 @@
+{
+  "name": "livery-extract",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": { "extract": "node extract.mjs" },
+  "dependencies": { "cheerio": "^1.0.0" }
+}

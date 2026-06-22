@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+target/
+
+# SQLite database (runtime; regenerated/seeded on first run)
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# Claude Code local state
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# The retired original single-file app — kept locally, not in the repo.
+archive/
+
+# Note: backend/uploads/ is intentionally tracked (seed images decoded from the
+# original HTML, so the app works on a fresh clone).

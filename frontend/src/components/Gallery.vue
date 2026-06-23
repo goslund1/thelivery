@@ -121,7 +121,7 @@ async function onAddFile(e: Event) {
 
 // ── Folder import ─────────────────────────────────────────────────────────────
 // Convention: folder name must start with FHX_ (e.g. FH5_Nissan_S13_Midnight)
-const FOLDER_RE = /^(FH\d+)_(.+)$/i
+const FOLDER_RE = /^(FH\s*\d+)[_\s-](.+)$/i
 
 type FolderImport =
   | { stage: 'confirm';  files: File[]; folderName: string; fhTag: string; descriptor: string }
@@ -264,6 +264,7 @@ function cancelFolderImport() {
           <img :src="img.thumbPath ?? img.path" />
           <button class="lead-star" type="button" title="Set as lead image" aria-label="Set as lead image" @click.stop="setLead(img.id)">★</button>
           <button class="pool-toggle" type="button" :title="img.included === false ? 'Add to slideshow' : 'Remove from slideshow'" @click.stop="toggleIncluded(img.id)">{{ img.included === false ? '○' : '●' }}</button>
+          <button class="thumb-delete" type="button" title="Remove from card" @click.stop="store.removeImage(card.id, img.id); ui.markCardDirty(card.id)">✕</button>
         </div>
 
         <!-- uploading progress -->
@@ -338,6 +339,33 @@ function cancelFolderImport() {
 }
 .thumb.excluded img {
   filter: grayscale(60%);
+}
+.thumb-delete {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: none;
+  background: rgba(0,0,0,0.6);
+  color: rgba(255,255,255,0.5);
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.thumb:hover .thumb-delete {
+  opacity: 1;
+}
+.thumb-delete:hover {
+  background: rgba(180,30,30,0.85);
+  color: #fff;
 }
 .pool-toggle {
   position: absolute;

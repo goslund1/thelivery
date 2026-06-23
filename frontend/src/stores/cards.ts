@@ -112,6 +112,12 @@ export const useCardsStore = defineStore('cards', () => {
     c.images = imgs
   }
 
+  function removeImage(cardId: string, imageId: string) {
+    const c = byId(cardId)
+    if (!c) return
+    c.images = c.images.filter((i) => i.id !== imageId)
+  }
+
   function toggleImageIncluded(id: string, imageId: string) {
     const c = byId(id)
     if (!c) return
@@ -172,7 +178,7 @@ export const useCardsStore = defineStore('cards', () => {
     byId, load, save, createNewCard,
     takeSnapshot, restoreSnapshot, setFigure,
     toggleFavorite, setLeadImage, reorderImages,
-    toggleImageIncluded, addImageToPool,
+    removeImage, toggleImageIncluded, addImageToPool,
     addTag, removeTag, addCollection, removeCollection,
     allTagValues, allCollectionValues, allSectionKeys,
   }

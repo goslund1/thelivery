@@ -27,7 +27,7 @@ function onExit() {
       </svg>
     </button>
 
-    <!-- Yellow: save changes (cursor = active editing session indicator) -->
+    <!-- Yellow: save changes — text-insertion I-beam = "you're in an editing session" -->
     <button
       class="tl-btn tl-yellow"
       :class="{ 'tl-pulse': unsavedCount > 0 }"
@@ -36,26 +36,28 @@ function onExit() {
       v-tip="() => ui.saving ? 'Saving…' : unsavedCount > 0 ? `Save changes (${unsavedCount})` : 'All saved'"
       @click="ui.saveAllDirty()"
     >
-      <svg viewBox="0 0 11 15" fill="currentColor">
-        <path d="M1 0 L1 11 L3.8 8.2 L5.8 13.5 L7.8 12.5 L5.8 7.2 L9.2 7.2 Z"/>
+      <svg viewBox="0 0 10 16" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round">
+        <line x1="1" y1="2"  x2="9" y2="2"/>
+        <line x1="5" y1="2"  x2="5" y2="14"/>
+        <line x1="1" y1="14" x2="9" y2="14"/>
       </svg>
     </button>
 
-    <!-- Green: new card (corner arrow + plus = create and add to catalog) -->
+    <!-- Green: new card — curve rising to 45° upper-right, plus left of upper arc -->
     <button
       class="tl-btn tl-green"
       aria-label="New card"
       v-tip="'New card'"
       @click="ui.openNewCard()"
     >
-      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <!-- L-shaped corner arrow: right-down then turns left -->
-        <path d="M10 2 L10 9 L4 9"/>
-        <!-- arrowhead pointing left -->
-        <path d="M6.5 7 L4 9 L6.5 11"/>
-        <!-- plus sign: create/add -->
-        <line x1="2" y1="1" x2="2" y2="5"/>
-        <line x1="0" y1="3" x2="4" y2="3"/>
+      <svg viewBox="0 0 16 16" fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Smooth curve: rises from bottom, turns and points 45° upper-right -->
+        <path d="M 8 15 C 8 10 9 7 13 3" stroke-width="2"/>
+        <!-- Arrowhead at tip (13,3) pointing NE — wings perpendicular to 45° -->
+        <polyline points="11,1 13,3 15,5" stroke-width="2"/>
+        <!-- Plus: just to the left of the upper portion of the curve -->
+        <line x1="1" y1="7" x2="5" y2="7" stroke-width="1.7"/>
+        <line x1="3" y1="5" x2="3" y2="9" stroke-width="1.7"/>
       </svg>
     </button>
   </div>
@@ -64,7 +66,9 @@ function onExit() {
 <style scoped>
 .tl-dock {
   position: fixed;
-  right: 0;
+  /* Align to the right edge of the 980px catalog column, not the viewport edge.
+     When the viewport is narrower than 980px the catalog goes edge-to-edge, so clamp to 0. */
+  right: max(0px, calc((100vw - 980px) / 2));
   bottom: 60px;
   z-index: 900;
   display: flex;
@@ -124,20 +128,24 @@ function onExit() {
 .tl-yellow {
   background: #a07000;
   border-color: var(--gold, #c9a227);
-  color: #1a1200;
+  color: #fff;
 }
 .tl-yellow:hover {
   box-shadow: 0 0 8px rgba(201,162,39,0.5);
 }
 .tl-yellow svg {
-  width: 11px;
-  height: 15px;
+  width: 10px;
+  height: 16px;
 }
 
 .tl-green {
   background: #1e7a3a;
   border-color: #27ae60;
   color: #d4f5e2;
+}
+.tl-green svg {
+  width: 16px;
+  height: 16px;
 }
 .tl-green:hover {
   box-shadow: 0 0 8px rgba(39,174,96,0.5);

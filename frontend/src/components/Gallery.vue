@@ -199,18 +199,18 @@ function cancelFolderImport() {
         <span class="icon" v-if="toggleIcon">{{ toggleIcon }}</span>
         <span class="label">{{ toggleLabel }}</span>
       </button>
-      <button
-        v-if="ordered[index]"
-        class="stage-expand"
-        title="View full resolution"
-        @click.stop="ui.openLightbox(
-          srcFor(ordered[index], 'stage'),
-          ordered[index].path,
-          ordered.map(img => ({ display: srcFor(img, 'stage'), original: img.path })),
-          index
-        )"
-      >⤢</button>
     </div>
+    <button
+      v-if="ordered[index]"
+      class="stage-expand"
+      title="View full resolution"
+      @click.stop="ui.openLightbox(
+        srcFor(ordered[index], 'stage'),
+        ordered[index].path,
+        ordered.map(img => ({ display: srcFor(img, 'stage'), original: img.path })),
+        index
+      )"
+    >⤢</button>
   </div>
 
   <!-- Folder import banner lives ABOVE the rail so it spans full width -->

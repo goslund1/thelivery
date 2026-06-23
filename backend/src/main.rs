@@ -6,7 +6,7 @@
 //!   PUT    /api/cards/:id    -> Card     (whole-object upsert)
 //!   POST   /api/cards        -> Card     (create; body must include id)
 //!   DELETE /api/cards/:id    -> 204
-//!   POST   /api/images       -> { path } (multipart upload to uploads/)
+//!   POST   /api/images       -> { path, thumbPath, stagePath } (multipart upload)
 //!   GET    /uploads/*        -> static files
 //!   GET    /api/health       -> "ok"
 
@@ -287,57 +287,124 @@ async fn delete_card(
     Ok(StatusCode::NO_CONTENT)
 }
 
-/// Accept a single multipart file field, store it under uploads/.
-/// Generates a thumb (200px) and stage (1000px) JPEG alongside the original.
+/// Sanitise a string into a filesystem-safe slug: lowercase, collapse
+/// non-alphanumeric runs to a single underscore, strip leading/trailing underscores.
+fn slugify(s: &str) -> String {
+    let mut out = String::new();
+    let mut last_under = true; // start true so we never get a leading _
+    for ch in s.chars() {
+        if ch.is_alphanumeric() {
+            out.push(ch.to_ascii_lowercase());
+            last_under = false;
+        } else if !last_under {
+            out.push('_');
+            last_under = true;
+        }
+    }
+    if out.ends_with('_') { out.pop(); }
+    out
+}
+
+/// Build the card folder name from metadata fields sent with the upload.
+/// Pattern: {fh_tag}_{subtitle_slug}_{name_slug}  e.g. FH5_Nissan_S13_Midnight_Drift
+/// Falls back to "misc" when metadata is absent (e.g. legacy uploads).
+fn card_folder(name: &str, subtitle: &str, collections: &str) -> String {
+    // Pick first FH* collection tag, or "FHX" if none found.
+    let fh_tag = collections
+        .split(',')
+        .map(|c| c.trim())
+        .find(|c| c.to_uppercase().starts_with("FH"))
+        .unwrap_or("FHX")
+        .to_uppercase();
+
+    let sub_slug = slugify(subtitle);
+    let name_slug = slugify(name);
+
+    match (sub_slug.is_empty(), name_slug.is_empty()) {
+        (false, false) => format!("{fh_tag}_{sub_slug}_{name_slug}"),
+        (true,  false) => format!("{fh_tag}_{name_slug}"),
+        (false, true)  => format!("{fh_tag}_{sub_slug}"),
+        (true,  true)  => "FHX_misc".into(),
+    }
+}
+
+/// Accept multipart fields: optional text fields `cardName`, `cardSubtitle`,
+/// `cardCollections` (comma-separated), then a `file` field.
+///
+/// Stores originals under  uploads/{folder}/{uuid}.jpg
+/// Stores resized variants under  uploads/{folder}/Lowres_Assets/{uuid}_{size}w.jpg
+///
+/// All images (including the original) are saved as JPEG.
 /// Returns { path, thumbPath, stagePath }.
 async fn upload_image(
     State(st): State<AppState>,
     mut multipart: Multipart,
 ) -> Result<Json<Value>, ApiError> {
+    let mut card_name = String::new();
+    let mut card_subtitle = String::new();
+    let mut card_collections = String::new();
+
     while let Some(field) = multipart
         .next_field()
         .await
         .map_err(|e| err(StatusCode::BAD_REQUEST, e))?
     {
-        let orig = field.file_name().unwrap_or("upload").to_string();
-        let ext = std::path::Path::new(&orig)
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("jpg")
-            .to_lowercase();
+        match field.name() {
+            Some("cardName") => {
+                card_name = field.text().await.unwrap_or_default();
+                continue;
+            }
+            Some("cardSubtitle") => {
+                card_subtitle = field.text().await.unwrap_or_default();
+                continue;
+            }
+            Some("cardCollections") => {
+                card_collections = field.text().await.unwrap_or_default();
+                continue;
+            }
+            _ => {}
+        }
+
+        // This field is the file.
         let data = field
             .bytes()
             .await
             .map_err(|e| err(StatusCode::BAD_REQUEST, e))?;
 
         let id = uuid::Uuid::new_v4().to_string();
-        let filename = format!("{id}.{ext}");
-        let thumb_name = format!("{id}_thumb.jpg");
-        let stage_name = format!("{id}_stage.jpg");
+        let folder = card_folder(&card_name, &card_subtitle, &card_collections);
+        let card_dir = st.uploads_dir.join(&folder);
+        let lowres_dir = card_dir.join("Lowres_Assets");
 
-        // Write original
-        let dest = st.uploads_dir.join(&filename);
-        std::fs::write(&dest, &data).map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        std::fs::create_dir_all(&card_dir)
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        std::fs::create_dir_all(&lowres_dir)
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
-        // Decode + generate resized variants (best-effort; skip on decode failure)
-        if let Ok(img) = image::load_from_memory(&data) {
-            let thumb = img.thumbnail(200, u32::MAX);
-            let stage = img.thumbnail(1000, u32::MAX);
+        // Decode image; fall back to raw write if we can't decode it.
+        let img = image::load_from_memory(&data)
+            .map_err(|e| err(StatusCode::BAD_REQUEST, e))?;
 
-            let _ = thumb.save_with_format(
-                st.uploads_dir.join(&thumb_name),
-                image::ImageFormat::Jpeg,
-            );
-            let _ = stage.save_with_format(
-                st.uploads_dir.join(&stage_name),
-                image::ImageFormat::Jpeg,
-            );
-        }
+        // Original → JPEG in card folder
+        let orig_name  = format!("{id}.jpg");
+        let thumb_name = format!("{id}_200w.jpg");
+        let stage_name = format!("{id}_1000w.jpg");
+
+        img.save_with_format(card_dir.join(&orig_name), image::ImageFormat::Jpeg)
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+        // Resized variants → Lowres_Assets (best-effort; never fail the request)
+        let _ = img
+            .thumbnail(200, u32::MAX)
+            .save_with_format(lowres_dir.join(&thumb_name), image::ImageFormat::Jpeg);
+        let _ = img
+            .thumbnail(1000, u32::MAX)
+            .save_with_format(lowres_dir.join(&stage_name), image::ImageFormat::Jpeg);
 
         return Ok(Json(json!({
-            "path":      format!("/uploads/{filename}"),
-            "thumbPath": format!("/uploads/{thumb_name}"),
-            "stagePath": format!("/uploads/{stage_name}"),
+            "path":      format!("/uploads/{folder}/{orig_name}"),
+            "thumbPath": format!("/uploads/{folder}/Lowres_Assets/{thumb_name}"),
+            "stagePath": format!("/uploads/{folder}/Lowres_Assets/{stage_name}"),
         })));
     }
     Err(err(StatusCode::BAD_REQUEST, "no file field in upload"))

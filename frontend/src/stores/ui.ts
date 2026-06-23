@@ -77,8 +77,9 @@ export const useUiStore = defineStore('ui', () => {
   const exitConfirmOpen = ref(false)
   const saving = ref(false)
 
-  // Lightbox
+  // Lightbox — displaySrc is what's shown (may be stage JPEG); originalSrc is always the full-res original for download.
   const lightboxSrc = ref<string | null>(null)
+  const lightboxOriginalSrc = ref<string | null>(null)
 
   // New card modal
   const newCardOpen = ref(false)
@@ -148,11 +149,13 @@ export const useUiStore = defineStore('ui', () => {
   function cancelExit() {
     exitConfirmOpen.value = false
   }
-  function openLightbox(src: string) {
-    lightboxSrc.value = src
+  function openLightbox(displaySrc: string, originalSrc?: string) {
+    lightboxSrc.value = displaySrc
+    lightboxOriginalSrc.value = originalSrc ?? displaySrc
   }
   function closeLightbox() {
     lightboxSrc.value = null
+    lightboxOriginalSrc.value = null
   }
   function openChipPicker(cardId: string, type: 'tag' | 'collection') {
     chipPicker.value = { cardId, type }
@@ -175,7 +178,7 @@ export const useUiStore = defineStore('ui', () => {
     isCardVisible, toggleCollection,
     exitConfirmOpen, saving,
     newCardOpen, openNewCard, closeNewCard,
-    lightboxSrc, chipPicker, imagePicker,
+    lightboxSrc, lightboxOriginalSrc, chipPicker, imagePicker,
     THEMES,
     enterEdit, requestExit, toggleEdit, saveCard, saveAllDirty,
     confirmSaveAndExit, confirmDiscardAndExit, cancelExit,

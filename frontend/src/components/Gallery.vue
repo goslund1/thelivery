@@ -4,6 +4,7 @@ import type { Card } from '../types'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 import { useSlideshow } from '../composables/useSlideshow'
+import { useNetworkQuality } from '../composables/useNetworkQuality'
 import { api } from '../api'
 
 const props = defineProps<{ card: Card }>()
@@ -18,6 +19,8 @@ const poolSorted = computed(() => [...images.value].sort((a, b) => a.order - b.o
 const stageRef = ref<HTMLElement | null>(null)
 const barRef = ref<HTMLElement | null>(null)
 const toggleRef = ref<HTMLElement | null>(null)
+
+const { srcFor } = useNetworkQuality()
 
 // useSlideshow internally filters to included-only.
 const { ordered, index, toggleIcon, toggleLabel, toggle, onThumb } = useSlideshow(
@@ -84,7 +87,11 @@ async function onAddFile(e: Event) {
   try {
     await Promise.all(
       files.map(async (file) => {
-        const { path, thumbPath, stagePath } = await api.uploadImage(file)
+        const { path, thumbPath, stagePath } = await api.uploadImage(file, {
+          name: props.card.name,
+          subtitle: props.card.subtitle,
+          collections: props.card.collections,
+        })
         store.addImageToPool(props.card.id, path, thumbPath, stagePath)
         ui.markCardDirty(props.card.id)
         uploadProgress.value!.done++
@@ -103,7 +110,7 @@ async function onAddFile(e: Event) {
     <img
       v-for="(img, i) in ordered"
       :key="img.id"
-      :src="img.stagePath ?? img.path"
+      :src="srcFor(img, 'stage')"
       :class="{ active: i === index }"
       :data-index="i"
       @click="toggle"
@@ -113,6 +120,12 @@ async function onAddFile(e: Event) {
         <span class="icon" v-if="toggleIcon">{{ toggleIcon }}</span>
         <span class="label">{{ toggleLabel }}</span>
       </button>
+      <button
+        v-if="ordered[index]"
+        class="stage-expand"
+        title="View full resolution"
+        @click.stop="ui.openLightbox(srcFor(ordered[index], 'stage'), ordered[index].path)"
+      >⤢</button>
     </div>
   </div>
 
@@ -182,6 +195,33 @@ async function onAddFile(e: Event) {
 </template>
 
 <style scoped>
+.stage-expand {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.stage:hover .stage-expand {
+  opacity: 1;
+}
+.stage-expand:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+}
 .thumb.excluded {
   opacity: 0.35;
 }

@@ -31,9 +31,15 @@ export const api = {
       if (!r.ok) throw new Error(`delete failed: ${r.status}`)
     }),
 
-  // Upload a file; returns original path plus thumb/stage variants when available.
-  uploadImage: (file: File) => {
+  // Upload a file with card context for folder naming; returns original + variant paths.
+  uploadImage: (
+    file: File,
+    card: { name: string; subtitle: string; collections: string[] },
+  ) => {
     const fd = new FormData()
+    fd.append('cardName', card.name)
+    fd.append('cardSubtitle', card.subtitle)
+    fd.append('cardCollections', card.collections.join(','))
     fd.append('file', file)
     return fetch('/api/images', { method: 'POST', body: fd }).then(
       json<{ path: string; thumbPath?: string; stagePath?: string }>

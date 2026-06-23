@@ -78,8 +78,11 @@ export const useUiStore = defineStore('ui', () => {
   const saving = ref(false)
 
   // Lightbox — displaySrc is what's shown (may be stage JPEG); originalSrc is always the full-res original for download.
+  // images is the full reel for arrow navigation; index tracks position.
   const lightboxSrc = ref<string | null>(null)
   const lightboxOriginalSrc = ref<string | null>(null)
+  const lightboxImages = ref<{ display: string; original: string }[]>([])
+  const lightboxIndex = ref(0)
 
   // New card modal
   const newCardOpen = ref(false)
@@ -149,13 +152,30 @@ export const useUiStore = defineStore('ui', () => {
   function cancelExit() {
     exitConfirmOpen.value = false
   }
-  function openLightbox(displaySrc: string, originalSrc?: string) {
+  function openLightbox(
+    displaySrc: string,
+    originalSrc?: string,
+    images?: { display: string; original: string }[],
+    index?: number,
+  ) {
     lightboxSrc.value = displaySrc
     lightboxOriginalSrc.value = originalSrc ?? displaySrc
+    lightboxImages.value = images ?? []
+    lightboxIndex.value = index ?? 0
+  }
+  function navigateLightbox(dir: 1 | -1) {
+    const imgs = lightboxImages.value
+    if (imgs.length < 2) return
+    const next = (lightboxIndex.value + dir + imgs.length) % imgs.length
+    lightboxIndex.value = next
+    lightboxSrc.value = imgs[next].display
+    lightboxOriginalSrc.value = imgs[next].original
   }
   function closeLightbox() {
     lightboxSrc.value = null
     lightboxOriginalSrc.value = null
+    lightboxImages.value = []
+    lightboxIndex.value = 0
   }
   function openChipPicker(cardId: string, type: 'tag' | 'collection') {
     chipPicker.value = { cardId, type }
@@ -178,11 +198,11 @@ export const useUiStore = defineStore('ui', () => {
     isCardVisible, toggleCollection,
     exitConfirmOpen, saving,
     newCardOpen, openNewCard, closeNewCard,
-    lightboxSrc, lightboxOriginalSrc, chipPicker, imagePicker,
+    lightboxSrc, lightboxOriginalSrc, lightboxImages, lightboxIndex, chipPicker, imagePicker,
     THEMES,
     enterEdit, requestExit, toggleEdit, saveCard, saveAllDirty,
     confirmSaveAndExit, confirmDiscardAndExit, cancelExit,
-    openLightbox, closeLightbox,
+    openLightbox, navigateLightbox, closeLightbox,
     openChipPicker, closeChipPicker,
     openImagePicker, closeImagePicker,
   }

@@ -203,7 +203,12 @@ function cancelFolderImport() {
         v-if="ordered[index]"
         class="stage-expand"
         title="View full resolution"
-        @click.stop="ui.openLightbox(srcFor(ordered[index], 'stage'), ordered[index].path)"
+        @click.stop="ui.openLightbox(
+          srcFor(ordered[index], 'stage'),
+          ordered[index].path,
+          ordered.map(img => ({ display: srcFor(img, 'stage'), original: img.path })),
+          index
+        )"
       >⤢</button>
     </div>
   </div>

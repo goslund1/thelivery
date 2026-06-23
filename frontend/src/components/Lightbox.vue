@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useUiStore } from '../stores/ui'
 
 const ui = useUiStore()
 
-// Progressive load: show the display src (JPEG) immediately, swap to original once loaded.
 const shownSrc = ref<string | null>(null)
 const isUpgraded = ref(false)
 
@@ -17,7 +16,6 @@ watch(() => ui.lightboxSrc, (display) => {
   if (original && original !== display) {
     const preload = new Image()
     preload.onload = () => {
-      // Only swap if this lightbox is still open for the same image
       if (ui.lightboxSrc === display) {
         shownSrc.value = original
         isUpgraded.value = true
@@ -26,6 +24,17 @@ watch(() => ui.lightboxSrc, (display) => {
     preload.src = original
   }
 })
+
+function onKey(e: KeyboardEvent) {
+  if (!ui.lightboxSrc) return
+  if (e.key === 'ArrowRight') { e.preventDefault(); ui.navigateLightbox(1) }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); ui.navigateLightbox(-1) }
+}
+
+onMounted(() => window.addEventListener('keydown', onKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+
+const hasMultiple = () => ui.lightboxImages.length > 1
 
 function downloadFilename(src: string) {
   return src.split('/').pop() ?? 'download.jpg'
@@ -36,7 +45,28 @@ function downloadFilename(src: string) {
   <div class="lightbox" :class="{ open: !!ui.lightboxSrc }" @click.self="ui.closeLightbox()">
     <button class="lightbox-close" aria-label="Close" @click="ui.closeLightbox()">×</button>
 
+    <!-- Left ear -->
+    <button
+      v-if="hasMultiple()"
+      class="lightbox-ear lightbox-ear-left"
+      aria-label="Previous image"
+      @click.stop="ui.navigateLightbox(-1)"
+    >‹</button>
+
     <img v-if="shownSrc" :src="shownSrc" alt="" :class="{ upgraded: isUpgraded }" />
+
+    <!-- Right ear -->
+    <button
+      v-if="hasMultiple()"
+      class="lightbox-ear lightbox-ear-right"
+      aria-label="Next image"
+      @click.stop="ui.navigateLightbox(1)"
+    >›</button>
+
+    <!-- Image counter -->
+    <span v-if="hasMultiple()" class="lightbox-counter">
+      {{ ui.lightboxIndex + 1 }} / {{ ui.lightboxImages.length }}
+    </span>
 
     <a
       v-if="ui.lightboxOriginalSrc"
@@ -50,6 +80,47 @@ function downloadFilename(src: string) {
 </template>
 
 <style scoped>
+.lightbox-ear {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10002;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  padding: 0;
+}
+.lightbox-ear:hover {
+  background: rgba(0, 0, 0, 0.85);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.lightbox-ear-left  { left: 20px; }
+.lightbox-ear-right { right: 20px; }
+
+.lightbox-counter {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.5);
+  z-index: 10001;
+  pointer-events: none;
+}
+
 .lightbox-download {
   position: fixed;
   bottom: 24px;
@@ -74,7 +145,6 @@ function downloadFilename(src: string) {
   border-color: var(--gold);
   color: var(--gold);
 }
-/* Subtle dissolve when the full-res swap happens */
 .lightbox img.upgraded {
   animation: lb-upgrade 0.4s ease;
 }

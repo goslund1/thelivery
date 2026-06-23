@@ -26,6 +26,7 @@ function removeCollection(c: string) {
 
 <template>
   <div class="card-meta">
+    <span v-if="card.isLegend" class="legend-flag">Field Legend — Not a real entry</span>
     <div>
       <p class="card-number">
         CATALOG <span>NO. {{ catalogNo }}</span>

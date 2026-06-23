@@ -44,29 +44,20 @@ function onExit() {
       </svg>
     </button>
 
-    <!-- Green: new card
-         Shaft: vertical section up, then 45° diagonal.
-         Head: solid filled triangle, tip pointing NE at 45°.
-         Base midpoint of triangle = end of diagonal, so shaft connects cleanly.
-         Plus: just left of the diagonal (upper) section. -->
+    <!-- Green: new card — FA up-right-from-square (external link arrow + box),
+         plus sign inset to the left in extended viewBox -->
     <button
       class="tl-btn tl-green"
       aria-label="New card"
       v-tip="'New card'"
       @click="ui.openNewCard()"
     >
-      <svg class="icon-arrow" viewBox="0 0 16 16" fill="none" stroke="white" stroke-linecap="round">
-        <!-- Section 1: vertical shaft -->
-        <line x1="7" y1="15" x2="7" y2="9" stroke-width="2"/>
-        <!-- Section 2: 45° diagonal shaft (Δx=3 Δy=-3) -->
-        <line x1="7" y1="9" x2="10" y2="6" stroke-width="2"/>
-        <!-- Arrowhead: solid triangle pointing NE.
-             Tip at (14,2). Base midpoint at (10,6) = diagonal end.
-             Direction (10,6)→(14,2) = (4,-4) = exactly 45°. -->
-        <polygon points="14,2 9,5 11,7" fill="white" stroke="none"/>
-        <!-- Plus: just left of the 45° section -->
-        <line x1="1" y1="7" x2="5" y2="7" stroke-width="1.7"/>
-        <line x1="3" y1="5" x2="3" y2="9" stroke-width="1.7"/>
+      <svg class="icon-arrow" viewBox="-200 0 712 512" fill="white">
+        <!-- Plus sign in the left gutter (just left of the arrow's upper portion) -->
+        <line x1="-150" y1="240" x2="-50" y2="240" stroke="white" stroke-width="60" stroke-linecap="round"/>
+        <line x1="-100" y1="190" x2="-100" y2="290" stroke="white" stroke-width="60" stroke-linecap="round"/>
+        <!-- Font Awesome up-right-from-square (external link icon) -->
+        <path d="M352 0c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9L370.7 96 201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L416 141.3l41.4 41.4c9.2 9.2 22.9 11.9 34.9 6.9s19.8-16.6 19.8-29.6l0-128c0-17.7-14.3-32-32-32L352 0zM80 32C35.8 32 0 67.8 0 112L0 432c0 44.2 35.8 80 80 80l320 0c44.2 0 80-35.8 80-80l0-112c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 112c0 8.8-7.2 16-16 16L80 448c-8.8 0-16-7.2-16-16l0-320c0-8.8 7.2-16 16-16l112 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L80 32z"/>
       </svg>
     </button>
   </div>
@@ -168,7 +159,7 @@ function onExit() {
   box-shadow: 0 0 8px rgba(39,174,96,0.5);
 }
 .icon-arrow {
-  width: 16px;
+  width: 22px;
   height: 16px;
 }
 

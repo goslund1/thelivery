@@ -13,7 +13,7 @@
 use std::path::PathBuf;
 
 use axum::{
-    extract::{Multipart, Path, State},
+    extract::{DefaultBodyLimit, Multipart, Path, State},
     http::StatusCode,
     routing::{get, post},
     Json, Router,
@@ -79,6 +79,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/images", post(upload_image))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
         .fallback_service(spa)
+        .layer(DefaultBodyLimit::max(40 * 1024 * 1024)) // 40 MB per file
         .layer(CorsLayer::permissive())
         .with_state(state);
 

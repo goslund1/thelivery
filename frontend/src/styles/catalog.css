@@ -169,6 +169,7 @@
         #1dc7ff 240px 250px,
         #000 250px 290px,
         #b81dff 290px 300px);
+    background-attachment: fixed;
   }
 
   .page-head{

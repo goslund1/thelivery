@@ -118,13 +118,18 @@ type FolderImport =
 const folderImport = ref<FolderImport | null>(null)
 const folderInputRef = ref<HTMLInputElement | null>(null)
 
+const SUPPORTED_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'])
+const HEIC_EXTS = /\.(heic|heif|avif)$/i
+
 function onFolderSelected(e: Event) {
   const all = Array.from((e.target as HTMLInputElement).files ?? [])
   if (folderInputRef.value) folderInputRef.value.value = ''
-  // Filter to images only, sort by relative path for consistent ordering
+  // Only JPEG/PNG/WebP — HEIC (iPhone default) not supported by the backend decoder
   const files = all
-    .filter(f => f.type.startsWith('image/'))
+    .filter(f => SUPPORTED_TYPES.has(f.type) || (!HEIC_EXTS.test(f.name) && f.type.startsWith('image/')))
     .sort((a, b) => a.webkitRelativePath.localeCompare(b.webkitRelativePath))
+  const skipped = all.filter(f => !files.includes(f) && (f.type.startsWith('image/') || /\.(heic|heif|avif)$/i.test(f.name)))
+  if (skipped.length) console.warn(`[gallery] skipped ${skipped.length} unsupported file(s) (HEIC/HEIF/AVIF). Export as JPEG from Photos first.`)
   if (!files.length) return
 
   const folderName = files[0].webkitRelativePath.split('/')[0]
@@ -226,7 +231,7 @@ function cancelFolderImport() {
     <div v-else-if="uploadResult" class="folder-import-banner" :class="{ 'fi-has-errors': uploadResult.failed > 0 }">
       <span class="fi-label">
         <template v-if="uploadResult.added > 0">✓ {{ uploadResult.added }} photo{{ uploadResult.added !== 1 ? 's' : '' }} added</template>
-        <template v-if="uploadResult.failed > 0"> · {{ uploadResult.failed }} failed (check console — unsupported format?)</template>
+        <template v-if="uploadResult.failed > 0"> · {{ uploadResult.failed }} failed — export as JPEG from Photos</template>
       </span>
     </div>
   </template>
@@ -283,7 +288,7 @@ function cancelFolderImport() {
           <div class="thumb thumb-add" title="Add photos" @click="folderInputRef?.click()">
             <span class="thumb-add-icon">⊞</span>
             <span class="thumb-add-label" v-if="poolSorted.length === 0">Add photos</span>
-            <input ref="folderInputRef" type="file" accept="image/*" webkitdirectory style="display:none" @change="onFolderSelected" />
+            <input ref="folderInputRef" type="file" accept="image/jpeg,image/png,image/webp" webkitdirectory style="display:none" @change="onFolderSelected" />
           </div>
         </template>
       </template>

@@ -84,8 +84,8 @@ async function onAddFile(e: Event) {
   try {
     await Promise.all(
       files.map(async (file) => {
-        const { path } = await api.uploadImage(file)
-        store.addImageToPool(props.card.id, path)
+        const { path, thumbPath, stagePath } = await api.uploadImage(file)
+        store.addImageToPool(props.card.id, path, thumbPath, stagePath)
         ui.markCardDirty(props.card.id)
         uploadProgress.value!.done++
       }),
@@ -103,7 +103,7 @@ async function onAddFile(e: Event) {
     <img
       v-for="(img, i) in ordered"
       :key="img.id"
-      :src="img.path"
+      :src="img.stagePath ?? img.path"
       :class="{ active: i === index }"
       :data-index="i"
       @click="toggle"
@@ -134,7 +134,7 @@ async function onAddFile(e: Event) {
           @dragover.prevent
           @drop.prevent="onDrop(i)"
         >
-          <img :src="img.path" />
+          <img :src="img.thumbPath ?? img.path" />
           <button
             class="lead-star"
             type="button"
@@ -172,7 +172,7 @@ async function onAddFile(e: Event) {
           title="View this photo"
           @click="onThumb(i)"
         >
-          <img :src="img.path" />
+          <img :src="img.thumbPath ?? img.path" />
         </div>
       </template>
 

@@ -287,7 +287,9 @@ async fn delete_card(
     Ok(StatusCode::NO_CONTENT)
 }
 
-/// Accept a single multipart file field, store it under uploads/, return its URL path.
+/// Accept a single multipart file field, store it under uploads/.
+/// Generates a thumb (200px) and stage (1000px) JPEG alongside the original.
+/// Returns { path, thumbPath, stagePath }.
 async fn upload_image(
     State(st): State<AppState>,
     mut multipart: Multipart,
@@ -301,16 +303,42 @@ async fn upload_image(
         let ext = std::path::Path::new(&orig)
             .extension()
             .and_then(|e| e.to_str())
-            .unwrap_or("png")
+            .unwrap_or("jpg")
             .to_lowercase();
         let data = field
             .bytes()
             .await
             .map_err(|e| err(StatusCode::BAD_REQUEST, e))?;
-        let filename = format!("{}.{}", uuid::Uuid::new_v4(), ext);
+
+        let id = uuid::Uuid::new_v4().to_string();
+        let filename = format!("{id}.{ext}");
+        let thumb_name = format!("{id}_thumb.jpg");
+        let stage_name = format!("{id}_stage.jpg");
+
+        // Write original
         let dest = st.uploads_dir.join(&filename);
         std::fs::write(&dest, &data).map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-        return Ok(Json(json!({ "path": format!("/uploads/{filename}") })));
+
+        // Decode + generate resized variants (best-effort; skip on decode failure)
+        if let Ok(img) = image::load_from_memory(&data) {
+            let thumb = img.thumbnail(200, u32::MAX);
+            let stage = img.thumbnail(1000, u32::MAX);
+
+            let _ = thumb.save_with_format(
+                st.uploads_dir.join(&thumb_name),
+                image::ImageFormat::Jpeg,
+            );
+            let _ = stage.save_with_format(
+                st.uploads_dir.join(&stage_name),
+                image::ImageFormat::Jpeg,
+            );
+        }
+
+        return Ok(Json(json!({
+            "path":      format!("/uploads/{filename}"),
+            "thumbPath": format!("/uploads/{thumb_name}"),
+            "stagePath": format!("/uploads/{stage_name}"),
+        })));
     }
     Err(err(StatusCode::BAD_REQUEST, "no file field in upload"))
 }

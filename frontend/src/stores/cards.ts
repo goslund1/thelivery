@@ -120,11 +120,16 @@ export const useCardsStore = defineStore('cards', () => {
     img.included = img.included === false ? true : false
   }
 
-  function addImageToPool(cardId: string, path: string) {
+  function addImageToPool(
+    cardId: string,
+    path: string,
+    thumbPath?: string,
+    stagePath?: string,
+  ) {
     const c = byId(cardId)
     if (!c) return
     const maxOrder = c.images.reduce((m, i) => Math.max(m, i.order), -1)
-    c.images.push({ id: `${cardId}-${Date.now()}`, path, order: maxOrder + 1, included: true })
+    c.images.push({ id: `${cardId}-${Date.now()}`, path, thumbPath, stagePath, order: maxOrder + 1, included: true })
   }
 
   function addTag(id: string, value: string) {

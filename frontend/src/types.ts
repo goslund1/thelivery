@@ -5,8 +5,10 @@
 
 export interface CardImage {
   id: string
-  path: string // URL path, e.g. "/uploads/1-0.jpg"
-  order: number // the image at order 0 is the lead/feature image
+  path: string      // original full-res URL, e.g. "/uploads/uuid.jpg"
+  thumbPath?: string // 200px-wide JPEG for the thumb rail
+  stagePath?: string // 1000px-wide JPEG for the slideshow stage
+  order: number     // the image at order 0 is the lead/feature image
   included?: boolean // undefined or true = in slideshow; false = in pool but hidden
 }
 

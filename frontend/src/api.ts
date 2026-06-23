@@ -31,10 +31,12 @@ export const api = {
       if (!r.ok) throw new Error(`delete failed: ${r.status}`)
     }),
 
-  // Upload a file, returns its served URL path.
+  // Upload a file; returns original path plus thumb/stage variants when available.
   uploadImage: (file: File) => {
     const fd = new FormData()
     fd.append('file', file)
-    return fetch('/api/images', { method: 'POST', body: fd }).then(json<{ path: string }>)
+    return fetch('/api/images', { method: 'POST', body: fd }).then(
+      json<{ path: string; thumbPath?: string; stagePath?: string }>
+    )
   },
 }

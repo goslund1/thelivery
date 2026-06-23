@@ -43,13 +43,6 @@ function removeCollection(c: string) {
     </div>
     <div class="card-meta-actions">
       <button class="fav-star" :class="{ favorited: card.isFavorite }" aria-label="Favorite this card" v-tip="() => card.isFavorite ? 'Unmark as favorite' : 'Mark as favorite'" @click="toggleFav">★</button>
-      <button
-        v-if="ui.isEditing"
-        class="card-save-btn"
-        :class="{ 'has-changes': ui.isCardDirty(card.id) }"
-        :disabled="!ui.isCardDirty(card.id) || ui.saving"
-        @click="ui.saveCard(card.id)"
-      >{{ ui.isCardDirty(card.id) ? 'Save ↓' : 'Saved' }}</button>
     </div>
   </div>
 </template>
@@ -60,31 +53,5 @@ function removeCollection(c: string) {
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-}
-.card-save-btn {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  white-space: nowrap;
-  background: var(--panel);
-  color: var(--steel);
-  border: 1px solid var(--panel-edge);
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-}
-.card-save-btn.has-changes {
-  background: var(--build-it-bg);
-  color: var(--ink);
-  border-color: var(--build-it-border);
-}
-.card-save-btn.has-changes:hover {
-  background: var(--build-it-bg-hover);
-}
-.card-save-btn:disabled {
-  cursor: default;
-  opacity: 0.55;
 }
 </style>

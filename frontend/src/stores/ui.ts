@@ -80,6 +80,11 @@ export const useUiStore = defineStore('ui', () => {
   // Lightbox
   const lightboxSrc = ref<string | null>(null)
 
+  // New card modal
+  const newCardOpen = ref(false)
+  function openNewCard() { newCardOpen.value = true }
+  function closeNewCard() { newCardOpen.value = false }
+
   // Chip picker (add a tag/collection to a card)
   const chipPicker = ref<{ cardId: string; type: 'tag' | 'collection' } | null>(null)
   // Image picker (set a section's figure image, or upload). `sectionKey` says where.
@@ -169,6 +174,7 @@ export const useUiStore = defineStore('ui', () => {
     favoritesOnly, disabledCollections,
     isCardVisible, toggleCollection,
     exitConfirmOpen, saving,
+    newCardOpen, openNewCard, closeNewCard,
     lightboxSrc, chipPicker, imagePicker,
     THEMES,
     enterEdit, requestExit, toggleEdit, saveCard, saveAllDirty,

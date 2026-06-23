@@ -45,5 +45,7 @@ function onBuildIt() {
       <TextSection v-if="section.type === 'text'" :card-id="card.id" :section="section" />
       <RecipeSection v-else-if="section.type === 'forza_recipe'" :recipe="section" />
     </CollapsibleSection>
+
   </div>
 </template>
+

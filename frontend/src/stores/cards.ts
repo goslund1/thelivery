@@ -31,6 +31,26 @@ export const useCardsStore = defineStore('cards', () => {
     }
   }
 
+  async function createNewCard(fields: { name: string; subtitle: string; collections: string[] }): Promise<Card> {
+    const maxCatalog = cards.value.reduce((m, c) => Math.max(m, c.catalogNumber), 0)
+    const nextNum = maxCatalog + 1
+    const newCard: Card = {
+      id: String(nextNum),
+      catalogNumber: nextNum,
+      name: fields.name,
+      subtitle: fields.subtitle,
+      isFavorite: false,
+      isLegend: false,
+      collections: fields.collections,
+      tags: [],
+      images: [],
+      sections: [],
+    }
+    const created = await api.createCard(newCard)
+    cards.value.push(created)
+    return created
+  }
+
   async function save(id: string) {
     const c = byId(id)
     if (!c) return
@@ -92,6 +112,21 @@ export const useCardsStore = defineStore('cards', () => {
     c.images = imgs
   }
 
+  function toggleImageIncluded(id: string, imageId: string) {
+    const c = byId(id)
+    if (!c) return
+    const img = c.images.find((i) => i.id === imageId)
+    if (!img) return
+    img.included = img.included === false ? true : false
+  }
+
+  function addImageToPool(cardId: string, path: string) {
+    const c = byId(cardId)
+    if (!c) return
+    const maxOrder = c.images.reduce((m, i) => Math.max(m, i.order), -1)
+    c.images.push({ id: `${cardId}-${Date.now()}`, path, order: maxOrder + 1, included: true })
+  }
+
   function addTag(id: string, value: string) {
     const c = byId(id)
     if (c && value && !c.tags.includes(value)) c.tags.push(value)
@@ -129,9 +164,10 @@ export const useCardsStore = defineStore('cards', () => {
 
   return {
     cards, loading, error,
-    byId, load, save,
+    byId, load, save, createNewCard,
     takeSnapshot, restoreSnapshot, setFigure,
     toggleFavorite, setLeadImage, reorderImages,
+    toggleImageIncluded, addImageToPool,
     addTag, removeTag, addCollection, removeCollection,
     allTagValues, allCollectionValues, allSectionKeys,
   }

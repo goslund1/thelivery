@@ -161,12 +161,12 @@ const cycleTooltip = computed(() => {
 }
 
 .tl-yellow {
-  background: #6b4a00;
-  border-color: #a07000;
+  background: #a07000;
+  border-color: var(--gold, #c9a227);
   color: #fff;
 }
 .tl-yellow:hover {
-  background: #c9a227;
+  background: #d4a800;
   border-color: #f0c040;
   box-shadow: 0 0 12px rgba(201,162,39,0.7);
 }

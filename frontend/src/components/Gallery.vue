@@ -396,6 +396,25 @@ function cancelFolderImport() {
   background: rgba(170, 30, 30, 0.9);
   color: #fff;
 }
+/* Excluded thumbs: reverse contrast on controls — light bg, dark icons */
+.thumb.excluded .thumb-ctrl {
+  background: rgba(220, 220, 220, 0.75);
+  color: rgba(0, 0, 0, 0.55);
+}
+.thumb.excluded .thumb-ctrl-lead.is-lead,
+.thumb.excluded .thumb-ctrl-lead:hover {
+  color: #9a7800;
+}
+.thumb.excluded .thumb-ctrl-pool.included {
+  color: #9a7800;
+}
+.thumb.excluded .thumb-ctrl-pool:not(.included) {
+  color: rgba(0, 0, 0, 0.3);
+}
+.thumb.excluded .thumb-ctrl-del:hover {
+  background: rgba(170, 30, 30, 0.85);
+  color: #fff;
+}
 .thumb-add {
   display: flex;
   flex-direction: column;

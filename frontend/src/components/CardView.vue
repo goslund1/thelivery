@@ -13,8 +13,12 @@ import RecipeSection from './RecipeSection.vue'
 const props = defineProps<{ card: Card }>()
 const ui = useUiStore()
 
+// Card 0 is the instructions card — read-only, never editable.
+const isReadOnly = computed(() => props.card.catalogNumber === 0)
+
 // Descendant editors mark this specific card dirty via inject.
-provide(MarkDirtyKey, () => ui.markCardDirty(props.card.id))
+// No-op for read-only cards so edits don't register.
+provide(MarkDirtyKey, () => { if (!isReadOnly.value) ui.markCardDirty(props.card.id) })
 
 // Per-section open state, so a parent action (Build It) can force one open and
 // the collapsibles still follow the per-type expand filters.
@@ -28,7 +32,7 @@ function onBuildIt() {
 </script>
 
 <template>
-  <div class="card" :id="`card-${card.id}`" :class="{ 'legend-card': card.isLegend }" :data-collections="card.collections.join(',')">
+  <div class="card" :id="`card-${card.id}`" :class="{ 'legend-card': card.isLegend, 'read-only-card': isReadOnly }" :data-collections="card.collections.join(',')">
     <CardMeta :card="card" />
     <Gallery :card="card" />
     <TagCloud :card="card" :recipe-key="recipeKey" @build-it="onBuildIt" />

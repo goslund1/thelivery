@@ -31,6 +31,12 @@ export const api = {
       if (!r.ok) throw new Error(`delete failed: ${r.status}`)
     }),
 
+  listCardHistory: (id: string) =>
+    fetch(`/api/cards/${id}/history`).then(json<{ version: number; savedAt: string }[]>),
+
+  getCardHistoryVersion: (id: string, version: number) =>
+    fetch(`/api/cards/${id}/history/${version}`).then(json<{ version: number; savedAt: string; body: import('./types').Card }>),
+
   deleteImages: (paths: string[]) =>
     fetch('/api/images', {
       method: 'DELETE',

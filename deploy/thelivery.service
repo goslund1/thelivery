@@ -13,8 +13,8 @@ Environment=PORT=8787
 Environment=DATABASE_PATH=/opt/thelivery/data.db
 Environment=UPLOADS_DIR=/opt/thelivery/uploads
 Environment=SEED_PATH=/opt/thelivery/seed/cards.json
-Environment=FRONTEND_DIR=/opt/thelivery/static
-ExecStart=/opt/thelivery/livery-backend
+Environment=FRONTEND_DIR=/opt/thelivery/releases/current/static
+ExecStart=/opt/thelivery/releases/current/livery-backend
 Restart=on-failure
 RestartSec=3
 

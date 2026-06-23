@@ -76,6 +76,8 @@ async fn main() -> anyhow::Result<()> {
             "/api/cards/:id",
             get(get_card).put(put_card).delete(delete_card),
         )
+        .route("/api/cards/:id/history", get(list_card_history))
+        .route("/api/cards/:id/history/:version", get(get_card_history_version))
         .route("/api/images", post(upload_image).delete(delete_images))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
         .fallback_service(spa)
@@ -255,12 +257,98 @@ async fn put_card(
     Path(id): Path<String>,
     Json(mut body): Json<Value>,
 ) -> Result<Json<Value>, ApiError> {
-    // The URL id wins, to keep the row id and body id consistent.
+    // Card 0 (the instructions card) is read-only through the normal API.
+    let catalog_number = body.get("catalogNumber").and_then(Value::as_i64).unwrap_or(-1);
+    if catalog_number == 0 {
+        return Err(err(StatusCode::FORBIDDEN, "card 0 is read-only"));
+    }
+
     body["id"] = json!(id);
+
+    // Snapshot the current state into history before overwriting.
+    let existing: Option<String> = sqlx::query_scalar("SELECT body FROM cards WHERE id = ?")
+        .bind(&id)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    if let Some(current_body) = existing {
+        let next_version: i64 = sqlx::query_scalar(
+            "SELECT COALESCE(MAX(version), 0) + 1 FROM card_history WHERE card_id = ?"
+        )
+        .bind(&id)
+        .fetch_one(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+        sqlx::query(
+            "INSERT INTO card_history (card_id, version, body) VALUES (?, ?, ?)"
+        )
+        .bind(&id)
+        .bind(next_version)
+        .bind(&current_body)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+        // Prune to 20 most recent versions.
+        sqlx::query(
+            "DELETE FROM card_history WHERE card_id = ? AND version <= (
+                SELECT version FROM card_history WHERE card_id = ?
+                ORDER BY version DESC LIMIT 1 OFFSET 19
+            )"
+        )
+        .bind(&id)
+        .bind(&id)
+        .execute(&st.pool)
+        .await
+        .ok();
+    }
+
     upsert(&st.pool, &body)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     Ok(Json(body))
+}
+
+async fn list_card_history(
+    State(st): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    let rows = sqlx::query(
+        "SELECT version, saved_at FROM card_history WHERE card_id = ? ORDER BY version DESC"
+    )
+    .bind(&id)
+    .fetch_all(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let versions: Vec<Value> = rows.iter().map(|r| json!({
+        "version": r.get::<i64, _>("version"),
+        "savedAt": r.get::<String, _>("saved_at"),
+    })).collect();
+
+    Ok(Json(json!(versions)))
+}
+
+async fn get_card_history_version(
+    State(st): State<AppState>,
+    Path((id, version)): Path<(String, i64)>,
+) -> Result<Json<Value>, ApiError> {
+    let row = sqlx::query(
+        "SELECT body, saved_at FROM card_history WHERE card_id = ? AND version = ?"
+    )
+    .bind(&id)
+    .bind(version)
+    .fetch_optional(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+    .ok_or_else(|| err(StatusCode::NOT_FOUND, "version not found"))?;
+
+    let body: Value = serde_json::from_str(row.get::<String, _>("body").as_str())
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    Ok(Json(json!({ "version": version, "savedAt": row.get::<String, _>("saved_at"), "body": body })))
 }
 
 async fn create_card(

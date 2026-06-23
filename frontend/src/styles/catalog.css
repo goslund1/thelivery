@@ -237,6 +237,18 @@
     min-width:0;
   }
 
+  /* Card 0 (instructions) suppresses all edit affordances even in edit mode */
+  .read-only-card .change-image-btn,
+  .read-only-card .chip-add-btn,
+  .read-only-card .save-card-btn,
+  .read-only-card .thumb-controls,
+  .read-only-card .thumb-add {
+    display: none !important;
+  }
+  .read-only-card [contenteditable] {
+    pointer-events: none;
+  }
+
   .card-meta{
     display:flex;
     align-items:flex-start;

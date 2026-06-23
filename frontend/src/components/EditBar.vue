@@ -30,9 +30,9 @@ function onExit() {
 
 <style scoped>
 .new-card-btn {
-  background: transparent;
-  border: 1px solid var(--panel-edge);
-  color: var(--steel);
+  background: #2d7d52;
+  border: 1px solid #3a9e68;
+  color: #e8f5ee;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.06em;
@@ -40,12 +40,12 @@ function onExit() {
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
   white-space: nowrap;
 }
 .new-card-btn:hover {
-  color: var(--paper);
-  border-color: var(--gold);
+  background: #358f5e;
+  border-color: #4ab87a;
 }
 .edit-unsaved-count {
   font-family: 'JetBrains Mono', monospace;

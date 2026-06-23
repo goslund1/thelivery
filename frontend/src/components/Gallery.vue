@@ -263,18 +263,20 @@ function cancelFolderImport() {
         >
           <img :src="img.thumbPath ?? img.path" />
           <div class="thumb-controls">
-            <button
-              class="thumb-ctrl thumb-ctrl-lead"
-              :class="{ 'is-lead': img.order === 0 }"
-              title="Set as lead image"
-              @click.stop="setLead(img.id)"
-            >★</button>
-            <button
-              class="thumb-ctrl thumb-ctrl-pool"
-              :class="{ included: img.included !== false }"
-              :title="img.included === false ? 'Add to slideshow' : 'Remove from slideshow'"
-              @click.stop="toggleIncluded(img.id)"
-            >●</button>
+            <div class="thumb-ctrl-left">
+              <button
+                class="thumb-ctrl thumb-ctrl-lead"
+                :class="{ 'is-lead': img.order === 0 }"
+                title="Set as lead image"
+                @click.stop="setLead(img.id)"
+              >★</button>
+              <button
+                class="thumb-ctrl thumb-ctrl-pool"
+                :class="{ included: img.included !== false }"
+                :title="img.included === false ? 'Add to slideshow' : 'Remove from slideshow'"
+                @click.stop="toggleIncluded(img.id)"
+              >●</button>
+            </div>
             <button
               class="thumb-ctrl thumb-ctrl-del"
               title="Remove from card"
@@ -357,13 +359,15 @@ function cancelFolderImport() {
   filter: grayscale(60%);
 }
 
-/* Three-button control row — top-left of each thumb in edit mode */
+/* Thumb control row — spans top of each thumb in edit mode */
 .thumb-controls {
   position: absolute;
   top: 3px;
   left: 3px;
+  right: 3px;
   display: flex;
-  gap: 2px;
+  justify-content: space-between;
+  align-items: flex-start;
   opacity: 0;
   z-index: 10;
   transition: opacity 0.15s ease;
@@ -371,14 +375,18 @@ function cancelFolderImport() {
 .thumb:hover .thumb-controls {
   opacity: 1;
 }
+.thumb-ctrl-left {
+  display: flex;
+  gap: 2px;
+}
 .thumb-ctrl {
-  width: 16px;
-  height: 16px;
-  border-radius: 2px;
+  width: 19px;
+  height: 19px;
+  border-radius: 3px;
   border: none;
   background: rgba(0, 0, 0, 0.68);
   color: rgba(255, 255, 255, 0.55);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1;
   cursor: pointer;
   display: flex;

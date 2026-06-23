@@ -31,6 +31,13 @@ export const api = {
       if (!r.ok) throw new Error(`delete failed: ${r.status}`)
     }),
 
+  deleteImages: (paths: string[]) =>
+    fetch('/api/images', {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ paths }),
+    }).then((r) => { if (!r.ok) throw new Error(`deleteImages failed: ${r.status}`) }),
+
   // Upload a file with card context for folder naming; returns original + variant paths.
   // fileIndex: when set, the backend uses it for sequential filename (001.jpg, 002.jpg…)
   uploadImage: (

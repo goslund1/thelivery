@@ -140,8 +140,8 @@ export const useUiStore = defineStore('ui', () => {
     exitConfirmOpen.value = false
     isEditing.value = false
   }
-  function confirmDiscardAndExit() {
-    useCardsStore().restoreSnapshot()
+  async function confirmDiscardAndExit() {
+    await useCardsStore().restoreSnapshot()
     clearAllDirty()
     exitConfirmOpen.value = false
     isEditing.value = false

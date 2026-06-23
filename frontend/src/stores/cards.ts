@@ -65,8 +65,24 @@ export const useCardsStore = defineStore('cards', () => {
   }
   // Revert every card to its baseline. Cards saved during this edit session have
   // an updated baseline, so they are left at their saved state; only unsaved
-  // cards roll back.
-  function restoreSnapshot() {
+  // cards roll back. Images added since the last save are deleted from disk.
+  async function restoreSnapshot() {
+    const orphans: string[] = []
+    for (const c of cards.value) {
+      const snap = snapshots[c.id]
+      if (!snap) continue
+      const savedPaths = new Set(
+        (JSON.parse(snap) as Card).images.flatMap((i) =>
+          [i.path, i.thumbPath, i.stagePath].filter(Boolean) as string[]
+        )
+      )
+      for (const img of c.images) {
+        for (const p of [img.path, img.thumbPath, img.stagePath]) {
+          if (p && !savedPaths.has(p)) orphans.push(p)
+        }
+      }
+    }
+    if (orphans.length) await api.deleteImages(orphans).catch(() => {})
     cards.value = cards.value.map((c) =>
       snapshots[c.id] ? (JSON.parse(snapshots[c.id]) as Card) : c,
     )

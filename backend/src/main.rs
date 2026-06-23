@@ -76,7 +76,7 @@ async fn main() -> anyhow::Result<()> {
             "/api/cards/:id",
             get(get_card).put(put_card).delete(delete_card),
         )
-        .route("/api/images", post(upload_image))
+        .route("/api/images", post(upload_image).delete(delete_images))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
         .fallback_service(spa)
         .layer(DefaultBodyLimit::max(40 * 1024 * 1024)) // 40 MB per file
@@ -327,6 +327,38 @@ fn card_folder(name: &str, subtitle: &str, collections: &str) -> String {
         (false, true)  => format!("{fh_tag}_{sub_slug}"),
         (true,  true)  => "FHX_misc".into(),
     }
+}
+
+/// Delete a list of uploaded image paths (all three variants: original, thumb, stage).
+/// Body: { "paths": ["/uploads/folder/001.jpg", ...] }
+/// Silently skips paths that don't exist or that escape the uploads directory.
+async fn delete_images(
+    State(st): State<AppState>,
+    Json(body): Json<Value>,
+) -> StatusCode {
+    let paths = match body.get("paths").and_then(Value::as_array) {
+        Some(p) => p.clone(),
+        None => return StatusCode::NO_CONTENT,
+    };
+    for v in paths {
+        let rel = match v.as_str() {
+            Some(s) => s.trim_start_matches('/').trim_start_matches("uploads/"),
+            None => continue,
+        };
+        // Resolve against uploads_dir and verify it stays inside (no path traversal).
+        let target = st.uploads_dir.join(rel);
+        if !target.starts_with(&st.uploads_dir) { continue; }
+
+        let stem = target.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
+        let dir  = target.parent().unwrap_or(&target);
+        let lowres = dir.join("Lowres_Assets");
+
+        // Delete original + both variants (ignore missing files).
+        let _ = std::fs::remove_file(&target);
+        let _ = std::fs::remove_file(lowres.join(format!("{stem}_200w.jpg")));
+        let _ = std::fs::remove_file(lowres.join(format!("{stem}_1000w.jpg")));
+    }
+    StatusCode::NO_CONTENT
 }
 
 /// Accept multipart fields (in any order before the file field):

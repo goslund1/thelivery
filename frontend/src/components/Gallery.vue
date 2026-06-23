@@ -316,7 +316,7 @@ function cancelFolderImport() {
 <style scoped>
 .stage-expand {
   position: absolute;
-  bottom: 10px;
+  top: 10px;
   right: 10px;
   width: 28px;
   height: 28px;

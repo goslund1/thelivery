@@ -32,14 +32,17 @@ export const api = {
     }),
 
   // Upload a file with card context for folder naming; returns original + variant paths.
+  // fileIndex: when set, the backend uses it for sequential filename (001.jpg, 002.jpg…)
   uploadImage: (
     file: File,
     card: { name: string; subtitle: string; collections: string[] },
+    fileIndex?: number,
   ) => {
     const fd = new FormData()
     fd.append('cardName', card.name)
     fd.append('cardSubtitle', card.subtitle)
     fd.append('cardCollections', card.collections.join(','))
+    if (fileIndex !== undefined) fd.append('fileIndex', String(fileIndex))
     fd.append('file', file)
     return fetch('/api/images', { method: 'POST', body: fd }).then(
       json<{ path: string; thumbPath?: string; stagePath?: string }>

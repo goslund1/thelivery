@@ -328,14 +328,16 @@ fn card_folder(name: &str, subtitle: &str, collections: &str) -> String {
     }
 }
 
-/// Accept multipart fields: optional text fields `cardName`, `cardSubtitle`,
-/// `cardCollections` (comma-separated), then a `file` field.
+/// Accept multipart fields (in any order before the file field):
+///   cardName, cardSubtitle, cardCollections (comma-separated), fileIndex (optional u32)
 ///
-/// Stores originals under  uploads/{folder}/{uuid}.jpg
-/// Stores resized variants under  uploads/{folder}/Lowres_Assets/{uuid}_{size}w.jpg
+/// Folder layout:
+///   uploads/{folder}/{stem}.jpg                      ← original (JPEG)
+///   uploads/{folder}/Lowres_Assets/{stem}_200w.jpg   ← thumb
+///   uploads/{folder}/Lowres_Assets/{stem}_1000w.jpg  ← stage
 ///
-/// All images (including the original) are saved as JPEG.
-/// Returns { path, thumbPath, stagePath }.
+/// stem is {:03} when fileIndex is supplied, otherwise a UUID.
+/// If the numbered file already exists (duplicate import), a short UUID suffix is appended.
 async fn upload_image(
     State(st): State<AppState>,
     mut multipart: Multipart,
@@ -343,6 +345,7 @@ async fn upload_image(
     let mut card_name = String::new();
     let mut card_subtitle = String::new();
     let mut card_collections = String::new();
+    let mut file_index: Option<u32> = None;
 
     while let Some(field) = multipart
         .next_field()
@@ -362,6 +365,10 @@ async fn upload_image(
                 card_collections = field.text().await.unwrap_or_default();
                 continue;
             }
+            Some("fileIndex") => {
+                file_index = field.text().await.ok().and_then(|s| s.parse().ok());
+                continue;
+            }
             _ => {}
         }
 
@@ -371,7 +378,6 @@ async fn upload_image(
             .await
             .map_err(|e| err(StatusCode::BAD_REQUEST, e))?;
 
-        let id = uuid::Uuid::new_v4().to_string();
         let folder = card_folder(&card_name, &card_subtitle, &card_collections);
         let card_dir = st.uploads_dir.join(&folder);
         let lowres_dir = card_dir.join("Lowres_Assets");
@@ -381,19 +387,32 @@ async fn upload_image(
         std::fs::create_dir_all(&lowres_dir)
             .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
-        // Decode image; fall back to raw write if we can't decode it.
+        // Decode image — all uploads become JPEG.
         let img = image::load_from_memory(&data)
             .map_err(|e| err(StatusCode::BAD_REQUEST, e))?;
 
-        // Original → JPEG in card folder
-        let orig_name  = format!("{id}.jpg");
-        let thumb_name = format!("{id}_200w.jpg");
-        let stage_name = format!("{id}_1000w.jpg");
+        // Build stem: sequential number when fileIndex provided, UUID otherwise.
+        // Guard against collision (e.g. re-importing same batch).
+        let stem = match file_index {
+            Some(idx) => {
+                let candidate = format!("{:03}", idx + 1);
+                if card_dir.join(format!("{candidate}.jpg")).exists() {
+                    let short = &uuid::Uuid::new_v4().to_string()[..6];
+                    format!("{candidate}_{short}")
+                } else {
+                    candidate
+                }
+            }
+            None => uuid::Uuid::new_v4().to_string(),
+        };
+
+        let orig_name  = format!("{stem}.jpg");
+        let thumb_name = format!("{stem}_200w.jpg");
+        let stage_name = format!("{stem}_1000w.jpg");
 
         img.save_with_format(card_dir.join(&orig_name), image::ImageFormat::Jpeg)
             .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
-        // Resized variants → Lowres_Assets (best-effort; never fail the request)
         let _ = img
             .thumbnail(200, u32::MAX)
             .save_with_format(lowres_dir.join(&thumb_name), image::ImageFormat::Jpeg);

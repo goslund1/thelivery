@@ -75,32 +75,110 @@ function toggleIncluded(imageId: string) {
   ui.markCardDirty(props.card.id)
 }
 
-// + button: hidden file input trigger
+// ── Single-file / batch add ───────────────────────────────────────────────────
 const addInputRef = ref<HTMLInputElement | null>(null)
 const uploadProgress = ref<{ done: number; total: number } | null>(null)
 const uploading = computed(() => uploadProgress.value !== null)
 
-async function onAddFile(e: Event) {
-  const files = Array.from((e.target as HTMLInputElement).files ?? [])
-  if (!files.length) return
+async function runUpload(
+  files: File[],
+  cardCtx: { name: string; subtitle: string; collections: string[] },
+  startIndex?: number,
+) {
   uploadProgress.value = { done: 0, total: files.length }
   try {
-    await Promise.all(
-      files.map(async (file) => {
-        const { path, thumbPath, stagePath } = await api.uploadImage(file, {
-          name: props.card.name,
-          subtitle: props.card.subtitle,
-          collections: props.card.collections,
-        })
-        store.addImageToPool(props.card.id, path, thumbPath, stagePath)
-        ui.markCardDirty(props.card.id)
-        uploadProgress.value!.done++
-      }),
-    )
+    // Upload sequentially so numbering is deterministic
+    for (let i = 0; i < files.length; i++) {
+      const fileIndex = startIndex !== undefined ? startIndex + i : undefined
+      const { path, thumbPath, stagePath } = await api.uploadImage(files[i], cardCtx, fileIndex)
+      store.addImageToPool(props.card.id, path, thumbPath, stagePath)
+      ui.markCardDirty(props.card.id)
+      uploadProgress.value!.done++
+    }
   } finally {
     uploadProgress.value = null
-    if (addInputRef.value) addInputRef.value.value = ''
   }
+}
+
+async function onAddFile(e: Event) {
+  const files = Array.from((e.target as HTMLInputElement).files ?? [])
+  if (addInputRef.value) addInputRef.value.value = ''
+  if (!files.length) return
+  await runUpload(files, {
+    name: props.card.name,
+    subtitle: props.card.subtitle,
+    collections: props.card.collections,
+  })
+}
+
+// ── Folder import ─────────────────────────────────────────────────────────────
+// Convention: folder name must start with FHX_ (e.g. FH5_Nissan_S13_Midnight)
+const FOLDER_RE = /^(FH\d+)_(.+)$/i
+
+type FolderImport =
+  | { stage: 'confirm';  files: File[]; folderName: string; fhTag: string; descriptor: string }
+  | { stage: 'clarify';  files: File[]; folderName: string; clarifyFh: string; clarifyName: string }
+
+const folderImport = ref<FolderImport | null>(null)
+const folderInputRef = ref<HTMLInputElement | null>(null)
+
+function onFolderSelected(e: Event) {
+  const all = Array.from((e.target as HTMLInputElement).files ?? [])
+  if (folderInputRef.value) folderInputRef.value.value = ''
+  // Filter to images only, sort by relative path for consistent ordering
+  const files = all
+    .filter(f => f.type.startsWith('image/'))
+    .sort((a, b) => a.webkitRelativePath.localeCompare(b.webkitRelativePath))
+  if (!files.length) return
+
+  const folderName = files[0].webkitRelativePath.split('/')[0]
+  const match = FOLDER_RE.exec(folderName)
+  if (match) {
+    folderImport.value = {
+      stage: 'confirm',
+      files,
+      folderName,
+      fhTag: match[1].toUpperCase(),
+      descriptor: match[2].replace(/_/g, ' '),
+    }
+  } else {
+    folderImport.value = {
+      stage: 'clarify',
+      files,
+      folderName,
+      clarifyFh: '',
+      clarifyName: folderName.replace(/_/g, ' '),
+    }
+  }
+}
+
+async function confirmFolderImport() {
+  const fi = folderImport.value
+  if (!fi) return
+  const startIndex = props.card.images.length
+  let cardCtx: { name: string; subtitle: string; collections: string[] }
+
+  if (fi.stage === 'confirm') {
+    // Use the folder-derived tag merged with the current card's collections
+    const collections = props.card.collections.includes(fi.fhTag)
+      ? props.card.collections
+      : [fi.fhTag, ...props.card.collections]
+    cardCtx = { name: props.card.name, subtitle: props.card.subtitle, collections }
+  } else {
+    const tag = fi.clarifyFh.trim().toUpperCase() || 'FHX'
+    cardCtx = {
+      name: fi.clarifyName.trim() || fi.folderName,
+      subtitle: props.card.subtitle,
+      collections: [tag, ...props.card.collections.filter(c => !c.toUpperCase().startsWith('FH'))],
+    }
+  }
+
+  folderImport.value = null
+  await runUpload(fi.files, cardCtx, startIndex)
+}
+
+function cancelFolderImport() {
+  folderImport.value = null
 }
 </script>
 
@@ -163,14 +241,51 @@ async function onAddFile(e: Event) {
           >{{ img.included === false ? '○' : '●' }}</button>
         </div>
 
-        <!-- + button to add a new image to the pool -->
-        <div class="thumb thumb-add" :class="{ loading: uploading }" @click="!uploading && addInputRef?.click()">
-          <template v-if="!uploadProgress">
+        <!-- Folder import confirm/clarify banner -->
+        <div v-if="folderImport" class="folder-import-banner">
+          <template v-if="folderImport.stage === 'confirm'">
+            <span class="fi-label">
+              <strong>{{ folderImport.fhTag }}</strong> · {{ folderImport.descriptor }}
+              <em>({{ folderImport.files.length }} photos)</em>
+            </span>
+            <button class="fi-btn fi-confirm" @click="confirmFolderImport">Import →</button>
+            <button class="fi-btn fi-cancel" @click="cancelFolderImport">✕</button>
+          </template>
+          <template v-else>
+            <span class="fi-label fi-warn">Folder name not recognised — clarify:</span>
+            <input
+              class="fi-input"
+              v-model="folderImport.clarifyFh"
+              placeholder="FH5 / FH6…"
+              maxlength="6"
+            />
+            <input
+              class="fi-input fi-input-wide"
+              v-model="folderImport.clarifyName"
+              placeholder="Card / folder name"
+            />
+            <span class="fi-count">{{ folderImport.files.length }} photos</span>
+            <button class="fi-btn fi-confirm" :disabled="!folderImport.clarifyFh.trim()" @click="confirmFolderImport">Import →</button>
+            <button class="fi-btn fi-cancel" @click="cancelFolderImport">✕</button>
+          </template>
+        </div>
+
+        <!-- + single/batch files  ⊞ folder -->
+        <div class="thumb-add-group" v-else-if="!uploadProgress">
+          <div class="thumb thumb-add" :class="{ loading: uploading }" @click="!uploading && addInputRef?.click()">
             <span class="thumb-add-icon">+</span>
             <span class="thumb-add-label" v-if="poolSorted.length === 0">Add photos</span>
-          </template>
-          <span class="thumb-add-progress" v-else>{{ uploadProgress.done }}/{{ uploadProgress.total }}</span>
-          <input ref="addInputRef" type="file" accept="image/*" multiple style="display:none" @change="onAddFile" />
+            <input ref="addInputRef" type="file" accept="image/*" multiple style="display:none" @change="onAddFile" />
+          </div>
+          <div class="thumb thumb-add thumb-add-folder" title="Import a folder" @click="folderInputRef?.click()">
+            <span class="thumb-add-icon">⊞</span>
+            <input ref="folderInputRef" type="file" accept="image/*" webkitdirectory style="display:none" @change="onFolderSelected" />
+          </div>
+        </div>
+
+        <!-- upload in progress -->
+        <div v-else class="thumb thumb-add loading">
+          <span class="thumb-add-progress">{{ uploadProgress.done }}/{{ uploadProgress.total }}</span>
         </div>
       </template>
 
@@ -269,6 +384,77 @@ async function onAddFile(e: Event) {
 .thumb-add:hover .thumb-add-icon {
   color: var(--gold);
 }
+.thumb-add-group {
+  display: contents;
+}
+.thumb-add-folder {
+  font-size: 16px;
+}
+.folder-import-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--panel-well);
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  flex-wrap: wrap;
+}
+.fi-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--paper);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fi-label em { color: var(--steel); font-style: normal; }
+.fi-warn { color: var(--gold); }
+.fi-input {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-edge);
+  border-radius: 3px;
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 8px;
+  width: 72px;
+  outline: none;
+}
+.fi-input:focus { border-color: var(--gold); }
+.fi-input-wide { width: 180px; }
+.fi-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--steel);
+  white-space: nowrap;
+}
+.fi-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+}
+.fi-confirm {
+  background: var(--gold);
+  color: var(--ink);
+  font-weight: 700;
+}
+.fi-confirm:disabled { opacity: 0.4; cursor: default; }
+.fi-cancel {
+  background: transparent;
+  border: 1px solid var(--panel-edge);
+  color: var(--steel);
+}
+.fi-cancel:hover { color: var(--paper); }
 .thumb-add-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;

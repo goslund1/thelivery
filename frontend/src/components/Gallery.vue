@@ -78,25 +78,33 @@ function toggleIncluded(imageId: string) {
 // ── Single-file / batch add ───────────────────────────────────────────────────
 const addInputRef = ref<HTMLInputElement | null>(null)
 const uploadProgress = ref<{ done: number; total: number } | null>(null)
-const uploading = computed(() => uploadProgress.value !== null)
+const uploadResult = ref<{ added: number; failed: number } | null>(null)
 
 async function runUpload(
   files: File[],
   cardCtx: { name: string; subtitle: string; collections: string[] },
   startIndex?: number,
 ) {
+  let added = 0, failed = 0
   uploadProgress.value = { done: 0, total: files.length }
   try {
-    // Upload sequentially so numbering is deterministic
     for (let i = 0; i < files.length; i++) {
-      const fileIndex = startIndex !== undefined ? startIndex + i : undefined
-      const { path, thumbPath, stagePath } = await api.uploadImage(files[i], cardCtx, fileIndex)
-      store.addImageToPool(props.card.id, path, thumbPath, stagePath)
-      ui.markCardDirty(props.card.id)
+      try {
+        const fileIndex = startIndex !== undefined ? startIndex + i : undefined
+        const { path, thumbPath, stagePath } = await api.uploadImage(files[i], cardCtx, fileIndex)
+        store.addImageToPool(props.card.id, path, thumbPath, stagePath)
+        ui.markCardDirty(props.card.id)
+        added++
+      } catch (e) {
+        console.warn(`[gallery] upload failed for "${files[i].name}":`, e)
+        failed++
+      }
       uploadProgress.value!.done++
     }
   } finally {
     uploadProgress.value = null
+    uploadResult.value = { added, failed }
+    setTimeout(() => { uploadResult.value = null }, 5000)
   }
 }
 
@@ -207,11 +215,39 @@ function cancelFolderImport() {
     </div>
   </div>
 
+  <!-- Folder import banner lives ABOVE the rail so it spans full width -->
+  <template v-if="ui.isEditing">
+    <div v-if="folderImport" class="folder-import-banner">
+      <template v-if="folderImport.stage === 'confirm'">
+        <span class="fi-label">
+          <strong>{{ folderImport.fhTag }}</strong> · {{ folderImport.descriptor }}
+          <em>({{ folderImport.files.length }} photos)</em>
+        </span>
+        <button class="fi-btn fi-confirm" @click="confirmFolderImport">Import →</button>
+        <button class="fi-btn fi-cancel" @click="cancelFolderImport">✕</button>
+      </template>
+      <template v-else>
+        <span class="fi-label fi-warn">Folder name not recognised — clarify:</span>
+        <input class="fi-input" v-model="folderImport.clarifyFh" placeholder="FH5 / FH6…" maxlength="6" />
+        <input class="fi-input fi-input-wide" v-model="folderImport.clarifyName" placeholder="Card / folder name" />
+        <span class="fi-count">{{ folderImport.files.length }} photos</span>
+        <button class="fi-btn fi-confirm" :disabled="!folderImport.clarifyFh.trim()" @click="confirmFolderImport">Import →</button>
+        <button class="fi-btn fi-cancel" @click="cancelFolderImport">✕</button>
+      </template>
+    </div>
+    <div v-else-if="uploadResult" class="folder-import-banner" :class="{ 'fi-has-errors': uploadResult.failed > 0 }">
+      <span class="fi-label">
+        <template v-if="uploadResult.added > 0">✓ {{ uploadResult.added }} photo{{ uploadResult.added !== 1 ? 's' : '' }} added</template>
+        <template v-if="uploadResult.failed > 0"> · {{ uploadResult.failed }} failed (check console — unsupported format?)</template>
+      </span>
+    </div>
+  </template>
+
   <div class="thumb-rail">
     <div class="edge-arrow edge-arrow-left" :class="{ visible: canLeft }"><div class="tri"></div></div>
     <div class="thumbs" ref="thumbsRef" @scroll="updateArrows">
 
-      <!-- Edit mode: show full pool with include/exclude toggle -->
+      <!-- Edit mode: thumb pool + add buttons -->
       <template v-if="ui.isEditing">
         <div
           v-for="(img, i) in poolSorted"
@@ -226,53 +262,18 @@ function cancelFolderImport() {
           @drop.prevent="onDrop(i)"
         >
           <img :src="img.thumbPath ?? img.path" />
-          <button
-            class="lead-star"
-            type="button"
-            title="Set as lead image"
-            aria-label="Set as lead image"
-            @click.stop="setLead(img.id)"
-          >★</button>
-          <button
-            class="pool-toggle"
-            type="button"
-            :title="img.included === false ? 'Add to slideshow' : 'Remove from slideshow'"
-            @click.stop="toggleIncluded(img.id)"
-          >{{ img.included === false ? '○' : '●' }}</button>
+          <button class="lead-star" type="button" title="Set as lead image" aria-label="Set as lead image" @click.stop="setLead(img.id)">★</button>
+          <button class="pool-toggle" type="button" :title="img.included === false ? 'Add to slideshow' : 'Remove from slideshow'" @click.stop="toggleIncluded(img.id)">{{ img.included === false ? '○' : '●' }}</button>
         </div>
 
-        <!-- Folder import confirm/clarify banner -->
-        <div v-if="folderImport" class="folder-import-banner">
-          <template v-if="folderImport.stage === 'confirm'">
-            <span class="fi-label">
-              <strong>{{ folderImport.fhTag }}</strong> · {{ folderImport.descriptor }}
-              <em>({{ folderImport.files.length }} photos)</em>
-            </span>
-            <button class="fi-btn fi-confirm" @click="confirmFolderImport">Import →</button>
-            <button class="fi-btn fi-cancel" @click="cancelFolderImport">✕</button>
-          </template>
-          <template v-else>
-            <span class="fi-label fi-warn">Folder name not recognised — clarify:</span>
-            <input
-              class="fi-input"
-              v-model="folderImport.clarifyFh"
-              placeholder="FH5 / FH6…"
-              maxlength="6"
-            />
-            <input
-              class="fi-input fi-input-wide"
-              v-model="folderImport.clarifyName"
-              placeholder="Card / folder name"
-            />
-            <span class="fi-count">{{ folderImport.files.length }} photos</span>
-            <button class="fi-btn fi-confirm" :disabled="!folderImport.clarifyFh.trim()" @click="confirmFolderImport">Import →</button>
-            <button class="fi-btn fi-cancel" @click="cancelFolderImport">✕</button>
-          </template>
+        <!-- uploading progress -->
+        <div v-if="uploadProgress" class="thumb thumb-add">
+          <span class="thumb-add-progress">{{ uploadProgress.done }}/{{ uploadProgress.total }}</span>
         </div>
 
-        <!-- + single/batch files  ⊞ folder -->
-        <div class="thumb-add-group" v-else-if="!uploadProgress">
-          <div class="thumb thumb-add" :class="{ loading: uploading }" @click="!uploading && addInputRef?.click()">
+        <!-- + files  ⊞ folder -->
+        <template v-else>
+          <div class="thumb thumb-add" @click="addInputRef?.click()">
             <span class="thumb-add-icon">+</span>
             <span class="thumb-add-label" v-if="poolSorted.length === 0">Add photos</span>
             <input ref="addInputRef" type="file" accept="image/*" multiple style="display:none" @change="onAddFile" />
@@ -281,15 +282,10 @@ function cancelFolderImport() {
             <span class="thumb-add-icon">⊞</span>
             <input ref="folderInputRef" type="file" accept="image/*" webkitdirectory style="display:none" @change="onFolderSelected" />
           </div>
-        </div>
-
-        <!-- upload in progress -->
-        <div v-else class="thumb thumb-add loading">
-          <span class="thumb-add-progress">{{ uploadProgress.done }}/{{ uploadProgress.total }}</span>
-        </div>
+        </template>
       </template>
 
-      <!-- View mode: only included images -->
+      <!-- View mode: included images only -->
       <template v-else>
         <div
           v-for="(img, i) in ordered"
@@ -455,6 +451,7 @@ function cancelFolderImport() {
   color: var(--steel);
 }
 .fi-cancel:hover { color: var(--paper); }
+.fi-has-errors { border-color: var(--gold); }
 .thumb-add-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;

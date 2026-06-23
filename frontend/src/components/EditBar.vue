@@ -50,8 +50,7 @@ const cycleTooltip = computed(() => {
     <!-- Yellow: cycle through unsaved cards — i-cursor signals "you're editing" -->
     <button
       class="tl-btn tl-yellow"
-      :class="{ 'tl-pulse': unsavedCount > 0 }"
-      :disabled="unsavedCount === 0"
+      :class="{ 'tl-pulse': unsavedCount > 0, 'tl-idle': unsavedCount === 0 }"
       aria-label="Jump to unsaved card"
       v-tip="() => cycleTooltip"
       @click="onCycleDirty"
@@ -140,6 +139,14 @@ const cycleTooltip = computed(() => {
   cursor: default;
   transform: none;
   filter: none;
+}
+.tl-yellow.tl-idle {
+  opacity: 0.6;
+  cursor: default;
+}
+.tl-yellow.tl-idle:hover {
+  transform: none;
+  box-shadow: none;
 }
 .tl-btn svg {
   flex-shrink: 0;

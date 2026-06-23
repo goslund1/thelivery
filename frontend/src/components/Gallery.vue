@@ -152,7 +152,10 @@ async function onAddFile(e: Event) {
 
         <!-- + button to add a new image to the pool -->
         <div class="thumb thumb-add" :class="{ loading: uploading }" @click="!uploading && addInputRef?.click()">
-          <span class="thumb-add-icon" v-if="!uploadProgress">+</span>
+          <template v-if="!uploadProgress">
+            <span class="thumb-add-icon">+</span>
+            <span class="thumb-add-label" v-if="poolSorted.length === 0">Add photos</span>
+          </template>
           <span class="thumb-add-progress" v-else>{{ uploadProgress.done }}/{{ uploadProgress.total }}</span>
           <input ref="addInputRef" type="file" accept="image/*" multiple style="display:none" @change="onAddFile" />
         </div>
@@ -205,6 +208,7 @@ async function onAddFile(e: Event) {
 }
 .thumb-add {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   border: 1px dashed var(--panel-edge);
@@ -223,6 +227,17 @@ async function onAddFile(e: Event) {
   line-height: 1;
 }
 .thumb-add:hover .thumb-add-icon {
+  color: var(--gold);
+}
+.thumb-add-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--steel);
+  margin-top: 4px;
+}
+.thumb-add:hover .thumb-add-label {
   color: var(--gold);
 }
 .thumb-add-progress {

@@ -788,6 +788,27 @@
 
   .gutter-figure{
     position:relative;
+    min-height:60px;
+  }
+
+  .gutter-figure-empty{
+    display:none;
+    position:absolute;
+    inset:0;
+    align-items:center;
+    justify-content:center;
+    border:1px dashed rgba(140,140,140,0.4);
+    border-radius:4px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--steel);
+    pointer-events:none;
+  }
+
+  body.editing-mode .gutter-figure-empty{
+    display:flex;
   }
 
   .gutter-figure.has-image{

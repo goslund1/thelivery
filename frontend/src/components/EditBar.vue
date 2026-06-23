@@ -35,7 +35,6 @@ const cycleTooltip = computed(() => {
   <div class="tl-dock" v-show="ui.isEditing">
     <span class="tl-mode-label">EDIT</span>
 
-    <!-- Red: exit edit mode -->
     <button
       class="tl-btn tl-red"
       aria-label="Exit edit mode"
@@ -73,6 +72,8 @@ const cycleTooltip = computed(() => {
         <path d="M352 0c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9L370.7 96 201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L416 141.3l41.4 41.4c9.2 9.2 22.9 11.9 34.9 6.9s19.8-16.6 19.8-29.6l0-128c0-17.7-14.3-32-32-32L352 0zM80 32C35.8 32 0 67.8 0 112L0 432c0 44.2 35.8 80 80 80l320 0c44.2 0 80-35.8 80-80l0-112c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 112c0 8.8-7.2 16-16 16L80 448c-8.8 0-16-7.2-16-16l0-320c0-8.8 7.2-16 16-16l112 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L80 32z"/>
       </svg>
     </button>
+
+    <span class="tl-mode-label tl-mode-bottom">MODE</span>
   </div>
 </template>
 
@@ -103,10 +104,16 @@ const cycleTooltip = computed(() => {
   color: var(--gold, #c9a227);
   opacity: 0.75;
   pointer-events: none;
-  padding-bottom: 2px;
-  border-bottom: 1px solid var(--panel-edge, rgba(255,255,255,0.1));
   width: 100%;
   text-align: center;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--panel-edge, rgba(255,255,255,0.1));
+}
+.tl-mode-bottom {
+  padding-bottom: 0;
+  padding-top: 2px;
+  border-bottom: none;
+  border-top: 1px solid var(--panel-edge, rgba(255,255,255,0.1));
 }
 
 .tl-btn {
@@ -119,12 +126,11 @@ const cycleTooltip = computed(() => {
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: filter 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
   flex-shrink: 0;
 }
 .tl-btn:hover {
-  filter: brightness(1.18);
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 .tl-btn:active {
   transform: scale(0.96);
@@ -140,12 +146,14 @@ const cycleTooltip = computed(() => {
 }
 
 .tl-red {
-  background: #c0392b;
-  border-color: #e74c3c;
+  background: #8b1a12;
+  border-color: #c0392b;
   color: #fff;
 }
 .tl-red:hover {
-  box-shadow: 0 0 8px rgba(231,76,60,0.55);
+  background: #e74c3c;
+  border-color: #ff6b5b;
+  box-shadow: 0 0 12px rgba(231,76,60,0.7);
 }
 .tl-red svg {
   width: 14px;
@@ -153,11 +161,14 @@ const cycleTooltip = computed(() => {
 }
 
 .tl-yellow {
-  background: #a07000;
-  border-color: var(--gold, #c9a227);
+  background: #6b4a00;
+  border-color: #a07000;
+  color: #fff;
 }
 .tl-yellow:hover {
-  box-shadow: 0 0 8px rgba(201,162,39,0.5);
+  background: #c9a227;
+  border-color: #f0c040;
+  box-shadow: 0 0 12px rgba(201,162,39,0.7);
 }
 .icon-ibeam {
   width: 8px;
@@ -165,11 +176,13 @@ const cycleTooltip = computed(() => {
 }
 
 .tl-green {
-  background: #1e7a3a;
-  border-color: #27ae60;
+  background: #0f4020;
+  border-color: #1e7a3a;
 }
 .tl-green:hover {
-  box-shadow: 0 0 8px rgba(39,174,96,0.5);
+  background: #27ae60;
+  border-color: #4cd68a;
+  box-shadow: 0 0 12px rgba(39,174,96,0.7);
 }
 .icon-arrow {
   width: 17px;

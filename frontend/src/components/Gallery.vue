@@ -401,7 +401,7 @@ function cancelFolderImport() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 1px dashed var(--panel-edge);
+  border: 1px dashed rgba(140,140,140,0.5);
   background: transparent;
   cursor: pointer;
   min-width: 60px;

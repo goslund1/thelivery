@@ -75,8 +75,7 @@ function toggleIncluded(imageId: string) {
   ui.markCardDirty(props.card.id)
 }
 
-// ── Single-file / batch add ───────────────────────────────────────────────────
-const addInputRef = ref<HTMLInputElement | null>(null)
+// ── Upload ────────────────────────────────────────────────────────────────────
 const uploadProgress = ref<{ done: number; total: number } | null>(null)
 const uploadResult = ref<{ added: number; failed: number } | null>(null)
 
@@ -106,17 +105,6 @@ async function runUpload(
     uploadResult.value = { added, failed }
     setTimeout(() => { uploadResult.value = null }, 5000)
   }
-}
-
-async function onAddFile(e: Event) {
-  const files = Array.from((e.target as HTMLInputElement).files ?? [])
-  if (addInputRef.value) addInputRef.value.value = ''
-  if (!files.length) return
-  await runUpload(files, {
-    name: props.card.name,
-    subtitle: props.card.subtitle,
-    collections: props.card.collections,
-  })
 }
 
 // ── Folder import ─────────────────────────────────────────────────────────────
@@ -290,15 +278,11 @@ function cancelFolderImport() {
           <span class="thumb-add-progress">{{ uploadProgress.done }}/{{ uploadProgress.total }}</span>
         </div>
 
-        <!-- + files  ⊞ folder -->
+        <!-- ⊞ folder/batch upload -->
         <template v-else>
-          <div class="thumb thumb-add" @click="addInputRef?.click()">
-            <span class="thumb-add-icon">+</span>
-            <span class="thumb-add-label" v-if="poolSorted.length === 0">Add photos</span>
-            <input ref="addInputRef" type="file" accept="image/*" multiple style="display:none" @change="onAddFile" />
-          </div>
-          <div class="thumb thumb-add thumb-add-folder" title="Import a folder" @click="folderInputRef?.click()">
+          <div class="thumb thumb-add" title="Add photos" @click="folderInputRef?.click()">
             <span class="thumb-add-icon">⊞</span>
+            <span class="thumb-add-label" v-if="poolSorted.length === 0">Add photos</span>
             <input ref="folderInputRef" type="file" accept="image/*" webkitdirectory style="display:none" @change="onFolderSelected" />
           </div>
         </template>

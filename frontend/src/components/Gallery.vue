@@ -262,9 +262,25 @@ function cancelFolderImport() {
           @drop.prevent="onDrop(i)"
         >
           <img :src="img.thumbPath ?? img.path" />
-          <button class="lead-star" type="button" title="Set as lead image" aria-label="Set as lead image" @click.stop="setLead(img.id)">★</button>
-          <button class="pool-toggle" type="button" :title="img.included === false ? 'Add to slideshow' : 'Remove from slideshow'" @click.stop="toggleIncluded(img.id)">{{ img.included === false ? '○' : '●' }}</button>
-          <button class="thumb-delete" type="button" title="Remove from card" @click.stop="store.removeImage(card.id, img.id); ui.markCardDirty(card.id)">✕</button>
+          <div class="thumb-controls">
+            <button
+              class="thumb-ctrl thumb-ctrl-lead"
+              :class="{ 'is-lead': img.order === 0 }"
+              title="Set as lead image"
+              @click.stop="setLead(img.id)"
+            >★</button>
+            <button
+              class="thumb-ctrl thumb-ctrl-pool"
+              :class="{ included: img.included !== false }"
+              :title="img.included === false ? 'Add to slideshow' : 'Remove from slideshow'"
+              @click.stop="toggleIncluded(img.id)"
+            >●</button>
+            <button
+              class="thumb-ctrl thumb-ctrl-del"
+              title="Remove from card"
+              @click.stop="store.removeImage(card.id, img.id); ui.markCardDirty(card.id)"
+            >✕</button>
+          </div>
         </div>
 
         <!-- uploading progress -->
@@ -340,16 +356,28 @@ function cancelFolderImport() {
 .thumb.excluded img {
   filter: grayscale(60%);
 }
-.thumb-delete {
+
+/* Three-button control row — top-left of each thumb in edit mode */
+.thumb-controls {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
+  top: 3px;
+  left: 3px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  z-index: 10;
+  transition: opacity 0.15s ease;
+}
+.thumb:hover .thumb-controls {
+  opacity: 1;
+}
+.thumb-ctrl {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
   border: none;
-  background: rgba(0,0,0,0.6);
-  color: rgba(255,255,255,0.5);
+  background: rgba(0, 0, 0, 0.68);
+  color: rgba(255, 255, 255, 0.55);
   font-size: 9px;
   line-height: 1;
   cursor: pointer;
@@ -357,33 +385,24 @@ function cancelFolderImport() {
   align-items: center;
   justify-content: center;
   padding: 0;
-  opacity: 0;
-  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: background 0.12s ease, color 0.12s ease;
 }
-.thumb:hover .thumb-delete {
-  opacity: 1;
+/* ★ lead — gold when this is the lead image */
+.thumb-ctrl-lead.is-lead,
+.thumb-ctrl-lead:hover {
+  color: var(--gold);
 }
-.thumb-delete:hover {
-  background: rgba(180,30,30,0.85);
+/* ● pool — gold when included in slideshow, dim when excluded */
+.thumb-ctrl-pool.included {
+  color: var(--gold);
+}
+.thumb-ctrl-pool:not(.included) {
+  color: rgba(255, 255, 255, 0.3);
+}
+/* ✕ delete — red on hover */
+.thumb-ctrl-del:hover {
+  background: rgba(170, 30, 30, 0.9);
   color: #fff;
-}
-.pool-toggle {
-  position: absolute;
-  bottom: 4px;
-  left: 4px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.5);
-  background: rgba(0,0,0,0.55);
-  color: #fff;
-  font-size: 10px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
 }
 .thumb-add {
   display: flex;

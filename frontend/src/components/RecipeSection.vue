@@ -204,7 +204,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
     <table v-if="ui.isEditing || hasNonStockSpecs" class="recipe-table">
       <tbody>
         <tr>
-          <th v-for="k in CORE_SPEC_KEYS" :key="k" style="width:20%">{{ k }}</th>
+          <th v-for="k in CORE_SPEC_KEYS" :key="k">{{ k }}</th>
         </tr>
         <tr>
           <td v-for="k in CORE_SPEC_KEYS" :key="k">
@@ -316,11 +316,6 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 
 <style scoped>
 /* Dropdown for each core-spec cell */
-/* table-layout:fixed + explicit th widths lock columns to equal shares.
-   overflow:hidden on td prevents the native select from visually spilling out. */
-.recipe-table { table-layout: fixed; }
-.recipe-table td { overflow: hidden; }
-
 .spec-select {
   background: color-mix(in srgb, var(--panel) 85%, #000);
   border: 1px solid var(--panel-edge);

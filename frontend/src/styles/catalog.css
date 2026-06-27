@@ -896,6 +896,7 @@
     width:100%;
     border-collapse:collapse;
     margin-bottom:16px;
+    table-layout:fixed;
   }
 
   .recipe-table th,
@@ -903,6 +904,8 @@
     border:1px solid var(--gold);
     padding:10px 8px;
     text-align:center;
+    overflow:hidden;
+    width:20%;
   }
 
   .recipe-table th{

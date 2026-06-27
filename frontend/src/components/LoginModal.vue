@@ -86,7 +86,7 @@ watch(
   border-radius: 4px;
   border: 1px solid var(--build-it-border);
   background: var(--build-it-bg);
-  color: var(--ink);
+  color: #fff;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   letter-spacing: 0.05em;

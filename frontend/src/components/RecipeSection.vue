@@ -317,16 +317,20 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 <style scoped>
 /* Dropdown for each core-spec cell */
 .spec-select {
+  appearance: none;
+  -webkit-appearance: none;
   background: color-mix(in srgb, var(--panel) 85%, #000);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23c9a227'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 5px center;
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
   color: var(--text);
   font-family: inherit;
   font-size: inherit;
-  padding: 1px 2px;
+  padding: 1px 18px 1px 4px;
   cursor: pointer;
   width: 100%;
-  min-width: 0;
   box-sizing: border-box;
 }
 .spec-select:focus {

@@ -11,24 +11,151 @@
 //!   GET    /api/health       -> "ok"
 
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
+use argon2::password_hash::rand_core::{OsRng, RngCore};
+use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
+use argon2::Argon2;
 use axum::{
-    extract::{Multipart, Path, State},
-    http::StatusCode,
+    async_trait,
+    extract::{FromRequestParts, Multipart, Path, State},
+    http::{header::AUTHORIZATION, request::Parts, HeaderName, HeaderValue, StatusCode},
     routing::{get, post},
     Json, Router,
 };
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::{sqlite::SqliteConnectOptions, Row, SqlitePool};
 use tower_http::{
     cors::CorsLayer,
     services::{ServeDir, ServeFile},
+    set_header::SetResponseHeaderLayer,
 };
 
 #[derive(Clone)]
 struct AppState {
     pool: SqlitePool,
     uploads_dir: PathBuf,
+    jwt_secret: Arc<Vec<u8>>,
+}
+
+// --- Authentication ---------------------------------------------------------
+
+#[derive(Serialize, Deserialize)]
+struct Claims {
+    sub: String, // username
+    exp: usize,  // expiry (unix seconds)
+}
+
+const TOKEN_TTL_SECS: u64 = 7 * 24 * 3600; // 7 days
+
+fn make_token(username: &str, secret: &[u8]) -> anyhow::Result<String> {
+    let exp = (SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + TOKEN_TTL_SECS) as usize;
+    let claims = Claims { sub: username.to_string(), exp };
+    Ok(encode(&Header::default(), &claims, &EncodingKey::from_secret(secret))?)
+}
+
+// JWT signing secret: from JWT_SECRET in prod; a random ephemeral secret in dev
+// (so we never ship a known-weak default). Ephemeral secrets reset tokens on
+// restart, which is fine for dev — set JWT_SECRET in production.
+fn load_jwt_secret() -> Arc<Vec<u8>> {
+    match std::env::var("JWT_SECRET") {
+        Ok(s) if !s.is_empty() => Arc::new(s.into_bytes()),
+        _ => {
+            tracing::warn!(
+                "JWT_SECRET not set — using a random ephemeral secret (logins reset on restart). Set JWT_SECRET in production."
+            );
+            let mut bytes = [0u8; 32];
+            OsRng.fill_bytes(&mut bytes);
+            Arc::new(bytes.to_vec())
+        }
+    }
+}
+
+/// Extractor that requires a valid `Authorization: Bearer <jwt>`. Handlers that
+/// take it are gated behind authentication; its presence in a handler signature
+/// is what protects that route. Returns 401 on missing/invalid/expired tokens.
+struct AuthUser(#[allow(dead_code)] String);
+
+#[async_trait]
+impl FromRequestParts<AppState> for AuthUser {
+    type Rejection = ApiError;
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+        let token = parts
+            .headers
+            .get(AUTHORIZATION)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|s| s.strip_prefix("Bearer "))
+            .ok_or_else(|| err(StatusCode::UNAUTHORIZED, "missing bearer token"))?;
+        let data = decode::<Claims>(
+            token,
+            &DecodingKey::from_secret(&state.jwt_secret),
+            &Validation::default(),
+        )
+        .map_err(|_| err(StatusCode::UNAUTHORIZED, "invalid or expired token"))?;
+        Ok(AuthUser(data.claims.sub))
+    }
+}
+
+#[derive(Deserialize)]
+struct LoginReq {
+    username: String,
+    password: String,
+}
+
+/// Verify credentials against the users table and issue a JWT. Uses a generic
+/// "invalid credentials" error for both unknown users and bad passwords.
+async fn login(State(st): State<AppState>, Json(req): Json<LoginReq>) -> Result<Json<Value>, ApiError> {
+    let row = sqlx::query("SELECT password_hash FROM users WHERE username = ?")
+        .bind(&req.username)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let ok = row
+        .and_then(|r| PasswordHash::new(&r.get::<String, _>("password_hash")).ok().map(|ph| {
+            Argon2::default()
+                .verify_password(req.password.as_bytes(), &ph)
+                .is_ok()
+        }))
+        .unwrap_or(false);
+    if !ok {
+        return Err(err(StatusCode::UNAUTHORIZED, "invalid credentials"));
+    }
+    let token = make_token(&req.username, &st.jwt_secret)
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(json!({ "token": token, "username": req.username })))
+}
+
+/// `adduser` CLI: prompt for a password and insert an Argon2-hashed user.
+async fn add_user(pool: &SqlitePool, username: &str) -> anyhow::Result<()> {
+    let password = rpassword::prompt_password(format!("Password for '{username}': "))?;
+    let confirm = rpassword::prompt_password("Confirm password: ")?;
+    if password != confirm {
+        anyhow::bail!("passwords do not match");
+    }
+    if password.len() < 8 {
+        anyhow::bail!("password must be at least 8 characters");
+    }
+    let salt = SaltString::generate(&mut OsRng);
+    let hash = Argon2::default()
+        .hash_password(password.as_bytes(), &salt)
+        .map_err(|e| anyhow::anyhow!("hashing failed: {e}"))?
+        .to_string();
+    match sqlx::query("INSERT INTO users (username, password_hash) VALUES (?, ?)")
+        .bind(username)
+        .bind(&hash)
+        .execute(pool)
+        .await
+    {
+        Ok(_) => {
+            println!("✓ user '{username}' created");
+            Ok(())
+        }
+        Err(e) if e.to_string().contains("UNIQUE") => anyhow::bail!("user '{username}' already exists"),
+        Err(e) => Err(e.into()),
+    }
 }
 
 type ApiError = (StatusCode, String);
@@ -42,6 +169,24 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt().with_target(false).init();
 
     let db_path = std::env::var("DATABASE_PATH").unwrap_or_else(|_| "data.db".into());
+
+    let opts = SqliteConnectOptions::new()
+        .filename(&db_path)
+        .create_if_missing(true);
+    let pool = SqlitePool::connect_with(opts).await?;
+    sqlx::migrate!("./migrations").run(&pool).await?;
+
+    // CLI: `livery-backend adduser <username>` — create a user, then exit.
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("adduser") {
+        let Some(username) = args.get(2) else {
+            eprintln!("usage: livery-backend adduser <username>");
+            std::process::exit(2);
+        };
+        add_user(&pool, username).await?;
+        return Ok(());
+    }
+
     let uploads_dir = PathBuf::from(std::env::var("UPLOADS_DIR").unwrap_or_else(|_| "uploads".into()));
     let seed_path = std::env::var("SEED_PATH").unwrap_or_else(|_| "seed/cards.json".into());
     // Directory of the built Vue frontend (Vite `dist`). Empty/missing in dev,
@@ -51,17 +196,14 @@ async fn main() -> anyhow::Result<()> {
     let port: u16 = std::env::var("PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8787);
 
     std::fs::create_dir_all(&uploads_dir)?;
-
-    let opts = SqliteConnectOptions::new()
-        .filename(&db_path)
-        .create_if_missing(true);
-    let pool = SqlitePool::connect_with(opts).await?;
-
-    sqlx::migrate!("./migrations").run(&pool).await?;
     seed_if_empty(&pool, &seed_path).await?;
     normalize_bodies(&pool).await?;
 
-    let state = AppState { pool, uploads_dir: uploads_dir.clone() };
+    let state = AppState {
+        pool,
+        uploads_dir: uploads_dir.clone(),
+        jwt_secret: load_jwt_secret(),
+    };
 
     // Serve the built SPA: real files (index.html at "/", hashed assets) are
     // served directly; any other path falls back to index.html. (This app has no
@@ -71,6 +213,7 @@ async fn main() -> anyhow::Result<()> {
 
     let app = Router::new()
         .route("/api/health", get(|| async { "ok" }))
+        .route("/api/login", post(login))
         .route("/api/cards", get(list_cards).post(create_card))
         .route(
             "/api/cards/:id",
@@ -79,6 +222,12 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/images", post(upload_image))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
         .fallback_service(spa)
+        // Stop browsers from MIME-sniffing a response into something executable
+        // (defense-in-depth for user-served /uploads files).
+        .layer(SetResponseHeaderLayer::overriding(
+            HeaderName::from_static("x-content-type-options"),
+            HeaderValue::from_static("nosniff"),
+        ))
         .layer(CorsLayer::permissive())
         .with_state(state);
 
@@ -251,6 +400,7 @@ async fn get_card(
 
 async fn put_card(
     State(st): State<AppState>,
+    _auth: AuthUser,
     Path(id): Path<String>,
     Json(mut body): Json<Value>,
 ) -> Result<Json<Value>, ApiError> {
@@ -264,6 +414,7 @@ async fn put_card(
 
 async fn create_card(
     State(st): State<AppState>,
+    _auth: AuthUser,
     Json(body): Json<Value>,
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
     if body.get("id").and_then(Value::as_str).unwrap_or_default().is_empty() {
@@ -277,6 +428,7 @@ async fn create_card(
 
 async fn delete_card(
     State(st): State<AppState>,
+    _auth: AuthUser,
     Path(id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
     sqlx::query("DELETE FROM cards WHERE id = ?")
@@ -287,9 +439,33 @@ async fn delete_card(
     Ok(StatusCode::NO_CONTENT)
 }
 
-/// Accept a single multipart file field, store it under uploads/, return its URL path.
+/// Detect a raster image type from its magic bytes. Returns a safe extension, or
+/// None for anything that isn't an allowed image. The client-supplied filename is
+/// never trusted — the extension is derived from the actual content so an
+/// attacker can't upload, say, an .html/.svg that would be served and executed
+/// from this origin. SVG is intentionally NOT allowed (it can carry script).
+fn sniff_image_ext(buf: &[u8]) -> Option<&'static str> {
+    if buf.len() >= 3 && buf[0] == 0xFF && buf[1] == 0xD8 && buf[2] == 0xFF {
+        return Some("jpg");
+    }
+    if buf.starts_with(b"\x89PNG\r\n\x1a\n") {
+        return Some("png");
+    }
+    if buf.starts_with(b"GIF87a") || buf.starts_with(b"GIF89a") {
+        return Some("gif");
+    }
+    if buf.len() >= 12 && &buf[0..4] == b"RIFF" && &buf[8..12] == b"WEBP" {
+        return Some("webp");
+    }
+    None
+}
+
+/// Accept a single multipart file field, validate it is a real image, store it
+/// under uploads/ with a server-chosen UUID name + content-derived extension, and
+/// return its URL path.
 async fn upload_image(
     State(st): State<AppState>,
+    _auth: AuthUser,
     mut multipart: Multipart,
 ) -> Result<Json<Value>, ApiError> {
     while let Some(field) = multipart
@@ -297,16 +473,17 @@ async fn upload_image(
         .await
         .map_err(|e| err(StatusCode::BAD_REQUEST, e))?
     {
-        let orig = field.file_name().unwrap_or("upload").to_string();
-        let ext = std::path::Path::new(&orig)
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("png")
-            .to_lowercase();
         let data = field
             .bytes()
             .await
             .map_err(|e| err(StatusCode::BAD_REQUEST, e))?;
+        // Validate by content, not by the client's filename/content-type.
+        let ext = sniff_image_ext(&data).ok_or_else(|| {
+            err(
+                StatusCode::BAD_REQUEST,
+                "unsupported file type — only PNG, JPEG, GIF, or WebP images are allowed",
+            )
+        })?;
         let filename = format!("{}.{}", uuid::Uuid::new_v4(), ext);
         let dest = st.uploads_dir.join(&filename);
         std::fs::write(&dest, &data).map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;

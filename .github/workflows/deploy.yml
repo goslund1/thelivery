@@ -67,7 +67,20 @@ jobs:
           cp -r backend/uploads/. bundle/seed-uploads/
           cp deploy/thelivery.service bundle/
 
-      # --- Ship it to the droplet -----------------------------------------
+      # --- Ship it to the droplet (over Tailscale) ------------------------
+      # Join the runner to the tailnet so it can reach the droplet on its
+      # private 100.x address. This lets public port 22 stay fully closed —
+      # set DEPLOY_HOST to the droplet's Tailscale MagicDNS name or 100.x IP.
+      # The ephemeral node is torn down when the job ends.
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          # Alternative to OAuth: use an ephemeral, pre-authorized auth key:
+          #   authkey: ${{ secrets.TS_AUTHKEY }}
+
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh

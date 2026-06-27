@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import type { Theme } from '../types'
 import { useCardsStore } from './cards'
+import { useAuthStore } from './auth'
+import { ApiError } from '../api'
 
 const THEMES: Theme[] = ['dark', 'light', 'rainbow', 'clouds', 'stormy']
 
@@ -77,6 +79,33 @@ export const useUiStore = defineStore('ui', () => {
   const exitConfirmOpen = ref(false)
   const saving = ref(false)
 
+  // Login modal
+  const loginOpen = ref(false)
+  let loginThenEdit = false // whether to enter edit mode after a successful login
+  function openLogin(thenEdit = false) {
+    loginThenEdit = thenEdit
+    loginOpen.value = true
+  }
+  function closeLogin() {
+    loginOpen.value = false
+  }
+  function onLoginSuccess() {
+    loginOpen.value = false
+    if (loginThenEdit) {
+      loginThenEdit = false
+      enterEdit()
+    }
+  }
+  // If a write was rejected for auth reasons, drop the stale token and re-prompt.
+  function handleAuthError(e: unknown): boolean {
+    if (e instanceof ApiError && e.status === 401) {
+      useAuthStore().logout()
+      openLogin(false)
+      return true
+    }
+    return false
+  }
+
   // Lightbox
   const lightboxSrc = ref<string | null>(null)
 
@@ -104,9 +133,16 @@ export const useUiStore = defineStore('ui', () => {
     if (hasUnsavedChanges.value) exitConfirmOpen.value = true
     else isEditing.value = false
   }
+  // Entering edit mode requires a login; clicking edit while signed out prompts
+  // for credentials, then enters edit on success.
   function toggleEdit() {
-    if (isEditing.value) requestExit()
-    else enterEdit()
+    if (isEditing.value) {
+      requestExit()
+    } else if (useAuthStore().isAuthenticated) {
+      enterEdit()
+    } else {
+      openLogin(true)
+    }
   }
   // Save a single card and clear its dirty flag.
   async function saveCard(id: string) {
@@ -114,6 +150,8 @@ export const useUiStore = defineStore('ui', () => {
     try {
       await useCardsStore().save(id)
       clearCardDirty(id)
+    } catch (e) {
+      if (!handleAuthError(e)) throw e
     } finally {
       saving.value = false
     }
@@ -125,6 +163,8 @@ export const useUiStore = defineStore('ui', () => {
       const ids = [...dirtyIds.value]
       await Promise.all(ids.map((id) => useCardsStore().save(id)))
       clearAllDirty()
+    } catch (e) {
+      if (!handleAuthError(e)) throw e
     } finally {
       saving.value = false
     }
@@ -169,6 +209,7 @@ export const useUiStore = defineStore('ui', () => {
     favoritesOnly, disabledCollections,
     isCardVisible, toggleCollection,
     exitConfirmOpen, saving,
+    loginOpen, openLogin, closeLogin, onLoginSuccess,
     lightboxSrc, chipPicker, imagePicker,
     THEMES,
     enterEdit, requestExit, toggleEdit, saveCard, saveAllDirty,

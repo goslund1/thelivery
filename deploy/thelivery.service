@@ -7,6 +7,10 @@ Type=simple
 User=thelivery
 Group=thelivery
 WorkingDirectory=/opt/thelivery
+# Secrets (e.g. JWT_SECRET=<random>) live in this file, created once on the
+# droplet and never committed. The leading "-" makes it optional (the app falls
+# back to a random ephemeral JWT secret if absent, which resets logins on restart).
+EnvironmentFile=-/opt/thelivery/secrets.env
 # Listen on localhost only; Caddy terminates TLS on 443 and reverse-proxies here.
 Environment=BIND_ADDR=127.0.0.1
 Environment=PORT=8787

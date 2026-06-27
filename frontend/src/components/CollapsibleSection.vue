@@ -32,8 +32,10 @@ function onSummaryClick(e: Event) {
   nextTick(() => {
     const topAfter = summary.getBoundingClientRect().top
     if (isCollapsing && topBefore < 0) {
-      // Was scrolled into a tall section — bring the header to the top of the window.
-      window.scrollBy(0, topAfter)
+      // Was scrolled into a tall section — scroll to the top of the parent card.
+      const card = summary.closest('.card')
+      const cardTop = card ? card.getBoundingClientRect().top : topAfter
+      window.scrollBy(0, cardTop)
     } else {
       // Normal case — keep the summary pinned where it was.
       window.scrollBy(0, topAfter - topBefore)

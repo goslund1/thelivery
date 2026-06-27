@@ -85,29 +85,37 @@ watch(() => store.cards.length, () => nextTick(positionSideBug))
 function pickTheme(t: Theme) { ui.theme = t; open.value = null }
 function pickDelta(d: number) { ui.textDelta = d; open.value = null }
 
-// Edit-mode key opens the edit bar / exit-confirm modal → hide tooltip (Rule A).
-function onEditClick() {
-  hideTip()
-  ui.toggleEdit()
-}
-// Expand/collapse-all stays in place → sync its visible tooltip text (Rule B).
-// Also anchors scroll so the card nearest the top of the viewport doesn't jump.
-function onToggleAll() {
-  const anchorEl = Array.from(document.querySelectorAll('.card')).reduce<Element | null>(
+function nearestVisibleCard(): Element | null {
+  return Array.from(document.querySelectorAll('.card')).reduce<Element | null>(
     (best, c) => {
       const r = c.getBoundingClientRect()
       if (r.bottom <= 0 || r.top >= window.innerHeight) return best
       if (!best) return c
       return Math.abs(r.top) < Math.abs(best.getBoundingClientRect().top) ? c : best
     }, null)
-  const beforeTop = anchorEl ? anchorEl.getBoundingClientRect().top : null
+}
+
+// Edit-mode key opens the edit bar / exit-confirm modal → hide tooltip (Rule A).
+// Anchors scroll so the nearest card doesn't jump when edit affordances reflow.
+function onEditClick() {
+  hideTip()
+  const anchor = nearestVisibleCard()
+  const before = anchor?.getBoundingClientRect().top ?? null
+  ui.toggleEdit()
+  nextTick(() => {
+    if (anchor && before !== null) window.scrollBy(0, anchor.getBoundingClientRect().top - before)
+  })
+}
+// Expand/collapse-all stays in place → sync its visible tooltip text (Rule B).
+// Also anchors scroll so the card nearest the top of the viewport doesn't jump.
+function onToggleAll() {
+  const anchor = nearestVisibleCard()
+  const before = anchor?.getBoundingClientRect().top ?? null
 
   ui.toggleAll()
 
   nextTick(() => {
-    if (anchorEl && beforeTop !== null) {
-      window.scrollBy(0, anchorEl.getBoundingClientRect().top - beforeTop)
-    }
+    if (anchor && before !== null) window.scrollBy(0, anchor.getBoundingClientRect().top - before)
     refreshTip(ui.allExpanded ? 'Collapse All Sections' : 'Expand All Sections')
   })
 }

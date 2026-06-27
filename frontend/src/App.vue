@@ -30,7 +30,7 @@ function onKey(e: KeyboardEvent) {
 onMounted(() => {
   store.load()
   document.addEventListener('keydown', onKey)
-  if (window.location.pathname === '/ignition') {
+  if (window.location.pathname === '/ignition' || window.location.hash === '#ignition') {
     window.history.replaceState(null, '', '/')
     ui.openLogin(true)
   }

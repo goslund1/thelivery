@@ -465,8 +465,5 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 }
 .up-preset-clear:hover { opacity: 0.9; color: #e03030; }
 
-.kit-item--buy::marker {
-  content: '$ ';
-  color: var(--gold);
-}
+.kit-item--buy { color: var(--gold); }
 </style>

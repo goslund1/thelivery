@@ -1,0 +1,104 @@
+{
+  "categories": [
+    {
+      "name": "Engine",
+      "parts": [
+        { "part": "Intake", "tiers": ["Street Intake", "Sport Intake", "Race Intake"], "tierCosts": {"Street Intake": 600, "Sport Intake": 1200, "Race Intake": 1800} },
+        { "part": "Intake Manifold / Throttle Body", "tiers": ["Sport Intake Manifold / Throttle Body", "Race Intake Manifold / Throttle Body"], "tierCosts": {"Sport Intake Manifold / Throttle Body": 1450, "Race Intake Manifold / Throttle Body": 2200} },
+        { "part": "Carburetor", "tiers": ["Street Carburetor", "Sport Carburetor", "Race Carburetor"], "tierCosts": {"Street Carburetor": 750, "Sport Carburetor": 1450, "Race Carburetor": 2200} },
+        { "part": "Ignition", "tiers": ["Sport Ignition", "Race Ignition"], "tierCosts": {"Sport Ignition": 1300, "Race Ignition": 1950} },
+        { "part": "Exhaust", "tiers": ["Street Exhaust", "Sport Exhaust", "Race Exhaust"], "tierCosts": {"Street Exhaust": 700, "Sport Exhaust": 1350, "Race Exhaust": 2050} },
+        { "part": "Camshaft", "tiers": ["Sport Camshaft", "Race Camshaft"], "tierCosts": {"Sport Camshaft": 2200, "Race Camshaft": 3400} },
+        { "part": "Valves", "tiers": ["Sport Valves", "Race Valves"], "tierCosts": {"Sport Valves": 2200, "Race Valves": 3400} },
+        { "part": "Displacement", "tiers": ["Street Displacement", "Sport Displacement", "Race Displacement"], "tierCosts": {"Street Displacement": 1200, "Sport Displacement": 2400, "Race Displacement": 3500} },
+        { "part": "Pistons / Compression", "tiers": ["Sport Pistons / Compression", "Race Pistons / Compression"], "tierCosts": {"Sport Pistons / Compression": 2400, "Race Pistons / Compression": 3500} },
+        { "part": "Single Turbo", "tiers": ["Sport Single Turbo", "Race Single Turbo", "Race Single Turbo with Anti-Lag"], "tierCosts": {"Sport Single Turbo": 3600, "Race Single Turbo": 5400, "Race Single Turbo with Anti-Lag": 7200} },
+        { "part": "Twin Turbo", "tiers": ["Sport Twin Turbo", "Race Twin Turbo", "Race Twin Turbo with Anti-Lag"], "tierCosts": {"Sport Twin Turbo": 3600, "Race Twin Turbo": 5400, "Race Twin Turbo with Anti-Lag": 7200} },
+        { "part": "Intercooler", "tiers": ["Street Intercooler", "Sport Intercooler", "Race Intercooler"], "tierCosts": {"Street Intercooler": 750, "Sport Intercooler": 1450, "Race Intercooler": 2200} },
+        { "part": "Oil / Cooling", "tiers": ["Race Oil / Cooling"], "tierCosts": {"Race Oil / Cooling": 2100} },
+        { "part": "Flywheel", "tiers": ["Street Flywheel", "Sport Flywheel", "Race Flywheel"], "tierCosts": {"Street Flywheel": 800, "Sport Flywheel": 1600, "Race Flywheel": 2400} }
+      ]
+    },
+    {
+      "name": "Platform and Handling",
+      "parts": [
+        { "part": "Brakes", "tiers": ["Street Brakes", "Sport Brakes", "Race Brakes"], "tierCosts": {"Street Brakes": 650, "Sport Brakes": 1300, "Race Brakes": 1950} },
+        { "part": "Springs and Dampers", "tiers": ["Street Springs and Dampers", "Sport Springs and Dampers", "Race Springs and Dampers", "Rally Springs and Dampers", "Drift Springs and Dampers"], "tierCosts": {"Street Springs and Dampers": 700, "Sport Springs and Dampers": 1350, "Race Springs and Dampers": 2050, "Rally Springs and Dampers": 2050, "Drift Springs and Dampers": 2050} },
+        { "part": "Front Anti-Roll Bars", "tiers": ["Street Front Anti-Roll Bars", "Sport Front Anti-Roll Bars", "Race Front Anti-Roll Bars"], "tierCosts": {"Street Front Anti-Roll Bars": 650, "Sport Front Anti-Roll Bars": 1250, "Race Front Anti-Roll Bars": 1900} },
+        { "part": "Rear Anti-Roll Bars", "tiers": ["Street Rear Anti-Roll Bars", "Sport Rear Anti-Roll Bars", "Race Rear Anti-Roll Bars"], "tierCosts": {"Street Rear Anti-Roll Bars": 650, "Sport Rear Anti-Roll Bars": 1250, "Race Rear Anti-Roll Bars": 1900} },
+        { "part": "Chassis Reinforcement / Roll Cage", "tiers": ["Street Chassis Reinforcement / Roll Cage", "Sport Chassis Reinforcement / Roll Cage", "Race Chassis Reinforcement / Roll Cage"], "tierCosts": {"Street Chassis Reinforcement / Roll Cage": 700, "Sport Chassis Reinforcement / Roll Cage": 1400, "Race Chassis Reinforcement / Roll Cage": 2100} },
+        { "part": "Weight Reduction", "tiers": ["Street Weight Reduction", "Sport Weight Reduction", "Race Weight Reduction"], "tierCosts": {"Street Weight Reduction": 800, "Sport Weight Reduction": 1550, "Race Weight Reduction": 2350} }
+      ]
+    },
+    {
+      "name": "Drivetrain",
+      "parts": [
+        { "part": "Clutch", "tiers": ["Race Clutch"], "tierCosts": {"Race Clutch": 2250} },
+        { "part": "Transmission", "tiers": ["Street Transmission", "Sport Transmission", "Race 6-Speed Transmission", "Race 7-Speed Transmission", "Race 8-Speed Transmission", "Race 9-Speed Transmission", "Race 10-Speed Transmission", "Drift Transmission"], "tierCosts": {"Street Transmission": 800, "Sport Transmission": 1600, "Race 6-Speed Transmission": 2400, "Race 7-Speed Transmission": 3000, "Race 8-Speed Transmission": 3000, "Race 9-Speed Transmission": 3000, "Race 10-Speed Transmission": 3000, "Drift Transmission": 3000} },
+        { "part": "Driveline", "tiers": ["Street Driveline", "Sport Driveline", "Race Driveline"], "tierCosts": {"Street Driveline": 700, "Sport Driveline": 1400, "Race Driveline": 2100} },
+        { "part": "Differential", "tiers": ["Sport Differential", "Race Differential", "Rally Differential", "Drift Differential", "Offroad Differential"], "tierCosts": {"Sport Differential": 1500, "Race Differential": 2250, "Rally Differential": 2500, "Drift Differential": 2500, "Offroad Differential": 2500} }
+      ]
+    },
+    {
+      "name": "Tires and Wheels",
+      "parts": [
+        {
+          "part": "Tire Compound",
+          "tiers": [
+            "Street Tire Compound",
+            "Sport Tire Compound",
+            "Semi-Slick Race Tire Compound",
+            "Horizon Semi-Slick Race Tire Compound",
+            "Slick Race Tire Compound",
+            "Drift Tire Compound",
+            "Rally Tire Compound",
+            "Offroad Race Tire Compound",
+            "Snow Tire Compound",
+            "Drag Tire Compound",
+            "Vintage Race Tire Compound",
+            "Vintage White Wall Tire Compound"
+          ],
+          "tierCosts": {
+            "Street Tire Compound": 200,
+            "Sport Tire Compound": 5000,
+            "Semi-Slick Race Tire Compound": 10000,
+            "Horizon Semi-Slick Race Tire Compound": 10000,
+            "Slick Race Tire Compound": 10000,
+            "Drift Tire Compound": 10000,
+            "Rally Tire Compound": 10000,
+            "Offroad Race Tire Compound": 10000,
+            "Snow Tire Compound": 10000,
+            "Drag Tire Compound": 10000,
+            "Vintage Race Tire Compound": 10000,
+            "Vintage White Wall Tire Compound": 10000
+          }
+        },
+        { "part": "Front Tire Width", "tiers": "stepped" },
+        { "part": "Rear Tire Width", "tiers": "stepped" },
+        { "part": "Rim Style", "tiers": "cosmetic" },
+        { "part": "Front Rim Style", "tiers": "cosmetic" },
+        { "part": "Rear Rim Style", "tiers": "cosmetic" },
+        { "part": "Front Rim Size", "tiers": "stepped" },
+        { "part": "Rear Rim Size", "tiers": "stepped" },
+        { "part": "Front Track Width", "tiers": "stepped" },
+        { "part": "Rear Track Width", "tiers": "stepped" }
+      ]
+    },
+    {
+      "name": "Aero and Appearance",
+      "parts": [
+        { "part": "Front Bumper", "tiers": ["Race Front Bumper", "None"], "tierCosts": {"Race Front Bumper": 5000, "None": 1000} },
+        { "part": "Rear Wing", "tiers": ["Race Rear Wing", "None"], "tierCosts": {"Race Rear Wing": 5000, "None": 1000} },
+        { "part": "Rear Bumper", "tiers": ["None"], "tierCosts": {"None": 1000} }
+      ]
+    },
+    {
+      "name": "Body Kits and Conversions",
+      "parts": [
+        { "part": "Engine Swap", "tiers": ["Stock", "7.0L V12", "3.0L V6-TT", "6.5L V12"], "tierCosts": {"Stock": 0, "7.0L V12": 62500, "3.0L V6-TT": 77500, "6.5L V12": 85000} },
+        { "part": "Drivetrain Swap", "tiers": ["Stock", "AWD", "RWD", "FWD"] },
+        { "part": "Aspiration", "tiers": ["Single Turbo", "Twin Turbo", "Positive-Displacement Supercharger", "Centrifugal Supercharger"], "tierCosts": {"Single Turbo": 1800, "Twin Turbo": 1800, "Positive-Displacement Supercharger": 1500, "Centrifugal Supercharger": 1500} }
+      ]
+    }
+  ]
+}

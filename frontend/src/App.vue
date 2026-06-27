@@ -12,6 +12,7 @@ import ImagePicker from './components/ImagePicker.vue'
 import ExitConfirmModal from './components/ExitConfirmModal.vue'
 import LoginModal from './components/LoginModal.vue'
 import CustomTip from './components/CustomTip.vue'
+import NewCardModal from './components/NewCardModal.vue'
 
 const store = useCardsStore()
 const ui = useUiStore()
@@ -22,6 +23,7 @@ function onKey(e: KeyboardEvent) {
   ui.closeChipPicker()
   ui.closeImagePicker()
   if (ui.loginOpen) ui.closeLogin()
+  ui.closeNewCard()
   if (ui.exitConfirmOpen) ui.cancelExit()
 }
 
@@ -63,5 +65,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
   <ImagePicker />
   <ExitConfirmModal />
   <LoginModal />
+  <NewCardModal />
   <CustomTip />
 </template>

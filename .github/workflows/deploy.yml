@@ -66,6 +66,7 @@ jobs:
           cp backend/seed/cards.json bundle/seed/
           cp -r backend/uploads/. bundle/seed-uploads/
           cp deploy/thelivery.service bundle/
+          cp deploy/rollback.sh bundle/
 
       # --- Ship it to the droplet (over Tailscale) ------------------------
       # Join the runner to the tailnet so it can reach the droplet on its

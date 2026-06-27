@@ -21,7 +21,11 @@ export function useSlideshow(
   barRef: Ref<HTMLElement | null>,
   toggleRef: Ref<HTMLElement | null>,
 ) {
-  const ordered = computed(() => [...images.value].sort((a, b) => a.order - b.order))
+  const ordered = computed(() =>
+    [...images.value]
+      .filter((img) => img.included !== false)
+      .sort((a, b) => a.order - b.order),
+  )
   const index = ref(0)
   const playing = ref(false)
   const toggleIcon = ref('▶')

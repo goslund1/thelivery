@@ -5,8 +5,11 @@
 
 export interface CardImage {
   id: string
-  path: string // URL path, e.g. "/uploads/1-0.jpg"
-  order: number // the image at order 0 is the lead/feature image
+  path: string      // original full-res URL, e.g. "/uploads/uuid.jpg"
+  thumbPath?: string // 200px-wide JPEG for the thumb rail
+  stagePath?: string // 1000px-wide JPEG for the slideshow stage
+  order: number     // the image at order 0 is the lead/feature image
+  included?: boolean // undefined or true = in slideshow; false = in pool but hidden
 }
 
 // A free-text section with an optional figure (Inspiration, Design Notes, ...).
@@ -35,6 +38,7 @@ export interface ForzaRecipeSection {
   label: string
   tuneName: string
   shareCode: string
+  showStock?: boolean
   coreSpecs: Record<string, string>
   upgrades: UpgradeCategory[]
   adjustments: Adjustment[]
@@ -53,6 +57,7 @@ export interface Card {
   tags: string[]
   images: CardImage[]
   sections: Section[]
+  colors?: Record<string, string>  // per-field color overrides, e.g. { name: '#ff0000' }
 }
 
 export type Theme = 'dark' | 'light' | 'rainbow' | 'clouds' | 'stormy'

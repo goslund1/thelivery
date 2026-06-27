@@ -34,9 +34,18 @@ export const useUiStore = defineStore('ui', () => {
     const s = new Set(dirtyIds.value)
     s.delete(id)
     dirtyIds.value = s
+    const before = _editList.length
+    _editList.splice(0, _editList.length, ..._editList.filter(e => e.cardId !== id))
+    if (_editList.length !== before) {
+      editCount.value = _editList.length
+      currentEditIndex.value = -1
+    }
   }
   function clearAllDirty() {
     dirtyIds.value = new Set()
+    _editList.splice(0)
+    editCount.value = 0
+    currentEditIndex.value = -1
   }
 
   // --- Expand/collapse state --------------------------------------------------
@@ -106,8 +115,17 @@ export const useUiStore = defineStore('ui', () => {
     return false
   }
 
-  // Lightbox
+  // Lightbox — displaySrc is what's shown (may be stage JPEG); originalSrc is always the full-res original for download.
+  // images is the full reel for arrow navigation; index tracks position.
   const lightboxSrc = ref<string | null>(null)
+  const lightboxOriginalSrc = ref<string | null>(null)
+  const lightboxImages = ref<{ display: string; original: string }[]>([])
+  const lightboxIndex = ref(0)
+
+  // New card modal
+  const newCardOpen = ref(false)
+  function openNewCard() { newCardOpen.value = true }
+  function closeNewCard() { newCardOpen.value = false }
 
   // Chip picker (add a tag/collection to a card)
   const chipPicker = ref<{ cardId: string; type: 'tag' | 'collection' } | null>(null)
@@ -122,6 +140,35 @@ export const useUiStore = defineStore('ui', () => {
     { immediate: true },
   )
   watch(isEditing, (on) => document.body.classList.toggle('editing-mode', on))
+
+  function onBeforeUnload(e: BeforeUnloadEvent) { e.preventDefault() }
+  watch(hasUnsavedChanges, (dirty) => {
+    if (dirty) window.addEventListener('beforeunload', onBeforeUnload)
+    else window.removeEventListener('beforeunload', onBeforeUnload)
+  })
+
+  // Flat ordered list of every contenteditable that received an input during this
+  // edit session, plus each field's last cursor position. Plain JS — DOM refs
+  // must NOT enter Vue's reactive system (Vue proxying breaks Range objects).
+  const _editList: Array<{ el: Element; cardId: string; range: Range | null }> = []
+  const editCount = ref(0)
+  const currentEditIndex = ref(-1) // index in _editList of the currently-focused entry
+
+  function addToEditList(cardId: string, el: Element) {
+    if (_editList.some(e => e.el === el)) return
+    _editList.push({ el, cardId, range: null })
+    editCount.value = _editList.length
+  }
+  function saveRange(el: Element, range: Range | null) {
+    const entry = _editList.find(e => e.el === el)
+    if (entry) entry.range = range
+  }
+  function setFocusedEdit(el: Element) {
+    currentEditIndex.value = _editList.findIndex(e => e.el === el)
+  }
+  function getEditAt(idx: number): { el: Element; cardId: string; range: Range | null } | null {
+    return _editList[idx] ?? null
+  }
 
   // --- Edit lifecycle ---------------------------------------------------------
   function enterEdit() {
@@ -174,8 +221,8 @@ export const useUiStore = defineStore('ui', () => {
     exitConfirmOpen.value = false
     isEditing.value = false
   }
-  function confirmDiscardAndExit() {
-    useCardsStore().restoreSnapshot()
+  async function confirmDiscardAndExit() {
+    await useCardsStore().restoreSnapshot()
     clearAllDirty()
     exitConfirmOpen.value = false
     isEditing.value = false
@@ -183,11 +230,30 @@ export const useUiStore = defineStore('ui', () => {
   function cancelExit() {
     exitConfirmOpen.value = false
   }
-  function openLightbox(src: string) {
-    lightboxSrc.value = src
+  function openLightbox(
+    displaySrc: string,
+    originalSrc?: string,
+    images?: { display: string; original: string }[],
+    index?: number,
+  ) {
+    lightboxSrc.value = displaySrc
+    lightboxOriginalSrc.value = originalSrc ?? displaySrc
+    lightboxImages.value = images ?? []
+    lightboxIndex.value = index ?? 0
+  }
+  function navigateLightbox(dir: 1 | -1) {
+    const imgs = lightboxImages.value
+    if (imgs.length < 2) return
+    const next = (lightboxIndex.value + dir + imgs.length) % imgs.length
+    lightboxIndex.value = next
+    lightboxSrc.value = imgs[next].display
+    lightboxOriginalSrc.value = imgs[next].original
   }
   function closeLightbox() {
     lightboxSrc.value = null
+    lightboxOriginalSrc.value = null
+    lightboxImages.value = []
+    lightboxIndex.value = 0
   }
   function openChipPicker(cardId: string, type: 'tag' | 'collection') {
     chipPicker.value = { cardId, type }
@@ -210,11 +276,13 @@ export const useUiStore = defineStore('ui', () => {
     isCardVisible, toggleCollection,
     exitConfirmOpen, saving,
     loginOpen, openLogin, closeLogin, onLoginSuccess,
-    lightboxSrc, chipPicker, imagePicker,
+    newCardOpen, openNewCard, closeNewCard,
+    lightboxSrc, lightboxOriginalSrc, lightboxImages, lightboxIndex, chipPicker, imagePicker,
     THEMES,
+    editCount, currentEditIndex, addToEditList, saveRange, setFocusedEdit, getEditAt,
     enterEdit, requestExit, toggleEdit, saveCard, saveAllDirty,
     confirmSaveAndExit, confirmDiscardAndExit, cancelExit,
-    openLightbox, closeLightbox,
+    openLightbox, navigateLightbox, closeLightbox,
     openChipPicker, closeChipPicker,
     openImagePicker, closeImagePicker,
   }

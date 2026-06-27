@@ -53,12 +53,34 @@ export const api = {
       if (!r.ok) throw new ApiError(r.status, `delete failed: ${r.status}`)
     }),
 
-  // Upload a file, returns its served URL path.
-  uploadImage: (file: File) => {
+  listCardHistory: (id: string) =>
+    fetch(`/api/cards/${id}/history`).then(json<{ version: number; savedAt: string }[]>),
+
+  getCardHistoryVersion: (id: string, version: number) =>
+    fetch(`/api/cards/${id}/history/${version}`).then(json<{ version: number; savedAt: string; body: import('./types').Card }>),
+
+  deleteImages: (paths: string[]) =>
+    fetch('/api/images', {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ paths }),
+    }).then((r) => { if (!r.ok) throw new ApiError(r.status, `deleteImages failed: ${r.status}`) }),
+
+  // Upload a file with card context for folder naming; returns original + variant paths.
+  // fileIndex: when set, the backend uses it for sequential filename (001.jpg, 002.jpg…)
+  uploadImage: (
+    file: File,
+    card: { name: string; subtitle: string; collections: string[] },
+    fileIndex?: number,
+  ) => {
     const fd = new FormData()
+    fd.append('cardName', card.name)
+    fd.append('cardSubtitle', card.subtitle)
+    fd.append('cardCollections', card.collections.join(','))
+    if (fileIndex !== undefined) fd.append('fileIndex', String(fileIndex))
     fd.append('file', file)
     return fetch('/api/images', { method: 'POST', headers: authHeaders(), body: fd }).then(
-      json<{ path: string }>,
+      json<{ path: string; thumbPath?: string; stagePath?: string }>,
     )
   },
 }

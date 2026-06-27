@@ -21,7 +21,8 @@ const bodyClass = computed(() => (props.section.key === 'inspiration' ? 'anecdot
         :src="section.figurePath"
         @click="ui.openLightbox(section.figurePath!)"
       />
-      <button class="change-image-btn" type="button" @click="ui.openImagePicker(cardId, section.key)">Change Image</button>
+      <span v-else class="gutter-figure-empty">Select image</span>
+      <button class="change-image-btn" type="button" @click="ui.openImagePicker(cardId, section.key)">{{ section.figurePath ? 'Change Image' : 'Select Image' }}</button>
     </div>
     <EditableText tag="div" :class="bodyClass" v-model="section.body" />
   </div>

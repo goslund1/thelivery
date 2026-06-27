@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { Card } from '../types'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 import EditableText from './EditableText.vue'
+import EditCardModal from './EditCardModal.vue'
 import { refreshTip } from '../composables/tooltip'
 
 const props = defineProps<{ card: Card }>()
@@ -11,11 +12,11 @@ const store = useCardsStore()
 const ui = useUiStore()
 
 const catalogNo = computed(() => String(props.card.catalogNumber).padStart(3, '0'))
+const editOpen = ref(false)
 
 function toggleFav() {
   store.toggleFavorite(props.card.id)
   ui.markCardDirty(props.card.id)
-  // Star stays in place → sync its tooltip text to the new state (Rule B).
   refreshTip(props.card.isFavorite ? 'Unmark as favorite' : 'Mark as favorite')
 }
 function removeCollection(c: string) {
@@ -26,6 +27,7 @@ function removeCollection(c: string) {
 
 <template>
   <div class="card-meta">
+    <span v-if="card.isLegend" class="legend-flag">Field Legend — Not a real entry</span>
     <div>
       <p class="card-number">
         CATALOG <span>NO. {{ catalogNo }}</span>
@@ -41,49 +43,46 @@ function removeCollection(c: string) {
       <EditableText tag="p" class="card-sub" v-model="card.subtitle" />
     </div>
     <div class="card-meta-actions">
+      <button v-if="ui.isEditing" class="edit-card-btn" @click="editOpen = true">Edit Card</button>
       <button class="fav-star" :class="{ favorited: card.isFavorite }" aria-label="Favorite this card" v-tip="() => card.isFavorite ? 'Unmark as favorite' : 'Mark as favorite'" @click="toggleFav">★</button>
-      <button
-        v-if="ui.isEditing"
-        class="card-save-btn"
-        :class="{ 'has-changes': ui.isCardDirty(card.id) }"
-        :disabled="!ui.isCardDirty(card.id) || ui.saving"
-        @click="ui.saveCard(card.id)"
-      >{{ ui.isCardDirty(card.id) ? 'Save ↓' : 'Saved' }}</button>
     </div>
   </div>
+
+  <Teleport to="body">
+    <EditCardModal v-if="editOpen" :card="card" @close="editOpen = false" />
+  </Teleport>
 </template>
 
 <style scoped>
 .card-meta-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  padding-top: 12px;
 }
-.card-save-btn {
+
+/* The fav-star is position:absolute in global CSS so it sits outside flow.
+   This button needs to be absolute too, shifted left of the star. */
+.edit-card-btn {
+  position: absolute;
+  top: 26px;
+  right: 69px;
+  background: transparent;
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  color: var(--steel);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 6px 12px;
-  border-radius: 4px;
+  letter-spacing: .06em;
+  padding: 4px 8px;
   cursor: pointer;
-  white-space: nowrap;
-  background: var(--panel);
-  color: var(--steel);
-  border: 1px solid var(--panel-edge);
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  z-index: 11;
+  transition: border-color .15s, color .15s;
 }
-.card-save-btn.has-changes {
-  background: var(--build-it-bg);
-  color: var(--ink);
-  border-color: var(--build-it-border);
-}
-.card-save-btn.has-changes:hover {
-  background: var(--build-it-bg-hover);
-}
-.card-save-btn:disabled {
-  cursor: default;
-  opacity: 0.55;
+.edit-card-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
 }
 </style>

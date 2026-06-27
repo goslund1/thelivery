@@ -19,16 +19,70 @@ export const useCardsStore = defineStore('cards', () => {
     return cards.value.find((c) => c.id === id)
   }
 
+  function ensureSections(card: Card): Card {
+    const keys = new Set(card.sections.map(s => s.key))
+    const missing: Card['sections'] = []
+    if (!keys.has('inspiration'))
+      missing.push({ type: 'text', key: 'inspiration', label: 'Inspiration', body: '' })
+    if (!keys.has('notes'))
+      missing.push({ type: 'text', key: 'notes', label: 'Design Notes', body: '' })
+    if (!keys.has('recipe'))
+      missing.push({ type: 'forza_recipe', key: 'recipe', label: 'Tune / Build Parts', tuneName: '', shareCode: '', coreSpecs: {}, upgrades: [], adjustments: [] })
+    if (missing.length === 0) return card
+    return { ...card, sections: [...card.sections, ...missing] }
+  }
+
   async function load() {
     loading.value = true
     error.value = null
     try {
-      cards.value = await api.listCards()
+      cards.value = (await api.listCards()).map(ensureSections)
     } catch (e) {
       error.value = (e as Error).message
     } finally {
       loading.value = false
     }
+  }
+
+  async function createNewCard(fields: {
+    name: string
+    subtitle: string
+    collections: string[]
+    tags?: string[]
+    inspirationBody?: string
+    notesBody?: string
+    tuneName?: string
+    shareCode?: string
+    coreSpecs?: Record<string, string>
+  }): Promise<Card> {
+    const maxCatalog = cards.value.reduce((m, c) => Math.max(m, c.catalogNumber), 0)
+    const nextNum = maxCatalog + 1
+    const newCard: Card = {
+      id: String(nextNum),
+      catalogNumber: nextNum,
+      name: fields.name,
+      subtitle: fields.subtitle,
+      isFavorite: false,
+      isLegend: false,
+      collections: fields.collections,
+      tags: fields.tags ?? [],
+      images: [],
+      sections: [
+        { type: 'text', key: 'inspiration', label: 'Inspiration', body: fields.inspirationBody ?? '' },
+        { type: 'text', key: 'notes', label: 'Design Notes', body: fields.notesBody ?? '' },
+        { type: 'forza_recipe', key: 'recipe', label: 'Tune / Build Parts', tuneName: fields.tuneName ?? '', shareCode: fields.shareCode ?? '', coreSpecs: fields.coreSpecs ?? {}, upgrades: [], adjustments: [] },
+      ],
+    }
+    const created = await api.createCard(newCard)
+    cards.value.push(created)
+    return created
+  }
+
+  async function deleteCard(id: string) {
+    await api.deleteCard(id)
+    const idx = cards.value.findIndex(c => c.id === id)
+    if (idx !== -1) cards.value.splice(idx, 1)
+    delete snapshots[id]
   }
 
   async function save(id: string) {
@@ -45,8 +99,24 @@ export const useCardsStore = defineStore('cards', () => {
   }
   // Revert every card to its baseline. Cards saved during this edit session have
   // an updated baseline, so they are left at their saved state; only unsaved
-  // cards roll back.
-  function restoreSnapshot() {
+  // cards roll back. Images added since the last save are deleted from disk.
+  async function restoreSnapshot() {
+    const orphans: string[] = []
+    for (const c of cards.value) {
+      const snap = snapshots[c.id]
+      if (!snap) continue
+      const savedPaths = new Set(
+        (JSON.parse(snap) as Card).images.flatMap((i) =>
+          [i.path, i.thumbPath, i.stagePath].filter(Boolean) as string[]
+        )
+      )
+      for (const img of c.images) {
+        for (const p of [img.path, img.thumbPath, img.stagePath]) {
+          if (p && !savedPaths.has(p)) orphans.push(p)
+        }
+      }
+    }
+    if (orphans.length) await api.deleteImages(orphans).catch(() => {})
     cards.value = cards.value.map((c) =>
       snapshots[c.id] ? (JSON.parse(snapshots[c.id]) as Card) : c,
     )
@@ -92,6 +162,40 @@ export const useCardsStore = defineStore('cards', () => {
     c.images = imgs
   }
 
+  function removeImage(cardId: string, imageId: string) {
+    const c = byId(cardId)
+    if (!c) return
+    c.images = c.images.filter((i) => i.id !== imageId)
+  }
+
+  function toggleImageIncluded(id: string, imageId: string) {
+    const c = byId(id)
+    if (!c) return
+    const img = c.images.find((i) => i.id === imageId)
+    if (!img) return
+    img.included = img.included === false ? true : false
+  }
+
+  function addImageToPool(
+    cardId: string,
+    path: string,
+    thumbPath?: string,
+    stagePath?: string,
+  ) {
+    const c = byId(cardId)
+    if (!c) return
+    const maxOrder = c.images.reduce((m, i) => Math.max(m, i.order), -1)
+    c.images.push({ id: `${cardId}-${Date.now()}`, path, thumbPath, stagePath, order: maxOrder + 1, included: true })
+  }
+
+  function setColor(id: string, key: string, color: string | undefined) {
+    const c = byId(id)
+    if (!c) return
+    if (!c.colors) c.colors = {}
+    if (color) c.colors[key] = color
+    else delete c.colors[key]
+  }
+
   function addTag(id: string, value: string) {
     const c = byId(id)
     if (c && value && !c.tags.includes(value)) c.tags.push(value)
@@ -129,9 +233,11 @@ export const useCardsStore = defineStore('cards', () => {
 
   return {
     cards, loading, error,
-    byId, load, save,
+    byId, load, save, deleteCard, createNewCard,
     takeSnapshot, restoreSnapshot, setFigure,
     toggleFavorite, setLeadImage, reorderImages,
+    removeImage, toggleImageIncluded, addImageToPool,
+    setColor,
     addTag, removeTag, addCollection, removeCollection,
     allTagValues, allCollectionValues, allSectionKeys,
   }

@@ -23,7 +23,12 @@ async function onUpload(e: Event) {
   const c = ctx.value
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!c || !file) return
-  const { path } = await api.uploadImage(file)
+  const cv = card.value
+  const { path } = await api.uploadImage(file, {
+    name: cv?.name ?? '',
+    subtitle: cv?.subtitle ?? '',
+    collections: cv?.collections ?? [],
+  })
   store.setFigure(c.cardId, c.sectionKey, path)
   ui.markCardDirty(c.cardId)
   ui.closeImagePicker()

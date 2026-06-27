@@ -208,11 +208,10 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
               <select
                 v-if="SPEC_OPTIONS[k]"
                 class="spec-select"
-                :value="recipe.coreSpecs[k] ?? ''"
                 @change="onSpecChange(k, $event)"
               >
-                <option value="">Stock</option>
-                <option v-for="opt in SPEC_OPTIONS[k]" :key="opt" :value="opt">{{ opt }}</option>
+                <option value="" :selected="!recipe.coreSpecs[k]">Stock</option>
+                <option v-for="opt in SPEC_OPTIONS[k]" :key="opt" :value="opt" :selected="recipe.coreSpecs[k] === opt">{{ opt }}</option>
               </select>
               <EditableText v-else v-model="recipe.coreSpecs[k]" />
             </template>

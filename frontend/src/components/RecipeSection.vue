@@ -32,6 +32,11 @@ function viewInstalledTier(tiers: string[]): string | null {
   }
   return null
 }
+function viewPartLabel(part: string, tiers: string[]): string {
+  const tier = viewInstalledTier(tiers)
+  if (!tier || tier === 'Stock') return 'Stock ' + part
+  return tier
+}
 function viewSteppedValue(partName: string): number {
   for (const cat of props.recipe.upgrades) {
     const entry = cat.parts.find(p => p.startsWith(partName + ' '))
@@ -261,7 +266,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
               <ul class="kit-list">
                 <template v-for="p in cat.parts" :key="p.part">
                   <li v-if="Array.isArray(p.tiers)">
-                    {{ viewInstalledTier(p.tiers) || ('Stock ' + p.part) }}
+                    {{ viewPartLabel(p.part, p.tiers) }}
                   </li>
                   <li v-else-if="p.tiers === 'stepped' && STEPPED_SET.has(p.part)">
                     {{ viewSteppedLabel(p.part) }}
@@ -373,6 +378,9 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   transition: opacity 0.12s, color 0.12s;
 }
 .kit-preset-trigger:hover { opacity: 1; color: var(--gold); }
+/* Make the label take all available space so the button + chevron sit together on the right */
+.kit-label-group { flex: 1; }
+
 .kit-stock-btn {
   background: none;
   border: 1px solid var(--panel-edge);
@@ -383,6 +391,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 2px 7px;
+  margin-right: 10px;
   cursor: pointer;
   opacity: 0.55;
   transition: color 0.12s, opacity 0.12s, border-color 0.12s;

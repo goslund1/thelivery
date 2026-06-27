@@ -155,9 +155,7 @@ async function onCreate() {
       notesBody: notesBody.value.trim(),
       tuneName: tuneName.value.trim(),
       shareCode: shareCode.value.trim(),
-      coreSpecs: Object.fromEntries(
-        Object.entries(coreSpecs.value).filter(([, v]) => v.trim())
-      ),
+      coreSpecs: { ...coreSpecs.value },
     })
     for (let i = 0; i < staged.value.length; i++) {
       const result = await api.uploadImage(staged.value[i].file, card, i)

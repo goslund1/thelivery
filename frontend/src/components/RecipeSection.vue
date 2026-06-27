@@ -11,7 +11,10 @@ const props = defineProps<{ recipe: ForzaRecipeSection }>()
 const ui = useUiStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
-const specKeys = computed(() => Object.keys(props.recipe.coreSpecs))
+const CORE_SPEC_KEYS = ['Drivetrain', 'Engine', 'Transmission', 'Tires', 'Suspension']
+const hasNonStockSpecs = computed(() =>
+  CORE_SPEC_KEYS.some(k => !!props.recipe.coreSpecs[k]?.trim()),
+)
 const partCount = computed(() =>
   props.recipe.upgrades.reduce((n, c) => n + c.parts.length, 0),
 )
@@ -188,18 +191,18 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
       </div>
     </div>
 
-    <table class="recipe-table">
+    <table v-if="ui.isEditing || hasNonStockSpecs" class="recipe-table">
       <tbody>
         <tr>
-          <th v-for="k in specKeys" :key="k">{{ k }}</th>
+          <th v-for="k in CORE_SPEC_KEYS" :key="k">{{ k }}</th>
         </tr>
         <tr>
-          <td v-for="k in specKeys" :key="k">
+          <td v-for="k in CORE_SPEC_KEYS" :key="k">
             <template v-if="ui.isEditing">
               <select
                 v-if="SPEC_OPTIONS[k]"
                 class="spec-select"
-                :value="recipe.coreSpecs[k]"
+                :value="recipe.coreSpecs[k] ?? ''"
                 @change="onSpecChange(k, $event)"
               >
                 <option value="">Stock</option>

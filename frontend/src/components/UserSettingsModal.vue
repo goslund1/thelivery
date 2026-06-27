@@ -84,21 +84,21 @@ function close() {
       </div>
 
       <!-- Change Password -->
-      <form v-if="tab === 'password'" class="login-form" @submit.prevent="submitChangePassword">
+      <form v-if="tab === 'password'" class="settings-form" @submit.prevent="submitChangePassword">
         <input v-model="currentPw" type="password" placeholder="Current password" autocomplete="current-password" />
-        <input v-model="newPw"     type="password" placeholder="New password" autocomplete="new-password" />
+        <input v-model="newPw"     type="password" placeholder="New password"     autocomplete="new-password" />
         <input v-model="confirmPw" type="password" placeholder="Confirm new password" autocomplete="new-password" />
-        <p v-if="pwError"   class="login-error">{{ pwError }}</p>
+        <p v-if="pwError"   class="settings-error">{{ pwError }}</p>
         <p v-if="pwSuccess" class="settings-ok">{{ pwSuccess }}</p>
         <button type="submit" :disabled="pwBusy">{{ pwBusy ? 'Saving…' : 'Update Password' }}</button>
       </form>
 
       <!-- Create User -->
-      <form v-if="tab === 'create'" class="login-form" @submit.prevent="submitCreateUser">
-        <input v-model="newUsername" type="text"     placeholder="Username" autocomplete="off" />
-        <input v-model="newUserPw"   type="password" placeholder="Password" autocomplete="new-password" />
+      <form v-if="tab === 'create'" class="settings-form" @submit.prevent="submitCreateUser">
+        <input v-model="newUsername"    type="text"     placeholder="Username"         autocomplete="off" />
+        <input v-model="newUserPw"      type="password" placeholder="Password"         autocomplete="new-password" />
         <input v-model="newUserConfirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
-        <p v-if="userError"   class="login-error">{{ userError }}</p>
+        <p v-if="userError"   class="settings-error">{{ userError }}</p>
         <p v-if="userSuccess" class="settings-ok">{{ userSuccess }}</p>
         <button type="submit" :disabled="userBusy">{{ userBusy ? 'Creating…' : 'Create User' }}</button>
       </form>
@@ -107,36 +107,72 @@ function close() {
 </template>
 
 <style scoped>
-.settings-panel {
-  max-width: 360px;
-}
+.settings-panel { max-width: 360px; }
+
+/* Tabs */
 .settings-tabs {
   display: flex;
-  gap: 4px;
-  margin-bottom: 12px;
+  gap: 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--panel-edge);
 }
 .settings-tabs button {
   flex: 1;
-  padding: 6px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--panel-edge);
+  padding: 7px 8px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
   background: none;
-  color: var(--text);
+  color: var(--steel);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   cursor: pointer;
-  opacity: 0.5;
+  transition: color 0.15s, border-color 0.15s;
 }
+.settings-tabs button:hover { color: var(--paper); }
 .settings-tabs button.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
+/* Form — mirrors LoginModal scoped styles */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 2px;
+}
+.settings-form input {
+  padding: 9px 11px;
+  border-radius: 4px;
+  border: 1px solid var(--panel-edge);
+  background: var(--panel-well);
+  color: var(--paper);
+  font-family: inherit;
+  font-size: 14px;
+}
+.settings-form input:focus {
+  outline: none;
   border-color: var(--gold);
-  color: var(--gold);
-  opacity: 1;
 }
-.settings-ok {
-  color: var(--gold);
-  font-size: 13px;
-  margin: 0;
+.settings-form button[type='submit'] {
+  margin-top: 4px;
+  padding: 9px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--build-it-border);
+  background: var(--build-it-bg);
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
 }
+.settings-form button[type='submit']:hover:not(:disabled) { background: var(--build-it-bg-hover); }
+.settings-form button[type='submit']:disabled { opacity: 0.6; cursor: default; }
+
+.settings-error { color: var(--danger-bright); font-size: 13px; margin: 0; }
+.settings-ok    { color: var(--gold);          font-size: 13px; margin: 0; }
 </style>

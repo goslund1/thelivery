@@ -316,6 +316,10 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 
 <style scoped>
 /* Dropdown for each core-spec cell */
+/* table-layout: fixed pins column widths to equal shares regardless of cell content,
+   so the edit-mode selects don't blow out the table width vs user view. */
+.recipe-table { table-layout: fixed; }
+
 .spec-select {
   background: color-mix(in srgb, var(--panel) 85%, #000);
   border: 1px solid var(--panel-edge);
@@ -326,7 +330,6 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   padding: 1px 2px;
   cursor: pointer;
   width: 100%;
-  max-width: 140px;
 }
 .spec-select:focus {
   outline: 1px solid var(--gold);

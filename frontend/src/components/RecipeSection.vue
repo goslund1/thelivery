@@ -215,7 +215,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         <span class="kit-label-group">
           <span class="section-label">Upgrades Installed</span> — {{ partCount }} parts<template v-if="totalUpgradeCost > 0"> › CR {{ totalUpgradeCost.toLocaleString() }}</template>
         </span>
-        <button class="kit-stock-btn" type="button" :class="{ active: showStock }" @click.stop="showStock = !showStock">Stock</button>
+        <button class="kit-stock-btn" type="button" :class="{ active: showStock }" @click.stop="showStock = !showStock">{{ showStock ? 'Hide Stock' : 'Show Stock' }}</button>
         <span class="chev"></span>
       </summary>
 

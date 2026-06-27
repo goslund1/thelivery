@@ -12,6 +12,12 @@ const ui = useUiStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
 const CORE_SPEC_KEYS = ['Drivetrain', 'Engine', 'Transmission', 'Tires', 'Suspension']
+
+// Normalize any null/undefined values to '' so the select binding always gets a string.
+for (const k of CORE_SPEC_KEYS) {
+  if (props.recipe.coreSpecs[k] == null) props.recipe.coreSpecs[k] = ''
+}
+
 const hasNonStockSpecs = computed(() =>
   CORE_SPEC_KEYS.some(k => !!props.recipe.coreSpecs[k]?.trim()),
 )

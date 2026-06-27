@@ -67,13 +67,6 @@ function getSteppedValue(partName: string): number {
   return 0
 }
 
-function partCost(p: JsonPart): number | null {
-  if (!p.tierCosts) return null
-  const installed = getInstalledTier(p.tiers as string[])
-  if (!installed) return null
-  return p.tierCosts[installed] ?? null
-}
-
 function adjustStepped(categoryName: string, partName: string, delta: number) {
   const cfg = STEPPED[partName]
   if (!cfg) return
@@ -110,7 +103,7 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
               :disabled="getSteppedValue(p.part) <= STEPPED[p.part].min"
               @click="adjustStepped(cat.name, p.part, -1)"
             >−</button>
-            <span class="up-step-val">
+            <span class="up-step-val" :class="{ 'up-step-set': getSteppedValue(p.part) !== 0 }">
               {{ getSteppedValue(p.part) === 0
                   ? 'stock'
                   : (getSteppedValue(p.part) > 0 ? '+' : '') + getSteppedValue(p.part) }}
@@ -132,7 +125,6 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
               <option value="">Stock {{ p.part }}</option>
               <option v-for="tier in p.tiers" :key="tier" :value="tier">{{ tier }}</option>
             </select>
-            <span v-if="partCost(p) !== null" class="up-cost">CR {{ partCost(p)!.toLocaleString() }}</span>
           </li>
         </template>
       </ul>
@@ -149,11 +141,10 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
   padding: 0;
 }
 
-/* Replace bullet dots with dropdown indicator */
-.up-picker :deep(.kit-list) {
-  list-style: none;
-  padding-left: 0;
+.kit-cat {
+  min-width: 0;
 }
+
 .up-picker :deep(.kit-list > li:not(.up-step-row)) {
   position: relative;
   display: flex;
@@ -161,20 +152,12 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
   gap: 4px;
   padding: 2px 0 4px;
 }
-.up-picker :deep(.kit-list > li:not(.up-step-row))::before {
-  content: '▾';
-  color: var(--gold);
-  opacity: 0.6;
-  font-size: 10px;
-  flex-shrink: 0;
-  line-height: 1;
-}
-/* Gradient underline: solid from left edge of text, fades before the native select arrow */
+/* Gradient underline */
 .up-picker :deep(.kit-list > li:not(.up-step-row))::after {
   content: '';
   position: absolute;
   bottom: 0;
-  left: 14px;
+  left: 0;
   right: 0;
   height: 1px;
   background: linear-gradient(to right,
@@ -188,7 +171,7 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
   flex: 1;
   background: none;
   border: none;
-  color: var(--text);
+  color: inherit;
   font-family: inherit;
   font-size: inherit;
   padding: 0;
@@ -203,15 +186,6 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
 .up-inline-select:focus { outline: 1px solid var(--gold); border-radius: 2px; outline-offset: 1px; }
 .up-inline-set { color: var(--gold); opacity: 1; }
 
-.up-cost {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  color: var(--text);
-  opacity: 0.38;
-  flex-shrink: 0;
-  white-space: nowrap;
-  letter-spacing: 0.02em;
-}
 
 .up-step-row {
   display: flex;
@@ -225,7 +199,7 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
   background: color-mix(in srgb, var(--panel-edge) 35%, transparent);
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--text);
+  color: var(--paper);
   font-size: 13px;
   line-height: 1;
   width: 20px;
@@ -240,8 +214,10 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
 .up-step-val {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--gold);
+  color: inherit;
+  opacity: 0.65;
   min-width: 30px;
   text-align: center;
 }
+.up-step-set { color: var(--gold); opacity: 1; }
 </style>

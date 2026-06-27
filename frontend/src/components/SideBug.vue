@@ -65,7 +65,7 @@ function positionSideBug() {
 
   const catRect = catalog.getBoundingClientRect()
   const bugWidth = bug.offsetWidth
-  bug.style.right = `${Math.max(12, window.innerWidth - catRect.right - bugWidth)}px`
+  bug.style.right = `${Math.max(0, window.innerWidth - catRect.right - bugWidth)}px`
 
   const titleTop = title.getBoundingClientRect().top
   const hamOffset = ham.getBoundingClientRect().top - bug.getBoundingClientRect().top

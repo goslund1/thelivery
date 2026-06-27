@@ -24,7 +24,7 @@ function removeTag(t: string) {
       class="tag chip"
       data-chip-type="tag"
     >{{ t }}<button class="chip-remove" type="button" @click="removeTag(t)">×</button></span>
-    <button class="chip-add" data-chip-type="tag" type="button" @click="ui.openChipPicker(card.id, 'tag')">+</button>
+    <button class="chip-add" data-chip-type="tag" type="button" @click="ui.openChipPicker(card.id, 'tag')">+ Tags</button>
     <a v-if="recipeKey" class="build-it" :href="`#${recipeKey}-${card.id}`" v-tip="'Jump to the build/tune recipe'" @click="emit('buildIt')">Build It →</a>
   </div>
 </template>

@@ -412,9 +412,12 @@
     background:transparent;
     border:1px dashed var(--border-soft);
     color:var(--steel);
-    font-size:13px;
+    font-size:11px;
+    font-family:'JetBrains Mono',monospace;
+    letter-spacing:.04em;
     line-height:1;
-    width:22px;
+    width:auto;
+    padding:0 7px;
     height:22px;
     border-radius:3px;
     cursor:pointer;
@@ -503,7 +506,6 @@
     opacity:0;
     position:absolute;
     top:0; left:0;
-    transform:scale(1.04);
     transition:opacity var(--dissolve) ease;
     pointer-events:none;
   }
@@ -645,7 +647,6 @@
     height:100%;
     object-fit:cover;
     display:block;
-    transform:scale(1.06);
   }
 
   .thumb:hover{opacity:.85;}
@@ -793,15 +794,17 @@
      regardless of card width — it just becomes narrower if it has to,
      the way a responsive sidebar layout is supposed to work. */
   .gutter-layout{
-    display:grid;
-    grid-template-columns:296px 1fr;
+    display:flex;
+    flex-wrap:wrap;
     column-gap:24px;
-    padding-right:96px;
+    row-gap:12px;
   }
 
   .gutter-figure{
     position:relative;
     min-height:60px;
+    flex:0 0 296px;
+    align-self:flex-start;
   }
 
   .gutter-figure-empty{
@@ -860,10 +863,18 @@
   .gutter-figure-img{
     width:100%;
     display:block;
-    transform:scale(1.04);
+  }
+
+  .gutter-text{
+    flex:1;
+    min-width:296px;
+    max-width:450px;
   }
 
   .anecdote-text{
+    flex:1;
+    min-width:296px;
+    max-width:450px;
     font-style:italic;
     color:var(--steel-light);
   }
@@ -1504,9 +1515,7 @@
 
   .exit-confirm-options button{
     width:100%;
-    background:var(--panel-well);
-    color:var(--paper);
-    border:1px solid var(--panel-edge);
+    color:#fff;
     font-family:'JetBrains Mono',monospace;
     font-size:13px;
     text-transform:uppercase;
@@ -1514,29 +1523,52 @@
     padding:12px 0;
     border-radius:5px;
     cursor:pointer;
-    transition:background .15s ease, border-color .15s ease;
+    transition:background .15s ease, border-color .15s ease, box-shadow .15s ease;
   }
 
+  /* Green light — Save and Exit */
   #exit-save-btn{
-    background:var(--gold);
-    color:var(--ink);
-    border-color:var(--gold);
+    background:#1e3d00;
+    border:2px solid #2e5f00;
+    animation:exit-save-pulse 1.8s ease-in-out infinite;
   }
-
   #exit-save-btn:hover{
-    background:var(--gold-bright);
+    background:#74b050;
+    border-color:#a8d888;
+    box-shadow:0 0 16px rgba(116,176,80,0.85);
+    animation:none;
+  }
+  @keyframes exit-save-pulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(116,176,80,0.7); }
+    50%    { box-shadow:0 0 0 8px rgba(116,176,80,0); }
   }
 
-  #exit-discard-btn:hover{
-    border-color:var(--magenta);
-    color:var(--magenta);
+  /* Yellow light — Continue Editing */
+  #exit-continue-btn{
+    background:#7a5800;
+    border:2px solid #a07800;
   }
-
   #exit-continue-btn:hover{
-    border-color:var(--gold);
-    color:var(--gold);
+    background:#ffc200;
+    border-color:#ffe870;
+    box-shadow:0 0 16px rgba(255,194,0,0.85);
   }
 
+  /* Red light — Discard and Exit */
+  #exit-discard-btn{
+    background:#5c0000;
+    border:2px solid #7a0000;
+  }
+  #exit-discard-btn:hover{
+    background:#cc0000;
+    border-color:#ff4444;
+    box-shadow:0 0 16px rgba(200,0,0,0.85);
+  }
+
+  #legend-save-btn { background:#1e3d00; border:2px solid #2e5f00; animation:exit-save-pulse 1.8s ease-in-out infinite; }
+  #legend-save-btn:hover { background:#74b050; border-color:#a8d888; box-shadow:0 0 16px rgba(116,176,80,0.85); animation:none; }
+  #legend-cancel-btn { background:#7a5800; border:2px solid #a07800; }
+  #legend-cancel-btn:hover { background:#ffc200; border-color:#ffe870; box-shadow:0 0 16px rgba(255,194,0,0.85); }
 
   .bug-check{
     display:flex;
@@ -1593,23 +1625,6 @@
     .details{grid-template-columns:1fr;}
   }
 
-  /* Below this, margin-left:320px + width:600px no longer fits inside
-     the shrinking card — collapse the reserved image-gutter and let the
-     prose go full-width (and taller) instead of overlapping/clipping. */
-  /* Below this, the figure column no longer makes sense alongside the
-     text — collapse the grid to a single column and let the figure
-     (if there is one) sit full-width above the text instead. */
-  @media (max-width:1040px){
-    .gutter-layout{
-      grid-template-columns:1fr;
-      padding-right:24px;
-    }
-
-    .gutter-figure:not(:empty){
-      margin-bottom:12px;
-      max-width:340px;
-    }
-  }
 
 /* ── Jump-to-edit highlight ── */
 @keyframes edit-jump-flash {

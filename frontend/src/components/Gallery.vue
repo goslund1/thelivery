@@ -57,14 +57,19 @@ watch(index, async () => {
   updateArrows()
 })
 
-let dragFrom = -1
-function onDragStart(i: number) { dragFrom = i }
+const dragFrom = ref(-1)
+const dropIdx = ref(-1)
+function onDragStart(i: number) { dragFrom.value = i; dropIdx.value = -1; onThumb(index.value) }
+function onRailTouch() { if (ui.isEditing) onThumb(index.value) }
+function onDragOver(i: number) { if (dragFrom.value >= 0) dropIdx.value = i }
+function onDragEnd() { dragFrom.value = -1; dropIdx.value = -1 }
 function onDrop(i: number) {
-  if (dragFrom >= 0 && dragFrom !== i) {
-    store.reorderImages(props.card.id, dragFrom, i)
+  if (dragFrom.value >= 0 && dragFrom.value !== i) {
+    store.reorderImages(props.card.id, dragFrom.value, i)
     ui.markCardDirty(props.card.id)
   }
-  dragFrom = -1
+  dragFrom.value = -1
+  dropIdx.value = -1
 }
 function setLead(imageId: string) {
   store.setLeadImage(props.card.id, imageId)
@@ -147,22 +152,43 @@ function onFolderSelected(e: Event) {
         descriptor: match[2].replace(/_/g, ' '),
       }
     } else {
-      folderImport.value = {
-        stage: 'clarify',
-        files,
-        folderName,
-        clarifyFh: '',
-        clarifyName: folderName.replace(/_/g, ' '),
+      const existingFh = props.card.collections.find(c => /^FH\d+$/i.test(c.trim())) ?? ''
+      if (existingFh) {
+        folderImport.value = {
+          stage: 'confirm',
+          files,
+          folderName,
+          fhTag: existingFh.toUpperCase(),
+          descriptor: props.card.name,
+        }
+      } else {
+        folderImport.value = {
+          stage: 'clarify',
+          files,
+          folderName,
+          clarifyFh: '',
+          clarifyName: folderName.replace(/_/g, ' '),
+        }
       }
     }
   } else {
     const existingFh = props.card.collections.find(c => /^FH\d+$/i.test(c.trim())) ?? ''
-    folderImport.value = {
-      stage: 'clarify',
-      files,
-      folderName: '',
-      clarifyFh: existingFh.toUpperCase(),
-      clarifyName: props.card.name,
+    if (existingFh) {
+      folderImport.value = {
+        stage: 'confirm',
+        files,
+        folderName: '',
+        fhTag: existingFh.toUpperCase(),
+        descriptor: props.card.name,
+      }
+    } else {
+      folderImport.value = {
+        stage: 'clarify',
+        files,
+        folderName: '',
+        clarifyFh: '',
+        clarifyName: props.card.name,
+      }
     }
   }
 }
@@ -256,22 +282,23 @@ function cancelFolderImport() {
     </div>
   </template>
 
-  <div class="thumb-rail">
+  <div class="thumb-rail" :class="{ 'thumb-rail-editing': ui.isEditing }">
     <div class="edge-arrow edge-arrow-left" :class="{ visible: canLeft }"><div class="tri"></div></div>
-    <div class="thumbs" ref="thumbsRef" @scroll="updateArrows">
+    <div class="thumbs" :class="{ 'thumbs-editing': ui.isEditing }" ref="thumbsRef" @scroll="updateArrows" @touchstart.passive="onRailTouch" @wheel.passive="onRailTouch">
 
-      <!-- Edit mode: thumb pool + add buttons -->
+      <!-- Edit mode: image pool only (add button overlays right side) -->
       <template v-if="ui.isEditing">
+        <template v-for="(img, i) in poolSorted" :key="img.id">
+        <div v-if="dragFrom >= 0 && dropIdx === i && dragFrom !== i" class="thumb-drop-indicator" />
         <div
-          v-for="(img, i) in poolSorted"
-          :key="img.id"
           class="thumb"
-          :class="{ active: ordered[index]?.id === img.id, excluded: img.included === false }"
+          :class="{ active: ordered[index]?.id === img.id, excluded: img.included === false, 'thumb-dragging': dragFrom === i }"
           draggable="true"
           title="Drag to reorder"
           @click="onThumb(ordered.findIndex(o => o.id === img.id))"
           @dragstart="onDragStart(i)"
-          @dragover.prevent
+          @dragover.prevent="onDragOver(i)"
+          @dragend="onDragEnd"
           @drop.prevent="onDrop(i)"
         >
           <img :src="img.thumbPath ?? img.path" />
@@ -302,29 +329,6 @@ function cancelFolderImport() {
             <button @click.stop="pendingDeleteId = null">No</button>
           </div>
         </div>
-
-        <!-- uploading progress -->
-        <div v-if="uploadProgress" class="thumb thumb-add">
-          <span class="thumb-add-progress">{{ uploadProgress.done }}/{{ uploadProgress.total }}</span>
-        </div>
-
-        <!-- ⊞ folder/batch upload -->
-        <template v-else>
-          <div class="thumb thumb-add" title="Add photos" @click="folderInputRef?.click()">
-            <span class="thumb-add-icon">
-              <svg width="32" height="22" viewBox="0 0 430.393 293.602" fill="none" stroke="currentColor" stroke-miterlimit="10">
-                <rect x="4.065"   y="15.863"  width="192.391" height="122.877" stroke-width="7"/>
-                <rect x="224.793" y="15.863"  width="192.391" height="122.877" stroke-width="7"/>
-                <rect x="224.793" y="167.225" width="192.391" height="122.877" stroke-width="7"/>
-                <rect x="3.5"     y="167.225" width="192.391" height="122.877" stroke-width="7"/>
-                <rect x="343.282" y="11.182"  width="77.323"  height="77.323"  stroke="none" fill="var(--panel)"/>
-                <line x1="381.012" y1="0"       x2="381.012" y2="98.761"   stroke-width="25"/>
-                <line x1="331.631" y1="49.381"  x2="430.393" y2="49.381"   stroke-width="25"/>
-              </svg>
-            </span>
-            <span class="thumb-add-label" v-if="poolSorted.length === 0">Add photos</span>
-            <input ref="folderInputRef" type="file" accept="image/jpeg,image/png,image/webp" webkitdirectory multiple style="display:none" @change="onFolderSelected" />
-          </div>
         </template>
       </template>
 
@@ -345,6 +349,28 @@ function cancelFolderImport() {
 
     </div>
     <div class="edge-arrow edge-arrow-right" :class="{ visible: canRight }"><div class="tri"></div></div>
+
+    <!-- Persistent add button — overlays right side of rail with a fade -->
+    <div
+      v-if="ui.isEditing"
+      class="thumb-add-panel"
+      :title="poolSorted.length > 0 ? 'Manage photos' : 'Add photos'"
+      @click="poolSorted.length > 0 ? ui.openGalleryManager(card.id) : folderInputRef?.click()"
+    >
+      <span class="thumb-add-icon">
+        <span v-if="uploadProgress" class="thumb-add-progress">{{ uploadProgress.done }}/{{ uploadProgress.total }}</span>
+        <svg v-else width="24" height="17" viewBox="0 0 430.393 293.602" fill="none" stroke="currentColor" stroke-miterlimit="10">
+          <rect x="4.065"   y="15.863"  width="192.391" height="122.877" stroke-width="7"/>
+          <rect x="224.793" y="15.863"  width="192.391" height="122.877" stroke-width="7"/>
+          <rect x="224.793" y="167.225" width="192.391" height="122.877" stroke-width="7"/>
+          <rect x="3.5"     y="167.225" width="192.391" height="122.877" stroke-width="7"/>
+          <rect x="343.282" y="11.182"  width="77.323"  height="77.323"  stroke="none" fill="var(--panel)"/>
+          <line x1="381.012" y1="0"       x2="381.012" y2="98.761"   stroke-width="25"/>
+          <line x1="331.631" y1="49.381"  x2="430.393" y2="49.381"   stroke-width="25"/>
+        </svg>
+      </span>
+      <input ref="folderInputRef" type="file" accept="image/jpeg,image/png,image/webp" webkitdirectory multiple style="display:none" @change="onFolderSelected" />
+    </div>
   </div>
 </template>
 
@@ -458,61 +484,101 @@ function cancelFolderImport() {
 .thumb-delete-confirm {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.82);
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: center;
   justify-content: center;
-  gap: 5px;
+  row-gap: 5px;
+  column-gap: 5px;
   border-radius: 3px;
   font-size: 11px;
   color: #fff;
-  z-index: 5;
+  z-index: 15;
+}
+.thumb-delete-confirm span {
+  width: 100%;
+  text-align: center;
+  color: var(--gold);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
 }
 .thumb-delete-confirm button {
-  border: 1px solid rgba(255,255,255,0.4);
   border-radius: 3px;
-  background: transparent;
-  color: #fff;
-  font-size: 11px;
-  padding: 2px 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 3px 10px;
   cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.thumb-delete-confirm button:first-of-type {
+  background: #5c0000;
+  color: #fff;
+  border: 1px solid #7a0000;
 }
 .thumb-delete-confirm button:first-of-type:hover {
-  background: #c0392b;
-  border-color: #c0392b;
+  background: #cc0000;
+  border-color: #ff4444;
+  box-shadow: 0 0 10px rgba(200,0,0,0.8);
+}
+.thumb-delete-confirm button:last-of-type {
+  background: #7a5800;
+  color: #fff;
+  border: 1px solid #a07800;
 }
 .thumb-delete-confirm button:last-of-type:hover {
-  border-color: rgba(255,255,255,0.8);
+  background: #ffc200;
+  border-color: #ffe870;
+  box-shadow: 0 0 10px rgba(255,194,0,0.85);
 }
-.thumb-add {
+.thumb-dragging {
+  opacity: 0.3;
+}
+.thumb-drop-indicator {
+  width: 3px;
+  height: 60px;
+  flex: 0 0 auto;
+  background: var(--gold);
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(201,162,39,0.7);
+}
+/* 20px fade zone + 60px icon + 10px right pad = 90px total
+   gradient covers only the fade zone; icon has solid background */
+.thumbs-editing {
+  padding-right: 90px;
+}
+.thumb-add-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 90px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  border: 1px dashed rgba(140,140,140,0.5);
-  background: transparent;
+  justify-content: flex-end;
+  padding: 14px 10px 24px 0;
+  background: linear-gradient(to right, transparent, var(--panel) 20px);
   cursor: pointer;
-  min-width: 60px;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-.thumb-add:hover {
-  border-color: var(--gold);
-  background: var(--gold-tint-04);
+  z-index: 5;
 }
 .thumb-add-icon {
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: var(--panel);
+  border: 1px dashed rgba(140, 140, 140, 0.5);
+  border-radius: 2px;
   color: var(--steel);
-  line-height: 1;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
-.thumb-add:hover .thumb-add-icon {
+.thumb-add-panel:hover .thumb-add-icon {
+  border-color: var(--gold);
   color: var(--gold);
-}
-.thumb-add-group {
-  display: contents;
-}
-.thumb-add-folder {
-  font-size: 16px;
+  background: var(--gold-tint-04);
 }
 .folder-import-banner {
   display: flex;
@@ -580,21 +646,16 @@ function cancelFolderImport() {
 }
 .fi-cancel:hover { color: var(--paper); }
 .fi-has-errors { border-color: var(--gold); }
-.thumb-add-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--steel);
-  margin-top: 4px;
-}
-.thumb-add:hover .thumb-add-label {
-  color: var(--gold);
+/* In edit mode, right chevron moves to overlap the fade zone, above the add panel */
+.thumb-rail-editing .edge-arrow-right {
+  right: 70px;
+  z-index: 6;
 }
 .thumb-add-progress {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--gold);
   letter-spacing: 0.05em;
+  text-align: center;
 }
 </style>

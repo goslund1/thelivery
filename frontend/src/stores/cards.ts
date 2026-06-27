@@ -162,6 +162,16 @@ export const useCardsStore = defineStore('cards', () => {
     c.images = imgs
   }
 
+  function restoreImageOrders(id: string, snapshot: { id: string; order: number }[]) {
+    const c = byId(id)
+    if (!c) return
+    const orderMap = new Map(snapshot.map(s => [s.id, s.order]))
+    for (const img of c.images) {
+      const o = orderMap.get(img.id)
+      if (o !== undefined) img.order = o
+    }
+  }
+
   function removeImage(cardId: string, imageId: string) {
     const c = byId(cardId)
     if (!c) return
@@ -181,11 +191,12 @@ export const useCardsStore = defineStore('cards', () => {
     path: string,
     thumbPath?: string,
     stagePath?: string,
+    included = true,
   ) {
     const c = byId(cardId)
     if (!c) return
     const maxOrder = c.images.reduce((m, i) => Math.max(m, i.order), -1)
-    c.images.push({ id: `${cardId}-${Date.now()}`, path, thumbPath, stagePath, order: maxOrder + 1, included: true })
+    c.images.push({ id: `${cardId}-${Date.now()}`, path, thumbPath, stagePath, order: maxOrder + 1, included })
   }
 
   function setColor(id: string, key: string, color: string | undefined) {
@@ -235,7 +246,7 @@ export const useCardsStore = defineStore('cards', () => {
     cards, loading, error,
     byId, load, save, deleteCard, createNewCard,
     takeSnapshot, restoreSnapshot, setFigure,
-    toggleFavorite, setLeadImage, reorderImages,
+    toggleFavorite, setLeadImage, reorderImages, restoreImageOrders,
     removeImage, toggleImageIncluded, addImageToPool,
     setColor,
     addTag, removeTag, addCollection, removeCollection,

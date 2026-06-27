@@ -12,9 +12,9 @@ const ui = useUiStore()
       </div>
       <p class="exit-confirm-text">You have unsaved changes. What would you like to do?</p>
       <div class="exit-confirm-options">
-        <button :disabled="ui.saving" @click="ui.confirmSaveAndExit()">Save and Exit</button>
-        <button @click="ui.confirmDiscardAndExit()">Discard and Exit</button>
-        <button @click="ui.cancelExit()">Continue Editing</button>
+        <button id="exit-save-btn" :disabled="ui.saving" @click="ui.confirmSaveAndExit()">Save and Exit</button>
+        <button id="exit-continue-btn" @click="ui.cancelExit()">Continue Editing</button>
+        <button id="exit-discard-btn" @click="ui.confirmDiscardAndExit()">Discard and Exit</button>
       </div>
     </div>
   </div>

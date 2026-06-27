@@ -14,6 +14,7 @@ import LoginModal from './components/LoginModal.vue'
 import UserSettingsModal from './components/UserSettingsModal.vue'
 import CustomTip from './components/CustomTip.vue'
 import NewCardModal from './components/NewCardModal.vue'
+import LegendConfirmModal from './components/LegendConfirmModal.vue'
 
 const store = useCardsStore()
 const ui = useUiStore()
@@ -61,7 +62,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         v-for="c in store.cards"
         :key="c.id"
         :card="c"
-        v-show="ui.isCardVisible(c.collections, c.isFavorite)"
+        v-show="c.isLegend ? ui.isEditing : ui.isCardVisible(c.collections, c.isFavorite)"
       />
     </template>
   </div>
@@ -73,5 +74,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
   <LoginModal />
   <UserSettingsModal />
   <NewCardModal />
+  <LegendConfirmModal />
   <CustomTip />
 </template>

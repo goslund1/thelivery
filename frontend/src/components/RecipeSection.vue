@@ -60,6 +60,12 @@ function viewSteppedValue(partName: string): number {
   }
   return 0
 }
+function viewPartCost(p: UpgJPart): number | null {
+  if (!p.tierCosts || !Array.isArray(p.tiers)) return null
+  const tier = viewInstalledTier(p.tiers)
+  if (!tier || tier === 'Stock') return null
+  return p.tierCosts[tier] ?? null
+}
 function viewSteppedLabel(partName: string): string {
   const v = viewSteppedValue(partName)
   if (v === 0) return `Stock ${partName}`
@@ -240,7 +246,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         <button class="kit-preset-trigger" type="button" @click="showPresetMenu = !showPresetMenu">
           {{ activeName || '— no preset —' }}
         </button>
-<div class="kit-preset-menu" v-show="showPresetMenu">
+        <div class="kit-preset-menu" v-show="showPresetMenu">
           <div v-if="presets.length" class="up-preset-list">
             <div v-for="(p, i) in presets" :key="i" class="up-preset-item">
               <button class="up-preset-apply" type="button" @click="applyPreset(p)">{{ p.name }}</button>
@@ -277,7 +283,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
               <ul class="kit-list">
                 <template v-for="p in cat.parts" :key="p.part">
                   <li v-if="Array.isArray(p.tiers)" :class="{ 'kit-item--buy': isCustomTier(p.tiers) }">
-                    {{ viewPartLabel(p.part, p.tiers) }}
+                    {{ viewPartLabel(p.part, p.tiers) }}<span v-if="viewPartCost(p) !== null" class="kit-item-cost"> · CR {{ viewPartCost(p)!.toLocaleString() }}</span>
                   </li>
                   <li v-else-if="p.tiers === 'stepped' && STEPPED_SET.has(p.part)" :class="{ 'kit-item--buy': viewSteppedValue(p.part) !== 0 }">
                     {{ viewSteppedLabel(p.part) }}
@@ -317,18 +323,13 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 <style scoped>
 /* Dropdown for each core-spec cell */
 .spec-select {
-  appearance: none;
-  -webkit-appearance: none;
-  background: color-mix(in srgb, var(--panel) 85%, #000);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23c9a227'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 5px center;
+  background: none;
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--text);
+  color: inherit;
   font-family: inherit;
   font-size: inherit;
-  padding: 1px 18px 1px 4px;
+  padding: 1px 4px;
   cursor: pointer;
   width: 100%;
   box-sizing: border-box;
@@ -337,12 +338,19 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   outline: 1px solid var(--gold);
   outline-offset: 1px;
 }
+.kit-item-cost {
+  color: var(--gold);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+}
 /* Share code input: invisible field, styled to match the <b> it replaces */
 .share-code-input {
   background: none;
   border: none;
   border-bottom: 1px solid var(--panel-edge);
-  color: var(--text);
+  color: inherit;
   font-family: inherit;
   font-size: inherit;
   font-weight: bold;
@@ -383,7 +391,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   flex: 1;
   background: none;
   border: none;
-  color: var(--text);
+  color: var(--steel);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.04em;
@@ -433,16 +441,16 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 .up-preset-item { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
 .up-preset-apply {
   flex: 1; background: none; border: none; text-align: left;
-  color: var(--text); font-size: 12px; padding: 5px 4px; cursor: pointer; border-radius: 3px;
+  color: var(--steel); font-size: 12px; padding: 5px 4px; cursor: pointer; border-radius: 3px;
 }
 .up-preset-apply:hover { color: var(--gold); }
 .up-preset-del {
-  background: none; border: none; color: var(--text); opacity: 0.4;
+  background: none; border: none; color: var(--steel); opacity: 0.4;
   font-size: 14px; cursor: pointer; padding: 2px 4px; line-height: 1;
 }
 .up-preset-del:hover { opacity: 1; color: #e03030; }
 .up-preset-divider { height: 1px; background: var(--panel-edge); margin: 4px 8px; }
-.up-preset-empty { font-size: 11px; color: var(--text); opacity: 0.4; padding: 4px 12px 8px; }
+.up-preset-empty { font-size: 11px; color: var(--steel); opacity: 0.4; padding: 4px 12px 8px; }
 .up-preset-save-link {
   background: none; border: none; color: var(--gold); font-size: 11px;
   padding: 4px 12px; cursor: pointer; width: 100%; text-align: left; opacity: 0.8;
@@ -454,18 +462,18 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   background: color-mix(in srgb, var(--panel) 70%, #000);
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--text); font-size: 11px; padding: 3px 6px;
+  color: var(--paper); font-size: 11px; padding: 3px 6px;
 }
 .up-preset-confirm {
   background: none; border: 1px solid var(--gold); border-radius: 3px;
   color: var(--gold); font-size: 10px; padding: 3px 8px; cursor: pointer;
 }
 .up-preset-cancel {
-  background: none; border: none; color: var(--text); opacity: 0.5;
+  background: none; border: none; color: var(--steel); opacity: 0.5;
   font-size: 14px; padding: 2px 4px; cursor: pointer; line-height: 1;
 }
 .up-preset-clear {
-  background: none; border: none; color: var(--text); font-size: 11px;
+  background: none; border: none; color: var(--steel); font-size: 11px;
   opacity: 0.4; cursor: pointer; padding: 5px 12px; width: 100%; text-align: left;
 }
 .up-preset-clear:hover { opacity: 0.9; color: #e03030; }

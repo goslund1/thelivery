@@ -88,6 +88,26 @@ export const useUiStore = defineStore('ui', () => {
   const exitConfirmOpen = ref(false)
   const saving = ref(false)
 
+  // Legend card (catalog 000) — changes require explicit confirmation before saving
+  const legendConfirmOpen = ref(false)
+  let _legendConfirmResolve: ((confirmed: boolean) => void) | null = null
+  function requestLegendConfirm(): Promise<boolean> {
+    return new Promise(resolve => {
+      _legendConfirmResolve = resolve
+      legendConfirmOpen.value = true
+    })
+  }
+  function confirmLegendUpdate() {
+    legendConfirmOpen.value = false
+    _legendConfirmResolve?.(true)
+    _legendConfirmResolve = null
+  }
+  function cancelLegendUpdate() {
+    legendConfirmOpen.value = false
+    _legendConfirmResolve?.(false)
+    _legendConfirmResolve = null
+  }
+
   // Login modal
   const loginOpen = ref(false)
   let loginThenEdit = false // whether to enter edit mode after a successful login
@@ -133,8 +153,8 @@ export const useUiStore = defineStore('ui', () => {
 
   // Chip picker (add a tag/collection to a card)
   const chipPicker = ref<{ cardId: string; type: 'tag' | 'collection' } | null>(null)
-  // Image picker (set a section's figure image, or upload). `sectionKey` says where.
-  const imagePicker = ref<{ cardId: string; sectionKey: string } | null>(null)
+  // Image picker: pick mode (sectionKey set) or manage mode (sectionKey absent).
+  const imagePicker = ref<{ cardId: string; sectionKey?: string } | null>(null)
 
   // Apply theme + text size to <html> reactively (CSS variables drive the rest).
   watch(theme, (t) => document.documentElement.setAttribute('data-theme', t), { immediate: true })
@@ -208,21 +228,44 @@ export const useUiStore = defineStore('ui', () => {
     }
   }
   // Save every card that still has unsaved changes.
+  // If the legend card (000) is dirty, pause and confirm before saving it.
   async function saveAllDirty() {
+    const cardsStore = useCardsStore()
+    const legendId = cardsStore.cards.find(c => c.isLegend)?.id
+    const allIds = [...dirtyIds.value]
+    const regularIds = legendId ? allIds.filter(id => id !== legendId) : allIds
+    const legendIsDirty = !!legendId && allIds.includes(legendId)
+
     saving.value = true
     try {
-      const ids = [...dirtyIds.value]
-      await Promise.all(ids.map((id) => useCardsStore().save(id)))
-      clearAllDirty()
+      await Promise.all(regularIds.map(id => cardsStore.save(id)))
+      for (const id of regularIds) clearCardDirty(id)
     } catch (e) {
       if (!handleAuthError(e)) throw e
     } finally {
       saving.value = false
     }
+
+    if (legendIsDirty && legendId) {
+      const confirmed = await requestLegendConfirm()
+      if (confirmed) {
+        saving.value = true
+        try {
+          await cardsStore.save(legendId)
+          clearCardDirty(legendId)
+        } catch (e) {
+          if (!handleAuthError(e)) throw e
+        } finally {
+          saving.value = false
+        }
+      } else {
+        clearCardDirty(legendId)
+      }
+    }
   }
   async function confirmSaveAndExit() {
-    await saveAllDirty()
     exitConfirmOpen.value = false
+    await saveAllDirty()
     isEditing.value = false
   }
   async function confirmDiscardAndExit() {
@@ -268,6 +311,9 @@ export const useUiStore = defineStore('ui', () => {
   function openImagePicker(cardId: string, sectionKey: string) {
     imagePicker.value = { cardId, sectionKey }
   }
+  function openGalleryManager(cardId: string) {
+    imagePicker.value = { cardId }
+  }
   function closeImagePicker() {
     imagePicker.value = null
   }
@@ -279,6 +325,7 @@ export const useUiStore = defineStore('ui', () => {
     favoritesOnly, disabledCollections,
     isCardVisible, toggleCollection,
     exitConfirmOpen, saving,
+    legendConfirmOpen, confirmLegendUpdate, cancelLegendUpdate,
     loginOpen, openLogin, closeLogin, onLoginSuccess,
     settingsOpen, openSettings, closeSettings,
     newCardOpen, openNewCard, closeNewCard,
@@ -289,6 +336,6 @@ export const useUiStore = defineStore('ui', () => {
     confirmSaveAndExit, confirmDiscardAndExit, cancelExit,
     openLightbox, navigateLightbox, closeLightbox,
     openChipPicker, closeChipPicker,
-    openImagePicker, closeImagePicker,
+    openImagePicker, openGalleryManager, closeImagePicker,
   }
 })

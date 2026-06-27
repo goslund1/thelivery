@@ -88,8 +88,24 @@ export const useCardsStore = defineStore('cards', () => {
   async function save(id: string) {
     const c = byId(id)
     if (!c) return
+
+    // Paths present in the last save but absent now were deleted — collect before saving.
+    const snap = snapshots[id]
+    const orphans: string[] = []
+    if (snap) {
+      const currentPaths = new Set(
+        c.images.flatMap(i => [i.path, i.thumbPath, i.stagePath].filter(Boolean) as string[])
+      )
+      for (const img of (JSON.parse(snap) as Card).images) {
+        for (const p of [img.path, img.thumbPath, img.stagePath]) {
+          if (p && !currentPaths.has(p)) orphans.push(p)
+        }
+      }
+    }
+
     await api.saveCard(c)
-    snapshots[id] = JSON.stringify(c) // saved state becomes the new baseline
+    snapshots[id] = JSON.stringify(c)
+    if (orphans.length) await api.deleteImages(orphans).catch(() => {})
   }
 
   // Capture a baseline for every card (called when entering edit mode).

@@ -38,6 +38,7 @@ export interface ForzaRecipeSection {
   label: string
   tuneName: string
   shareCode: string
+  showStock?: boolean
   coreSpecs: Record<string, string>
   upgrades: UpgradeCategory[]
   adjustments: Adjustment[]
@@ -56,6 +57,7 @@ export interface Card {
   tags: string[]
   images: CardImage[]
   sections: Section[]
+  colors?: Record<string, string>  // per-field color overrides, e.g. { name: '#ff0000' }
 }
 
 export type Theme = 'dark' | 'light' | 'rainbow' | 'clouds' | 'stormy'

@@ -1,37 +1,102 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useUiStore } from '../stores/ui'
 import { hideTip, refreshTip } from '../composables/tooltip'
 
 const ui = useUiStore()
-const unsavedCount = computed(() => ui.dirtyIds.size)
+const editCount = computed(() => ui.editCount)
+const hasUnsaved = computed(() => ui.dirtyIds.size > 0)
 
 function onExit() {
   hideTip()
   ui.requestExit()
 }
 
-// Cycle through dirty cards on each click, scrolling each into view in turn.
+// Cycle through every individually-typed field across all dirty cards.
 const cycleIndex = ref(0)
-function onCycleDirty() {
-  const ids = [...ui.dirtyIds]
-  if (!ids.length) return
-  const id = ids[cycleIndex.value % ids.length]
-  cycleIndex.value = (cycleIndex.value + 1) % ids.length
-  const el = document.getElementById(`card-${id}`)
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  refreshTip(cycleTooltip.value)
+const lastJumpIndex = ref(-1)
+let _highlightTimer: ReturnType<typeof setTimeout> | null = null
+
+// When the user manually focuses a known edit field, sync the pill position.
+watch(() => ui.currentEditIndex, (idx) => {
+  if (idx >= 0) lastJumpIndex.value = idx
+})
+
+// Reset counters when saved cards remove entries from the edit list.
+watch(editCount, (next, prev) => {
+  if (next < (prev ?? 0)) {
+    cycleIndex.value = 0
+    lastJumpIndex.value = -1
+  }
+})
+
+async function onCycleDirty() {
+  const count = ui.editCount
+  if (!count) return
+
+  const idx = cycleIndex.value % count
+  lastJumpIndex.value = idx
+  cycleIndex.value = (cycleIndex.value + 1) % count
+
+  const entry = ui.getEditAt(idx)
+  if (!entry) return
+  const target = entry.el as HTMLElement
+
+  // Open a collapsed <details> section before measuring position
+  const details = target.closest('details') as HTMLDetailsElement | null
+  if (details && !details.open) {
+    details.querySelector('summary')?.click()
+    await nextTick()
+  }
+
+  // Center in viewport — more predictable than scrollIntoView on a tall page
+  const rect = target.getBoundingClientRect()
+  const midpoint = rect.top + rect.height / 2
+  const delta = midpoint - window.innerHeight / 2
+  if (Math.abs(delta) > 4) {
+    window.scrollBy({ top: delta, behavior: 'smooth' })
+  }
+
+  // Focus and restore cursor
+  if (typeof target.focus === 'function') {
+    target.focus({ preventScroll: true })
+    if (entry.range) {
+      try {
+        const sel = window.getSelection()
+        sel?.removeAllRanges()
+        sel?.addRange(entry.range)
+      } catch {
+        // Range stale — leave cursor where focus placed it
+      }
+    }
+  }
+
+  // Pulse gold highlight ring
+  if (_highlightTimer !== null) clearTimeout(_highlightTimer)
+  target.classList.remove('edit-jump-target')
+  void target.offsetWidth // force reflow to restart animation
+  target.classList.add('edit-jump-target')
+  _highlightTimer = setTimeout(() => {
+    target.classList.remove('edit-jump-target')
+    _highlightTimer = null
+  }, 1600)
+
+  refreshTip('Jump to next edit')
 }
 
-const cycleTooltip = computed(() => {
-  const n = unsavedCount.value
-  if (n === 0) return 'All saved'
-  if (n === 1) return 'Jump to unsaved card'
-  return `Jump to unsaved (${cycleIndex.value % n + 1} of ${n})`
+const pillLabel = computed(() => {
+  if (lastJumpIndex.value < 0) return `${editCount.value} edit${editCount.value === 1 ? '' : 's'}`
+  return `Edit ${lastJumpIndex.value + 1} / ${editCount.value}`
 })
 </script>
 
 <template>
+  <!-- Pill at bottom-center showing edit position and Save All -->
+  <div class="edit-pill" v-show="ui.isEditing && editCount > 0">
+    <span class="edit-pill-label">{{ pillLabel }}</span>
+    <button class="edit-pill-save" type="button" @click="ui.saveAllDirty">Save All</button>
+  </div>
+
   <div class="tl-dock" v-show="ui.isEditing">
     <span class="tl-mode-label">EDIT</span>
 
@@ -47,12 +112,12 @@ const cycleTooltip = computed(() => {
       </svg>
     </button>
 
-    <!-- Yellow: cycle through unsaved cards — i-cursor signals "you're editing" -->
+    <!-- Yellow: cycle through every edited field — i-cursor signals "you're editing" -->
     <button
       class="tl-btn tl-yellow"
-      :class="{ 'tl-pulse': unsavedCount > 0, 'tl-idle': unsavedCount === 0 }"
-      aria-label="Jump to unsaved card"
-      v-tip="() => cycleTooltip"
+      :class="{ 'tl-pulse': hasUnsaved, 'tl-idle': !hasUnsaved }"
+      aria-label="Jump to next edit"
+      v-tip="'Jump to next edit'"
       @click="onCycleDirty"
     >
       <svg class="icon-ibeam" viewBox="0 0 256 512" fill="white">
@@ -67,8 +132,10 @@ const cycleTooltip = computed(() => {
       v-tip="'New card'"
       @click="ui.openNewCard()"
     >
-      <svg class="icon-arrow" viewBox="0 0 512 512" fill="white">
-        <path d="M352 0c-12.9 0-24.6 7.8-29.6 19.8s-2.2 25.7 6.9 34.9L370.7 96 201.4 265.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L416 141.3l41.4 41.4c9.2 9.2 22.9 11.9 34.9 6.9s19.8-16.6 19.8-29.6l0-128c0-17.7-14.3-32-32-32L352 0zM80 32C35.8 32 0 67.8 0 112L0 432c0 44.2 35.8 80 80 80l320 0c44.2 0 80-35.8 80-80l0-112c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 112c0 8.8-7.2 16-16 16L80 448c-8.8 0-16-7.2-16-16l0-320c0-8.8 7.2-16 16-16l112 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L80 32z"/>
+      <svg class="icon-arrow" viewBox="0 0 20 20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M 9 2 L 2 2 L 2 18 L 18 18 L 18 9"/>
+        <line x1="10" y1="5.5" x2="17" y2="5.5"/>
+        <line x1="13.5" y1="2.5" x2="13.5" y2="8.5"/>
       </svg>
     </button>
 
@@ -77,6 +144,50 @@ const cycleTooltip = computed(() => {
 </template>
 
 <style scoped>
+.edit-pill {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px 7px 18px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--gold);
+  white-space: nowrap;
+  pointer-events: auto;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.4);
+}
+.edit-pill-label strong {
+  font-weight: 700;
+}
+.edit-pill-save {
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent);
+  border-radius: 999px;
+  color: var(--gold);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 3px 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.edit-pill-save:hover {
+  background: var(--gold);
+  color: #111;
+  border-color: var(--gold);
+}
+
 .tl-dock {
   position: fixed;
   right: max(0px, calc((100vw - 980px) / 2));
@@ -87,8 +198,8 @@ const cycleTooltip = computed(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 8px 10px;
-  background: var(--panel-bg, rgba(30,30,30,0.92));
-  border: 1px solid var(--panel-edge, rgba(255,255,255,0.12));
+  background: color-mix(in srgb, var(--panel) 69%, transparent);
+  border: 1px solid var(--panel-edge);
   border-right: none;
   border-radius: 10px 0 0 10px;
   backdrop-filter: blur(8px);
@@ -100,19 +211,19 @@ const cycleTooltip = computed(() => {
   font-size: 8px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--gold, #c9a227);
+  color: var(--gold);
   opacity: 0.75;
   pointer-events: none;
   width: 100%;
   text-align: center;
   padding-bottom: 2px;
-  border-bottom: 1px solid var(--panel-edge, rgba(255,255,255,0.1));
+  border-bottom: 1px solid var(--panel-edge);
 }
 .tl-mode-bottom {
   padding-bottom: 0;
   padding-top: 2px;
   border-bottom: none;
-  border-top: 1px solid var(--panel-edge, rgba(255,255,255,0.1));
+  border-top: 1px solid var(--panel-edge);
 }
 
 .tl-btn {
@@ -141,10 +252,11 @@ const cycleTooltip = computed(() => {
   filter: none;
 }
 .tl-yellow.tl-idle {
-  opacity: 0.6;
   cursor: default;
 }
 .tl-yellow.tl-idle:hover {
+  background: #9a7400;
+  border-color: #b89000;
   transform: none;
   box-shadow: none;
 }
@@ -158,9 +270,9 @@ const cycleTooltip = computed(() => {
   color: #fff;
 }
 .tl-red:hover {
-  background: #e74c3c;
-  border-color: #ff6b5b;
-  box-shadow: 0 0 12px rgba(231,76,60,0.7);
+  background: #e82810;
+  border-color: #ff4830;
+  box-shadow: 0 0 12px rgba(232,40,16,0.75);
 }
 .tl-red svg {
   width: 14px;
@@ -168,8 +280,8 @@ const cycleTooltip = computed(() => {
 }
 
 .tl-yellow {
-  background: #e6a800;
-  border-color: #ffd040;
+  background: #7a5800;
+  border-color: #a07800;
   color: #fff;
 }
 .tl-yellow:hover {
@@ -187,9 +299,9 @@ const cycleTooltip = computed(() => {
   border-color: #1e7a3a;
 }
 .tl-green:hover {
-  background: #27ae60;
-  border-color: #4cd68a;
-  box-shadow: 0 0 12px rgba(39,174,96,0.7);
+  background: #16c24a;
+  border-color: #34e068;
+  box-shadow: 0 0 12px rgba(22,194,74,0.75);
 }
 .icon-arrow {
   width: 17px;

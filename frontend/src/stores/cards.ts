@@ -19,11 +19,24 @@ export const useCardsStore = defineStore('cards', () => {
     return cards.value.find((c) => c.id === id)
   }
 
+  function ensureSections(card: Card): Card {
+    const keys = new Set(card.sections.map(s => s.key))
+    const missing: Card['sections'] = []
+    if (!keys.has('inspiration'))
+      missing.push({ type: 'text', key: 'inspiration', label: 'Inspiration', body: '' })
+    if (!keys.has('notes'))
+      missing.push({ type: 'text', key: 'notes', label: 'Design Notes', body: '' })
+    if (!keys.has('recipe'))
+      missing.push({ type: 'forza_recipe', key: 'recipe', label: 'Tune / Build Parts', tuneName: '', shareCode: '', coreSpecs: {}, upgrades: [], adjustments: [] })
+    if (missing.length === 0) return card
+    return { ...card, sections: [...card.sections, ...missing] }
+  }
+
   async function load() {
     loading.value = true
     error.value = null
     try {
-      cards.value = await api.listCards()
+      cards.value = (await api.listCards()).map(ensureSections)
     } catch (e) {
       error.value = (e as Error).message
     } finally {
@@ -31,7 +44,17 @@ export const useCardsStore = defineStore('cards', () => {
     }
   }
 
-  async function createNewCard(fields: { name: string; subtitle: string; collections: string[] }): Promise<Card> {
+  async function createNewCard(fields: {
+    name: string
+    subtitle: string
+    collections: string[]
+    tags?: string[]
+    inspirationBody?: string
+    notesBody?: string
+    tuneName?: string
+    shareCode?: string
+    coreSpecs?: Record<string, string>
+  }): Promise<Card> {
     const maxCatalog = cards.value.reduce((m, c) => Math.max(m, c.catalogNumber), 0)
     const nextNum = maxCatalog + 1
     const newCard: Card = {
@@ -42,13 +65,24 @@ export const useCardsStore = defineStore('cards', () => {
       isFavorite: false,
       isLegend: false,
       collections: fields.collections,
-      tags: [],
+      tags: fields.tags ?? [],
       images: [],
-      sections: [],
+      sections: [
+        { type: 'text', key: 'inspiration', label: 'Inspiration', body: fields.inspirationBody ?? '' },
+        { type: 'text', key: 'notes', label: 'Design Notes', body: fields.notesBody ?? '' },
+        { type: 'forza_recipe', key: 'recipe', label: 'Tune / Build Parts', tuneName: fields.tuneName ?? '', shareCode: fields.shareCode ?? '', coreSpecs: fields.coreSpecs ?? {}, upgrades: [], adjustments: [] },
+      ],
     }
     const created = await api.createCard(newCard)
     cards.value.push(created)
     return created
+  }
+
+  async function deleteCard(id: string) {
+    await api.deleteCard(id)
+    const idx = cards.value.findIndex(c => c.id === id)
+    if (idx !== -1) cards.value.splice(idx, 1)
+    delete snapshots[id]
   }
 
   async function save(id: string) {
@@ -154,6 +188,14 @@ export const useCardsStore = defineStore('cards', () => {
     c.images.push({ id: `${cardId}-${Date.now()}`, path, thumbPath, stagePath, order: maxOrder + 1, included: true })
   }
 
+  function setColor(id: string, key: string, color: string | undefined) {
+    const c = byId(id)
+    if (!c) return
+    if (!c.colors) c.colors = {}
+    if (color) c.colors[key] = color
+    else delete c.colors[key]
+  }
+
   function addTag(id: string, value: string) {
     const c = byId(id)
     if (c && value && !c.tags.includes(value)) c.tags.push(value)
@@ -191,10 +233,11 @@ export const useCardsStore = defineStore('cards', () => {
 
   return {
     cards, loading, error,
-    byId, load, save, createNewCard,
+    byId, load, save, deleteCard, createNewCard,
     takeSnapshot, restoreSnapshot, setFigure,
     toggleFavorite, setLeadImage, reorderImages,
     removeImage, toggleImageIncluded, addImageToPool,
+    setColor,
     addTag, removeTag, addCollection, removeCollection,
     allTagValues, allCollectionValues, allSectionKeys,
   }

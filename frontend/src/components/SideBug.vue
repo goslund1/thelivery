@@ -89,9 +89,25 @@ function onEditClick() {
   ui.toggleEdit()
 }
 // Expand/collapse-all stays in place → sync its visible tooltip text (Rule B).
+// Also anchors scroll so the card nearest the top of the viewport doesn't jump.
 function onToggleAll() {
+  const anchorEl = Array.from(document.querySelectorAll('.card')).reduce<Element | null>(
+    (best, c) => {
+      const r = c.getBoundingClientRect()
+      if (r.bottom <= 0 || r.top >= window.innerHeight) return best
+      if (!best) return c
+      return Math.abs(r.top) < Math.abs(best.getBoundingClientRect().top) ? c : best
+    }, null)
+  const beforeTop = anchorEl ? anchorEl.getBoundingClientRect().top : null
+
   ui.toggleAll()
-  refreshTip(ui.allExpanded ? 'Collapse All Sections' : 'Expand All Sections')
+
+  nextTick(() => {
+    if (anchorEl && beforeTop !== null) {
+      window.scrollBy(0, anchorEl.getBoundingClientRect().top - beforeTop)
+    }
+    refreshTip(ui.allExpanded ? 'Collapse All Sections' : 'Expand All Sections')
+  })
 }
 </script>
 

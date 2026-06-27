@@ -32,9 +32,18 @@ export const useUiStore = defineStore('ui', () => {
     const s = new Set(dirtyIds.value)
     s.delete(id)
     dirtyIds.value = s
+    const before = _editList.length
+    _editList.splice(0, _editList.length, ..._editList.filter(e => e.cardId !== id))
+    if (_editList.length !== before) {
+      editCount.value = _editList.length
+      currentEditIndex.value = -1
+    }
   }
   function clearAllDirty() {
     dirtyIds.value = new Set()
+    _editList.splice(0)
+    editCount.value = 0
+    currentEditIndex.value = -1
   }
 
   // --- Expand/collapse state --------------------------------------------------
@@ -102,6 +111,35 @@ export const useUiStore = defineStore('ui', () => {
     { immediate: true },
   )
   watch(isEditing, (on) => document.body.classList.toggle('editing-mode', on))
+
+  function onBeforeUnload(e: BeforeUnloadEvent) { e.preventDefault() }
+  watch(hasUnsavedChanges, (dirty) => {
+    if (dirty) window.addEventListener('beforeunload', onBeforeUnload)
+    else window.removeEventListener('beforeunload', onBeforeUnload)
+  })
+
+  // Flat ordered list of every contenteditable that received an input during this
+  // edit session, plus each field's last cursor position. Plain JS — DOM refs
+  // must NOT enter Vue's reactive system (Vue proxying breaks Range objects).
+  const _editList: Array<{ el: Element; cardId: string; range: Range | null }> = []
+  const editCount = ref(0)
+  const currentEditIndex = ref(-1) // index in _editList of the currently-focused entry
+
+  function addToEditList(cardId: string, el: Element) {
+    if (_editList.some(e => e.el === el)) return
+    _editList.push({ el, cardId, range: null })
+    editCount.value = _editList.length
+  }
+  function saveRange(el: Element, range: Range | null) {
+    const entry = _editList.find(e => e.el === el)
+    if (entry) entry.range = range
+  }
+  function setFocusedEdit(el: Element) {
+    currentEditIndex.value = _editList.findIndex(e => e.el === el)
+  }
+  function getEditAt(idx: number): { el: Element; cardId: string; range: Range | null } | null {
+    return _editList[idx] ?? null
+  }
 
   // --- Edit lifecycle ---------------------------------------------------------
   function enterEdit() {
@@ -200,6 +238,7 @@ export const useUiStore = defineStore('ui', () => {
     newCardOpen, openNewCard, closeNewCard,
     lightboxSrc, lightboxOriginalSrc, lightboxImages, lightboxIndex, chipPicker, imagePicker,
     THEMES,
+    editCount, currentEditIndex, addToEditList, saveRange, setFocusedEdit, getEditAt,
     enterEdit, requestExit, toggleEdit, saveCard, saveAllDirty,
     confirmSaveAndExit, confirmDiscardAndExit, cancelExit,
     openLightbox, navigateLightbox, closeLightbox,

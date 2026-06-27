@@ -77,6 +77,7 @@ function toggleIncluded(imageId: string) {
 
 // ── Upload ────────────────────────────────────────────────────────────────────
 const uploadProgress = ref<{ done: number; total: number } | null>(null)
+const pendingDeleteId = ref<string | null>(null)
 const uploadResult = ref<{ added: number; failed: number } | null>(null)
 
 async function runUpload(
@@ -127,31 +128,45 @@ function onFolderSelected(e: Event) {
   // Only JPEG/PNG/WebP — HEIC (iPhone default) not supported by the backend decoder
   const files = all
     .filter(f => SUPPORTED_TYPES.has(f.type) || (!HEIC_EXTS.test(f.name) && f.type.startsWith('image/')))
-    .sort((a, b) => a.webkitRelativePath.localeCompare(b.webkitRelativePath))
+    .sort((a, b) => (a.webkitRelativePath || a.name).localeCompare(b.webkitRelativePath || b.name))
   const skipped = all.filter(f => !files.includes(f) && (f.type.startsWith('image/') || /\.(heic|heif|avif)$/i.test(f.name)))
   if (skipped.length) console.warn(`[gallery] skipped ${skipped.length} unsupported file(s) (HEIC/HEIF/AVIF). Export as JPEG from Photos first.`)
   if (!files.length) return
 
-  const folderName = files[0].webkitRelativePath.split('/')[0]
-  const match = FOLDER_RE.exec(folderName)
-  if (match) {
-    folderImport.value = {
-      stage: 'confirm',
-      files,
-      folderName,
-      fhTag: match[1].toUpperCase(),
-      descriptor: match[2].replace(/_/g, ' '),
+  // webkitRelativePath is only populated when a whole folder is selected.
+  // Individual file picks won't have it, so fall back to clarify pre-filled from the card.
+  const folderName = files[0].webkitRelativePath?.split('/')[0] ?? ''
+  if (folderName) {
+    const match = FOLDER_RE.exec(folderName)
+    if (match) {
+      folderImport.value = {
+        stage: 'confirm',
+        files,
+        folderName,
+        fhTag: match[1].toUpperCase(),
+        descriptor: match[2].replace(/_/g, ' '),
+      }
+    } else {
+      folderImport.value = {
+        stage: 'clarify',
+        files,
+        folderName,
+        clarifyFh: '',
+        clarifyName: folderName.replace(/_/g, ' '),
+      }
     }
   } else {
+    const existingFh = props.card.collections.find(c => /^FH\d+$/i.test(c.trim())) ?? ''
     folderImport.value = {
       stage: 'clarify',
       files,
-      folderName,
-      clarifyFh: '',
-      clarifyName: folderName.replace(/_/g, ' '),
+      folderName: '',
+      clarifyFh: existingFh.toUpperCase(),
+      clarifyName: props.card.name,
     }
   }
 }
+
 
 async function confirmFolderImport() {
   const fi = folderImport.value
@@ -278,8 +293,13 @@ function cancelFolderImport() {
             <button
               class="thumb-ctrl thumb-ctrl-del"
               title="Remove from card"
-              @click.stop="store.removeImage(card.id, img.id); ui.markCardDirty(card.id)"
+              @click.stop="pendingDeleteId = img.id"
             >✕</button>
+          </div>
+          <div v-if="pendingDeleteId === img.id" class="thumb-delete-confirm" @click.stop>
+            <span>Remove?</span>
+            <button @click.stop="store.removeImage(card.id, img.id); ui.markCardDirty(card.id); pendingDeleteId = null">Yes</button>
+            <button @click.stop="pendingDeleteId = null">No</button>
           </div>
         </div>
 
@@ -291,9 +311,19 @@ function cancelFolderImport() {
         <!-- ⊞ folder/batch upload -->
         <template v-else>
           <div class="thumb thumb-add" title="Add photos" @click="folderInputRef?.click()">
-            <span class="thumb-add-icon">⊞</span>
+            <span class="thumb-add-icon">
+              <svg width="32" height="22" viewBox="0 0 430.393 293.602" fill="none" stroke="currentColor" stroke-miterlimit="10">
+                <rect x="4.065"   y="15.863"  width="192.391" height="122.877" stroke-width="7"/>
+                <rect x="224.793" y="15.863"  width="192.391" height="122.877" stroke-width="7"/>
+                <rect x="224.793" y="167.225" width="192.391" height="122.877" stroke-width="7"/>
+                <rect x="3.5"     y="167.225" width="192.391" height="122.877" stroke-width="7"/>
+                <rect x="343.282" y="11.182"  width="77.323"  height="77.323"  stroke="none" fill="var(--panel)"/>
+                <line x1="381.012" y1="0"       x2="381.012" y2="98.761"   stroke-width="25"/>
+                <line x1="331.631" y1="49.381"  x2="430.393" y2="49.381"   stroke-width="25"/>
+              </svg>
+            </span>
             <span class="thumb-add-label" v-if="poolSorted.length === 0">Add photos</span>
-            <input ref="folderInputRef" type="file" accept="image/jpeg,image/png,image/webp" webkitdirectory style="display:none" @change="onFolderSelected" />
+            <input ref="folderInputRef" type="file" accept="image/jpeg,image/png,image/webp" webkitdirectory multiple style="display:none" @change="onFolderSelected" />
           </div>
         </template>
       </template>
@@ -424,6 +454,36 @@ function cancelFolderImport() {
 .thumb.excluded .thumb-ctrl-del:hover {
   background: rgba(170, 30, 30, 0.85);
   color: #fff;
+}
+.thumb-delete-confirm {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #fff;
+  z-index: 5;
+}
+.thumb-delete-confirm button {
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 3px;
+  background: transparent;
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.thumb-delete-confirm button:first-of-type:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+}
+.thumb-delete-confirm button:last-of-type:hover {
+  border-color: rgba(255,255,255,0.8);
 }
 .thumb-add {
   display: flex;

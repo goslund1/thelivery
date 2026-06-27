@@ -16,6 +16,16 @@ const el = ref<HTMLElement | null>(null)
 function onInput() {
   emit('update:modelValue', el.value?.innerText ?? '')
   markDirty()
+  const cardId = el.value?.closest('[id^="card-"]')?.id?.slice(5) ?? null
+  if (cardId && el.value) ui.addToEditList(cardId, el.value)
+}
+function onFocus() {
+  if (el.value) ui.setFocusedEdit(el.value)
+}
+function onBlur() {
+  const sel = window.getSelection()
+  if (!sel || sel.rangeCount === 0 || !el.value?.contains(sel.anchorNode)) return
+  if (el.value) ui.saveRange(el.value, sel.getRangeAt(0).cloneRange())
 }
 
 onMounted(() => {
@@ -40,5 +50,7 @@ watch(
     :contenteditable="ui.isEditing"
     class="editable"
     @input="onInput"
+    @focus="onFocus"
+    @blur="onBlur"
   />
 </template>

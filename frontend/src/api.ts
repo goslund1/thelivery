@@ -28,7 +28,7 @@ export const api = {
 
   deleteCard: (id: string) =>
     fetch(`/api/cards/${id}`, { method: 'DELETE' }).then((r) => {
-      if (!r.ok) throw new Error(`delete failed: ${r.status}`)
+      if (!r.ok) throw new Error(`deleteCard failed: ${r.status}`)
     }),
 
   listCardHistory: (id: string) =>

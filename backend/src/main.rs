@@ -146,17 +146,51 @@ async fn normalize_bodies(pool: &SqlitePool) -> anyhow::Result<()> {
         let Ok(mut v) = serde_json::from_str::<Value>(&raw) else {
             continue;
         };
-        if v.get("sections").is_some() {
-            continue; // already new shape
+        let mut changed = false;
+        // Step 1: migrate old-shape cards (no sections key at all).
+        if v.get("sections").is_none() {
+            normalize_card(&mut v);
+            changed = true;
         }
-        normalize_card(&mut v);
-        upsert(pool, &v).await?;
-        migrated += 1;
+        // Step 2: ensure all 3 standard sections exist (handles sections:[]).
+        if ensure_standard_sections(&mut v) {
+            changed = true;
+        }
+        if changed {
+            upsert(pool, &v).await?;
+            migrated += 1;
+        }
     }
     if migrated > 0 {
         tracing::info!("normalized {migrated} card(s) to the sections shape");
     }
     Ok(())
+}
+
+fn ensure_standard_sections(v: &mut Value) -> bool {
+    let Some(obj) = v.as_object_mut() else { return false };
+    let arr = match obj.entry("sections").or_insert_with(|| json!([])).as_array_mut() {
+        Some(a) => a,
+        None => return false,
+    };
+    let existing: std::collections::HashSet<String> = arr.iter()
+        .filter_map(|s| s.get("key").and_then(Value::as_str).map(String::from))
+        .collect();
+    let mut added = false;
+    if !existing.contains("inspiration") {
+        arr.push(json!({ "type": "text", "key": "inspiration", "label": "Inspiration", "body": "" }));
+        added = true;
+    }
+    if !existing.contains("notes") {
+        arr.push(json!({ "type": "text", "key": "notes", "label": "Design Notes", "body": "" }));
+        added = true;
+    }
+    if !existing.contains("recipe") {
+        arr.push(json!({ "type": "forza_recipe", "key": "recipe", "label": "Tune / Build Parts",
+            "tuneName": "", "shareCode": "", "coreSpecs": {}, "upgrades": [], "adjustments": [] }));
+        added = true;
+    }
+    added
 }
 
 fn text_section(key: &str, label: &str, src: &Value) -> Value {
@@ -516,7 +550,7 @@ async fn upload_image(
         // Guard against collision (e.g. re-importing same batch).
         let stem = match file_index {
             Some(idx) => {
-                let candidate = format!("{:03}", idx + 1);
+                let candidate = format!("{folder}_{:03}", idx + 1);
                 if card_dir.join(format!("{candidate}.jpg")).exists() {
                     let short = &uuid::Uuid::new_v4().to_string()[..6];
                     format!("{candidate}_{short}")
@@ -524,7 +558,7 @@ async fn upload_image(
                     candidate
                 }
             }
-            None => uuid::Uuid::new_v4().to_string(),
+            None => format!("{folder}_{}", uuid::Uuid::new_v4()),
         };
 
         let orig_name  = format!("{stem}.jpg");

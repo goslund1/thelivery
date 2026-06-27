@@ -71,14 +71,13 @@ const totalUpgradeCost = computed(() => {
 const SPEC_OPTIONS: Record<string, string[]> = {
   Drivetrain:   ['RWD', 'AWD', 'FWD'],
   Engine: [
-    'Stock',
     '1.0L I3T', '1.5L I3T', '1.6L I4T', '2.0L I4T', '2.0L I4 TT',
     '2.3L I4T', '2.5L F4T', '3.0L I6T', '3.0L V6-TT', '3.5L V6 TT',
     '3.8L V6 TT', '4.0L F6 TT', '4.5L V8 TT', '5.0L V8', '5.2L V8',
     '5.7L V8', '6.2L V8', '6.2L V8 SC', '7.0L V8', '7.3L V8',
     '6.5L V12', '7.0L V12', 'Electric',
   ],
-  Transmission: ['Stock', 'Sport', '5-Speed Race', '6-Speed Race', '7-Speed Race', '8-Speed Race', '9-Speed Race', '10-Speed Race', 'Drift'],
+  Transmission: ['Sport', '5-Speed Race', '6-Speed Race', '7-Speed Race', '8-Speed Race', '9-Speed Race', '10-Speed Race', 'Drift'],
   Tires: ['Street', 'Sport', 'Semi-Slick Race', 'Horizon Semi-Slick Race', 'Slick Race', 'Drift', 'Rally', 'Offroad Race', 'Snow', 'Drag', 'Vintage Race', 'Vintage White Wall'],
   Suspension:   ['Street', 'Sport', 'Race', 'Rally', 'Drift'],
 }

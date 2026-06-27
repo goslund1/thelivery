@@ -68,6 +68,12 @@ function close() {
   currentPw.value = ''; newPw.value = ''; confirmPw.value = ''
   newUsername.value = ''; newUserPw.value = ''; newUserConfirm.value = ''
 }
+
+function logout() {
+  if (ui.isEditing) ui.toggleEdit()
+  auth.logout()
+  ui.closeSettings()
+}
 </script>
 
 <template>
@@ -102,6 +108,10 @@ function close() {
         <p v-if="userSuccess" class="settings-ok">{{ userSuccess }}</p>
         <button type="submit" :disabled="userBusy">{{ userBusy ? 'Creating…' : 'Create User' }}</button>
       </form>
+
+      <div class="settings-footer">
+        <button class="logout-btn" @click="logout">Sign Out</button>
+      </div>
     </div>
   </div>
 </template>
@@ -175,4 +185,29 @@ function close() {
 
 .settings-error { color: var(--danger-bright); font-size: 13px; margin: 0; }
 .settings-ok    { color: var(--gold);          font-size: 13px; margin: 0; }
+
+.settings-footer {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-edge);
+}
+.logout-btn {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 2px solid #7a0000;
+  background: #5c0000;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.logout-btn:hover {
+  background: #cc0000;
+  border-color: #ff4444;
+  box-shadow: 0 0 16px rgba(200, 0, 0, 0.85);
+}
 </style>

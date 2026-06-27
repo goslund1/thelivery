@@ -59,6 +59,20 @@ export const api = {
   getCardHistoryVersion: (id: string, version: number) =>
     fetch(`/api/cards/${id}/history/${version}`).then(json<{ version: number; savedAt: string; body: import('./types').Card }>),
 
+  createUser: (username: string, password: string) =>
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ username, password }),
+    }).then(json<{ username: string }>),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    fetch('/api/me/password', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    }).then(json<{ ok: boolean }>),
+
   deleteImages: (paths: string[]) =>
     fetch('/api/images', {
       method: 'DELETE',

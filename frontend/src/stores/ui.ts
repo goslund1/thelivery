@@ -98,6 +98,10 @@ export const useUiStore = defineStore('ui', () => {
   function closeLogin() {
     loginOpen.value = false
   }
+
+  const settingsOpen = ref(false)
+  function openSettings() { settingsOpen.value = true }
+  function closeSettings() { settingsOpen.value = false }
   function onLoginSuccess() {
     loginOpen.value = false
     if (loginThenEdit) {
@@ -276,6 +280,7 @@ export const useUiStore = defineStore('ui', () => {
     isCardVisible, toggleCollection,
     exitConfirmOpen, saving,
     loginOpen, openLogin, closeLogin, onLoginSuccess,
+    settingsOpen, openSettings, closeSettings,
     newCardOpen, openNewCard, closeNewCard,
     lightboxSrc, lightboxOriginalSrc, lightboxImages, lightboxIndex, chipPicker, imagePicker,
     THEMES,

@@ -1,14 +1,17 @@
-//! Card Catalog API — Axum + SQLite (single-user, no auth).
+//! Card Catalog API — Axum + SQLite.
 //!
 //! Routes:
-//!   GET    /api/cards        -> [Card]   (ordered by catalogNumber)
-//!   GET    /api/cards/:id    -> Card
-//!   PUT    /api/cards/:id    -> Card     (whole-object upsert)
-//!   POST   /api/cards        -> Card     (create; body must include id)
-//!   DELETE /api/cards/:id    -> 204
-//!   POST   /api/images       -> { path, thumbPath, stagePath } (multipart upload)
-//!   GET    /uploads/*        -> static files
-//!   GET    /api/health       -> "ok"
+//!   GET    /api/cards              -> [Card]   (ordered by catalogNumber)
+//!   GET    /api/cards/:id          -> Card
+//!   PUT    /api/cards/:id          -> Card     (whole-object upsert; auth required)
+//!   POST   /api/cards              -> Card     (create; body must include id; auth required)
+//!   DELETE /api/cards/:id          -> 204      (auth required)
+//!   POST   /api/images             -> { path, thumbPath, stagePath } (multipart upload; auth required)
+//!   POST   /api/login              -> { token, username }
+//!   POST   /api/users              -> { username }  (create user; auth required)
+//!   PUT    /api/me/password        -> { ok }        (change own password; auth required)
+//!   GET    /uploads/*              -> static files
+//!   GET    /api/health             -> "ok"
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -21,7 +24,7 @@ use axum::{
     async_trait,
     extract::{DefaultBodyLimit, FromRequestParts, Multipart, Path, State},
     http::{header::AUTHORIZATION, request::Parts, HeaderName, HeaderValue, StatusCode},
-    routing::{get, post},
+    routing::{get, post, put},
     Json, Router,
 };
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -134,6 +137,82 @@ async fn login(State(st): State<AppState>, Json(req): Json<LoginReq>) -> Result<
     Ok(Json(json!({ "token": token, "username": req.username })))
 }
 
+#[derive(Deserialize)]
+struct CreateUserReq {
+    username: String,
+    password: String,
+}
+
+/// Create a new user. Requires a valid JWT so only existing users can invite others.
+async fn create_user(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Json(req): Json<CreateUserReq>,
+) -> Result<Json<Value>, ApiError> {
+    if req.password.len() < 8 {
+        return Err(err(StatusCode::BAD_REQUEST, "password must be at least 8 characters"));
+    }
+    let salt = SaltString::generate(&mut OsRng);
+    let hash = Argon2::default()
+        .hash_password(req.password.as_bytes(), &salt)
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .to_string();
+    sqlx::query("INSERT INTO users (username, password_hash) VALUES (?, ?)")
+        .bind(&req.username)
+        .bind(&hash)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| {
+            if e.to_string().contains("UNIQUE") {
+                err(StatusCode::CONFLICT, "username already exists")
+            } else {
+                err(StatusCode::INTERNAL_SERVER_ERROR, e)
+            }
+        })?;
+    Ok(Json(json!({ "username": req.username })))
+}
+
+#[derive(Deserialize)]
+struct ChangePasswordReq {
+    current_password: String,
+    new_password: String,
+}
+
+/// Change the calling user's own password. Requires the current password to confirm.
+async fn change_password(
+    AuthUser(username): AuthUser,
+    State(st): State<AppState>,
+    Json(req): Json<ChangePasswordReq>,
+) -> Result<Json<Value>, ApiError> {
+    if req.new_password.len() < 8 {
+        return Err(err(StatusCode::BAD_REQUEST, "new password must be at least 8 characters"));
+    }
+    let row = sqlx::query("SELECT password_hash FROM users WHERE username = ?")
+        .bind(&username)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .ok_or_else(|| err(StatusCode::NOT_FOUND, "user not found"))?;
+    let stored_hash: String = row.get("password_hash");
+    let ph = PasswordHash::new(&stored_hash)
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Argon2::default()
+        .verify_password(req.current_password.as_bytes(), &ph)
+        .map_err(|_| err(StatusCode::UNAUTHORIZED, "current password is incorrect"))?;
+    let salt = SaltString::generate(&mut OsRng);
+    let new_hash = Argon2::default()
+        .hash_password(req.new_password.as_bytes(), &salt)
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .to_string();
+    sqlx::query("UPDATE users SET password_hash = ? WHERE username = ?")
+        .bind(&new_hash)
+        .bind(&username)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(json!({ "ok": true })))
+}
+
 /// `adduser` CLI: prompt for a password and insert an Argon2-hashed user.
 async fn add_user(pool: &SqlitePool, username: &str) -> anyhow::Result<()> {
     let password = rpassword::prompt_password(format!("Password for '{username}': "))?;
@@ -215,6 +294,8 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/api/health", get(|| async { "ok" }))
         .route("/api/login", post(login))
+        .route("/api/users", post(create_user))
+        .route("/api/me/password", put(change_password))
         .route("/api/cards", get(list_cards).post(create_card))
         .route(
             "/api/cards/:id",

@@ -116,6 +116,12 @@ function onToggleAll() {
 <template>
   <div ref="bugRef">
     <div class="side-bug" ref="sideBugEl">
+      <button v-if="auth.isAuthenticated" class="bug-btn" aria-label="Account settings" v-tip="'Account settings'" @click="ui.openSettings()">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
+        </svg>
+      </button>
       <button v-if="auth.isAuthenticated" class="bug-btn" :class="{ active: ui.isEditing }" aria-label="Edit mode" v-tip="() => ui.isEditing ? 'Exit edit mode' : 'Enter edit mode'" @click="onEditClick">
         <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
           <g transform="rotate(225 12 12)">

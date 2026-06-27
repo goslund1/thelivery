@@ -46,6 +46,10 @@ function viewPartLabel(part: string, tiers: string[]): string {
   if (!tier || tier === 'Stock') return 'Stock ' + part
   return tier
 }
+function isCustomTier(tiers: string[]): boolean {
+  const tier = viewInstalledTier(tiers)
+  return !!tier && tier !== 'Stock'
+}
 function viewSteppedValue(partName: string): number {
   for (const cat of props.recipe.upgrades) {
     const entry = cat.parts.find(p => p.startsWith(partName + ' '))
@@ -272,10 +276,10 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
               <p class="kit-cat-label">{{ cat.name }}</p>
               <ul class="kit-list">
                 <template v-for="p in cat.parts" :key="p.part">
-                  <li v-if="Array.isArray(p.tiers)">
+                  <li v-if="Array.isArray(p.tiers)" :class="{ 'kit-item--buy': isCustomTier(p.tiers) }">
                     {{ viewPartLabel(p.part, p.tiers) }}
                   </li>
-                  <li v-else-if="p.tiers === 'stepped' && STEPPED_SET.has(p.part)">
+                  <li v-else-if="p.tiers === 'stepped' && STEPPED_SET.has(p.part)" :class="{ 'kit-item--buy': viewSteppedValue(p.part) !== 0 }">
                     {{ viewSteppedLabel(p.part) }}
                   </li>
                 </template>
@@ -460,4 +464,9 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   opacity: 0.4; cursor: pointer; padding: 5px 12px; width: 100%; text-align: left;
 }
 .up-preset-clear:hover { opacity: 0.9; color: #e03030; }
+
+.kit-item--buy::marker {
+  content: '$ ';
+  color: var(--gold);
+}
 </style>

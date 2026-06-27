@@ -12,32 +12,14 @@ function onToggle(e: Event) {
   open.value = (e.target as HTMLDetailsElement).open
 }
 
-// Fired on <summary> click — BEFORE the native <details> toggle runs.
-// Pattern mirrors SideBug's onToggleAll: capture position before, compensate after nextTick.
-//
-// Special case (collapse only): if the user scrolled deep into a tall section so the
-// summary is above the viewport, snap to the top of the parent card instead.
-// We capture the card's absolute document position HERE (before any DOM change) because
-// collapsing a section inside a card doesn't move the card itself in the document —
-// so getBoundingClientRect().top + scrollY is stable across the toggle.
+// Capture summary position before the native toggle, compensate after.
+// No special-case for "above viewport" — a user can't click an off-screen summary,
+// so topBefore is always >= 0 for real clicks. Global collapse-all is handled in SideBug.
 function onSummaryClick(e: Event) {
   const summary = e.currentTarget as HTMLElement
-  const details = summary.closest('details') as HTMLDetailsElement
-  const isCollapsing = details.open
   const topBefore = summary.getBoundingClientRect().top
-
-  // Capture card's absolute document top now, before anything changes.
-  const card = summary.closest('.card') as HTMLElement | null
-  const cardDocTop = card != null ? card.getBoundingClientRect().top + window.scrollY : null
-
   nextTick(() => {
-    if (isCollapsing && topBefore < 0 && cardDocTop != null) {
-      // Summary was above the viewport — scroll to the card's top.
-      window.scrollTo({ top: cardDocTop })
-    } else {
-      // Normal case — keep the summary pinned at its current viewport position.
-      window.scrollBy(0, summary.getBoundingClientRect().top - topBefore)
-    }
+    window.scrollBy(0, summary.getBoundingClientRect().top - topBefore)
   })
 }
 </script>

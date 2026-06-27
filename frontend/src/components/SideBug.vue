@@ -106,18 +106,36 @@ function onEditClick() {
     if (anchor && before !== null) window.scrollBy(0, anchor.getBoundingClientRect().top - before)
   })
 }
-// Expand/collapse-all stays in place → sync its visible tooltip text (Rule B).
-// Also anchors scroll so the card nearest the top of the viewport doesn't jump.
+// Expand/collapse-all — two distinct scroll behaviours:
+// • Expanding: just preserve the current viewport position (anchor pattern).
+// • Collapsing: snap the card that owned the content at the viewport top to the
+//   top of the window. elementFromPoint finds which card the user was looking at;
+//   we hold a reference and scrollTo its post-collapse document position (measured
+//   after nextTick because other sections above it may also have collapsed).
 function onToggleAll() {
-  const anchor = nearestVisibleCard()
-  const before = anchor?.getBoundingClientRect().top ?? null
+  const willCollapse = ui.allExpanded
 
-  ui.toggleAll()
+  if (willCollapse) {
+    const el = document.elementFromPoint(window.innerWidth / 2, 1)
+    const card = el?.closest('.card') as HTMLElement | null
 
-  nextTick(() => {
-    if (anchor && before !== null) window.scrollBy(0, anchor.getBoundingClientRect().top - before)
-    refreshTip(ui.allExpanded ? 'Collapse All Sections' : 'Expand All Sections')
-  })
+    ui.toggleAll()
+
+    nextTick(() => {
+      if (card) window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY })
+      refreshTip('Expand All Sections')
+    })
+  } else {
+    const anchor = nearestVisibleCard()
+    const before = anchor?.getBoundingClientRect().top ?? null
+
+    ui.toggleAll()
+
+    nextTick(() => {
+      if (anchor && before !== null) window.scrollBy(0, anchor.getBoundingClientRect().top - before)
+      refreshTip('Collapse All Sections')
+    })
+  }
 }
 </script>
 

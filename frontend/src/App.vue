@@ -30,6 +30,10 @@ function onKey(e: KeyboardEvent) {
 onMounted(() => {
   store.load()
   document.addEventListener('keydown', onKey)
+  if (window.location.pathname === '/ignition') {
+    window.history.replaceState(null, '', '/')
+    ui.openLogin(true)
+  }
 })
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 </script>

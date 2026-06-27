@@ -2,12 +2,14 @@
 import { ref, nextTick, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useUiStore } from '../stores/ui'
 import { useCardsStore } from '../stores/cards'
+import { useAuthStore } from '../stores/auth'
 import { onClickOutside } from '../composables/onClickOutside'
 import { hideTip, refreshTip } from '../composables/tooltip'
 import type { Theme } from '../types'
 
 const ui = useUiStore()
 const store = useCardsStore()
+const auth = useAuthStore()
 
 // Inline SVGs for each theme (matches the original theme-flyout icons).
 const themeIcons: Record<Theme, string> = {
@@ -114,7 +116,7 @@ function onToggleAll() {
 <template>
   <div ref="bugRef">
     <div class="side-bug" ref="sideBugEl">
-      <button class="bug-btn" :class="{ active: ui.isEditing }" aria-label="Edit mode" v-tip="() => ui.isEditing ? 'Exit edit mode' : 'Enter edit mode'" @click="onEditClick">
+      <button v-if="auth.isAuthenticated" class="bug-btn" :class="{ active: ui.isEditing }" aria-label="Edit mode" v-tip="() => ui.isEditing ? 'Exit edit mode' : 'Enter edit mode'" @click="onEditClick">
         <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
           <g transform="rotate(225 12 12)">
             <path d="M12 5 L7 8 L10.5 11.5 L10.5 21"></path>

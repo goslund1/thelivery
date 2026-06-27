@@ -42,7 +42,7 @@ watch(
 </script>
 
 <template>
-  <div class="image-picker" :class="{ open: ui.loginOpen }" @click.self="ui.closeLogin()">
+  <div v-if="ui.loginOpen" class="image-picker open" @click.self="ui.closeLogin()">
     <div class="image-picker-panel login-panel">
       <div class="image-picker-head">
         <span>Sign in to edit</span>

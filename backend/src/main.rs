@@ -1,17 +1,21 @@
 //! Card Catalog API — Axum + SQLite.
 //!
 //! Routes:
-//!   GET    /api/cards              -> [Card]   (ordered by catalogNumber)
-//!   GET    /api/cards/:id          -> Card
-//!   PUT    /api/cards/:id          -> Card     (whole-object upsert; auth required)
-//!   POST   /api/cards              -> Card     (create; body must include id; auth required)
-//!   DELETE /api/cards/:id          -> 204      (auth required)
-//!   POST   /api/images             -> { path, thumbPath, stagePath } (multipart upload; auth required)
-//!   POST   /api/login              -> { token, username }
-//!   POST   /api/users              -> { username }  (create user; auth required)
-//!   PUT    /api/me/password        -> { ok }        (change own password; auth required)
-//!   GET    /uploads/*              -> static files
-//!   GET    /api/health             -> "ok"
+//!   GET    /api/cards                        -> [Card]   (ordered by catalogNumber)
+//!   GET    /api/cards/:id                    -> Card
+//!   PUT    /api/cards/:id                    -> Card     (whole-object upsert; auth required)
+//!   POST   /api/cards                        -> Card     (create; body must include id; auth required)
+//!   DELETE /api/cards/:id                    -> 204      (auth required)
+//!   POST   /api/images                       -> { path, thumbPath, stagePath } (multipart upload; auth required)
+//!   POST   /api/login                        -> { token, username }
+//!   POST   /api/users                        -> { username }  (create user; auth required)
+//!   PUT    /api/me/password                  -> { ok }        (change own password; auth required)
+//!   GET    /api/admin/stats                  -> { cardCount, imageCount, fileCount, uploadsDirBytes, dbBytes }
+//!   GET    /api/admin/orphans                -> { count, paths[] }  (dry-run scan; auth required)
+//!   DELETE /api/admin/orphans                -> { deleted }          (auth required)
+//!   POST   /api/admin/export-seed            -> { exported }         (auth required)
+//!   GET    /uploads/*                        -> static files
+//!   GET    /api/health                       -> "ok"
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -41,6 +45,8 @@ use tower_http::{
 struct AppState {
     pool: SqlitePool,
     uploads_dir: PathBuf,
+    seed_path: PathBuf,
+    db_path: PathBuf,
     jwt_secret: Arc<Vec<u8>>,
 }
 
@@ -282,6 +288,8 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         pool,
         uploads_dir: uploads_dir.clone(),
+        seed_path: PathBuf::from(&seed_path),
+        db_path: PathBuf::from(&db_path),
         jwt_secret: load_jwt_secret(),
     };
 
@@ -304,6 +312,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/cards/:id/history", get(list_card_history))
         .route("/api/cards/:id/history/:version", get(get_card_history_version))
         .route("/api/images", post(upload_image).delete(delete_images))
+        .route("/api/admin/stats", get(admin_stats))
+        .route("/api/admin/orphans", get(admin_scan_orphans).delete(admin_delete_orphans))
+        .route("/api/admin/export-seed", post(admin_export_seed))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
         .fallback_service(spa)
         .layer(DefaultBodyLimit::max(40 * 1024 * 1024)) // 40 MB per file
@@ -487,6 +498,151 @@ fn normalize_card(v: &mut Value) {
             }
         }
     }
+}
+
+// --- Admin ------------------------------------------------------------------
+
+/// Recursively collect all file paths under a directory.
+fn walk_files(dir: &std::path::Path, out: &mut Vec<PathBuf>) {
+    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() { walk_files(&path, out); } else { out.push(path); }
+    }
+}
+
+/// Collect paths referenced in the DB (relative to uploads_dir, forward-slash separated).
+async fn referenced_paths(pool: &SqlitePool) -> Result<std::collections::HashSet<String>, ApiError> {
+    let rows = sqlx::query("SELECT body FROM cards")
+        .fetch_all(pool).await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let mut set = std::collections::HashSet::new();
+    for row in &rows {
+        let Ok(v) = serde_json::from_str::<Value>(row.get::<String, _>("body").as_str()) else { continue };
+        if let Some(imgs) = v["images"].as_array() {
+            for img in imgs {
+                for key in ["path", "thumbPath", "stagePath"] {
+                    if let Some(p) = img[key].as_str() {
+                        // Strip /uploads/ prefix so the string is relative to uploads_dir.
+                        let rel = p.trim_start_matches('/').trim_start_matches("uploads/");
+                        set.insert(rel.to_string());
+                    }
+                }
+            }
+        }
+    }
+    Ok(set)
+}
+
+async fn admin_stats(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+) -> Result<Json<Value>, ApiError> {
+    let card_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM cards")
+        .fetch_one(&st.pool).await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let rows = sqlx::query("SELECT body FROM cards")
+        .fetch_all(&st.pool).await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let image_count: usize = rows.iter()
+        .filter_map(|r| serde_json::from_str::<Value>(r.get::<String, _>("body").as_str()).ok())
+        .map(|v| v["images"].as_array().map(|a| a.len()).unwrap_or(0))
+        .sum();
+
+    let mut all_files = Vec::new();
+    walk_files(&st.uploads_dir, &mut all_files);
+    let (file_count, uploads_bytes) = all_files.iter().fold((0u64, 0u64), |(n, b), f| {
+        let size = std::fs::metadata(f).map(|m| m.len()).unwrap_or(0);
+        (n + 1, b + size)
+    });
+
+    let db_bytes = std::fs::metadata(&st.db_path).map(|m| m.len()).unwrap_or(0);
+
+    Ok(Json(json!({
+        "cardCount": card_count,
+        "imageCount": image_count,
+        "fileCount": file_count,
+        "uploadsDirBytes": uploads_bytes,
+        "dbBytes": db_bytes,
+    })))
+}
+
+async fn admin_scan_orphans(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+) -> Result<Json<Value>, ApiError> {
+    let refs = referenced_paths(&st.pool).await?;
+    let mut all_files = Vec::new();
+    walk_files(&st.uploads_dir, &mut all_files);
+
+    let orphan_paths: Vec<String> = all_files.iter()
+        .filter_map(|f| {
+            let rel = f.strip_prefix(&st.uploads_dir).ok()?;
+            // Normalise to forward slashes for the response.
+            let s = rel.components()
+                .map(|c| c.as_os_str().to_string_lossy().into_owned())
+                .collect::<Vec<_>>()
+                .join("/");
+            if !refs.contains(&s) { Some(s) } else { None }
+        })
+        .collect();
+
+    Ok(Json(json!({ "count": orphan_paths.len(), "paths": orphan_paths })))
+}
+
+async fn admin_delete_orphans(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+) -> Result<Json<Value>, ApiError> {
+    let refs = referenced_paths(&st.pool).await?;
+    let mut all_files = Vec::new();
+    walk_files(&st.uploads_dir, &mut all_files);
+
+    let mut deleted = 0u64;
+    for f in &all_files {
+        if let Ok(rel) = f.strip_prefix(&st.uploads_dir) {
+            let s = rel.components()
+                .map(|c| c.as_os_str().to_string_lossy().into_owned())
+                .collect::<Vec<_>>()
+                .join("/");
+            if !refs.contains(&s) {
+                let _ = std::fs::remove_file(f);
+                deleted += 1;
+            }
+        }
+    }
+    // Prune empty directories (walk again bottom-up via sorted reverse).
+    let mut dirs: Vec<_> = all_files.iter()
+        .filter_map(|f| f.parent().map(|p| p.to_path_buf()))
+        .collect();
+    dirs.sort();
+    dirs.dedup();
+    for d in dirs.iter().rev() {
+        if d != &st.uploads_dir {
+            let _ = std::fs::remove_dir(d); // only removes if empty
+        }
+    }
+
+    Ok(Json(json!({ "deleted": deleted })))
+}
+
+async fn admin_export_seed(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+) -> Result<Json<Value>, ApiError> {
+    let rows = sqlx::query("SELECT body FROM cards ORDER BY catalog_number")
+        .fetch_all(&st.pool).await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let cards: Vec<Value> = rows.iter()
+        .filter_map(|r| serde_json::from_str::<Value>(r.get::<String, _>("body").as_str()).ok())
+        .collect();
+    let count = cards.len();
+    let json_str = serde_json::to_string_pretty(&cards)
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    std::fs::write(&st.seed_path, json_str)
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, format!("write failed: {e}")))?;
+    Ok(Json(json!({ "exported": count })))
 }
 
 async fn list_cards(State(st): State<AppState>) -> Result<Json<Vec<Value>>, ApiError> {

@@ -80,6 +80,26 @@ export const api = {
       body: JSON.stringify({ paths }),
     }).then((r) => { if (!r.ok) throw new ApiError(r.status, `deleteImages failed: ${r.status}`) }),
 
+  adminStats: () =>
+    fetch('/api/admin/stats', { headers: authHeaders() }).then(
+      json<{ cardCount: number; imageCount: number; fileCount: number; uploadsDirBytes: number; dbBytes: number }>
+    ),
+
+  adminScanOrphans: () =>
+    fetch('/api/admin/orphans', { headers: authHeaders() }).then(
+      json<{ count: number; paths: string[] }>
+    ),
+
+  adminDeleteOrphans: () =>
+    fetch('/api/admin/orphans', { method: 'DELETE', headers: authHeaders() }).then(
+      json<{ deleted: number }>
+    ),
+
+  adminExportSeed: () =>
+    fetch('/api/admin/export-seed', { method: 'POST', headers: authHeaders() }).then(
+      json<{ exported: number }>
+    ),
+
   // Upload a file with card context for folder naming; returns original + variant paths.
   // fileIndex: when set, the backend uses it for sequential filename (001.jpg, 002.jpg…)
   uploadImage: (

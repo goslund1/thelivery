@@ -114,10 +114,7 @@ const showPresetMenu = ref(false)
 const showSaveRow    = ref(false)
 const saveNameInput  = ref('')
 const activeName     = ref('')
-const showStock      = computed({
-  get: () => props.recipe.showStock ?? false,
-  set: (v: boolean) => { props.recipe.showStock = v; markDirty() },
-})
+const showStock      = ref(props.recipe.showStock ?? false)
 const presetBarEl    = ref<HTMLElement | null>(null)
 
 function loadPresets() {
@@ -218,6 +215,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         <span class="kit-label-group">
           <span class="section-label">Upgrades Installed</span> — {{ partCount }} parts<template v-if="totalUpgradeCost > 0"> › CR {{ totalUpgradeCost.toLocaleString() }}</template>
         </span>
+        <button class="kit-stock-btn" type="button" :class="{ active: showStock }" @click.stop="showStock = !showStock">Stock</button>
         <span class="chev"></span>
       </summary>
 
@@ -226,11 +224,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         <button class="kit-preset-trigger" type="button" @click="showPresetMenu = !showPresetMenu">
           {{ activeName || '— no preset —' }}
         </button>
-        <label class="kit-stock-label">
-          <input type="checkbox" v-model="showStock" class="kit-stock-check" />
-          Show Stock
-        </label>
-        <div class="kit-preset-menu" v-show="showPresetMenu">
+<div class="kit-preset-menu" v-show="showPresetMenu">
           <div v-if="presets.length" class="up-preset-list">
             <div v-for="(p, i) in presets" :key="i" class="up-preset-item">
               <button class="up-preset-apply" type="button" @click="applyPreset(p)">{{ p.name }}</button>
@@ -379,19 +373,23 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   transition: opacity 0.12s, color 0.12s;
 }
 .kit-preset-trigger:hover { opacity: 1; color: var(--gold); }
-.kit-stock-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.kit-stock-btn {
+  background: none;
+  border: 1px solid var(--panel-edge);
+  border-radius: 3px;
+  color: var(--steel);
+  font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  opacity: 0.45;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 7px;
   cursor: pointer;
-  white-space: nowrap;
-  user-select: none;
-  transition: opacity 0.12s;
+  opacity: 0.55;
+  transition: color 0.12s, opacity 0.12s, border-color 0.12s;
+  flex-shrink: 0;
 }
-.kit-stock-label:hover { opacity: 0.85; }
-.kit-stock-check { cursor: pointer; accent-color: var(--gold); }
+.kit-stock-btn:hover { opacity: 1; }
+.kit-stock-btn.active { color: var(--gold); border-color: var(--gold); opacity: 1; }
 
 /* Preset dropdown menu */
 .kit-preset-menu {

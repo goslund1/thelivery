@@ -2,10 +2,6 @@
 import { nextTick, watch } from 'vue'
 import { useUiStore } from '../stores/ui'
 
-// Replaces a native <details class="section"> from the original. Open state is
-// a v-model so a parent can force it open (e.g. the "Build It" link), and it
-// follows the per-type expand state driven by the side-bug section checkboxes
-// and the global expand/collapse-all toggle.
 const props = defineProps<{ sectionKey: string; label: string; domId?: string }>()
 const open = defineModel<boolean>('open', { default: false })
 const ui = useUiStore()
@@ -17,28 +13,30 @@ function onToggle(e: Event) {
 }
 
 // Fired on <summary> click — BEFORE the native <details> toggle runs.
-// Captures the summary's viewport position so we can compensate after the
-// layout change, keeping the header visually pinned in place.
+// Pattern mirrors SideBug's onToggleAll: capture position before, compensate after nextTick.
 //
-// Special case: if this is a collapse AND the summary is above the viewport
-// (user scrolled deep into a tall section), snap the summary to the top of
-// the window instead so the header is always visible after the section closes.
+// Special case (collapse only): if the user scrolled deep into a tall section so the
+// summary is above the viewport, snap to the top of the parent card instead.
+// We capture the card's absolute document position HERE (before any DOM change) because
+// collapsing a section inside a card doesn't move the card itself in the document —
+// so getBoundingClientRect().top + scrollY is stable across the toggle.
 function onSummaryClick(e: Event) {
   const summary = e.currentTarget as HTMLElement
   const details = summary.closest('details') as HTMLDetailsElement
   const isCollapsing = details.open
   const topBefore = summary.getBoundingClientRect().top
 
+  // Capture card's absolute document top now, before anything changes.
+  const card = summary.closest('.card') as HTMLElement | null
+  const cardDocTop = card != null ? card.getBoundingClientRect().top + window.scrollY : null
+
   nextTick(() => {
-    const topAfter = summary.getBoundingClientRect().top
-    if (isCollapsing && topBefore < 0) {
-      // Was scrolled into a tall section — scroll to the top of the parent card.
-      const card = summary.closest('.card')
-      const cardTop = card ? card.getBoundingClientRect().top : topAfter
-      window.scrollBy(0, cardTop)
+    if (isCollapsing && topBefore < 0 && cardDocTop != null) {
+      // Summary was above the viewport — scroll to the card's top.
+      window.scrollTo({ top: cardDocTop })
     } else {
-      // Normal case — keep the summary pinned where it was.
-      window.scrollBy(0, topAfter - topBefore)
+      // Normal case — keep the summary pinned at its current viewport position.
+      window.scrollBy(0, summary.getBoundingClientRect().top - topBefore)
     }
   })
 }

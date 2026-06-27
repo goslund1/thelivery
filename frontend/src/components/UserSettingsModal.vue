@@ -85,6 +85,8 @@ const orphanBusy = ref(false)
 const orphanResult = ref<string | null>(null)
 const exportBusy = ref(false)
 const exportResult = ref<string | null>(null)
+const reloadBusy = ref(false)
+const reloadResult = ref<string | null>(null)
 
 function formatBytes(b: number) {
   if (b < 1024) return `${b} B`
@@ -133,11 +135,24 @@ async function exportSeed() {
   finally { exportBusy.value = false }
 }
 
+async function reloadSeed() {
+  reloadBusy.value = true
+  reloadResult.value = null
+  adminError.value = null
+  try {
+    const res = await api.adminReloadSeed()
+    reloadResult.value = `Reloaded ${res.upserted} cards${res.removed > 0 ? `, removed ${res.removed}` : ''}.`
+  }
+  catch (e: any) { adminError.value = `Reload failed: ${e.message}` }
+  finally { reloadBusy.value = false }
+}
+
 function onTabAdmin() {
   tab.value = 'admin'
   orphanScan.value = null
   orphanResult.value = null
   exportResult.value = null
+  reloadResult.value = null
   adminError.value = null
   loadAdminStats()
 }
@@ -217,11 +232,21 @@ function onTabAdmin() {
         <!-- Export seed -->
         <div class="admin-section">
           <div class="admin-section-head">Export Seed</div>
-          <p class="admin-muted">Write current DB cards to the server's seed file so the next re-seed reflects live data.</p>
+          <p class="admin-muted">Write current DB cards to the server's seed file. Run this locally before pushing.</p>
           <button class="admin-btn" :disabled="exportBusy" @click="exportSeed">
             {{ exportBusy ? 'Exporting…' : 'Export to Seed File' }}
           </button>
           <p v-if="exportResult" class="admin-ok">{{ exportResult }}</p>
+        </div>
+
+        <!-- Reload seed -->
+        <div class="admin-section">
+          <div class="admin-section-head">Reload from Seed</div>
+          <p class="admin-muted">Apply the deployed seed file to the live DB — upserts all cards, removes deleted ones. Run this on production after a deploy.</p>
+          <button class="admin-btn" :disabled="reloadBusy" @click="reloadSeed">
+            {{ reloadBusy ? 'Reloading…' : 'Reload from Seed' }}
+          </button>
+          <p v-if="reloadResult" class="admin-ok">{{ reloadResult }}</p>
         </div>
 
       </div>

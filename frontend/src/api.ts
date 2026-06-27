@@ -100,6 +100,11 @@ export const api = {
       json<{ exported: number }>
     ),
 
+  adminReloadSeed: () =>
+    fetch('/api/admin/reload-seed', { method: 'POST', headers: authHeaders() }).then(
+      json<{ upserted: number; removed: number }>
+    ),
+
   // Upload a file with card context for folder naming; returns original + variant paths.
   // fileIndex: when set, the backend uses it for sequential filename (001.jpg, 002.jpg…)
   uploadImage: (

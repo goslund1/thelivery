@@ -315,6 +315,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/stats", get(admin_stats))
         .route("/api/admin/orphans", get(admin_scan_orphans).delete(admin_delete_orphans))
         .route("/api/admin/export-seed", post(admin_export_seed))
+        .route("/api/admin/reload-seed", post(admin_reload_seed))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
         .fallback_service(spa)
         .layer(DefaultBodyLimit::max(40 * 1024 * 1024)) // 40 MB per file
@@ -625,6 +626,43 @@ async fn admin_delete_orphans(
     }
 
     Ok(Json(json!({ "deleted": deleted })))
+}
+
+async fn admin_reload_seed(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+) -> Result<Json<Value>, ApiError> {
+    let raw = std::fs::read_to_string(&st.seed_path)
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, format!("read seed failed: {e}")))?;
+    let cards: Vec<Value> = serde_json::from_str(&raw)
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, format!("parse seed failed: {e}")))?;
+
+    let seed_ids: std::collections::HashSet<String> = cards.iter()
+        .filter_map(|c| c.get("id").and_then(Value::as_str).map(String::from))
+        .collect();
+
+    // Upsert every card in the seed file.
+    for card in &cards {
+        upsert(&st.pool, card).await
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    }
+
+    // Delete any cards in the DB not present in the seed.
+    let db_ids: Vec<String> = sqlx::query_scalar("SELECT id FROM cards")
+        .fetch_all(&st.pool).await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let mut removed = 0u64;
+    for id in db_ids {
+        if !seed_ids.contains(&id) {
+            sqlx::query("DELETE FROM cards WHERE id = ?")
+                .bind(&id)
+                .execute(&st.pool).await
+                .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+            removed += 1;
+        }
+    }
+
+    Ok(Json(json!({ "upserted": cards.len(), "removed": removed })))
 }
 
 async fn admin_export_seed(

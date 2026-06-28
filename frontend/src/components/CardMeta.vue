@@ -5,6 +5,7 @@ import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 import EditableText from './EditableText.vue'
 import EditCardModal from './EditCardModal.vue'
+import SubtitleEditor from './SubtitleEditor.vue'
 import { refreshTip } from '../composables/tooltip'
 
 const props = defineProps<{ card: Card }>()
@@ -40,7 +41,7 @@ function removeCollection(c: string) {
         <button class="chip-add" data-chip-type="collection" type="button" @click="ui.openChipPicker(card.id, 'collection')">+</button>
       </p>
       <EditableText tag="h2" class="card-title" v-model="card.name" />
-      <EditableText tag="p" class="card-sub" v-model="card.subtitle" />
+      <SubtitleEditor v-model="card.subtitle" />
     </div>
     <div class="card-meta-actions">
       <button v-if="ui.isEditing" class="edit-card-btn" @click="editOpen = true">Edit Card</button>

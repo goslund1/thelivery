@@ -15,6 +15,7 @@ import UserSettingsModal from './components/UserSettingsModal.vue'
 import CustomTip from './components/CustomTip.vue'
 import NewCardModal from './components/NewCardModal.vue'
 import LegendConfirmModal from './components/LegendConfirmModal.vue'
+import FactoidPanel from './components/FactoidPanel.vue'
 
 const store = useCardsStore()
 const ui = useUiStore()
@@ -28,6 +29,7 @@ function onKey(e: KeyboardEvent) {
   if (ui.settingsOpen) ui.closeSettings()
   ui.closeNewCard()
   if (ui.exitConfirmOpen) ui.cancelExit()
+  if (ui.factoidPanelOpen) ui.closeFactoidPanel()
 }
 
 onMounted(() => {
@@ -75,5 +77,6 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
   <UserSettingsModal />
   <NewCardModal />
   <LegendConfirmModal />
+  <FactoidPanel />
   <CustomTip />
 </template>

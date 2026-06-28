@@ -7,7 +7,7 @@ import EditableText from './EditableText.vue'
 import UpgradesPicker from './UpgradesPicker.vue'
 import rawUpgrades from '../data/fh_upgrades.json'
 
-const props = defineProps<{ recipe: ForzaRecipeSection }>()
+const props = defineProps<{ recipe: ForzaRecipeSection; initialKitOpen?: boolean }>()
 const ui = useUiStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
@@ -123,7 +123,7 @@ function onShareCodeInput(e: Event) {
 }
 
 // The Upgrades sub-list follows its own filter checkbox + expand/collapse-all.
-const kitOpen = ref(false)
+const kitOpen = ref(props.initialKitOpen ?? false)
 watch(() => ui.upgradesExpanded, (v) => (kitOpen.value = v))
 function onKitToggle(e: Event) {
   kitOpen.value = (e.target as HTMLDetailsElement).open

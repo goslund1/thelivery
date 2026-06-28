@@ -50,7 +50,9 @@ export const useCardsStore = defineStore('cards', () => {
     collections: string[]
     tags?: string[]
     inspirationBody?: string
+    inspirationFigurePath?: string
     notesBody?: string
+    notesFigurePath?: string
     tuneName?: string
     shareCode?: string
     coreSpecs?: Record<string, string>
@@ -70,8 +72,8 @@ export const useCardsStore = defineStore('cards', () => {
       tags: fields.tags ?? [],
       images: [],
       sections: [
-        { type: 'text', key: 'inspiration', label: 'Inspiration', body: fields.inspirationBody ?? '' },
-        { type: 'text', key: 'notes', label: 'Design Notes', body: fields.notesBody ?? '' },
+        { type: 'text', key: 'inspiration', label: 'Inspiration', body: fields.inspirationBody ?? '', figurePath: fields.inspirationFigurePath },
+        { type: 'text', key: 'notes', label: 'Design Notes', body: fields.notesBody ?? '', figurePath: fields.notesFigurePath },
         { type: 'forza_recipe', key: 'recipe', label: 'Tune / Build Parts', tuneName: fields.tuneName ?? '', shareCode: fields.shareCode ?? '', coreSpecs: fields.coreSpecs ?? {}, upgrades: fields.upgrades ?? [], adjustments: fields.adjustments ?? [] },
       ],
     }
@@ -250,6 +252,19 @@ export const useCardsStore = defineStore('cards', () => {
     return [...new Set(cards.value.flatMap((c) => c.collections))].sort()
   }
 
+  // Distinct subtitle values at a given dot-segment position, excluding the
+  // legend template card. Position 0 = Make/Model, 1 = Technique, etc.
+  function allSubtitleSegments(position: number): string[] {
+    const seen = new Set<string>()
+    for (const c of cards.value) {
+      if (c.isLegend) continue
+      const parts = (c.subtitle ?? '').split(' · ')
+      const v = parts[position]?.trim()
+      if (v) seen.add(v)
+    }
+    return [...seen].sort()
+  }
+
   // Distinct sections across the catalog, in first-seen order — drives the
   // generic section filter in the side-bug menu.
   function allSectionKeys() {
@@ -268,6 +283,6 @@ export const useCardsStore = defineStore('cards', () => {
     removeImage, toggleImageIncluded, addImageToPool,
     setColor,
     addTag, removeTag, addCollection, removeCollection,
-    allTagValues, allCollectionValues, allSectionKeys,
+    allTagValues, allCollectionValues, allSectionKeys, allSubtitleSegments,
   }
 })

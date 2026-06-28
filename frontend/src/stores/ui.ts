@@ -151,6 +151,11 @@ export const useUiStore = defineStore('ui', () => {
   function openNewCard() { newCardOpen.value = true }
   function closeNewCard() { newCardOpen.value = false }
 
+  // Factoid schema panel
+  const factoidPanelOpen = ref(false)
+  function openFactoidPanel() { factoidPanelOpen.value = true }
+  function closeFactoidPanel() { factoidPanelOpen.value = false }
+
   // Chip picker (add a tag/collection to a card)
   const chipPicker = ref<{ cardId: string; type: 'tag' | 'collection' } | null>(null)
   // Image picker: pick mode (sectionKey set) or manage mode (sectionKey absent).
@@ -337,5 +342,6 @@ export const useUiStore = defineStore('ui', () => {
     openLightbox, navigateLightbox, closeLightbox,
     openChipPicker, closeChipPicker,
     openImagePicker, openGalleryManager, closeImagePicker,
+    factoidPanelOpen, openFactoidPanel, closeFactoidPanel,
   }
 })

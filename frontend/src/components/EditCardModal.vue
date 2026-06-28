@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, watch, computed, reactive } from 'vue'
-import type { Card, ForzaRecipeSection } from '../types'
+import { ref, watch, computed, reactive, onMounted, onUnmounted } from 'vue'
+import type { Card, TextSection as TextSectionData, ForzaRecipeSection } from '../types'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 import CollapsibleSection from './CollapsibleSection.vue'
+import TextSection from './TextSection.vue'
 import RecipeSection from './RecipeSection.vue'
+import SubtitleEditor from './SubtitleEditor.vue'
 
 const props = defineProps<{ card: Card }>()
 const emit = defineEmits<{ close: [] }>()
@@ -12,24 +14,39 @@ const emit = defineEmits<{ close: [] }>()
 const store = useCardsStore()
 const ui = useUiStore()
 
-// Buffered local copies — only applied on Save so Cancel is clean
+// Buffered local copies for fields that need clean Cancel support
 const name       = ref('')
 const subtitle   = ref('')
 const collections = ref<string[]>([])
 const collectionInput = ref('')
 const tags        = ref<string[]>([])
 const tagInput    = ref('')
-const inspirationBody = ref('')
-const notesBody   = ref('')
 
 const saving      = ref(false)
 const error       = ref('')
 const confirmDelete = ref(false)
 
-// Recipe is handled live by RecipeSection; snapshot here lets Cancel revert it
-const recipeSection = computed(() =>
-  props.card.sections.find(s => s.type === 'forza_recipe') as ForzaRecipeSection | undefined
-)
+// Text sections and recipe are handled live by their components;
+// snapshots let Cancel revert any changes made inside the modal.
+const inspirationSection = computed<TextSectionData | undefined>(() => {
+  const s = props.card.sections.find(s => s.key === 'inspiration')
+  return s?.type === 'text' ? s : undefined
+})
+const notesSection = computed<TextSectionData | undefined>(() => {
+  const s = props.card.sections.find(s => s.key === 'notes')
+  return s?.type === 'text' ? s : undefined
+})
+const recipeSection = computed<ForzaRecipeSection | undefined>(() => {
+  const s = props.card.sections.find(s => s.type === 'forza_recipe')
+  return s?.type === 'forza_recipe' ? s : undefined
+})
+// Non-null accessors for template bindings — v-if guards above guarantee non-null
+const inspSect   = computed(() => inspirationSection.value!)
+const notesSect  = computed(() => notesSection.value!)
+const recipeSect = computed(() => recipeSection.value!)
+
+const inspSnapshot   = ref('')
+const notesSnapshot  = ref('')
 const recipeSnapshot = ref('')
 const sectionOpen = reactive({ insp: true, notes: true, recipe: true })
 
@@ -48,21 +65,24 @@ const canCreateTag = computed(() => {
 
 function populate() {
   const c = props.card
-  const inspiration = c.sections.find(s => s.key === 'inspiration')
-  const notes = c.sections.find(s => s.key === 'notes')
-  const recipe = c.sections.find(s => s.type === 'forza_recipe')
   name.value        = c.name
   subtitle.value    = c.subtitle
   collections.value = [...c.collections]
   tags.value        = [...c.tags]
-  inspirationBody.value = inspiration?.type === 'text' ? inspiration.body : ''
-  notesBody.value   = notes?.type === 'text' ? notes.body : ''
+  const insp   = c.sections.find(s => s.key === 'inspiration')
+  const notes  = c.sections.find(s => s.key === 'notes')
+  const recipe = c.sections.find(s => s.type === 'forza_recipe')
+  if (insp)   inspSnapshot.value   = JSON.stringify(insp)
+  if (notes)  notesSnapshot.value  = JSON.stringify(notes)
   if (recipe) recipeSnapshot.value = JSON.stringify(recipe)
   confirmDelete.value = false
   error.value = ''
 }
 
 watch(() => props.card, populate, { immediate: true })
+
+onMounted(() => { document.body.style.overflow = 'hidden' })
+onUnmounted(() => { document.body.style.overflow = '' })
 
 // Collections
 function toggleCollection(c: string) {
@@ -107,11 +127,7 @@ async function onSave() {
     c.subtitle = subtitle.value.trim()
     c.collections = collections.value
     c.tags = tags.value
-    const insp = c.sections.find(s => s.key === 'inspiration')
-    if (insp?.type === 'text') insp.body = inspirationBody.value
-    const notes = c.sections.find(s => s.key === 'notes')
-    if (notes?.type === 'text') notes.body = notesBody.value
-    // Recipe already mutated live by RecipeSection — no copy needed
+    // Text sections and recipe already mutated live by their components
     await store.save(c.id)
     ui.clearCardDirty(c.id)
     emit('close')
@@ -123,8 +139,21 @@ async function onSave() {
 }
 
 function onCancel() {
-  // Restore recipe from snapshot so any live RecipeSection changes are discarded
-  const recipe = props.card.sections.find(s => s.type === 'forza_recipe')
+  // Restore text sections and recipe from snapshots
+  const c = props.card
+  const insp = c.sections.find(s => s.key === 'inspiration')
+  if (insp?.type === 'text' && inspSnapshot.value) {
+    const snap = JSON.parse(inspSnapshot.value)
+    insp.body = snap.body
+    insp.figurePath = snap.figurePath
+  }
+  const notes = c.sections.find(s => s.key === 'notes')
+  if (notes?.type === 'text' && notesSnapshot.value) {
+    const snap = JSON.parse(notesSnapshot.value)
+    notes.body = snap.body
+    notes.figurePath = snap.figurePath
+  }
+  const recipe = c.sections.find(s => s.type === 'forza_recipe')
   if (recipe?.type === 'forza_recipe' && recipeSnapshot.value) {
     const snap = JSON.parse(recipeSnapshot.value) as ForzaRecipeSection
     recipe.tuneName  = snap.tuneName
@@ -168,7 +197,7 @@ async function onDelete() {
               type="button" @click="toggleCollection(c)">{{ c }}</button>
           </div>
           <input class="card-title nc-title-input" v-model="name" placeholder="Livery Name" @keydown.enter.prevent />
-          <input class="card-sub nc-sub-input" v-model="subtitle" placeholder="Make/Model · Base Coat or Technique · Style · Rims" />
+          <SubtitleEditor v-model="subtitle" />
         </div>
       </div>
 
@@ -182,25 +211,19 @@ async function onDelete() {
         <button v-if="canCreateTag" class="nc-tag-opt nc-tag-new" type="button" @click="addTag(tagInput)">+ "{{ tagInput.trim() }}"</button>
       </div>
 
-      <!-- Inspiration -->
+      <!-- Inspiration — full TextSection with gutter figure -->
       <CollapsibleSection label="Inspiration" section-key="modal-insp" v-model:open="sectionOpen.insp">
-        <div class="section-body">
-          <textarea class="nc-textarea" v-model="inspirationBody" rows="4"
-            placeholder="The why/how/when behind the build, told with some license." />
-        </div>
+        <TextSection v-if="inspirationSection" :card-id="card.id" :section="inspSect" />
       </CollapsibleSection>
 
-      <!-- Design Notes -->
+      <!-- Design Notes — full TextSection with gutter figure -->
       <CollapsibleSection label="Design Notes" section-key="modal-notes" v-model:open="sectionOpen.notes">
-        <div class="section-body">
-          <textarea class="nc-textarea" v-model="notesBody" rows="4"
-            placeholder="Technique commentary — how it was built, material/layering choices." />
-        </div>
+        <TextSection v-if="notesSection" :card-id="card.id" :section="notesSect" />
       </CollapsibleSection>
 
-      <!-- Tune / Build Parts — RecipeSection for full edit-mode parity -->
+      <!-- Tune / Build Parts — full RecipeSection -->
       <CollapsibleSection label="Tune / Build Parts" section-key="modal-recipe" v-model:open="sectionOpen.recipe">
-        <RecipeSection v-if="recipeSection" :recipe="recipeSection" />
+        <RecipeSection v-if="recipeSection" :recipe="recipeSect" />
       </CollapsibleSection>
 
       <!-- Footer -->

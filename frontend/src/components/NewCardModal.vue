@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, reactive, computed, nextTick, watch } from 'vue'
+import { ref, reactive, computed, nextTick, watch, onUnmounted } from 'vue'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 import { api } from '../api'
 import type { ForzaRecipeSection } from '../types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import RecipeSection from './RecipeSection.vue'
+import SubtitleEditor from './SubtitleEditor.vue'
 
 const store = useCardsStore()
 const ui = useUiStore()
@@ -19,6 +20,62 @@ const selectedTags = ref<string[]>([])
 const tagInput = ref('')
 const inspirationBody = ref('')
 const notesBody = ref('')
+
+// Section figure images — uploaded immediately, paths stored here
+const inspirationFigurePath = ref<string | null>(null)
+const notesFigurePath = ref<string | null>(null)
+const figureSaving = ref(false)
+const figureError = ref('')
+
+// Inline folder-name prompt (shown when card name is empty and user tries to upload a figure)
+const folderPromptOpen = ref(false)
+const folderPromptValue = ref('')
+let folderPromptResolve: ((v: string | null) => void) | null = null
+
+async function promptFolderName(): Promise<string | null> {
+  return new Promise(resolve => {
+    folderPromptValue.value = ''
+    folderPromptOpen.value = true
+    folderPromptResolve = resolve
+  })
+}
+function confirmFolderName() {
+  const v = folderPromptValue.value.trim()
+  folderPromptOpen.value = false
+  folderPromptResolve?.(v || null)
+  folderPromptResolve = null
+}
+function cancelFolderName() {
+  folderPromptOpen.value = false
+  folderPromptResolve?.(null)
+  folderPromptResolve = null
+}
+
+async function onFigureFilePick(section: 'insp' | 'notes', e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  ;(e.target as HTMLInputElement).value = ''
+  if (!file) return
+
+  const cardName = name.value.trim()
+  const uploadCtxName = cardName || await promptFolderName()
+  if (!uploadCtxName) return
+
+  figureSaving.value = true
+  figureError.value = ''
+  try {
+    const { path } = await api.uploadImage(file, {
+      name: uploadCtxName,
+      subtitle: subtitle.value.trim(),
+      collections: selectedCollections.value,
+    })
+    if (section === 'insp') inspirationFigurePath.value = path
+    else notesFigurePath.value = path
+  } catch (err) {
+    figureError.value = (err as Error).message
+  } finally {
+    figureSaving.value = false
+  }
+}
 
 // Recipe — reactive object passed directly to RecipeSection
 const CORE_SPEC_KEYS = ['Drivetrain', 'Engine', 'Transmission', 'Tires', 'Suspension']
@@ -35,7 +92,7 @@ const recipe = reactive<ForzaRecipeSection>({
 
 const sectionOpen = reactive({ insp: true, notes: true, recipe: true })
 
-// Upload staging
+// Upload staging (gallery images)
 interface Staged { file: File; url: string }
 const staged = ref<Staged[]>([])
 const activeStaged = ref(0)
@@ -68,6 +125,7 @@ const canCreateTag = computed(() => {
 })
 
 watch(() => ui.newCardOpen, async (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
   if (!open) return
   name.value = ''
   subtitle.value = ''
@@ -77,6 +135,10 @@ watch(() => ui.newCardOpen, async (open) => {
   tagInput.value = ''
   inspirationBody.value = ''
   notesBody.value = ''
+  inspirationFigurePath.value = null
+  notesFigurePath.value = null
+  figureSaving.value = false
+  figureError.value = ''
   recipe.tuneName = ''
   recipe.shareCode = ''
   recipe.coreSpecs = Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, '']))
@@ -126,7 +188,7 @@ function onTagKey(e: KeyboardEvent) {
   if (e.key === 'Backspace' && !tagInput.value) selectedTags.value.pop()
 }
 
-// Upload staging
+// Gallery upload staging
 const SUPPORTED = new Set(['image/jpeg', 'image/png', 'image/webp'])
 function stageFiles(files: FileList | File[]) {
   for (const f of files) {
@@ -168,7 +230,9 @@ async function onCreate() {
       collections: selectedCollections.value,
       tags: selectedTags.value,
       inspirationBody: inspirationBody.value.trim(),
+      inspirationFigurePath: inspirationFigurePath.value ?? undefined,
       notesBody: notesBody.value.trim(),
+      notesFigurePath: notesFigurePath.value ?? undefined,
       tuneName: recipe.tuneName.trim(),
       shareCode: recipe.shareCode.trim(),
       coreSpecs: { ...recipe.coreSpecs },
@@ -193,6 +257,7 @@ async function onCreate() {
 
 function onCancel() { ui.closeNewCard() }
 function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel() }
+onUnmounted(() => { document.body.style.overflow = '' })
 </script>
 
 <template>
@@ -232,11 +297,7 @@ function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel()
             placeholder="Livery Name"
             @keydown.enter.prevent
           />
-          <input
-            class="card-sub nc-sub-input"
-            v-model="subtitle"
-            placeholder="Make/Model (game-accurate) · Base Coat or Technique · Style · Rims"
-          />
+          <SubtitleEditor v-model="subtitle" />
         </div>
       </div>
 
@@ -315,37 +376,64 @@ function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel()
         >+ "{{ tagInput.trim() }}"</button>
       </div>
 
-      <!-- Inspiration -->
+      <!-- Inspiration — gutter-layout with figure upload + textarea -->
       <CollapsibleSection label="Inspiration" section-key="nc-insp" v-model:open="sectionOpen.insp">
-        <div class="section-body">
+        <div class="section-body gutter-layout">
+          <div class="gutter-figure" :class="{ 'has-image': inspirationFigurePath }">
+            <img
+              v-if="inspirationFigurePath"
+              class="gutter-figure-img"
+              :src="inspirationFigurePath"
+              @click="ui.openLightbox(inspirationFigurePath!)"
+            />
+            <span v-else class="gutter-figure-empty">Select image</span>
+            <label class="change-image-btn" :class="{ 'nc-figure-saving': figureSaving }">
+              {{ inspirationFigurePath ? 'Change Image' : 'Select Image' }}
+              <input type="file" style="display:none" accept="image/*" :disabled="figureSaving" @change="onFigureFilePick('insp', $event)" />
+            </label>
+          </div>
           <textarea
-            class="nc-textarea"
+            class="nc-textarea anecdote-text"
             v-model="inspirationBody"
             rows="4"
-            placeholder="This is where the creative-fiction origin story lives — the why/how/when behind the build, told with some license. Doesn't need to be literally true, just true to the car."
+            placeholder="The why/how/when behind the build, told with some license."
           />
         </div>
       </CollapsibleSection>
 
-      <!-- Design Notes -->
+      <!-- Design Notes — gutter-layout with figure upload + textarea -->
       <CollapsibleSection label="Design Notes" section-key="nc-notes" v-model:open="sectionOpen.notes">
-        <div class="section-body">
+        <div class="section-body gutter-layout">
+          <div class="gutter-figure" :class="{ 'has-image': notesFigurePath }">
+            <img
+              v-if="notesFigurePath"
+              class="gutter-figure-img"
+              :src="notesFigurePath"
+              @click="ui.openLightbox(notesFigurePath!)"
+            />
+            <span v-else class="gutter-figure-empty">Select image</span>
+            <label class="change-image-btn" :class="{ 'nc-figure-saving': figureSaving }">
+              {{ notesFigurePath ? 'Change Image' : 'Select Image' }}
+              <input type="file" style="display:none" accept="image/*" :disabled="figureSaving" @change="onFigureFilePick('notes', $event)" />
+            </label>
+          </div>
           <textarea
-            class="nc-textarea"
+            class="nc-textarea gutter-text"
             v-model="notesBody"
             rows="4"
-            placeholder="This is where technique commentary lives — how it was actually built in the livery editor, material/layering choices, anything the tools fought you on."
+            placeholder="Technique commentary — how it was built, material/layering choices."
           />
         </div>
       </CollapsibleSection>
 
       <!-- Tune / Build Parts — RecipeSection for full edit-mode parity -->
       <CollapsibleSection label="Tune / Build Parts" section-key="nc-recipe" v-model:open="sectionOpen.recipe">
-        <RecipeSection :recipe="recipe" />
+        <RecipeSection :recipe="recipe" :initial-kit-open="true" />
       </CollapsibleSection>
 
       <!-- Footer -->
       <div class="nc-footer">
+        <p v-if="figureError" class="nc-error">{{ figureError }}</p>
         <p v-if="error" class="nc-error">{{ error }}</p>
         <div class="nc-actions">
           <button class="nc-btn-cancel" type="button" @click="onCancel">Cancel</button>
@@ -355,6 +443,95 @@ function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel()
         </div>
       </div>
 
+      <!-- Inline folder-name prompt (shown when no card name is set at figure upload time) -->
+      <div v-if="folderPromptOpen" class="nc-folder-prompt" @click.self="cancelFolderName">
+        <div class="nc-folder-prompt-inner">
+          <p class="nc-folder-prompt-label">Enter a folder name for this image</p>
+          <p class="nc-folder-prompt-sub">Or enter the Livery Name above first and it'll be used automatically.</p>
+          <input
+            class="nc-folder-prompt-input"
+            v-model="folderPromptValue"
+            placeholder="e.g. Dragon Livery"
+            @keydown.enter="confirmFolderName"
+            @keydown.escape="cancelFolderName"
+          />
+          <div class="nc-folder-prompt-btns">
+            <button class="nc-btn-cancel" type="button" @click="cancelFolderName">Cancel</button>
+            <button class="nc-btn-create" type="button" @click="confirmFolderName">Use This Name →</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </template>
+
+<style scoped>
+.nc-figure-saving {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Textarea within gutter-layout — fills the text column */
+.gutter-layout .nc-textarea {
+  flex: 1;
+  min-width: 0;
+  resize: vertical;
+  align-self: stretch;
+}
+
+/* Folder-name prompt overlay — sits inside .nc-modal-card */
+.nc-folder-prompt {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  border-radius: inherit;
+}
+.nc-folder-prompt-inner {
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  padding: 24px 28px 20px;
+  max-width: 340px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+.nc-folder-prompt-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--paper);
+  margin: 0 0 4px;
+}
+.nc-folder-prompt-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--steel);
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+.nc-folder-prompt-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  background: var(--stage-bg);
+  border: 1px solid var(--panel-edge);
+  border-radius: 3px;
+  color: var(--paper);
+  padding: 8px 10px;
+  margin-bottom: 14px;
+}
+.nc-folder-prompt-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.nc-folder-prompt-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+</style>

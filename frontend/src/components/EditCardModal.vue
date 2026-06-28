@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import type { Card } from '../types'
+import { ref, watch, computed, reactive } from 'vue'
+import type { Card, ForzaRecipeSection } from '../types'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
+import CollapsibleSection from './CollapsibleSection.vue'
+import RecipeSection from './RecipeSection.vue'
 
 const props = defineProps<{ card: Card }>()
 const emit = defineEmits<{ close: [] }>()
@@ -10,7 +12,7 @@ const emit = defineEmits<{ close: [] }>()
 const store = useCardsStore()
 const ui = useUiStore()
 
-// Local copies — changes only apply on Save
+// Buffered local copies — only applied on Save so Cancel is clean
 const name       = ref('')
 const subtitle   = ref('')
 const collections = ref<string[]>([])
@@ -19,14 +21,17 @@ const tags        = ref<string[]>([])
 const tagInput    = ref('')
 const inspirationBody = ref('')
 const notesBody   = ref('')
-const tuneName    = ref('')
-const shareCode   = ref('')
-const CORE_SPEC_KEYS = ['Drivetrain', 'Engine', 'Transmission', 'Tires', 'Suspension']
-const coreSpecs   = ref<Record<string, string>>({})
 
 const saving      = ref(false)
 const error       = ref('')
 const confirmDelete = ref(false)
+
+// Recipe is handled live by RecipeSection; snapshot here lets Cancel revert it
+const recipeSection = computed(() =>
+  props.card.sections.find(s => s.type === 'forza_recipe') as ForzaRecipeSection | undefined
+)
+const recipeSnapshot = ref('')
+const sectionOpen = reactive({ insp: true, notes: true, recipe: true })
 
 const existingCollections = computed(() => store.allCollectionValues())
 const existingTags        = computed(() => store.allTagValues())
@@ -43,20 +48,16 @@ const canCreateTag = computed(() => {
 
 function populate() {
   const c = props.card
-  const recipe = c.sections.find(s => s.type === 'forza_recipe')
   const inspiration = c.sections.find(s => s.key === 'inspiration')
   const notes = c.sections.find(s => s.key === 'notes')
+  const recipe = c.sections.find(s => s.type === 'forza_recipe')
   name.value        = c.name
   subtitle.value    = c.subtitle
   collections.value = [...c.collections]
   tags.value        = [...c.tags]
   inspirationBody.value = inspiration?.type === 'text' ? inspiration.body : ''
   notesBody.value   = notes?.type === 'text' ? notes.body : ''
-  tuneName.value    = recipe?.type === 'forza_recipe' ? recipe.tuneName : ''
-  shareCode.value   = recipe?.type === 'forza_recipe' ? recipe.shareCode : ''
-  coreSpecs.value   = recipe?.type === 'forza_recipe'
-    ? Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, recipe.coreSpecs[k] ?? '']))
-    : Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, '']))
+  if (recipe) recipeSnapshot.value = JSON.stringify(recipe)
   confirmDelete.value = false
   error.value = ''
 }
@@ -110,12 +111,7 @@ async function onSave() {
     if (insp?.type === 'text') insp.body = inspirationBody.value
     const notes = c.sections.find(s => s.key === 'notes')
     if (notes?.type === 'text') notes.body = notesBody.value
-    const recipe = c.sections.find(s => s.type === 'forza_recipe')
-    if (recipe?.type === 'forza_recipe') {
-      recipe.tuneName = tuneName.value.trim()
-      recipe.shareCode = shareCode.value.trim()
-      for (const k of CORE_SPEC_KEYS) recipe.coreSpecs[k] = coreSpecs.value[k] ?? ''
-    }
+    // Recipe already mutated live by RecipeSection — no copy needed
     await store.save(c.id)
     ui.clearCardDirty(c.id)
     emit('close')
@@ -126,6 +122,24 @@ async function onSave() {
   }
 }
 
+function onCancel() {
+  // Restore recipe from snapshot so any live RecipeSection changes are discarded
+  const recipe = props.card.sections.find(s => s.type === 'forza_recipe')
+  if (recipe?.type === 'forza_recipe' && recipeSnapshot.value) {
+    const snap = JSON.parse(recipeSnapshot.value) as ForzaRecipeSection
+    recipe.tuneName  = snap.tuneName
+    recipe.shareCode = snap.shareCode
+    recipe.showStock = snap.showStock
+    for (const k of Object.keys(snap.coreSpecs)) recipe.coreSpecs[k] = snap.coreSpecs[k]
+    for (const k of Object.keys(recipe.coreSpecs)) {
+      if (!(k in snap.coreSpecs)) delete recipe.coreSpecs[k]
+    }
+    recipe.upgrades.splice(0, recipe.upgrades.length, ...snap.upgrades)
+    recipe.adjustments.splice(0, recipe.adjustments.length, ...snap.adjustments)
+  }
+  emit('close')
+}
+
 async function onDelete() {
   await store.deleteCard(props.card.id)
   emit('close')
@@ -133,9 +147,9 @@ async function onDelete() {
 </script>
 
 <template>
-  <div class="nc-overlay open" @click.self="emit('close')">
+  <div class="nc-overlay open" @click.self="onCancel">
     <div class="card nc-modal-card">
-      <button class="nc-close" @click="emit('close')">×</button>
+      <button class="nc-close" @click="onCancel">×</button>
 
       <!-- Card meta -->
       <div class="card-meta nc-card-meta">
@@ -168,45 +182,26 @@ async function onDelete() {
         <button v-if="canCreateTag" class="nc-tag-opt nc-tag-new" type="button" @click="addTag(tagInput)">+ "{{ tagInput.trim() }}"</button>
       </div>
 
-      <!-- Sections -->
-      <div class="nc-section">
-        <div class="nc-section-head">Inspiration</div>
+      <!-- Inspiration -->
+      <CollapsibleSection label="Inspiration" section-key="modal-insp" v-model:open="sectionOpen.insp">
         <div class="section-body">
           <textarea class="nc-textarea" v-model="inspirationBody" rows="4"
             placeholder="The why/how/when behind the build, told with some license." />
         </div>
-      </div>
+      </CollapsibleSection>
 
-      <div class="nc-section">
-        <div class="nc-section-head">Design Notes</div>
+      <!-- Design Notes -->
+      <CollapsibleSection label="Design Notes" section-key="modal-notes" v-model:open="sectionOpen.notes">
         <div class="section-body">
           <textarea class="nc-textarea" v-model="notesBody" rows="4"
             placeholder="Technique commentary — how it was built, material/layering choices." />
         </div>
-      </div>
+      </CollapsibleSection>
 
-      <div class="nc-section">
-        <div class="nc-section-head">Tune / Build Parts</div>
-        <div class="section-body">
-          <div class="nc-recipe-row">
-            <div class="nc-recipe-field">
-              <label class="nc-recipe-label">Tune Name</label>
-              <input class="nc-recipe-input" v-model="tuneName" placeholder="Saved name in-game" />
-            </div>
-            <div class="nc-recipe-field nc-recipe-field--narrow">
-              <label class="nc-recipe-label">Share Code</label>
-              <input class="nc-recipe-input" v-model="shareCode" placeholder="000 000 000" />
-            </div>
-          </div>
-          <div class="nc-specs-grid">
-            <div v-for="key in CORE_SPEC_KEYS" :key="key" class="nc-spec">
-              <label class="nc-recipe-label">{{ key }}</label>
-              <input class="nc-recipe-input" v-model="coreSpecs[key]"
-                :placeholder="`e.g. ${key === 'Drivetrain' ? 'AWD' : key === 'Tires' ? 'Rally' : 'stock'}`" />
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- Tune / Build Parts — RecipeSection for full edit-mode parity -->
+      <CollapsibleSection label="Tune / Build Parts" section-key="modal-recipe" v-model:open="sectionOpen.recipe">
+        <RecipeSection v-if="recipeSection" :recipe="recipeSection" />
+      </CollapsibleSection>
 
       <!-- Footer -->
       <div class="nc-footer">
@@ -214,7 +209,7 @@ async function onDelete() {
         <div class="nc-actions ec-actions">
           <button class="ec-btn-delete" type="button" @click="confirmDelete = true">Delete Card</button>
           <div class="ec-right">
-            <button class="nc-btn-cancel" type="button" @click="emit('close')">Cancel</button>
+            <button class="nc-btn-cancel" type="button" @click="onCancel">Cancel</button>
             <button class="nc-btn-create" type="button" :disabled="saving" @click="onSave">
               {{ saving ? 'Saving…' : 'Save Changes →' }}
             </button>
@@ -264,7 +259,6 @@ async function onDelete() {
 }
 .ec-btn-delete:hover, .ec-btn-delete--confirm { background: #c0392b; color: #fff; }
 
-/* Centered delete confirm popup */
 .ec-delete-overlay {
   position: fixed;
   inset: 0;

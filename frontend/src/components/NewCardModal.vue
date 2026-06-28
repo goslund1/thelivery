@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, reactive, computed, nextTick, watch } from 'vue'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 import { api } from '../api'
+import type { ForzaRecipeSection } from '../types'
+import CollapsibleSection from './CollapsibleSection.vue'
+import RecipeSection from './RecipeSection.vue'
 
 const store = useCardsStore()
 const ui = useUiStore()
@@ -16,10 +19,21 @@ const selectedTags = ref<string[]>([])
 const tagInput = ref('')
 const inspirationBody = ref('')
 const notesBody = ref('')
-const tuneName = ref('')
-const shareCode = ref('')
+
+// Recipe — reactive object passed directly to RecipeSection
 const CORE_SPEC_KEYS = ['Drivetrain', 'Engine', 'Transmission', 'Tires', 'Suspension']
-const coreSpecs = ref<Record<string, string>>(Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, ''])))
+const recipe = reactive<ForzaRecipeSection>({
+  type: 'forza_recipe',
+  key: 'recipe',
+  label: 'Tune / Build Parts',
+  tuneName: '',
+  shareCode: '',
+  coreSpecs: Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, ''])),
+  upgrades: [],
+  adjustments: [],
+})
+
+const sectionOpen = reactive({ insp: true, notes: true, recipe: true })
 
 // Upload staging
 interface Staged { file: File; url: string }
@@ -63,9 +77,11 @@ watch(() => ui.newCardOpen, async (open) => {
   tagInput.value = ''
   inspirationBody.value = ''
   notesBody.value = ''
-  tuneName.value = ''
-  shareCode.value = ''
-  coreSpecs.value = Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, '']))
+  recipe.tuneName = ''
+  recipe.shareCode = ''
+  recipe.coreSpecs = Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, '']))
+  recipe.upgrades.splice(0)
+  recipe.adjustments.splice(0)
   staged.value.forEach(s => URL.revokeObjectURL(s.url))
   staged.value = []
   activeStaged.value = 0
@@ -153,9 +169,11 @@ async function onCreate() {
       tags: selectedTags.value,
       inspirationBody: inspirationBody.value.trim(),
       notesBody: notesBody.value.trim(),
-      tuneName: tuneName.value.trim(),
-      shareCode: shareCode.value.trim(),
-      coreSpecs: { ...coreSpecs.value },
+      tuneName: recipe.tuneName.trim(),
+      shareCode: recipe.shareCode.trim(),
+      coreSpecs: { ...recipe.coreSpecs },
+      upgrades: JSON.parse(JSON.stringify(recipe.upgrades)),
+      adjustments: JSON.parse(JSON.stringify(recipe.adjustments)),
     })
     for (let i = 0; i < staged.value.length; i++) {
       const result = await api.uploadImage(staged.value[i].file, card, i)
@@ -182,7 +200,7 @@ function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel()
     <div class="card nc-modal-card">
       <button class="nc-close" aria-label="Cancel" @click="onCancel">×</button>
 
-      <!-- ── card-meta: catalog number, collections, name, subtitle ── -->
+      <!-- card-meta: catalog number, collections, name, subtitle -->
       <div class="card-meta nc-card-meta">
         <div class="nc-meta-inner">
           <p class="card-number">
@@ -199,7 +217,6 @@ function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel()
               @blur="addCollectionFromInput"
             />
           </p>
-          <!-- existing collection quick-picks -->
           <div v-if="existingCollections.length" class="nc-col-picks">
             <button
               v-for="c in existingCollections" :key="c"
@@ -223,7 +240,7 @@ function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel()
         </div>
       </div>
 
-      <!-- ── Gallery / upload stage (16:9) ── -->
+      <!-- Gallery / upload stage (16:9) -->
       <div
         class="nc-stage"
         :class="{ 'nc-stage--drag': isDragOver, 'nc-stage--filled': staged.length > 0 }"
@@ -273,7 +290,7 @@ function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel()
         </div>
       </div>
 
-      <!-- ── Tag cloud ── -->
+      <!-- Tag cloud -->
       <div class="tag-cloud nc-tag-cloud">
         <span v-for="t in selectedTags" :key="t" class="tag nc-tag-sel">
           {{ t }}<button class="nc-x" type="button" @click="removeTag(t)">×</button>
@@ -298,9 +315,8 @@ function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel()
         >+ "{{ tagInput.trim() }}"</button>
       </div>
 
-      <!-- ── Sections ── -->
-      <div class="nc-section">
-        <div class="nc-section-head">Inspiration</div>
+      <!-- Inspiration -->
+      <CollapsibleSection label="Inspiration" section-key="nc-insp" v-model:open="sectionOpen.insp">
         <div class="section-body">
           <textarea
             class="nc-textarea"
@@ -309,10 +325,10 @@ function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel()
             placeholder="This is where the creative-fiction origin story lives — the why/how/when behind the build, told with some license. Doesn't need to be literally true, just true to the car."
           />
         </div>
-      </div>
+      </CollapsibleSection>
 
-      <div class="nc-section">
-        <div class="nc-section-head">Design Notes</div>
+      <!-- Design Notes -->
+      <CollapsibleSection label="Design Notes" section-key="nc-notes" v-model:open="sectionOpen.notes">
         <div class="section-body">
           <textarea
             class="nc-textarea"
@@ -321,34 +337,14 @@ function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel()
             placeholder="This is where technique commentary lives — how it was actually built in the livery editor, material/layering choices, anything the tools fought you on."
           />
         </div>
-      </div>
+      </CollapsibleSection>
 
-      <div class="nc-section">
-        <div class="nc-section-head">Tune / Build Parts</div>
-        <div class="section-body">
-          <div class="nc-recipe-row">
-            <div class="nc-recipe-field">
-              <label class="nc-recipe-label">Tune Name</label>
-              <input class="nc-recipe-input" v-model="tuneName" placeholder="Tune Name (the name it's saved under in-game)" />
-            </div>
-            <div class="nc-recipe-field nc-recipe-field--narrow">
-              <label class="nc-recipe-label">Share Code</label>
-              <input class="nc-recipe-input" v-model="shareCode" placeholder="000 000 000" />
-            </div>
-          </div>
-          <div class="nc-specs-grid">
-            <div v-for="key in CORE_SPEC_KEYS" :key="key" class="nc-spec">
-              <label class="nc-recipe-label">{{ key }}</label>
-              <input class="nc-recipe-input" v-model="coreSpecs[key]" :placeholder="`e.g. ${key === 'Drivetrain' ? 'AWD' : key === 'Tires' ? 'Rally' : 'stock'}`" />
-            </div>
-          </div>
-          <p class="nc-stub-hint">
-            <span>Build parts (upgrades installed) → fill in after recon.</span>
-          </p>
-        </div>
-      </div>
+      <!-- Tune / Build Parts — RecipeSection for full edit-mode parity -->
+      <CollapsibleSection label="Tune / Build Parts" section-key="nc-recipe" v-model:open="sectionOpen.recipe">
+        <RecipeSection :recipe="recipe" />
+      </CollapsibleSection>
 
-      <!-- ── Footer ── -->
+      <!-- Footer -->
       <div class="nc-footer">
         <p v-if="error" class="nc-error">{{ error }}</p>
         <div class="nc-actions">
@@ -362,4 +358,3 @@ function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel()
     </div>
   </div>
 </template>
-

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { Card, TextSection } from '../types'
+import type { Card, TextSection, UpgradeCategory, Adjustment } from '../types'
 import { api } from '../api'
 
 // Holds the catalog data and all mutations. Replaces the original app's
@@ -54,6 +54,8 @@ export const useCardsStore = defineStore('cards', () => {
     tuneName?: string
     shareCode?: string
     coreSpecs?: Record<string, string>
+    upgrades?: UpgradeCategory[]
+    adjustments?: Adjustment[]
   }): Promise<Card> {
     const maxCatalog = cards.value.reduce((m, c) => Math.max(m, c.catalogNumber), 0)
     const nextNum = maxCatalog + 1
@@ -70,7 +72,7 @@ export const useCardsStore = defineStore('cards', () => {
       sections: [
         { type: 'text', key: 'inspiration', label: 'Inspiration', body: fields.inspirationBody ?? '' },
         { type: 'text', key: 'notes', label: 'Design Notes', body: fields.notesBody ?? '' },
-        { type: 'forza_recipe', key: 'recipe', label: 'Tune / Build Parts', tuneName: fields.tuneName ?? '', shareCode: fields.shareCode ?? '', coreSpecs: fields.coreSpecs ?? {}, upgrades: [], adjustments: [] },
+        { type: 'forza_recipe', key: 'recipe', label: 'Tune / Build Parts', tuneName: fields.tuneName ?? '', shareCode: fields.shareCode ?? '', coreSpecs: fields.coreSpecs ?? {}, upgrades: fields.upgrades ?? [], adjustments: fields.adjustments ?? [] },
       ],
     }
     const created = await api.createCard(newCard)

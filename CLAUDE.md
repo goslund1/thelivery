@@ -137,6 +137,30 @@ String template refs (`ref="x"`) aren't counted as "used" by `vue-tsc`'s unused-
 - Required GitHub secrets: `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_USER` (passwordless sudo). The droplet runs the service as a dedicated `thelivery` user under `/opt/thelivery`.
 - After a push, you can confirm the live build updated by checking the asset hash in `frontend/dist/index.html` against `https://thelivery.silverleaf.services/`.
 
+## Feature status
+
+### Shipped and working
+- **Card gallery** — full-page scrolling catalog, 16:9 slideshow with autoplay (IntersectionObserver), thumbnail rail, lightbox
+- **Edit mode** — inline `EditableText` for name/subtitle/sections, per-card Save button, dirty tracking, snapshot/discard on exit, `ExitConfirmModal`
+- **New card modal** (`NewCardModal.vue`) — photo upload (drag/drop + browse), staged thumbnail strip, feature-image selection, tag/collection pickers, full RecipeSection (tune + specs + upgrades + adjustments)
+- **Edit card modal** (`EditCardModal.vue`) — same section parity as card edit view: `CollapsibleSection` headers, textareas for Inspiration/Design Notes, full `RecipeSection` for recipe with Cancel-safe snapshot/restore
+- **Recipe section** (`RecipeSection.vue`) — tune name, share code (auto-formatted), 5-column spec table with dropdowns, `UpgradesPicker` (add/remove parts by category), Show Stock toggle, upgrade cost tally, preset system (save/apply/delete via localStorage), adjustments list (view/inline edit)
+- **Orphan image cleanup** — auto-wired into `save()` (deleted images on card = orphan delete on save); also available on-demand via Admin panel
+- **Admin panel** (tab in UserSettingsModal) — stats (card count, image count, file count, DB/uploads size), orphan scan + confirm delete, export seed to `seed/cards.json`, reload DB from seed
+- **User management** — login (JWT), logout (clears token + exits edit mode), change password, create users (admin only), sign-out button (redlight style)
+- **Theme system** — 5 themes (dark/light/rainbow/clouds/stormy) via `data-theme` on `<html>`; text-size knob; both persist to localStorage
+- **Filters** — by collection, tag, search text (SideBug flyouts)
+- **Favorites** — per-card star toggle, persisted to DB
+- **Upgrade presets** — save/apply/delete named upgrade configs via localStorage (per-browser, not per-card)
+- **DB sync workflow** — Admin → Export Seed → git push → production Admin → Reload from Seed (no SSH/Geoff required for content pushes)
+- **Card history** — backend records a version row on every save (`/api/cards/:id/history`); API client wired; **no UI yet**
+
+### Pending / in progress
+- **Tuning adjustments editor** — `recipe.adjustments[]` renders read-only in modal and view mode; no UI to add/remove/reorder adjustment rows yet
+- **Theme builder** — planned as a slide-in panel launched from the Themes flyout in SideBug; waiting for mockup from Jason
+- **Mobile layout** — not yet designed or implemented
+- **Card history UI** — history stored and API exists; viewer UI not built
+
 ## Conventions & rules
 
 - **Git:** never auto-commit; commit only when asked (this repo's branch is `main`). End commit messages with the `Co-Authored-By` trailer.

@@ -5,9 +5,10 @@ import { useUiStore } from '../stores/ui'
 import { MarkDirtyKey } from '../keys'
 import EditableText from './EditableText.vue'
 import UpgradesPicker from './UpgradesPicker.vue'
+import TuningAdjustments from './TuningAdjustments.vue'
 import rawUpgrades from '../data/fh_upgrades.json'
 
-const props = defineProps<{ recipe: ForzaRecipeSection; initialKitOpen?: boolean }>()
+const props = defineProps<{ recipe: ForzaRecipeSection; cardId?: string; initialKitOpen?: boolean }>()
 const ui = useUiStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
@@ -29,6 +30,18 @@ const partCount = computed(() =>
 type UpgJPart = { part: string; tiers: string[] | 'stepped' | 'cosmetic'; tierCosts?: Record<string, number> }
 type UpgJCat  = { name: string; parts: UpgJPart[] }
 const allUpgCats = rawUpgrades.categories as UpgJCat[]
+
+const CAT_ORDER = [
+  'Body Kits and Conversions',
+  'Engine',
+  'Drivetrain',
+  'Platform and Handling',
+  'Aero and Appearance',
+  'Tires and Wheels',
+]
+const allStockCats = CAT_ORDER.map(n => allUpgCats.find(c => c.name === n)).filter(Boolean) as UpgJCat[]
+const COL3_BREAK = new Set(['Drivetrain', 'Tires and Wheels'])
+const COL2_BREAK = new Set(['Platform and Handling'])
 const STEPPED_SET = new Set([
   'Front Tire Width', 'Rear Tire Width',
   'Front Rim Size', 'Rear Rim Size',
@@ -273,12 +286,20 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         </div>
       </div>
 
-      <div class="kit-body">
+      <div class="kit-body" :class="{ 'kit-body--grid': ui.isEditing || showStock }">
         <UpgradesPicker v-if="ui.isEditing" :upgrades="recipe.upgrades" :show-stock="showStock" />
         <template v-else-if="showStock">
-          <!-- Show Stock: full list at equal visual weight, stock items shown as plain text -->
+          <!-- Show Stock: full list, Engine pinned left, other cats balanced across cols 2-3 -->
           <div class="upgrades-grid">
-            <div v-for="cat in allUpgCats" :key="cat.name" class="kit-cat">
+            <div
+              v-for="cat in allStockCats"
+              :key="cat.name"
+              class="kit-cat"
+              :class="{
+                'up-col3-break': COL3_BREAK.has(cat.name),
+                'up-col2-break': COL2_BREAK.has(cat.name),
+              }"
+            >
               <p class="kit-cat-label">{{ cat.name }}</p>
               <ul class="kit-list">
                 <template v-for="p in cat.parts" :key="p.part">
@@ -309,14 +330,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
     </details>
 
     <p class="kit-cat-label adj-label">Tune Adjustments</p>
-    <div class="adjustments-box">
-      <ul class="recipe-adjustments">
-        <li v-for="(adj, ai) in recipe.adjustments" :key="ai">
-          <EditableText tag="b" v-model="adj.name" /> —
-          <EditableText tag="span" v-model="adj.description" />
-        </li>
-      </ul>
-    </div>
+    <TuningAdjustments :adjustments="recipe.adjustments" :card-id="props.cardId" />
   </div>
 </template>
 
@@ -356,7 +370,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   font-weight: bold;
   letter-spacing: inherit;
   padding: 0 2px;
-  width: 7.5em;
+  width: 9em;
 }
 .share-code-input:focus {
   outline: none;
@@ -370,11 +384,29 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   column-count: auto;
 }
 
+.kit-body--grid {
+  column-width: unset;
+  column-gap: unset;
+}
+
 .upgrades-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  align-items: start;
+  columns: 3;
+  column-gap: 16px;
+}
+.upgrades-grid .kit-cat {
+  break-inside: avoid;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+.upgrades-grid .up-col3-break { break-before: column; }
+@media (max-width: 800px) {
+  .upgrades-grid { columns: 2; }
+  .upgrades-grid .up-col3-break { break-before: auto; }
+  .upgrades-grid .up-col2-break { break-before: column; }
+}
+@media (max-width: 540px) {
+  .upgrades-grid { columns: 1; }
+  .upgrades-grid .up-col2-break { break-before: auto; }
 }
 
 /* ── Preset bar ─────────────────────────────────────────────────────────────── */

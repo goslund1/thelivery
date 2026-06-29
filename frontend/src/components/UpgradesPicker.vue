@@ -13,14 +13,27 @@ type JsonCategory = { name: string; parts: JsonPart[] }
 
 const categories = rawData.categories as JsonCategory[]
 
-const STEPPED: Record<string, { min: number; max: number }> = {
-  'Front Tire Width':  { min: -1, max: 7 },
-  'Rear Tire Width':   { min: -1, max: 7 },
-  'Front Rim Size':    { min: -1, max: 5 },
-  'Rear Rim Size':     { min: -1, max: 5 },
-  'Front Track Width': { min: -1, max: 5 },
-  'Rear Track Width':  { min: -1, max: 5 },
-}
+const CAT_ORDER = [
+  'Body Kits and Conversions',
+  'Engine',
+  'Drivetrain',
+  'Platform and Handling',
+  'Aero and Appearance',
+  'Tires and Wheels',
+]
+const allCats = CAT_ORDER.map(n => categories.find(c => c.name === n)).filter(Boolean) as JsonCategory[]
+
+// Which cats force a new column at each breakpoint
+const COL3_BREAK = new Set(['Drivetrain', 'Tires and Wheels'])
+const COL2_BREAK = new Set(['Platform and Handling'])
+
+const STEPPED = new Set([
+  'Front Tire Width', 'Rear Tire Width',
+  'Front Rim Size',   'Rear Rim Size',
+  'Front Track Width','Rear Track Width',
+])
+
+const STEP_PRESETS = [-1, 0, 1, 2, 3, 5]
 
 function cleanEmpty() {
   for (let i = props.upgrades.length - 1; i >= 0; i--) {
@@ -67,10 +80,21 @@ function getSteppedValue(partName: string): number {
   return 0
 }
 
-function adjustStepped(categoryName: string, partName: string, delta: number) {
-  const cfg = STEPPED[partName]
-  if (!cfg) return
-  const next = Math.max(cfg.min, Math.min(cfg.max, getSteppedValue(partName) + delta))
+function getPresetIndex(partName: string): number {
+  const v = getSteppedValue(partName)
+  const exact = STEP_PRESETS.indexOf(v)
+  if (exact !== -1) return exact
+  let best = 0
+  let bestDist = Math.abs(STEP_PRESETS[0] - v)
+  for (let i = 1; i < STEP_PRESETS.length; i++) {
+    const d = Math.abs(STEP_PRESETS[i] - v)
+    if (d < bestDist) { bestDist = d; best = i }
+  }
+  return best
+}
+
+function nudgeStepped(categoryName: string, partName: string, dir: 1 | -1) {
+  const next = STEP_PRESETS[Math.max(0, Math.min(STEP_PRESETS.length - 1, getPresetIndex(partName) + dir))]
   for (const cat of props.upgrades) {
     cat.parts = cat.parts.filter(p => !p.startsWith(partName + ' '))
   }
@@ -79,14 +103,27 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
   markDirty()
 }
 
+function displayName(s: string): string {
+  return s.replace(/^Chassis /i, '').replace(/^Intake (?=Manifold)/i, '')
+}
+
+function steppedLabel(partName: string): string {
+  const v = getSteppedValue(partName)
+  return v === 0 ? 'stock' : (v > 0 ? '+' : '') + v
+}
+
 </script>
 
 <template>
   <div class="up-picker">
     <div
-      v-for="cat in categories"
+      v-for="cat in allCats"
       :key="cat.name"
       class="kit-cat"
+      :class="{
+        'up-col3-break': COL3_BREAK.has(cat.name),
+        'up-col2-break': COL2_BREAK.has(cat.name),
+      }"
     >
       <p class="kit-cat-label">{{ cat.name }}</p>
       <ul class="kit-list">
@@ -94,25 +131,23 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
           <template v-if="p.tiers === 'cosmetic'" />
 
           <li
-            v-else-if="p.tiers === 'stepped' && STEPPED[p.part]"
+            v-else-if="p.tiers === 'stepped' && STEPPED.has(p.part)"
             class="up-step-row"
           >
-            <span class="up-step-lbl">{{ p.part }}</span>
             <button
               class="up-step-btn" type="button"
-              :disabled="getSteppedValue(p.part) <= STEPPED[p.part].min"
-              @click="adjustStepped(cat.name, p.part, -1)"
-            >−</button>
+              :disabled="getPresetIndex(p.part) <= 0"
+              @click="nudgeStepped(cat.name, p.part, -1)"
+            >‹</button>
             <span class="up-step-val" :class="{ 'up-step-set': getSteppedValue(p.part) !== 0 }">
-              {{ getSteppedValue(p.part) === 0
-                  ? 'stock'
-                  : (getSteppedValue(p.part) > 0 ? '+' : '') + getSteppedValue(p.part) }}
+              {{ steppedLabel(p.part) }}
             </span>
             <button
               class="up-step-btn" type="button"
-              :disabled="getSteppedValue(p.part) >= STEPPED[p.part].max"
-              @click="adjustStepped(cat.name, p.part, +1)"
-            >+</button>
+              :disabled="getPresetIndex(p.part) >= STEP_PRESETS.length - 1"
+              @click="nudgeStepped(cat.name, p.part, +1)"
+            >›</button>
+            <span class="up-step-lbl">{{ displayName(p.part) }}</span>
           </li>
 
           <li v-else-if="Array.isArray(p.tiers)">
@@ -122,8 +157,8 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
               :value="getInstalledTier(p.tiers) ?? ''"
               @change="onTierChange(cat.name, p.tiers, $event)"
             >
-              <option value="">Stock {{ p.part }}</option>
-              <option v-for="tier in p.tiers" :key="tier" :value="tier">{{ tier }}</option>
+              <option value="">Stock {{ displayName(p.part) }}</option>
+              <option v-for="tier in p.tiers" :key="tier" :value="tier">{{ displayName(tier) }}</option>
             </select>
           </li>
         </template>
@@ -134,15 +169,27 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
 
 <style scoped>
 .up-picker {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  align-items: start;
+  columns: 3;
+  column-gap: 16px;
   padding: 0;
 }
-
 .kit-cat {
+  break-inside: avoid;
+  margin-bottom: 16px;
   min-width: 0;
+}
+/* At 3 cols: Drivetrain and Tires start a new column */
+.up-col3-break { break-before: column; }
+
+@media (max-width: 800px) {
+  .up-picker { columns: 2; }
+  /* Remove 3-col breaks, add 2-col break at Platform */
+  .up-col3-break { break-before: auto; }
+  .up-col2-break { break-before: column; }
+}
+@media (max-width: 540px) {
+  .up-picker { columns: 1; }
+  .up-col2-break { break-before: auto; }
 }
 
 .up-picker :deep(.kit-list > li:not(.up-step-row)) {
@@ -152,7 +199,6 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
   gap: 4px;
   padding: 2px 0 4px;
 }
-/* Gradient underline */
 .up-picker :deep(.kit-list > li:not(.up-step-row))::after {
   content: '';
   position: absolute;
@@ -186,15 +232,14 @@ function adjustStepped(categoryName: string, partName: string, delta: number) {
 .up-inline-select:focus { outline: 1px solid var(--gold); border-radius: 2px; outline-offset: 1px; }
 .up-inline-set { color: var(--gold); opacity: 1; }
 
-
 .up-step-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 2px 0;
   list-style: none;
 }
-.up-step-lbl { flex: 1; opacity: 0.6; }
+.up-step-lbl { flex: 1; opacity: 0.6; margin-left: 2px; }
 .up-step-btn {
   background: color-mix(in srgb, var(--panel-edge) 35%, transparent);
   border: 1px solid var(--panel-edge);

@@ -366,7 +366,7 @@ function isBipolar(r: AdjustmentRow) {
   return (r as LocalRow)._bipolar || (r.min < 0 && r.max > 0)
 }
 function trackStyle(r: AdjustmentRow) {
-  const color = isChanged(r) ? 'var(--magenta)' : 'var(--steel-light)'
+  const color = isChanged(r) ? 'var(--tabc, var(--magenta))' : 'var(--steel-light)'
   const fill = pct(r, r.value)
   const center = isBipolar(r) ? 50 : 0
   return `--fill: ${fill}%; --center: ${center}%; --track-color: ${color}`
@@ -1145,15 +1145,23 @@ async function submitSuggestion() {
 .ta-stack-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 12px;
   color: var(--paper);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 10px 0 10px 10px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--panel-edge);
-  border-left: 3px solid var(--tabc, var(--panel-edge));
   margin: 16px 0 12px;
+}
+.ta-stack-header::before {
+  content: '';
+  display: block;
+  flex-shrink: 0;
+  width: 14px;
+  height: 28px;
+  background: var(--tabc, var(--panel-edge));
+  clip-path: polygon(0 0, 65% 0, 100% 50%, 65% 100%, 0 100%, 35% 50%);
 }
 .ta-stack-header:first-child { margin-top: 0; }
 .ta-stack-header-left {
@@ -1336,12 +1344,12 @@ async function submitSuggestion() {
   display: flex;
   overflow: hidden;
 }
-/* Left zone: spans label/val/end columns, magenta bg, holds section title */
+/* Left zone: spans label/val/end columns, tab color bg, holds section title */
 .ta-title-label-zone {
   width: min(var(--col-left-zone), 40%);
   flex-shrink: 0;
   box-sizing: border-box;
-  background: var(--magenta);
+  background: var(--tabc, var(--magenta));
   display: flex;
   align-items: center;
   justify-content: center;

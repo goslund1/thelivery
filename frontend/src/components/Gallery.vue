@@ -47,12 +47,16 @@ watch(index, async () => {
   const t = thumbsRef.value
   const active = t?.querySelector<HTMLElement>('.thumb.active')
   if (t && active) {
+    // In edit mode, the add panel covers the right 90px of the rail. Use that as
+    // the effective right boundary so the active thumb always lands in the clear
+    // zone — the gradient then shows the next thumb peeking in as a preview.
+    const reservedRight = ui.isEditing ? 90 : 0
     const railLeft = t.scrollLeft
-    const railRight = railLeft + t.clientWidth
+    const railRight = railLeft + t.clientWidth - reservedRight
     const thumbLeft = active.offsetLeft
     const thumbRight = thumbLeft + active.offsetWidth
     if (thumbLeft < railLeft) t.scrollLeft = thumbLeft - 10
-    else if (thumbRight > railRight) t.scrollLeft = thumbRight - t.clientWidth + 10
+    else if (thumbRight > railRight) t.scrollLeft = thumbRight - t.clientWidth + reservedRight + 10
   }
   updateArrows()
 })
@@ -646,10 +650,12 @@ function cancelFolderImport() {
 }
 .fi-cancel:hover { color: var(--paper); }
 .fi-has-errors { border-color: var(--gold); }
-/* In edit mode, right chevron moves to overlap the fade zone, above the add panel */
+/* In edit mode, chevron sits over the add panel's fade zone. background:none so
+   the arrow's own gradient doesn't extend the fade leftward on canRight changes. */
 .thumb-rail-editing .edge-arrow-right {
-  right: 70px;
+  right: 63px;
   z-index: 6;
+  background: none;
 }
 .thumb-add-progress {
   font-family: 'JetBrains Mono', monospace;

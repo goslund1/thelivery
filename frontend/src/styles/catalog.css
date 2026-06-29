@@ -827,6 +827,10 @@
     display:flex;
   }
 
+  body.editing-mode .gutter-figure:not(.has-image){
+    aspect-ratio:16/9;
+  }
+
   .gutter-figure.has-image{
     overflow:hidden;
     border-radius:4px;

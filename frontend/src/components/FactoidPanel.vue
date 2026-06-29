@@ -53,7 +53,7 @@ function confirmAddType() {
       class="fp-backdrop"
       @click.self="ui.closeFactoidPanel()"
     ></div>
-    <div class="fp-panel" :class="{ open: ui.factoidPanelOpen }">
+    <div class="fp-panel" :class="{ open: ui.factoidPanelOpen }" :style="{ pointerEvents: ui.factoidPanelOpen ? 'auto' : 'none' }">
       <div class="fp-header">
         <span class="fp-title">Factoid Types</span>
         <button class="fp-close" type="button" @click="ui.closeFactoidPanel()">×</button>

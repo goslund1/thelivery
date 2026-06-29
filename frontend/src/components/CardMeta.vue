@@ -15,6 +15,20 @@ const ui = useUiStore()
 const catalogNo = computed(() => String(props.card.catalogNumber).padStart(3, '0'))
 const editOpen = ref(false)
 
+function formatShareCode(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(0, 9)
+  if (d.length <= 3) return d
+  if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`
+  return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`
+}
+function onLiveryCodeInput(e: Event) {
+  const input = e.target as HTMLInputElement
+  const formatted = formatShareCode(input.value)
+  props.card.liveryShareCode = formatted
+  input.value = formatted
+  ui.markCardDirty(props.card.id)
+}
+
 function toggleFav() {
   store.toggleFavorite(props.card.id)
   ui.markCardDirty(props.card.id)
@@ -41,6 +55,19 @@ function removeCollection(c: string) {
         <button class="chip-add" data-chip-type="collection" type="button" @click="ui.openChipPicker(card.id, 'collection')">+</button>
       </p>
       <EditableText tag="h2" class="card-title" v-model="card.name" />
+      <div v-if="ui.isEditing || card.liveryShareCode" class="plate livery-code-plate">
+        SHARE CODE:
+        <input
+          v-if="ui.isEditing"
+          class="livery-code-input"
+          :value="card.liveryShareCode"
+          @input="onLiveryCodeInput"
+          placeholder="000 000 000"
+          maxlength="11"
+          spellcheck="false"
+        />
+        <b v-else>{{ card.liveryShareCode || '—' }}</b>
+      </div>
       <SubtitleEditor v-model="card.subtitle" />
     </div>
     <div class="card-meta-actions">
@@ -55,6 +82,27 @@ function removeCollection(c: string) {
 </template>
 
 <style scoped>
+.livery-code-plate {
+  margin: 4px 0 6px;
+}
+.livery-code-input {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--panel-edge);
+  color: var(--magenta);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: .08em;
+  padding: 0 2px;
+  width: 9em;
+}
+.livery-code-input:focus {
+  outline: none;
+  border-bottom-color: var(--gold);
+}
+.livery-code-input::placeholder { opacity: 0.35; font-weight: normal; }
+
 .card-meta-actions {
   display: flex;
   flex-direction: row;

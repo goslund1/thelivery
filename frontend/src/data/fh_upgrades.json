@@ -1,6 +1,14 @@
 {
   "categories": [
     {
+      "name": "Body Kits and Conversions",
+      "parts": [
+        { "part": "Engine Swap", "tiers": ["Stock", "7.0L V12", "3.0L V6-TT", "6.5L V12"], "tierCosts": {"Stock": 0, "7.0L V12": 62500, "3.0L V6-TT": 77500, "6.5L V12": 85000} },
+        { "part": "Drivetrain Swap", "tiers": ["Stock", "AWD", "RWD", "FWD"] },
+        { "part": "Aspiration", "tiers": ["Single Turbo", "Twin Turbo", "Positive-Displacement Supercharger", "Centrifugal Supercharger"], "tierCosts": {"Single Turbo": 1800, "Twin Turbo": 1800, "Positive-Displacement Supercharger": 1500, "Centrifugal Supercharger": 1500} }
+      ]
+    },
+    {
       "name": "Engine",
       "parts": [
         { "part": "Intake", "tiers": ["Street Intake", "Sport Intake", "Race Intake"], "tierCosts": {"Street Intake": 600, "Sport Intake": 1200, "Race Intake": 1800} },
@@ -90,14 +98,6 @@
         { "part": "Front Bumper", "tiers": ["Race Front Bumper", "None"], "tierCosts": {"Race Front Bumper": 5000, "None": 1000} },
         { "part": "Rear Wing", "tiers": ["Race Rear Wing", "None"], "tierCosts": {"Race Rear Wing": 5000, "None": 1000} },
         { "part": "Rear Bumper", "tiers": ["None"], "tierCosts": {"None": 1000} }
-      ]
-    },
-    {
-      "name": "Body Kits and Conversions",
-      "parts": [
-        { "part": "Engine Swap", "tiers": ["Stock", "7.0L V12", "3.0L V6-TT", "6.5L V12"], "tierCosts": {"Stock": 0, "7.0L V12": 62500, "3.0L V6-TT": 77500, "6.5L V12": 85000} },
-        { "part": "Drivetrain Swap", "tiers": ["Stock", "AWD", "RWD", "FWD"] },
-        { "part": "Aspiration", "tiers": ["Single Turbo", "Twin Turbo", "Positive-Displacement Supercharger", "Centrifugal Supercharger"], "tierCosts": {"Single Turbo": 1800, "Twin Turbo": 1800, "Positive-Displacement Supercharger": 1500, "Centrifugal Supercharger": 1500} }
       ]
     }
   ]

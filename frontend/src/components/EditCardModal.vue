@@ -17,6 +17,7 @@ const ui = useUiStore()
 // Buffered local copies for fields that need clean Cancel support
 const name       = ref('')
 const subtitle   = ref('')
+const liveryShareCode = ref('')
 const collections = ref<string[]>([])
 const collectionInput = ref('')
 const tags        = ref<string[]>([])
@@ -63,10 +64,24 @@ const canCreateTag = computed(() => {
   return q && !tags.value.includes(q) && !existingTags.value.some(t => t.toLowerCase() === q.toLowerCase())
 })
 
+function formatShareCode(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(0, 9)
+  if (d.length <= 3) return d
+  if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`
+  return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`
+}
+function onLiveryCodeInput(e: Event) {
+  const input = e.target as HTMLInputElement
+  const formatted = formatShareCode(input.value)
+  liveryShareCode.value = formatted
+  input.value = formatted
+}
+
 function populate() {
   const c = props.card
-  name.value        = c.name
-  subtitle.value    = c.subtitle
+  name.value            = c.name
+  subtitle.value        = c.subtitle
+  liveryShareCode.value = c.liveryShareCode ?? ''
   collections.value = [...c.collections]
   tags.value        = [...c.tags]
   const insp   = c.sections.find(s => s.key === 'inspiration')
@@ -125,6 +140,7 @@ async function onSave() {
     const c = props.card
     c.name = name.value.trim()
     c.subtitle = subtitle.value.trim()
+    c.liveryShareCode = liveryShareCode.value.trim() || undefined
     c.collections = collections.value
     c.tags = tags.value
     // Text sections and recipe already mutated live by their components
@@ -197,6 +213,17 @@ async function onDelete() {
               type="button" @click="toggleCollection(c)">{{ c }}</button>
           </div>
           <input class="card-title nc-title-input" v-model="name" placeholder="Livery Name" @keydown.enter.prevent />
+          <div class="plate nc-livery-code-plate">
+            SHARE CODE:
+            <input
+              class="nc-livery-code-input"
+              :value="liveryShareCode"
+              @input="onLiveryCodeInput"
+              placeholder="000 000 000"
+              maxlength="11"
+              spellcheck="false"
+            />
+          </div>
           <SubtitleEditor v-model="subtitle" />
         </div>
       </div>
@@ -258,6 +285,27 @@ async function onDelete() {
 </template>
 
 <style scoped>
+.nc-livery-code-plate {
+  margin: 4px 0 6px;
+}
+.nc-livery-code-input {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--panel-edge);
+  color: var(--magenta);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: .08em;
+  padding: 0 2px;
+  width: 9em;
+}
+.nc-livery-code-input:focus {
+  outline: none;
+  border-bottom-color: var(--gold);
+}
+.nc-livery-code-input::placeholder { opacity: 0.35; font-weight: normal; }
+
 .ec-actions {
   display: flex;
   align-items: center;

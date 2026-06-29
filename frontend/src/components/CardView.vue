@@ -53,7 +53,7 @@ function onBuildIt() {
       v-model:open="openState[section.key]"
     >
       <TextSection v-if="section.type === 'text'" :card-id="card.id" :section="section" />
-      <RecipeSection v-else-if="section.type === 'forza_recipe'" :recipe="section" />
+      <RecipeSection v-else-if="section.type === 'forza_recipe'" :recipe="section" :card-id="card.id" />
     </CollapsibleSection>
 
   </div>

@@ -75,6 +75,27 @@ function logout() {
   ui.closeSettings()
 }
 
+// Suggestions
+type Suggestion = { id: number; cardId: string; title: string; credit: string | null; adjustments: object[]; submittedAt: string; ip: string; reviewed: boolean }
+const suggestions = ref<Suggestion[]>([])
+const suggestionsBusy = ref(false)
+const suggestionsError = ref<string | null>(null)
+
+async function loadSuggestions() {
+  suggestionsBusy.value = true
+  suggestionsError.value = null
+  try { suggestions.value = await api.adminListSuggestions() }
+  catch (e: any) { suggestionsError.value = `Failed: ${e.message}` }
+  finally { suggestionsBusy.value = false }
+}
+
+async function dismissSuggestion(id: number) {
+  try {
+    await api.adminDismissSuggestion(id)
+    suggestions.value = suggestions.value.filter(s => s.id !== id)
+  } catch (e: any) { suggestionsError.value = `Failed: ${e.message}` }
+}
+
 // Admin
 type AdminStats = { cardCount: number; imageCount: number; fileCount: number; uploadsDirBytes: number; dbBytes: number }
 const adminStats = ref<AdminStats | null>(null)
@@ -155,6 +176,7 @@ function onTabAdmin() {
   reloadResult.value = null
   adminError.value = null
   loadAdminStats()
+  loadSuggestions()
 }
 </script>
 
@@ -237,6 +259,24 @@ function onTabAdmin() {
             {{ exportBusy ? 'Exporting…' : 'Export to Seed File' }}
           </button>
           <p v-if="exportResult" class="admin-ok">{{ exportResult }}</p>
+        </div>
+
+        <!-- Suggestions -->
+        <div class="admin-section">
+          <div class="admin-section-head">Tune Suggestions <span v-if="suggestions.length" class="admin-badge">{{ suggestions.length }}</span></div>
+          <p v-if="suggestionsError" class="settings-error">{{ suggestionsError }}</p>
+          <div v-if="suggestionsBusy" class="admin-muted">Loading…</div>
+          <div v-else-if="!suggestions.length" class="admin-muted">No suggestions yet.</div>
+          <div v-else class="admin-suggestions">
+            <div v-for="s in suggestions" :key="s.id" class="admin-suggestion">
+              <div class="admin-suggestion-head">
+                <span class="admin-suggestion-title">{{ s.title }}</span>
+                <span class="admin-suggestion-meta">{{ s.cardId }} · {{ s.submittedAt.slice(0,10) }}</span>
+              </div>
+              <div v-if="s.credit" class="admin-suggestion-credit">{{ s.credit }}</div>
+              <button class="admin-btn admin-btn-red admin-suggestion-dismiss" @click="dismissSuggestion(s.id)">Dismiss</button>
+            </div>
+          </div>
         </div>
 
         <!-- Reload seed -->
@@ -424,4 +464,48 @@ function onTabAdmin() {
   border-color: #ff4444;
   box-shadow: 0 0 16px rgba(200, 0, 0, 0.85);
 }
+
+.admin-badge {
+  display: inline-block;
+  background: var(--magenta);
+  color: #fff;
+  font-size: 9px;
+  border-radius: 100px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.admin-suggestions { display: flex; flex-direction: column; gap: 8px; }
+.admin-suggestion {
+  border: 1px solid var(--panel-edge);
+  border-radius: 5px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.admin-suggestion-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.admin-suggestion-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--paper);
+}
+.admin-suggestion-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--steel);
+  white-space: nowrap;
+}
+.admin-suggestion-credit {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--gold);
+}
+.admin-suggestion-dismiss { align-self: flex-start; margin-top: 4px; }
 </style>

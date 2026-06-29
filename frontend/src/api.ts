@@ -105,6 +105,40 @@ export const api = {
       json<{ upserted: number; removed: number }>
     ),
 
+  submitSuggestion: (payload: { cardId: string; title: string; credit?: string; adjustments: object[] }) =>
+    fetch('/api/suggestions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ card_id: payload.cardId, title: payload.title, credit: payload.credit, adjustments: payload.adjustments }),
+    }).then(json<{ ok: boolean }>),
+
+  adminListSuggestions: () =>
+    fetch('/api/admin/suggestions', { headers: authHeaders() }).then(
+      json<{ id: number; cardId: string; title: string; credit: string | null; adjustments: object[]; submittedAt: string; ip: string; reviewed: boolean }[]>
+    ),
+
+  adminDismissSuggestion: (id: number) =>
+    fetch(`/api/admin/suggestions/${id}`, { method: 'DELETE', headers: authHeaders() }).then(
+      json<{ ok: boolean }>
+    ),
+
+  listTuningPresets: () =>
+    fetch('/api/tuning-presets').then(
+      json<{ id: number; name: string; values: Record<string, number>; createdAt: string }[]>
+    ),
+
+  createTuningPreset: (payload: { name: string; values: Record<string, number> }) =>
+    fetch('/api/tuning-presets', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
+    }).then(json<{ id: number; name: string; values: Record<string, number> }>),
+
+  deleteTuningPreset: (id: number) =>
+    fetch(`/api/tuning-presets/${id}`, { method: 'DELETE', headers: authHeaders() }).then(
+      json<{ ok: boolean }>
+    ),
+
   // Upload a file with card context for folder naming; returns original + variant paths.
   // fileIndex: when set, the backend uses it for sequential filename (001.jpg, 002.jpg…)
   uploadImage: (

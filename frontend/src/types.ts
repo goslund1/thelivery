@@ -26,9 +26,17 @@ export interface UpgradeCategory {
   parts: string[]
 }
 
-export interface Adjustment {
-  name: string
-  description: string
+export interface AdjustmentRow {
+  tab: string     // 'tires' | 'alignment' | 'arb' | 'springs' | 'damping' | 'aero' | 'brakes' | 'differential'
+  group: string   // e.g. 'Tire Pressure', 'Camber'
+  key: string     // unique slug, e.g. 'tiresFront'
+  label: string   // e.g. 'Front', 'Rear'
+  unit: string    // e.g. '°', '%', '' for unitless
+  min: number
+  max: number
+  stock: number
+  value: number
+  step: number
 }
 
 // The Forza tune/build-parts section.
@@ -41,7 +49,7 @@ export interface ForzaRecipeSection {
   showStock?: boolean
   coreSpecs: Record<string, string>
   upgrades: UpgradeCategory[]
-  adjustments: Adjustment[]
+  adjustments: AdjustmentRow[]
 }
 
 export type Section = TextSection | ForzaRecipeSection
@@ -51,6 +59,7 @@ export interface Card {
   catalogNumber: number
   name: string
   subtitle: string
+  liveryShareCode?: string
   isFavorite: boolean
   isLegend: boolean
   collections: string[]

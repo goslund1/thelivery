@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { Card, TextSection, UpgradeCategory, Adjustment } from '../types'
+import type { Card, TextSection, UpgradeCategory, AdjustmentRow } from '../types'
 import { api } from '../api'
 
 // Holds the catalog data and all mutations. Replaces the original app's
@@ -57,7 +57,7 @@ export const useCardsStore = defineStore('cards', () => {
     shareCode?: string
     coreSpecs?: Record<string, string>
     upgrades?: UpgradeCategory[]
-    adjustments?: Adjustment[]
+    adjustments?: AdjustmentRow[]
   }): Promise<Card> {
     const maxCatalog = cards.value.reduce((m, c) => Math.max(m, c.catalogNumber), 0)
     const nextNum = maxCatalog + 1

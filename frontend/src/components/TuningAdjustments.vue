@@ -652,7 +652,7 @@ async function submitSuggestion() {
       <div class="ta-nonstock-body">
         <template v-if="changedRows.length">
           <div v-for="(col, ci) in tweakColumns" :key="ci" class="ta-nonstock-col">
-            <div v-for="[tabId, { groups }] in col" :key="tabId" class="ta-nonstock-tab-block">
+            <div v-for="[tabId, { groups }] in col" :key="tabId" :class="['ta-nonstock-tab-block', 'ta-tab--' + tabId]">
               <div v-for="[groupKey, { label, rows }] in groups" :key="groupKey" class="ta-nonstock-group">
                 <div class="ta-nonstock-group-title">{{ label }}</div>
                 <div v-for="r in rows" :key="r.key" class="ta-nonstock-line">
@@ -710,7 +710,7 @@ async function submitSuggestion() {
     <div v-if="activeTabs.length" class="ta-tabbar">
       <button
         v-for="tab in activeTabs" :key="tab.id"
-        class="ta-tab-btn" :class="{ active: !stacked && tab.id === activeTabId }"
+        :class="['ta-tab-btn', 'ta-tab--' + tab.id, { active: !stacked && tab.id === activeTabId }]"
         @click="onTabClick(tab.id)"
       >
         {{ tab.label }}
@@ -724,7 +724,7 @@ async function submitSuggestion() {
 
     <!-- Content -->
     <div v-if="activeTabs.length" class="ta-content">
-      <div v-for="section in displaySections" :key="section.id">
+      <div v-for="section in displaySections" :key="section.id" :class="'ta-tab--' + section.id">
         <div v-if="stacked" class="ta-stack-header" :ref="(el) => sectionRefs[section.id] = el as HTMLElement | null">
           <div class="ta-stack-header-left">
             <span class="ta-caps-nudge">{{ section.label }}<span v-if="hasChangedInTab(section.id)" class="ta-tab-dot ta-tab-dot--inline"></span></span>
@@ -1094,7 +1094,7 @@ async function submitSuggestion() {
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--steel-light);
-  background: var(--panel-edge);
+  background: color-mix(in srgb, var(--tabc, var(--panel-edge)) 28%, var(--panel-edge));
   padding: 2px 6px;
   margin-bottom: 2px;
 }
@@ -1127,8 +1127,8 @@ async function submitSuggestion() {
   white-space: nowrap;
   transition: color 0.12s, background 0.12s, border-color 0.12s;
 }
-.ta-tab-btn:hover { color: var(--paper); border-color: var(--steel); }
-.ta-tab-btn.active { background: var(--magenta); border-color: var(--magenta); color: #fff; font-weight: 600; }
+.ta-tab-btn:hover { color: var(--paper); border-color: var(--tabc, var(--steel)); }
+.ta-tab-btn.active { background: var(--tabc, var(--magenta)); border-color: var(--tabc, var(--magenta)); color: #fff; font-weight: 600; }
 .ta-tab-dot {
   position: absolute;
   top: 2px; right: 2px;
@@ -1150,8 +1150,9 @@ async function submitSuggestion() {
   color: var(--paper);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 10px 0;
+  padding: 10px 0 10px 10px;
   border-bottom: 1px solid var(--panel-edge);
+  border-left: 3px solid var(--tabc, var(--panel-edge));
   margin: 16px 0 12px;
 }
 .ta-stack-header:first-child { margin-top: 0; }
@@ -1188,6 +1189,17 @@ async function submitSuggestion() {
 }
 .ta-btn-lwb:hover { color: var(--gold-bright, var(--gold)); border-color: var(--gold); }
 
+/* Tab color tokens — set --tabc on the element, everything inside inherits it */
+.ta-tab--tires        { --tabc: var(--tabc-tires); }
+.ta-tab--gearing      { --tabc: var(--tabc-gearing); }
+.ta-tab--alignment    { --tabc: var(--tabc-alignment); }
+.ta-tab--arb          { --tabc: var(--tabc-arb); }
+.ta-tab--springs      { --tabc: var(--tabc-springs); }
+.ta-tab--damping      { --tabc: var(--tabc-damping); }
+.ta-tab--aero         { --tabc: var(--tabc-aero); }
+.ta-tab--brakes       { --tabc: var(--tabc-brakes); }
+.ta-tab--differential { --tabc: var(--tabc-differential); }
+
 .ta-stack-collapse-btn { margin-left: auto; color: var(--magenta); border-color: var(--magenta-tint-40); }
 .ta-stack-collapse-btn:hover { color: var(--paper); border-color: var(--magenta); }
 .ta-stack-stock-btn {}
@@ -1196,6 +1208,7 @@ async function submitSuggestion() {
   margin-bottom: 16px;
   overflow: hidden;
   border-radius: 0 0 0 4px;
+  --track-color: var(--tabc, var(--magenta));
 }
 .ta-group-header {
   display: flex;

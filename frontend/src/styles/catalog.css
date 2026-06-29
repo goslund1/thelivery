@@ -34,6 +34,16 @@
     --bug-bg:var(--panel);
     --dissolve: 2s;
     --text-delta: 0px;
+    /* Tab accent colors — one per tuning section */
+    --tabc-tires:        #00d4f5;
+    --tabc-gearing:      #0fc4a0;
+    --tabc-alignment:    #c870d0;
+    --tabc-arb:          #8c5cf6;
+    --tabc-springs:      #f5906a;
+    --tabc-damping:      #e85d2a;
+    --tabc-aero:         #84cc16;
+    --tabc-brakes:       #f04060;
+    --tabc-differential: #6884f8;
   }
 
   /* Light theme — overrides the same variables, nothing else changes */

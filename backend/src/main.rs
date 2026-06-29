@@ -17,18 +17,19 @@
 //!   GET    /uploads/*                        -> static files
 //!   GET    /api/health                       -> "ok"
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use argon2::password_hash::rand_core::{OsRng, RngCore};
 use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
 use axum::{
     async_trait,
-    extract::{DefaultBodyLimit, FromRequestParts, Multipart, Path, State},
+    extract::{ConnectInfo, DefaultBodyLimit, FromRequestParts, Multipart, Path, State},
     http::{header::AUTHORIZATION, request::Parts, HeaderName, HeaderValue, StatusCode},
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
     Json, Router,
 };
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -48,6 +49,23 @@ struct AppState {
     seed_path: PathBuf,
     db_path: PathBuf,
     jwt_secret: Arc<Vec<u8>>,
+    rate_limits: Arc<tokio::sync::Mutex<HashMap<String, Vec<Instant>>>>,
+}
+
+const SUGGESTION_RATE_LIMIT: usize = 3;
+const SUGGESTION_RATE_WINDOW: Duration = Duration::from_secs(3600);
+const SUGGESTION_TITLE_MAX: usize = 60;
+
+// Patterns that indicate directed hostility or hate — not general profanity.
+const BLOCKED_PATTERNS: &[&str] = &[
+    "fuck you", "kill yourself", "kys", "go die", "you suck",
+    "faggot", "nigger", "nigga", "chink", "spic", "wetback",
+    "retard", "cunt", "whore", "bitch ass",
+];
+
+fn is_title_blocked(title: &str) -> bool {
+    let lower = title.to_lowercase();
+    BLOCKED_PATTERNS.iter().any(|p| lower.contains(p))
 }
 
 type ApiError = (StatusCode, String);
@@ -283,6 +301,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     seed_if_empty(&pool, &seed_path).await?;
+    seed_users_if_empty(&pool, "seed/users.json").await?;
     normalize_bodies(&pool).await?;
 
     let state = AppState {
@@ -291,6 +310,7 @@ async fn main() -> anyhow::Result<()> {
         seed_path: PathBuf::from(&seed_path),
         db_path: PathBuf::from(&db_path),
         jwt_secret: load_jwt_secret(),
+        rate_limits: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
     };
 
     // Serve the built SPA: real files (index.html at "/", hashed assets) are
@@ -316,6 +336,11 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/orphans", get(admin_scan_orphans).delete(admin_delete_orphans))
         .route("/api/admin/export-seed", post(admin_export_seed))
         .route("/api/admin/reload-seed", post(admin_reload_seed))
+        .route("/api/suggestions", post(submit_suggestion))
+        .route("/api/admin/suggestions", get(admin_list_suggestions))
+        .route("/api/admin/suggestions/:id", delete(admin_dismiss_suggestion))
+        .route("/api/tuning-presets", get(list_tuning_presets).post(create_tuning_preset))
+        .route("/api/tuning-presets/:id", delete(delete_tuning_preset))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
         .fallback_service(spa)
         .layer(DefaultBodyLimit::max(40 * 1024 * 1024)) // 40 MB per file
@@ -333,9 +358,166 @@ async fn main() -> anyhow::Result<()> {
     let addr = format!("{bind}:{port}");
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("backend listening on http://{addr}");
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app.into_make_service_with_connect_info::<std::net::SocketAddr>()).await?;
     Ok(())
 }
+
+// --- Suggestions ------------------------------------------------------------
+
+#[derive(Deserialize)]
+struct SubmitSuggestionReq {
+    card_id: String,
+    title: String,
+    credit: Option<String>,
+    adjustments: Value,
+}
+
+async fn submit_suggestion(
+    State(st): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    Json(req): Json<SubmitSuggestionReq>,
+) -> Result<Json<Value>, ApiError> {
+    let ip = addr.ip().to_string();
+
+    // Rate limit: 3 per hour per IP
+    {
+        let mut limits = st.rate_limits.lock().await;
+        let now = Instant::now();
+        let entries = limits.entry(ip.clone()).or_default();
+        entries.retain(|t| now.duration_since(*t) < SUGGESTION_RATE_WINDOW);
+        if entries.len() >= SUGGESTION_RATE_LIMIT {
+            return Err(err(StatusCode::TOO_MANY_REQUESTS, "Too many suggestions — try again later"));
+        }
+        entries.push(now);
+    }
+
+    // Validate title
+    let title = req.title.trim().to_string();
+    if title.is_empty() || title.chars().count() > SUGGESTION_TITLE_MAX {
+        return Err(err(StatusCode::UNPROCESSABLE_ENTITY, format!("Title must be 1–{SUGGESTION_TITLE_MAX} characters")));
+    }
+    if is_title_blocked(&title) {
+        return Err(err(StatusCode::UNPROCESSABLE_ENTITY, "Title contains prohibited content"));
+    }
+
+    let credit = req.credit.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    let adjustments = req.adjustments.to_string();
+
+    sqlx::query(
+        "INSERT INTO suggestions (card_id, title, credit, adjustments, ip) VALUES (?, ?, ?, ?, ?)"
+    )
+    .bind(&req.card_id)
+    .bind(&title)
+    .bind(&credit)
+    .bind(&adjustments)
+    .bind(&ip)
+    .execute(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    Ok(Json(json!({ "ok": true })))
+}
+
+async fn admin_list_suggestions(
+    State(st): State<AppState>,
+    _auth: AuthUser,
+) -> Result<Json<Value>, ApiError> {
+    let rows = sqlx::query(
+        "SELECT id, card_id, title, credit, adjustments, submitted_at, ip, reviewed FROM suggestions ORDER BY submitted_at DESC"
+    )
+    .fetch_all(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let list: Vec<Value> = rows.iter().map(|r| json!({
+        "id":           r.get::<i64, _>("id"),
+        "cardId":       r.get::<String, _>("card_id"),
+        "title":        r.get::<String, _>("title"),
+        "credit":       r.get::<Option<String>, _>("credit"),
+        "adjustments":  serde_json::from_str::<Value>(&r.get::<String, _>("adjustments")).unwrap_or(Value::Null),
+        "submittedAt":  r.get::<String, _>("submitted_at"),
+        "ip":           r.get::<String, _>("ip"),
+        "reviewed":     r.get::<i64, _>("reviewed") == 1,
+    })).collect();
+
+    Ok(Json(json!(list)))
+}
+
+async fn admin_dismiss_suggestion(
+    State(st): State<AppState>,
+    _auth: AuthUser,
+    Path(id): Path<i64>,
+) -> Result<Json<Value>, ApiError> {
+    sqlx::query("DELETE FROM suggestions WHERE id = ?")
+        .bind(id)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(json!({ "ok": true })))
+}
+
+// --- Tuning Presets ---------------------------------------------------------
+
+#[derive(Deserialize)]
+struct CreatePresetReq {
+    name: String,
+    values: Value,
+}
+
+async fn list_tuning_presets(
+    State(st): State<AppState>,
+) -> Result<Json<Value>, ApiError> {
+    let rows = sqlx::query("SELECT id, name, body, created_at FROM tuning_presets ORDER BY created_at ASC")
+        .fetch_all(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let list: Vec<Value> = rows.iter().map(|r| json!({
+        "id":        r.get::<i64, _>("id"),
+        "name":      r.get::<String, _>("name"),
+        "values":    serde_json::from_str::<Value>(&r.get::<String, _>("body")).unwrap_or(json!({})),
+        "createdAt": r.get::<String, _>("created_at"),
+    })).collect();
+
+    Ok(Json(json!(list)))
+}
+
+async fn create_tuning_preset(
+    State(st): State<AppState>,
+    _auth: AuthUser,
+    Json(req): Json<CreatePresetReq>,
+) -> Result<Json<Value>, ApiError> {
+    let name = req.name.trim().to_string();
+    if name.is_empty() {
+        return Err(err(StatusCode::UNPROCESSABLE_ENTITY, "Name is required"));
+    }
+    let body = req.values.to_string();
+
+    let result = sqlx::query("INSERT INTO tuning_presets (name, body) VALUES (?, ?)")
+        .bind(&name)
+        .bind(&body)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let id = result.last_insert_rowid();
+    Ok(Json(json!({ "id": id, "name": name, "values": req.values })))
+}
+
+async fn delete_tuning_preset(
+    State(st): State<AppState>,
+    _auth: AuthUser,
+    Path(id): Path<i64>,
+) -> Result<Json<Value>, ApiError> {
+    sqlx::query("DELETE FROM tuning_presets WHERE id = ?")
+        .bind(id)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(json!({ "ok": true })))
+}
+
+// --- Seed -------------------------------------------------------------------
 
 /// Import seed/cards.json on first run (when the table is empty).
 async fn seed_if_empty(pool: &SqlitePool, seed_path: &str) -> anyhow::Result<()> {
@@ -356,6 +538,34 @@ async fn seed_if_empty(pool: &SqlitePool, seed_path: &str) -> anyhow::Result<()>
         upsert(pool, c).await?;
     }
     tracing::info!("seeded {} cards from {seed_path}", cards.len());
+    Ok(())
+}
+
+/// Seed users from seed/users.json when the users table is empty (e.g. after a DB reset).
+/// Skips silently if the file doesn't exist. Never overwrites existing users.
+async fn seed_users_if_empty(pool: &SqlitePool, seed_path: &str) -> anyhow::Result<()> {
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
+        .fetch_one(pool)
+        .await?;
+    if count > 0 {
+        return Ok(());
+    }
+    let Ok(raw) = std::fs::read_to_string(seed_path) else {
+        tracing::warn!("no user seed at {seed_path}; starting with no users (run `adduser` to create one)");
+        return Ok(());
+    };
+    let users: Vec<Value> = serde_json::from_str(&raw)?;
+    for u in &users {
+        let username = u.get("username").and_then(Value::as_str).unwrap_or_default();
+        let hash = u.get("password_hash").and_then(Value::as_str).unwrap_or_default();
+        if username.is_empty() || hash.is_empty() { continue; }
+        sqlx::query("INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)")
+            .bind(username)
+            .bind(hash)
+            .execute(pool)
+            .await?;
+    }
+    tracing::info!("seeded {} user(s) from {seed_path}", users.len());
     Ok(())
 }
 
@@ -716,12 +926,6 @@ async fn put_card(
     Path(id): Path<String>,
     Json(mut body): Json<Value>,
 ) -> Result<Json<Value>, ApiError> {
-    // Card 0 (the instructions card) is read-only through the normal API.
-    let catalog_number = body.get("catalogNumber").and_then(Value::as_i64).unwrap_or(-1);
-    if catalog_number == 0 {
-        return Err(err(StatusCode::FORBIDDEN, "card 0 is read-only"));
-    }
-
     body["id"] = json!(id);
 
     // Snapshot the current state into history before overwriting.

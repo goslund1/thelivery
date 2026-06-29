@@ -179,7 +179,6 @@ function setTabMode(tabId: string, isStatic: boolean) {
 }
 
 function buildLocalRows(): LocalRow[] {
-  initTabModes()
   const result: LocalRow[] = []
   for (const tab of CANONICAL_TABS) {
     if (tab.deferred) continue
@@ -214,11 +213,13 @@ function buildLocalRows(): LocalRow[] {
   return result
 }
 
+initTabModes()
 const localRows = ref<LocalRow[]>(buildLocalRows())
 const endDisplay = ref<Record<string, string>>({})
 
 watch(() => props.adjustments, () => {
   gearCount.value = storedGearCount()
+  initTabModes()
   localRows.value = buildLocalRows()
   endDisplay.value = {}
 }, { deep: false })
@@ -256,7 +257,7 @@ const activeTabs = computed(() => {
 
 const activeTabId = ref('')
 watch(activeTabs, tabs => {
-  if (!activeTabId.value && tabs.length) activeTabId.value = tabs[0].id
+  if (!tabs.some(t => t.id === activeTabId.value) && tabs.length) activeTabId.value = tabs[0].id
 }, { immediate: true })
 
 const stacked = ref(false)
@@ -492,9 +493,8 @@ function onMinChange(r: LocalRow, e: Event) {
   const raw = (e.target as HTMLInputElement).value
   const v = parseFloat(raw)
   if (!isNaN(v)) {
-    r.min = v
-    endDisplay.value[r.key + ':min'] = fmt(r, v)
-    if (r.value < r.min) r.value = r.min
+    r.min = Math.min(v, r.value)
+    endDisplay.value[r.key + ':min'] = fmt(r, r.min)
     flush()
   } else {
     endDisplay.value[r.key + ':min'] = raw
@@ -504,9 +504,8 @@ function onMaxChange(r: LocalRow, e: Event) {
   const raw = (e.target as HTMLInputElement).value
   const v = parseFloat(raw)
   if (!isNaN(v)) {
-    r.max = v
-    endDisplay.value[r.key + ':max'] = fmt(r, v)
-    if (r.value > r.max) r.value = r.max
+    r.max = Math.max(v, r.value)
+    endDisplay.value[r.key + ':max'] = fmt(r, r.max)
     flush()
   } else {
     endDisplay.value[r.key + ':max'] = raw

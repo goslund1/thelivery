@@ -903,7 +903,7 @@ async function submitSuggestion() {
     </div>
 
     <!-- Suggestion submit modal -->
-    <div v-if="suggestModalOpen" class="ta-overlay" @click.self="suggestModalOpen = false">
+    <div v-if="suggestModalOpen" class="ta-overlay ta-overlay--fixed" @click.self="suggestModalOpen = false">
       <div class="ta-dialog ta-suggest-dialog">
         <div class="ta-dialog-head">
           <span>Suggest a Tune</span>
@@ -1530,7 +1530,7 @@ async function submitSuggestion() {
   );
 }
 .ta-slider::-moz-range-track    { height: 6px; border-radius: 3px; background: var(--panel-edge); }
-.ta-slider::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--magenta); }
+.ta-slider::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--track-color, var(--magenta)); }
 .ta-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 14px; height: 14px; border-radius: 50%;
@@ -1576,6 +1576,7 @@ async function submitSuggestion() {
   display: flex; align-items: center; justify-content: center;
   z-index: 100;
 }
+.ta-overlay--fixed { position: fixed; border-radius: 0; }
 .ta-dialog {
   background: var(--panel);
   border: 1px solid var(--panel-edge);

@@ -57,7 +57,7 @@ const CANONICAL_TABS: CanonicalTab[] = [
       { key: 'casterFront', label: 'Front', unit: '°', step: 0.1 },
     ]},
   ]},
-  { id: 'arb', label: 'Anti-Roll Bars', groups: [
+  { id: 'arb', label: 'Antiroll Bars', groups: [
     { title: 'Antiroll Bars', axis: ['Soft', 'Stiff'], rows: [
       { key: 'arbFront', label: 'Front', unit: '', step: 0.01 },
       { key: 'arbRear',  label: 'Rear',  unit: '', step: 0.01 },
@@ -262,6 +262,7 @@ watch(activeTabs, tabs => {
 const stacked = ref(false)
 const suppressStackHover = ref(false)
 const taRef = ref<HTMLElement | null>(null)
+const sectionRefs = ref<Record<string, HTMLElement | null>>({})
 
 function collapseToTab(sectionId: string) {
   stacked.value = false
@@ -273,6 +274,18 @@ function collapseToTab(sectionId: string) {
     const target = window.scrollY + rect.top - window.innerHeight * 0.2
     window.scrollTo({ top: Math.max(0, target), behavior: 'smooth' })
   })
+}
+
+function onTabClick(tabId: string) {
+  if (stacked.value) {
+    const el = sectionRefs.value[tabId]
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const target = window.scrollY + rect.top - 12
+    window.scrollTo({ top: Math.max(0, target), behavior: 'smooth' })
+  } else {
+    collapseToTab(tabId)
+  }
 }
 
 function groupsForTab(tabId: string) {
@@ -310,6 +323,36 @@ function hasChangedInTab(tabId: string) {
   return localRows.value.filter(r => r.tab === tabId).some(r => isChanged(r))
 }
 const changedRows = computed(() => localRows.value.filter(r => isChanged(r)))
+const TAB_LABEL: Record<string, string> = Object.fromEntries(CANONICAL_TABS.map(t => [t.id, t.label]))
+const TWEAK_COLS = 5
+const changedByTab = computed(() => {
+  const tabMap = new Map<string, { tabLabel: string; groups: Map<string, { label: string; rows: typeof changedRows.value }> }>()
+  for (const r of changedRows.value) {
+    if (!tabMap.has(r.tab)) tabMap.set(r.tab, { tabLabel: TAB_LABEL[r.tab] ?? r.tab, groups: new Map() })
+    const { tabLabel, groups } = tabMap.get(r.tab)!
+    if (!groups.has(r.group)) {
+      const display = tabLabel.toLowerCase() !== r.group.toLowerCase() ? `${tabLabel} / ${r.group}` : r.group
+      groups.set(r.group, { label: display, rows: [] })
+    }
+    groups.get(r.group)!.rows.push(r)
+  }
+  return tabMap
+})
+// Distribute tab blocks across explicit columns using a greedy height-balance algorithm.
+// Each tab block's height ≈ number of total rows across its groups + groups (for title rows).
+const tweakColumns = computed(() => {
+  const cols: Array<Array<[string, typeof changedByTab.value extends Map<string, infer V> ? V : never]>> = Array.from({ length: TWEAK_COLS }, () => [])
+  const heights = new Array(TWEAK_COLS).fill(0)
+  for (const entry of changedByTab.value) {
+    const [, { groups }] = entry
+    let h = 0
+    for (const { rows } of groups.values()) h += rows.length + 1 // +1 for group title
+    const shortest = heights.indexOf(Math.min(...heights))
+    cols[shortest].push(entry)
+    heights[shortest] += h
+  }
+  return cols
+})
 
 // ── Formatting ────────────────────────────────────────────────────────────────
 function decimals(r: AdjustmentRow) { return r.step < 0.1 ? 2 : r.step < 1 ? 1 : 0 }
@@ -608,9 +651,16 @@ async function submitSuggestion() {
       </summary>
       <div class="ta-nonstock-body">
         <template v-if="changedRows.length">
-          <div v-for="r in changedRows" :key="r.key" class="ta-nonstock-line">
-            <span class="ta-nonstock-loc">{{ r.group }} {{ r.label }}</span>
-            <span class="ta-nonstock-vals">{{ fmt(r, r.value) }} <span class="ta-nonstock-stock">← {{ fmt(r, r.stock) }}</span></span>
+          <div v-for="(col, ci) in tweakColumns" :key="ci" class="ta-nonstock-col">
+            <div v-for="[tabId, { groups }] in col" :key="tabId" class="ta-nonstock-tab-block">
+              <div v-for="[groupKey, { label, rows }] in groups" :key="groupKey" class="ta-nonstock-group">
+                <div class="ta-nonstock-group-title">{{ label }}</div>
+                <div v-for="r in rows" :key="r.key" class="ta-nonstock-line">
+                  <span class="ta-nonstock-loc">{{ r.label }}</span>
+                  <span class="ta-nonstock-vals">{{ fmt(r, r.value) }} <span class="ta-nonstock-stock">← {{ fmt(r, r.stock) }}</span></span>
+                </div>
+              </div>
+            </div>
           </div>
         </template>
         <span v-else class="ta-nonstock-empty">Everything matches stock.</span>
@@ -661,7 +711,7 @@ async function submitSuggestion() {
       <button
         v-for="tab in activeTabs" :key="tab.id"
         class="ta-tab-btn" :class="{ active: !stacked && tab.id === activeTabId }"
-        @click="collapseToTab(tab.id)"
+        @click="onTabClick(tab.id)"
       >
         {{ tab.label }}
         <span v-if="hasChangedInTab(tab.id)" class="ta-tab-dot"></span>
@@ -675,7 +725,7 @@ async function submitSuggestion() {
     <!-- Content -->
     <div v-if="activeTabs.length" class="ta-content">
       <div v-for="section in displaySections" :key="section.id">
-        <div v-if="stacked" class="ta-stack-header">
+        <div v-if="stacked" class="ta-stack-header" :ref="(el) => sectionRefs[section.id] = el as HTMLElement | null">
           <div class="ta-stack-header-left">
             <span class="ta-caps-nudge">{{ section.label }}<span v-if="hasChangedInTab(section.id)" class="ta-tab-dot ta-tab-dot--inline"></span></span>
             <button v-if="ui.isEditing" class="ta-btn-lwb ta-stack-stock-btn" @click="onSetStockParameters(section.id)">Set As Stock</button>
@@ -1028,13 +1078,27 @@ async function submitSuggestion() {
 
 .ta-nonstock-body  {
   padding: 8px 14px 12px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 2px 12px;
+  display: flex;
+  gap: 16px;
+  align-items: start;
   font-size: 12px;
   color: var(--paper);
   line-height: 1.75;
 }
+.ta-nonstock-col { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ta-nonstock-tab-block { display: flex; flex-direction: column; gap: 6px; }
+.ta-nonstock-group { display: flex; flex-direction: column; }
+.ta-nonstock-group-title {
+  text-align: center;
+  font-size: 0.85em;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--steel-light);
+  background: var(--panel-edge);
+  padding: 2px 6px;
+  margin-bottom: 2px;
+}
+.ta-nonstock-group-rows { display: flex; flex-direction: column; }
 .ta-nonstock-line  { display: flex; gap: 5px; align-items: baseline; min-width: 0; overflow: hidden; }
 .ta-nonstock-loc   { color: var(--steel-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; }
 .ta-nonstock-vals  { flex-shrink: 0; white-space: nowrap; font-weight: 600; }
@@ -1124,7 +1188,8 @@ async function submitSuggestion() {
 }
 .ta-btn-lwb:hover { color: var(--gold-bright, var(--gold)); border-color: var(--gold); }
 
-.ta-stack-collapse-btn { margin-left: auto; }
+.ta-stack-collapse-btn { margin-left: auto; color: var(--magenta); border-color: var(--magenta-tint-40); }
+.ta-stack-collapse-btn:hover { color: var(--paper); border-color: var(--magenta); }
 .ta-stack-stock-btn {}
 
 .ta-group {

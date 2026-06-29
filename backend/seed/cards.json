@@ -28,14 +28,14 @@
     "name": "Livery Name",
     "sections": [
       {
-        "body": "This is where the creative-fiction origin story lives — the why/how/when behind the build, told with some license. Doesn't need to be literally true, just true to the car.",
+        "body": "This is where the creative-fiction origin story lives \u2014 the why/how/when behind the build, told with some license. Doesn't need to be literally true, just true to the car.",
         "figurePath": "/uploads/legend-inspiration.png",
         "key": "inspiration",
         "label": "Inspiration",
         "type": "text"
       },
       {
-        "body": "This is where technique commentary lives — how it was actually built in the livery editor, material/layering choices, anything the tools fought you on.",
+        "body": "This is where technique commentary lives \u2014 how it was actually built in the livery editor, material/layering choices, anything the tools fought you on.",
         "key": "notes",
         "label": "Design Notes",
         "type": "text"
@@ -43,7 +43,7 @@
       {
         "adjustments": [
           {
-            "description": "the specific change, one of usually only 5–8 touched out of 50+ possible",
+            "description": "the specific change, one of usually only 5\u20138 touched out of 50+ possible",
             "name": "Adjustment name"
           }
         ],
@@ -76,7 +76,7 @@
         ]
       }
     ],
-    "subtitle": "Make/Model (game-accurate) · Base Coat or Technique · Rally / Race / Track / Aero / Drag / Off-Road / Cross-Country / Specialty / Jumper / Endo · Rims: Rim Name (if relevant to the look)",
+    "subtitle": "Make/Model (game-accurate) \u00b7 Base Coat or Technique \u00b7 Rally / Race / Track / Aero / Drag / Off-Road / Cross-Country / Specialty / Jumper / Endo \u00b7 Rims: Rim Name (if relevant to the look)",
     "tags": [
       "Cloud",
       "Tags",
@@ -233,14 +233,14 @@
     "name": "Smokin",
     "sections": [
       {
-        "body": "[Dummy copy] Built late one night after losing a Stunt Park lobby in something far less subtle, this one was about proving restraint could still look mean. The olive and gold were picked to feel like a getaway car that's already won the chase before it started — quiet until it isn't.",
+        "body": "[Dummy copy] Built late one night after losing a Stunt Park lobby in something far less subtle, this one was about proving restraint could still look mean. The olive and gold were picked to feel like a getaway car that's already won the chase before it started \u2014 quiet until it isn't.",
         "figurePath": "/uploads/FH5_ferrari_599_gtb_fiorano_formula_drift_599d_matte_olive_gold_pinstripe_drift_fd_599d_smokin_evo/FH5_ferrari_599_gtb_fiorano_formula_drift_599d_matte_olive_gold_pinstripe_drift_fd_599d_smokin_evo_004.jpg",
         "key": "inspiration",
         "label": "Inspiration",
         "type": "text"
       },
       {
-        "body": "Confirmed via the Forza Wiki: it's the 2007 Formula Drift #117 599 GTB Fiorano — nicknamed \"Fiorella\" — built by Federico Sceriffo, with twin positive-displacement superchargers (not turbos) pushing the V12 to roughly 917 hp, a Hollinger 6-speed sequential replacing the stock semi-automatic F1 transmission, Öhlins coilovers, and at 3,208 lb it's the heaviest car in Formula Drift's Forza roster. Front-mid-engine layout gives it a rear-biased 47/53 weight split; custom control arms and wide fenders were fitted specifically to increase steering angle — the whole point of the car.",
+        "body": "Confirmed via the Forza Wiki: it's the 2007 Formula Drift #117 599 GTB Fiorano \u2014 nicknamed \"Fiorella\" \u2014 built by Federico Sceriffo, with twin positive-displacement superchargers (not turbos) pushing the V12 to roughly 917 hp, a Hollinger 6-speed sequential replacing the stock semi-automatic F1 transmission, \u00d6hlins coilovers, and at 3,208 lb it's the heaviest car in Formula Drift's Forza roster. Front-mid-engine layout gives it a rear-biased 47/53 weight split; custom control arms and wide fenders were fitted specifically to increase steering angle \u2014 the whole point of the car.",
         "figurePath": "/uploads/FH5_ferrari_599_gtb_fiorano_formula_drift_599d_matte_olive_gold_pinstripe_drift_fd_599d_smokin_evo/FH5_ferrari_599_gtb_fiorano_formula_drift_599d_matte_olive_gold_pinstripe_drift_fd_599d_smokin_evo_019.jpg",
         "key": "notes",
         "label": "Design Notes",
@@ -249,26 +249,142 @@
       {
         "adjustments": [
           {
-            "description": "maxed for additional steering angle on entry",
-            "name": "Front camber"
+            "tab": "tires",
+            "group": "Tire Pressure",
+            "key": "tiresFront",
+            "label": "Front",
+            "unit": "",
+            "min": 10,
+            "max": 60,
+            "stock": 33.0,
+            "value": 26.0,
+            "step": 0.5
           },
           {
-            "description": "set positive to help the rear step out predictably",
-            "name": "Rear toe"
+            "tab": "tires",
+            "group": "Tire Pressure",
+            "key": "tiresRear",
+            "label": "Rear",
+            "unit": "",
+            "min": 10,
+            "max": 60,
+            "stock": 24.0,
+            "value": 18.0,
+            "step": 0.5
           },
           {
-            "description": "raised to hold angle through the clip",
-            "name": "Differential (rear lock)"
+            "tab": "alignment",
+            "group": "Camber",
+            "key": "camberFront",
+            "label": "Front",
+            "unit": "\u00b0",
+            "min": -5.0,
+            "max": 0.0,
+            "stock": -1.0,
+            "value": -4.9,
+            "step": 0.1
           },
           {
-            "description": "rear softened relative to front for easier transitions",
-            "name": "Anti-roll bars"
+            "tab": "alignment",
+            "group": "Camber",
+            "key": "camberRear",
+            "label": "Rear",
+            "unit": "\u00b0",
+            "min": -3.0,
+            "max": 0.0,
+            "stock": -1.0,
+            "value": -1.0,
+            "step": 0.1
+          },
+          {
+            "tab": "alignment",
+            "group": "Toe",
+            "key": "toeFront",
+            "label": "Front",
+            "unit": "\u00b0",
+            "min": -1.0,
+            "max": 1.0,
+            "stock": 0.0,
+            "value": 0.0,
+            "step": 0.1
+          },
+          {
+            "tab": "alignment",
+            "group": "Toe",
+            "key": "toeRear",
+            "label": "Rear",
+            "unit": "\u00b0",
+            "min": -1.0,
+            "max": 1.0,
+            "stock": 0.0,
+            "value": 0.2,
+            "step": 0.1
+          },
+          {
+            "tab": "alignment",
+            "group": "Caster",
+            "key": "casterFront",
+            "label": "Front",
+            "unit": "\u00b0",
+            "min": 3.0,
+            "max": 7.0,
+            "stock": 5.0,
+            "value": 6.8,
+            "step": 0.1
+          },
+          {
+            "tab": "arb",
+            "group": "Antiroll Bars",
+            "key": "arbFront",
+            "label": "Front",
+            "unit": "",
+            "min": 1,
+            "max": 65,
+            "stock": 30.0,
+            "value": 55.0,
+            "step": 0.1
+          },
+          {
+            "tab": "arb",
+            "group": "Antiroll Bars",
+            "key": "arbRear",
+            "label": "Rear",
+            "unit": "",
+            "min": 1,
+            "max": 65,
+            "stock": 28.7,
+            "value": 12.0,
+            "step": 0.1
+          },
+          {
+            "tab": "differential",
+            "group": "Rear",
+            "key": "diffRearAccel",
+            "label": "Acceleration",
+            "unit": "%",
+            "min": 0,
+            "max": 100,
+            "stock": 70,
+            "value": 100,
+            "step": 1
+          },
+          {
+            "tab": "differential",
+            "group": "Rear",
+            "key": "diffRearDecel",
+            "label": "Deceleration",
+            "unit": "%",
+            "min": 0,
+            "max": 100,
+            "stock": 3,
+            "value": 0,
+            "step": 1
           }
         ],
         "coreSpecs": {
           "Drivetrain": "RWD",
           "Engine": "V12 + Twin Supercharger",
-          "Suspension": "Öhlins Coilovers (Race)",
+          "Suspension": "\u00d6hlins Coilovers (Race)",
           "Tires": "Drift",
           "Transmission": "Hollinger 6-Speed Sequential"
         },
@@ -320,7 +436,7 @@
         ]
       }
     ],
-    "subtitle": "Ferrari 599 GTB Fiorano (Formula Drift 599D) · matte olive & gold pinstripe · Drift",
+    "subtitle": "Ferrari 599 GTB Fiorano (Formula Drift 599D) \u00b7 matte olive & gold pinstripe \u00b7 Drift",
     "tags": [
       "Drift",
       "Black Out"
@@ -420,14 +536,14 @@
     "name": "Lolita",
     "sections": [
       {
-        "body": "Lolita is set up with rally tires and suspension. I'll have to get back to you on the tuning, as that's a next-tier initiative to include specific tunings that go with the cars. But the idea with this setup is that it can do most everything. It can drift pretty well — rally tires are, in my opinion, the second-best for drifting — and obviously they give improved speed and traction on the dirt road speed zones. Basically, it's a pretty good car to do Stunt Party and many of the PR Events. It's not the fastest possible, but it definitely will test your limits of control.",
+        "body": "Lolita is set up with rally tires and suspension. I'll have to get back to you on the tuning, as that's a next-tier initiative to include specific tunings that go with the cars. But the idea with this setup is that it can do most everything. It can drift pretty well \u2014 rally tires are, in my opinion, the second-best for drifting \u2014 and obviously they give improved speed and traction on the dirt road speed zones. Basically, it's a pretty good car to do Stunt Party and many of the PR Events. It's not the fastest possible, but it definitely will test your limits of control.",
         "figurePath": "/uploads/FH6_mazda_mx_5_miata_fe_damascus_steel_rally_rims_bbs_rs_turbofan_lolita/FH6_mazda_mx_5_miata_fe_damascus_steel_rally_rims_bbs_rs_turbofan_lolita_003.jpg",
         "key": "inspiration",
         "label": "Inspiration",
         "type": "text"
       },
       {
-        "body": "Built on the Mazda MX-5 Miata Forza Edition shell — stock, that's a V10-swapped drag special. Lolita's been pulled in a completely different direction: converted to AWD, dropped onto rally rubber. The damascus-steel wrap reads almost like a topographic map at a glance, which is exactly why it took a second look to realize it wasn't one — the rippling forge-pattern and contour lines share that same swirling logic.",
+        "body": "Built on the Mazda MX-5 Miata Forza Edition shell \u2014 stock, that's a V10-swapped drag special. Lolita's been pulled in a completely different direction: converted to AWD, dropped onto rally rubber. The damascus-steel wrap reads almost like a topographic map at a glance, which is exactly why it took a second look to realize it wasn't one \u2014 the rippling forge-pattern and contour lines share that same swirling logic.",
         "figurePath": "/uploads/FH6_mazda_mx_5_miata_fe_damascus_steel_rally_rims_bbs_rs_turbofan_lolita/FH6_mazda_mx_5_miata_fe_damascus_steel_rally_rims_bbs_rs_turbofan_lolita_005.jpg",
         "key": "notes",
         "label": "Design Notes",
@@ -440,7 +556,7 @@
             "name": "Front anti-roll bar"
           },
           {
-            "description": "−0.3° for easier rotation",
+            "description": "\u22120.3\u00b0 for easier rotation",
             "name": "Rear toe"
           },
           {
@@ -456,7 +572,7 @@
             "name": "Final drive"
           },
           {
-            "description": "min-maxed for forward tilt — 9.8\" front / 14.8\" rear",
+            "description": "min-maxed for forward tilt \u2014 9.8\" front / 14.8\" rear",
             "name": "Ride height"
           }
         ],
@@ -470,7 +586,7 @@
         "key": "recipe",
         "label": "Tune / Build Parts",
         "shareCode": "TBD",
-        "tuneName": "MX-5 Miata Forza Edition (placeholder — confirm the actual saved tune name)",
+        "tuneName": "MX-5 Miata Forza Edition (placeholder \u2014 confirm the actual saved tune name)",
         "type": "forza_recipe",
         "upgrades": [
           {
@@ -518,7 +634,7 @@
         ]
       }
     ],
-    "subtitle": "Mazda MX-5 Miata FE · Damascus Steel · Rally · Rims: BBS RS Turbofan",
+    "subtitle": "Mazda MX-5 Miata FE \u00b7 Damascus Steel \u00b7 Rally \u00b7 Rims: BBS RS Turbofan",
     "tags": [
       "Drift",
       "Rally",
@@ -603,7 +719,7 @@
     "name": "Tune In Tokyo",
     "sections": [
       {
-        "body": "[Dummy copy] Imagined as the car that never makes it home before the lights come back on — built for the loop between Shibuya crossing reruns and a back-alley meet that only exists because three friends agreed to text the location at the same time. The sunburst is the moment the camera flash actually lands.",
+        "body": "[Dummy copy] Imagined as the car that never makes it home before the lights come back on \u2014 built for the loop between Shibuya crossing reruns and a back-alley meet that only exists because three friends agreed to text the location at the same time. The sunburst is the moment the camera flash actually lands.",
         "figurePath": "/uploads/FH6_roadster_neon_sunburst_wrap_turbo_widebody_tune_in_tokyo/FH6_roadster_neon_sunburst_wrap_turbo_widebody_tune_in_tokyo_007.jpg",
         "key": "inspiration",
         "label": "Inspiration",
@@ -666,7 +782,7 @@
         ]
       }
     ],
-    "subtitle": "Roadster · neon sunburst wrap · turbo widebody",
+    "subtitle": "Roadster \u00b7 neon sunburst wrap \u00b7 turbo widebody",
     "tags": [
       "Drift"
     ]
@@ -781,7 +897,7 @@
     "name": "Photo Safari: Discover Japan",
     "sections": [
       {
-        "body": "[Dummy copy] Started as a joke about how serious every other build in this catalog had gotten. The smiley face was supposed to be temporary — a placeholder livery for a single screenshot — and then it just never came off, because something about a trophy truck grinning through a mountain pass was funnier every time it got photographed again.",
+        "body": "[Dummy copy] Started as a joke about how serious every other build in this catalog had gotten. The smiley face was supposed to be temporary \u2014 a placeholder livery for a single screenshot \u2014 and then it just never came off, because something about a trophy truck grinning through a mountain pass was funnier every time it got photographed again.",
         "figurePath": "/uploads/FH6_off_road_trophy_truck_novelty_smiley_wrap_photo_safari_discover_japan/FH6_off_road_trophy_truck_novelty_smiley_wrap_photo_safari_discover_japan_008.jpg",
         "key": "inspiration",
         "label": "Inspiration",
@@ -898,7 +1014,7 @@
         ]
       }
     ],
-    "subtitle": "Off-road trophy truck · novelty smiley wrap",
+    "subtitle": "Off-road trophy truck \u00b7 novelty smiley wrap",
     "tags": []
   },
   {
@@ -987,7 +1103,7 @@
     "name": "Violet",
     "sections": [
       {
-        "body": "[Dummy copy] Named for the color before anything else about it existed — the cloud pattern, the green wheels, even the car choice came after deciding the only non-negotiable was that exact shade of violet showing up under stadium lights at night.",
+        "body": "[Dummy copy] Named for the color before anything else about it existed \u2014 the cloud pattern, the green wheels, even the car choice came after deciding the only non-negotiable was that exact shade of violet showing up under stadium lights at night.",
         "figurePath": "/uploads/FH6_toyota_gr_supra_violet_cloud_wrap_green_forged_wheels_violet/FH6_toyota_gr_supra_violet_cloud_wrap_green_forged_wheels_violet_013.jpg",
         "key": "inspiration",
         "label": "Inspiration",
@@ -1061,7 +1177,7 @@
         ]
       }
     ],
-    "subtitle": "Toyota GR Supra · violet cloud wrap · green forged wheels",
+    "subtitle": "Toyota GR Supra \u00b7 violet cloud wrap \u00b7 green forged wheels",
     "tags": [
       "Drift"
     ]
@@ -1168,14 +1284,14 @@
     "name": "A Better A-Team",
     "sections": [
       {
-        "body": "Although B.A. Baracus famously feared flying, this van can catch plenty of air and look badass doin' it! Upgraded carbon fiber body and authentic bullet holes in the rear panel — you'll have plenty of muscle to get away from the bad guys, and with that mean stance, you'll look like you're going a hundred miles an hour standing still.",
+        "body": "Although B.A. Baracus famously feared flying, this van can catch plenty of air and look badass doin' it! Upgraded carbon fiber body and authentic bullet holes in the rear panel \u2014 you'll have plenty of muscle to get away from the bad guys, and with that mean stance, you'll look like you're going a hundred miles an hour standing still.",
         "figurePath": "/uploads/FH5_gmc_vandura_matte_black_carbon_roof_street_rims_fifteen52_forged_3pc_formula_tr_a_better_a_team/FH5_gmc_vandura_matte_black_carbon_roof_street_rims_fifteen52_forged_3pc_formula_tr_a_better_a_team_003.jpg",
         "key": "inspiration",
         "label": "Inspiration",
         "type": "text"
       },
       {
-        "body": "Built on the GMC Vandura shell as a direct callback to the actual A-Team van, but pushed further than the show ever did: the roof gets a carbon-fiber texture instead of plain sheet metal, the red pinstripe is sharpened into a single clean diagonal rather than the original's slightly softer line, and the wheels are swapped to a red-lipped aftermarket style instead of the steelies the real van wore. The rear panel carries \"Pity the fool\" in script — a Mr. T line that never actually appeared on the van itself, added here as the kind of detail a fan would want but the show never gave them.",
+        "body": "Built on the GMC Vandura shell as a direct callback to the actual A-Team van, but pushed further than the show ever did: the roof gets a carbon-fiber texture instead of plain sheet metal, the red pinstripe is sharpened into a single clean diagonal rather than the original's slightly softer line, and the wheels are swapped to a red-lipped aftermarket style instead of the steelies the real van wore. The rear panel carries \"Pity the fool\" in script \u2014 a Mr. T line that never actually appeared on the van itself, added here as the kind of detail a fan would want but the show never gave them.",
         "figurePath": "/uploads/FH5_gmc_vandura_matte_black_carbon_roof_street_rims_fifteen52_forged_3pc_formula_tr_a_better_a_team/FH5_gmc_vandura_matte_black_carbon_roof_street_rims_fifteen52_forged_3pc_formula_tr_a_better_a_team_004.jpg",
         "key": "notes",
         "label": "Design Notes",
@@ -1188,7 +1304,7 @@
             "name": "Suspension"
           },
           {
-            "description": "min-maxed for forward tilt — 9.8\" front / 14.8\" rear",
+            "description": "min-maxed for forward tilt \u2014 9.8\" front / 14.8\" rear",
             "name": "Ride height"
           }
         ],
@@ -1250,7 +1366,7 @@
         ]
       }
     ],
-    "subtitle": "GMC Vandura · Matte Black & Carbon Roof · Street · Rims: Fifteen52 Forged 3PC Formula TR",
+    "subtitle": "GMC Vandura \u00b7 Matte Black & Carbon Roof \u00b7 Street \u00b7 Rims: Fifteen52 Forged 3PC Formula TR",
     "tags": [
       "Replica",
       "Black Out",

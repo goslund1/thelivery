@@ -26,5 +26,9 @@ target/
 # The retired original single-file app — kept locally, not in the repo.
 archive/
 
+# User seed — contains a password hash. Never commit. Re-export after a password
+# change: sqlite3 backend/data.db "SELECT username, password_hash FROM users;"
+backend/seed/users.json
+
 # Note: backend/uploads/ is intentionally tracked (seed images decoded from the
 # original HTML, so the app works on a fresh clone).

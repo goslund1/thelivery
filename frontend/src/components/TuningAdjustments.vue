@@ -545,6 +545,7 @@ const presetNameInput = ref('')
 const presetNameOpen = ref(false)
 const presetBusy = ref(false)
 const presetError = ref<string | null>(null)
+const deleteConfirmOpen = ref(false)
 
 async function loadPresets() {
   try { presets.value = await api.listTuningPresets() }
@@ -554,6 +555,7 @@ async function loadPresets() {
 function applyPreset() {
   const preset = presets.value.find(p => p.id === selectedPresetId.value)
   if (!preset) return
+  presetError.value = null
   for (const r of localRows.value) {
     if (!r.locked && r.key in preset.values) r.value = preset.values[r.key]
   }
@@ -579,10 +581,15 @@ async function saveAsPreset() {
   finally { presetBusy.value = false }
 }
 
-async function deletePreset() {
+function deletePreset() {
+  if (!selectedPresetId.value) return
+  deleteConfirmOpen.value = true
+}
+async function confirmDeletePreset() {
   if (!selectedPresetId.value) return
   presetBusy.value = true
   presetError.value = null
+  deleteConfirmOpen.value = false
   try {
     await api.deleteTuningPreset(selectedPresetId.value)
     presets.value = presets.value.filter(p => p.id !== selectedPresetId.value)
@@ -591,7 +598,7 @@ async function deletePreset() {
   finally { presetBusy.value = false }
 }
 
-watch(() => ui.isEditing, (editing) => { if (editing) loadPresets() }, { immediate: true })
+watch(() => ui.isEditing, (editing) => { if (editing && !presets.value.length) loadPresets() }, { immediate: true })
 
 // ── Suggestion panel ──────────────────────────────────────────────────────────
 
@@ -799,7 +806,7 @@ async function submitSuggestion() {
               </div>
               <div class="ta-right-section">
                 <div class="ta-lock-line">🔒 Locked</div>
-                <div class="ta-lock-reason">{{ (r as any).lockReason }}</div>
+                <div class="ta-lock-reason">{{ r.lockReason }}</div>
               </div>
             </div>
 
@@ -867,6 +874,21 @@ async function submitSuggestion() {
     </div>
 
     <p v-else-if="!ui.isEditing" class="ta-empty">No adjustments recorded.</p>
+
+    <!-- Delete preset confirm dialog -->
+    <div v-if="deleteConfirmOpen" class="ta-overlay" @click.self="deleteConfirmOpen = false">
+      <div class="ta-dialog">
+        <div class="ta-dialog-head">
+          <span>Delete Preset</span>
+          <button class="ta-dialog-close" @click="deleteConfirmOpen = false">×</button>
+        </div>
+        <p class="ta-dialog-body">Delete "{{ presets.find(p => p.id === selectedPresetId)?.name }}"? This cannot be undone.</p>
+        <div class="ta-dialog-btns">
+          <button class="ta-dlg-discard" :disabled="presetBusy" @click="confirmDeletePreset">{{ presetBusy ? '…' : 'Delete' }}</button>
+          <button class="ta-dlg-cancel" @click="deleteConfirmOpen = false">Cancel</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Set Stock Values confirm dialog -->
     <div v-if="stockConfirmOpen" class="ta-overlay" @click.self="stockConfirmOpen = false">

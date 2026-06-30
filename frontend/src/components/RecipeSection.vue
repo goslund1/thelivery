@@ -330,7 +330,11 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
     </details>
 
     <p class="kit-cat-label adj-label">Tune Adjustments</p>
-    <TuningAdjustments :adjustments="recipe.adjustments" :card-id="props.cardId" />
+    <TuningAdjustments
+      :adjustments="recipe.adjustments"
+      :card-id="props.cardId"
+      @update:adjustments="rows => recipe.adjustments.splice(0, recipe.adjustments.length, ...rows)"
+    />
   </div>
 </template>
 

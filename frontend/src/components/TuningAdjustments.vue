@@ -6,6 +6,7 @@ import { MarkDirtyKey } from '../keys'
 import { api } from '../api'
 
 const props = defineProps<{ adjustments: AdjustmentRow[]; cardId?: string }>()
+const emit = defineEmits<{ 'update:adjustments': [rows: AdjustmentRow[]] }>()
 const ui = useUiStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
@@ -248,7 +249,7 @@ function flush() {
       key: `__mode_${tabId}`, tab: tabId, group: '', label: '', unit: '',
       step: 1, min: 0, max: 1, stock: 0, value: 1,
     }))
-  props.adjustments.splice(0, props.adjustments.length, ...active, ...sentinels)
+  emit('update:adjustments', [...active, ...sentinels])
   markDirty()
 }
 

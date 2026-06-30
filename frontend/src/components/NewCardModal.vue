@@ -77,18 +77,21 @@ async function onFigureFilePick(section: 'insp' | 'notes', e: Event) {
   }
 }
 
-// Recipe — reactive object passed directly to RecipeSection
+// Recipe — ref so reassignment on modal-open triggers RecipeSection's props watcher for a clean reset
 const CORE_SPEC_KEYS = ['Drivetrain', 'Engine', 'Transmission', 'Tires', 'Suspension']
-const recipe = reactive<ForzaRecipeSection>({
-  type: 'forza_recipe',
-  key: 'recipe',
-  label: 'Tune / Build Parts',
-  tuneName: '',
-  shareCode: '',
-  coreSpecs: Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, ''])),
-  upgrades: [],
-  adjustments: [],
-})
+function blankRecipe(): ForzaRecipeSection {
+  return {
+    type: 'forza_recipe',
+    key: 'recipe',
+    label: 'Tune / Build Parts',
+    tuneName: '',
+    shareCode: '',
+    coreSpecs: Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, ''])),
+    upgrades: [],
+    adjustments: [],
+  }
+}
+const recipe = ref<ForzaRecipeSection>(blankRecipe())
 
 const sectionOpen = reactive({ insp: true, notes: true, recipe: true })
 
@@ -139,11 +142,7 @@ watch(() => ui.newCardOpen, async (open) => {
   notesFigurePath.value = null
   figureSaving.value = false
   figureError.value = ''
-  recipe.tuneName = ''
-  recipe.shareCode = ''
-  recipe.coreSpecs = Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, '']))
-  recipe.upgrades.splice(0)
-  recipe.adjustments.splice(0)
+  recipe.value = blankRecipe()
   staged.value.forEach(s => URL.revokeObjectURL(s.url))
   staged.value = []
   activeStaged.value = 0
@@ -233,11 +232,11 @@ async function onCreate() {
       inspirationFigurePath: inspirationFigurePath.value ?? undefined,
       notesBody: notesBody.value.trim(),
       notesFigurePath: notesFigurePath.value ?? undefined,
-      tuneName: recipe.tuneName.trim(),
-      shareCode: recipe.shareCode.trim(),
-      coreSpecs: { ...recipe.coreSpecs },
-      upgrades: JSON.parse(JSON.stringify(recipe.upgrades)),
-      adjustments: JSON.parse(JSON.stringify(recipe.adjustments)),
+      tuneName: recipe.value.tuneName.trim(),
+      shareCode: recipe.value.shareCode.trim(),
+      coreSpecs: { ...recipe.value.coreSpecs },
+      upgrades: JSON.parse(JSON.stringify(recipe.value.upgrades)),
+      adjustments: JSON.parse(JSON.stringify(recipe.value.adjustments)),
     })
     for (let i = 0; i < staged.value.length; i++) {
       const result = await api.uploadImage(staged.value[i].file, card, i)
@@ -428,7 +427,7 @@ onUnmounted(() => { document.body.style.overflow = '' })
 
       <!-- Tune / Build Parts — RecipeSection for full edit-mode parity -->
       <CollapsibleSection label="Tune / Build Parts" section-key="nc-recipe" v-model:open="sectionOpen.recipe">
-        <RecipeSection :recipe="recipe" :initial-kit-open="true" />
+        <RecipeSection :recipe="recipe" :initial-kit-open="true" @update:recipe="updated => Object.assign(recipe, updated)" />
       </CollapsibleSection>
 
       <!-- Footer -->

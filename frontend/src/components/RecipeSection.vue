@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import type { ForzaRecipeSection, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
 import { MarkDirtyKey } from '../keys'
@@ -9,21 +9,53 @@ import TuningAdjustments from './TuningAdjustments.vue'
 import rawUpgrades from '../data/fh_upgrades.json'
 
 const props = defineProps<{ recipe: ForzaRecipeSection; cardId?: string; initialKitOpen?: boolean }>()
+const emit = defineEmits<{ 'update:recipe': [recipe: ForzaRecipeSection] }>()
 const ui = useUiStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
 const CORE_SPEC_KEYS = ['Drivetrain', 'Engine', 'Transmission', 'Tires', 'Suspension']
 
-// Normalize any null/undefined values to '' so the select binding always gets a string.
-for (const k of CORE_SPEC_KEYS) {
-  if (props.recipe.coreSpecs[k] == null) props.recipe.coreSpecs[k] = ''
+function cloneRecipe(r: ForzaRecipeSection): ForzaRecipeSection {
+  return JSON.parse(JSON.stringify(r))
 }
 
+const local = reactive<ForzaRecipeSection>(cloneRecipe(props.recipe))
+
+// Normalize any null/undefined values to '' so the select binding always gets a string.
+for (const k of CORE_SPEC_KEYS) {
+  if (local.coreSpecs[k] == null) local.coreSpecs[k] = ''
+}
+
+// Loop-prevention flags: skipNextPropsSync prevents the deep props watcher from re-syncing
+// after our own flush triggers a Pinia update; inPropsSync prevents the upgrades watcher
+// from flushing back during an inbound sync from the parent.
+let skipNextPropsSync = false
+let inPropsSync = false
+
+watch(() => props.recipe, (r) => {
+  if (skipNextPropsSync) { skipNextPropsSync = false; return }
+  inPropsSync = true
+  Object.assign(local, cloneRecipe(r))
+  inPropsSync = false
+}, { deep: true })
+
+function flush() {
+  skipNextPropsSync = true
+  emit('update:recipe', JSON.parse(JSON.stringify(local)))
+}
+
+// UpgradesPicker mutates local.upgrades in-place; detect those mutations and flush.
+watch(() => local.upgrades, () => {
+  if (inPropsSync) return
+  flush()
+  markDirty()
+}, { deep: true, flush: 'sync' })
+
 const hasNonStockSpecs = computed(() =>
-  CORE_SPEC_KEYS.some(k => !!props.recipe.coreSpecs[k]?.trim()),
+  CORE_SPEC_KEYS.some(k => !!local.coreSpecs[k]?.trim()),
 )
 const partCount = computed(() =>
-  props.recipe.upgrades.reduce((n, c) => n + c.parts.length, 0),
+  local.upgrades.reduce((n, c) => n + c.parts.length, 0),
 )
 
 // Full upgrade part list for "Show Stock" view mode and cost tallying
@@ -48,7 +80,7 @@ const STEPPED_SET = new Set([
   'Front Track Width', 'Rear Track Width',
 ])
 function viewInstalledTier(tiers: string[]): string | null {
-  for (const cat of props.recipe.upgrades) {
+  for (const cat of local.upgrades) {
     const hit = tiers.find(t => cat.parts.includes(t))
     if (hit) return hit
   }
@@ -64,7 +96,7 @@ function isCustomTier(tiers: string[]): boolean {
   return !!tier && tier !== 'Stock'
 }
 function viewSteppedValue(partName: string): number {
-  for (const cat of props.recipe.upgrades) {
+  for (const cat of local.upgrades) {
     const entry = cat.parts.find(p => p.startsWith(partName + ' '))
     if (entry) {
       const n = parseInt(entry.slice(partName.length + 1).trim(), 10)
@@ -115,7 +147,8 @@ const SPEC_OPTIONS: Record<string, string[]> = {
 }
 
 function onSpecChange(key: string, e: Event) {
-  props.recipe.coreSpecs[key] = (e.target as HTMLSelectElement).value
+  local.coreSpecs[key] = (e.target as HTMLSelectElement).value
+  flush()
   markDirty()
 }
 
@@ -129,9 +162,10 @@ function formatShareCode(raw: string): string {
 function onShareCodeInput(e: Event) {
   const input = e.target as HTMLInputElement
   const formatted = formatShareCode(input.value)
-  props.recipe.shareCode = formatted
+  local.shareCode = formatted
   // Rewrite value to insert spaces; cursor goes to end which is acceptable for a code field.
   input.value = formatted
+  flush()
   markDirty()
 }
 
@@ -150,7 +184,7 @@ const showPresetMenu = ref(false)
 const showSaveRow    = ref(false)
 const saveNameInput  = ref('')
 const activeName     = ref('')
-const showStock      = ref(props.recipe.showStock ?? false)
+const showStock      = ref(local.showStock ?? false)
 const presetBarEl    = ref<HTMLElement | null>(null)
 
 function loadPresets() {
@@ -162,9 +196,9 @@ loadPresets()
 function persistPresets() { localStorage.setItem(STORE_KEY, JSON.stringify(presets.value)) }
 
 function applyPreset(p: Preset) {
-  props.recipe.upgrades.splice(0, props.recipe.upgrades.length, ...JSON.parse(JSON.stringify(p.upgrades)))
+  local.upgrades.splice(0, local.upgrades.length, ...JSON.parse(JSON.stringify(p.upgrades)))
   activeName.value = p.name
-  markDirty()
+  // flush() + markDirty() handled by the local.upgrades sync watcher
   showPresetMenu.value = false
 }
 
@@ -172,7 +206,7 @@ function saveAsPreset() {
   const name = saveNameInput.value.trim()
   if (!name) return
   loadPresets()
-  presets.value.push({ name, upgrades: JSON.parse(JSON.stringify(props.recipe.upgrades)) })
+  presets.value.push({ name, upgrades: JSON.parse(JSON.stringify(local.upgrades)) })
   persistPresets()
   activeName.value    = name
   saveNameInput.value = ''
@@ -186,9 +220,9 @@ function deletePreset(i: number) {
 }
 
 function clearAllUpgrades() {
-  props.recipe.upgrades.splice(0)
+  local.upgrades.splice(0)
   activeName.value = ''
-  markDirty()
+  // flush() + markDirty() handled by the local.upgrades sync watcher
 }
 
 function onPresetDocClick(e: MouseEvent) {
@@ -204,19 +238,19 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 <template>
   <div class="section-body">
     <div class="tune-header">
-      <EditableText tag="p" class="tune-name" v-model="recipe.tuneName" />
+      <EditableText tag="p" class="tune-name" :modelValue="local.tuneName" @update:modelValue="v => { local.tuneName = String(v); flush() }" />
       <div class="plate">
         SHARE CODE:
         <input
           v-if="ui.isEditing"
           class="share-code-input"
-          :value="recipe.shareCode"
+          :value="local.shareCode"
           @input="onShareCodeInput"
           placeholder="000 000 000"
           maxlength="11"
           spellcheck="false"
         />
-        <b v-else>{{ recipe.shareCode || '—' }}</b>
+        <b v-else>{{ local.shareCode || '—' }}</b>
       </div>
     </div>
 
@@ -233,12 +267,12 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
                 class="spec-select"
                 @change="onSpecChange(k, $event)"
               >
-                <option value="" :selected="!recipe.coreSpecs[k]">Stock</option>
-                <option v-for="opt in SPEC_OPTIONS[k]" :key="opt" :value="opt" :selected="recipe.coreSpecs[k] === opt">{{ opt }}</option>
+                <option value="" :selected="!local.coreSpecs[k]">Stock</option>
+                <option v-for="opt in SPEC_OPTIONS[k]" :key="opt" :value="opt" :selected="local.coreSpecs[k] === opt">{{ opt }}</option>
               </select>
-              <EditableText v-else v-model="recipe.coreSpecs[k]" />
+              <EditableText v-else :modelValue="local.coreSpecs[k]" @update:modelValue="v => { local.coreSpecs[k] = String(v); flush() }" />
             </template>
-            <span v-else>{{ recipe.coreSpecs[k] || 'Stock' }}</span>
+            <span v-else>{{ local.coreSpecs[k] || 'Stock' }}</span>
           </td>
         </tr>
       </tbody>
@@ -287,7 +321,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
       </div>
 
       <div class="kit-body" :class="{ 'kit-body--grid': ui.isEditing || showStock }">
-        <UpgradesPicker v-if="ui.isEditing" :upgrades="recipe.upgrades" :show-stock="showStock" />
+        <UpgradesPicker v-if="ui.isEditing" :upgrades="local.upgrades" :show-stock="showStock" />
         <template v-else-if="showStock">
           <!-- Show Stock: full list, Engine pinned left, other cats balanced across cols 2-3 -->
           <div class="upgrades-grid">
@@ -317,13 +351,13 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         <template v-else>
           <!-- Default: only show installed (non-stock) upgrades -->
           <div class="upgrades-grid">
-            <div v-for="(cat, ci) in recipe.upgrades" :key="ci" class="kit-cat">
+            <div v-for="(cat, ci) in local.upgrades" :key="ci" class="kit-cat">
               <p class="kit-cat-label">{{ cat.category }}</p>
               <ul class="kit-list">
                 <li v-for="(part, pi) in cat.parts" :key="pi">{{ part }}</li>
               </ul>
             </div>
-            <p v-if="!recipe.upgrades.length" class="kit-cat-label" style="opacity:0.35">No upgrades recorded</p>
+            <p v-if="!local.upgrades.length" class="kit-cat-label" style="opacity:0.35">No upgrades recorded</p>
           </div>
         </template>
       </div>
@@ -331,9 +365,9 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 
     <p class="kit-cat-label adj-label">Tune Adjustments</p>
     <TuningAdjustments
-      :adjustments="recipe.adjustments"
+      :adjustments="local.adjustments"
       :card-id="props.cardId"
-      @update:adjustments="rows => recipe.adjustments.splice(0, recipe.adjustments.length, ...rows)"
+      @update:adjustments="rows => { local.adjustments.splice(0, local.adjustments.length, ...rows); flush(); markDirty() }"
     />
   </div>
 </template>

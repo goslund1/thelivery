@@ -250,7 +250,7 @@ async function onDelete() {
 
       <!-- Tune / Build Parts — full RecipeSection -->
       <CollapsibleSection label="Tune / Build Parts" section-key="modal-recipe" v-model:open="sectionOpen.recipe">
-        <RecipeSection v-if="recipeSection" :recipe="recipeSect" />
+        <RecipeSection v-if="recipeSection" :recipe="recipeSect" @update:recipe="updated => Object.assign(recipeSect, updated)" />
       </CollapsibleSection>
 
       <!-- Footer -->

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, ref, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { AdjustmentRow } from '../types'
 import { useUiStore } from '../stores/ui'
 import { MarkDirtyKey } from '../keys'
@@ -23,6 +23,7 @@ interface CanonicalRow {
   locked?: boolean
   lockReason?: string
   bipolar?: boolean
+  centerMark?: boolean
 }
 interface CanonicalGroup {
   title: string
@@ -91,8 +92,8 @@ const CANONICAL_TABS: CanonicalTab[] = [
     ]},
   ]},
   { id: 'brakes', label: 'Brake', groups: [
-    { title: 'Balance',  axis: ['Rear', 'Front'],  rows: [{ key: 'brakeBalance',  label: 'Balance',  unit: '%', step: 1 }] },
-    { title: 'Pressure', axis: ['Low',  'High'],   rows: [{ key: 'brakePressure', label: 'Pressure', unit: '%', step: 1 }] },
+    { title: 'Balance',  axis: ['Rear', 'Front'],  rows: [{ key: 'brakeBalance',  label: 'Balance',  unit: '%', step: 1, centerMark: true }] },
+    { title: 'Pressure', axis: ['Low',  'High'],   rows: [{ key: 'brakePressure', label: 'Pressure', unit: '%', step: 1, centerMark: true }] },
   ]},
   { id: 'differential', label: 'Differential', groups: [
     { title: 'Front', axis: ['Low', 'High'], rows: [
@@ -104,7 +105,7 @@ const CANONICAL_TABS: CanonicalTab[] = [
       { key: 'diffRearDecel', label: 'Deceleration', unit: '%', step: 1 },
     ]},
     { title: 'Center', axis: ['Front', 'Rear'], rows: [
-      { key: 'centerBalance', label: 'Balance', unit: '%', step: 1 },
+      { key: 'centerBalance', label: 'Balance', unit: '%', step: 1, centerMark: true },
     ]},
   ]},
 ]
@@ -133,6 +134,7 @@ interface LocalRow extends AdjustmentRow {
   _axis?: [string, string]
   _headerUnit?: string
   _bipolar?: boolean
+  _centerMark?: boolean
 }
 
 function buildGearRows(): LocalRow[] {
@@ -210,9 +212,10 @@ function buildLocalRows(): LocalRow[] {
           value: stored?.value ?? 0,
           locked:     def.locked,
           lockReason: def.lockReason,
-          _axis:      group.axis,
+          _axis:       group.axis,
           _headerUnit: group.headerUnit,
-          _bipolar:   def.bipolar,
+          _bipolar:    def.bipolar,
+          _centerMark: def.centerMark,
         })
       }
     }
@@ -241,7 +244,7 @@ watch(gearCount, () => {
 function flush() {
   const active = localRows.value
     .filter(r => !r.locked)
-    .map(({ locked, lockReason, _axis, _headerUnit, _bipolar, ...r }) => r)
+    .map(({ locked, lockReason, _axis, _headerUnit, _bipolar, _centerMark, ...r }) => r)
   // Persist static-mode flags as sentinel rows (only non-default static=true entries)
   const sentinels = Object.entries(tabModes.value)
     .filter(([, isStatic]) => isStatic)
@@ -271,17 +274,65 @@ watch(activeTabs, tabs => {
 const stacked = ref(false)
 const suppressStackHover = ref(false)
 const taRef = ref<HTMLElement | null>(null)
+const taNonstockRef = ref<HTMLElement | null>(null)
 const sectionRefs = ref<Record<string, HTMLElement | null>>({})
 
 function collapseToTab(sectionId: string) {
+  if (stacked.value) {
+    const el = sectionRefs.value[sectionId]
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - 12), behavior: 'smooth' })
+  } else {
+    activeTabId.value = sectionId
+    nextTick(() => {
+      const el = taNonstockRef.value ?? taRef.value
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - 8), behavior: 'smooth' })
+    })
+  }
+}
+
+function focusRowByKey(key: string) {
+  nextTick(() => {
+    const slider = document.querySelector<HTMLElement>(`.ta-slider[data-key="${key}"]`)
+    if (slider) {
+      slider.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      slider.focus({ preventScroll: true })
+    }
+    focusedKey.value = key
+  })
+}
+
+function clickNonstockRow(tabId: string, key: string) {
+  if (stacked.value) {
+    const el = sectionRefs.value[tabId]
+    if (el) window.scrollTo({ top: Math.max(0, window.scrollY + el.getBoundingClientRect().top - 12), behavior: 'smooth' })
+    // Focus + highlight without scrollIntoView — viewport stays at the section header
+    nextTick(() => {
+      const slider = document.querySelector<HTMLElement>(`.ta-slider[data-key="${key}"]`)
+      if (slider) slider.focus({ preventScroll: true })
+      focusedKey.value = key
+    })
+  } else {
+    activeTabId.value = tabId
+    nextTick(() => {
+      const el = taNonstockRef.value ?? taRef.value
+      if (el) window.scrollTo({ top: Math.max(0, window.scrollY + el.getBoundingClientRect().top - 8), behavior: 'smooth' })
+    })
+    focusRowByKey(key)
+  }
+}
+
+function switchToTabView(sectionId: string) {
   stacked.value = false
   activeTabId.value = sectionId
   nextTick(() => {
-    const el = taRef.value
+    const el = taNonstockRef.value ?? taRef.value
     if (!el) return
     const rect = el.getBoundingClientRect()
-    const target = window.scrollY + rect.top - window.innerHeight * 0.2
-    window.scrollTo({ top: Math.max(0, target), behavior: 'smooth' })
+    window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - 8), behavior: 'smooth' })
   })
 }
 
@@ -293,7 +344,7 @@ function onTabClick(tabId: string) {
     const target = window.scrollY + rect.top - 12
     window.scrollTo({ top: Math.max(0, target), behavior: 'smooth' })
   } else {
-    collapseToTab(tabId)
+    switchToTabView(tabId)
   }
 }
 
@@ -333,7 +384,20 @@ function hasChangedInTab(tabId: string) {
 }
 const changedRows = computed(() => localRows.value.filter(r => isChanged(r)))
 const TAB_LABEL: Record<string, string> = Object.fromEntries(CANONICAL_TABS.map(t => [t.id, t.label]))
-const TWEAK_COLS = 5
+const tweakColCount = ref(5)
+let tweakResizeObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  if (taNonstockRef.value) {
+    tweakResizeObserver = new ResizeObserver(([entry]) => {
+      const w = entry.contentRect.width
+      tweakColCount.value = w >= 880 ? 5 : w >= 700 ? 4 : w >= 500 ? 3 : w >= 320 ? 2 : 1
+    })
+    tweakResizeObserver.observe(taNonstockRef.value)
+  }
+})
+onUnmounted(() => tweakResizeObserver?.disconnect())
+
 const changedByTab = computed(() => {
   const tabMap = new Map<string, { tabLabel: string; groups: Map<string, { label: string; rows: typeof changedRows.value }> }>()
   for (const r of changedRows.value) {
@@ -352,8 +416,9 @@ type TabBlock = { tabLabel: string; groups: Map<string, { label: string; rows: L
 // Distribute tab blocks across explicit columns using a greedy height-balance algorithm.
 // Each tab block's height ≈ number of total rows across its groups + groups (for title rows).
 const tweakColumns = computed(() => {
-  const cols: Array<Array<[string, TabBlock]>> = Array.from({ length: TWEAK_COLS }, () => [])
-  const heights = new Array(TWEAK_COLS).fill(0)
+  const n = tweakColCount.value
+  const cols: Array<Array<[string, TabBlock]>> = Array.from({ length: n }, () => [])
+  const heights = new Array(n).fill(0)
   for (const entry of changedByTab.value) {
     const [, { groups }] = entry
     let h = 0
@@ -402,7 +467,7 @@ function stockDotStyle(r: AdjustmentRow) {
   }
 }
 function centerMarkStyle(r: AdjustmentRow) {
-  if (isBipolar(r)) return { left: '50%' }
+  if (isBipolar(r) || (r as LocalRow)._centerMark) return { left: '50%' }
   return thumbPct(r, 0)
 }
 
@@ -460,7 +525,7 @@ function onRowClick(r: LocalRow, e: MouseEvent) {
 }
 
 function onRowKeydown(r: LocalRow, e: KeyboardEvent) {
-  if (!ui.isEditing || r.locked) return
+if (!ui.isEditing || r.locked) return
 
   // Cmd/Ctrl+Z — undo last slider move or nudge
   if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
@@ -556,6 +621,7 @@ const presetNameOpen = ref(false)
 const presetBusy = ref(false)
 const presetError = ref<string | null>(null)
 const deleteConfirmOpen = ref(false)
+const applyConfirmOpen  = ref(false)
 
 async function loadPresets() {
   try { presets.value = await api.listTuningPresets() }
@@ -563,13 +629,31 @@ async function loadPresets() {
 }
 
 function applyPreset() {
+  if (!selectedPresetId.value) return
+  if (changedRows.value.length > 0) { applyConfirmOpen.value = true; return }
+  executeApplyPreset()
+}
+
+function executeApplyPreset() {
   const preset = presets.value.find(p => p.id === selectedPresetId.value)
   if (!preset) return
+  applyConfirmOpen.value = false
   presetError.value = null
-  for (const r of localRows.value) {
-    if (!r.locked && r.key in preset.values) r.value = preset.values[r.key]
-  }
+  const savedY = window.scrollY
+  localRows.value = localRows.value.map(r => {
+    if (r.locked) return r
+    const updated = { ...r }
+    if (r.key in preset.values) {
+      updated.value = preset.values[r.key]
+      updated.stock = preset.values[r.key]
+    }
+    if ((r.key + ':min') in preset.values)    updated.min   = preset.values[r.key + ':min']
+    if ((r.key + ':max') in preset.values)    updated.max   = preset.values[r.key + ':max']
+    return updated
+  })
+  endDisplay.value = {}
   flush()
+  requestAnimationFrame(() => window.scrollTo({ top: savedY, behavior: 'instant' }))
 }
 
 async function saveAsPreset() {
@@ -580,7 +664,10 @@ async function saveAsPreset() {
   try {
     const values: Record<string, number> = {}
     for (const r of localRows.value) {
-      if (!r.locked) values[r.key] = r.value
+      if (r.locked) continue
+      values[r.key]          = r.value
+      values[r.key + ':min'] = r.min
+      values[r.key + ':max'] = r.max
     }
     const created = await api.createTuningPreset({ name, values })
     presets.value.push(created)
@@ -661,7 +748,7 @@ async function submitSuggestion() {
 
 <template>
   <!-- List of Tweaks — lives above the widget panel -->
-  <details class="ta-nonstock" open>
+  <details class="ta-nonstock" open ref="taNonstockRef">
       <summary class="ta-nonstock-summary">
         <span>List of Tweaks<template v-if="changedRows.length"> ({{ changedRows.length }})</template></span>
         <span class="ta-nonstock-chev"></span>
@@ -669,10 +756,11 @@ async function submitSuggestion() {
       <div class="ta-nonstock-body">
         <template v-if="changedRows.length">
           <div v-for="(col, ci) in tweakColumns" :key="ci" class="ta-nonstock-col">
-            <div v-for="[tabId, { groups }] in col" :key="tabId" :class="['ta-nonstock-tab-block', 'ta-tab--' + tabId]">
-              <div v-for="[groupKey, { label, rows }] in groups" :key="groupKey" class="ta-nonstock-group">
-                <div class="ta-nonstock-group-title">{{ label }}</div>
-                <div v-for="r in rows" :key="r.key" class="ta-nonstock-line">
+            <div v-for="[tabId, { tabLabel, groups }] in col" :key="tabId" :class="['ta-nonstock-tab-block', 'ta-tab--' + tabId]" role="button" tabindex="0" @click="collapseToTab(tabId)" @keydown.enter.space.prevent="collapseToTab(tabId)">
+              <div class="ta-nonstock-tab-header">{{ tabLabel }}</div>
+              <div v-for="[groupKey, { rows }] in groups" :key="groupKey" class="ta-nonstock-subgroup">
+                <div class="ta-nonstock-subgroup-title">{{ groupKey }}</div>
+                <div v-for="r in rows" :key="r.key" class="ta-nonstock-line" role="button" tabindex="-1" @click.stop="clickNonstockRow(tabId, r.key)">
                   <span class="ta-nonstock-loc">{{ r.label }}</span>
                   <span class="ta-nonstock-vals">{{ fmt(r, r.value) }} <span class="ta-nonstock-stock">← {{ fmt(r, r.stock) }}</span></span>
                 </div>
@@ -747,7 +835,7 @@ async function submitSuggestion() {
             <span class="ta-caps-nudge">{{ section.label }}<span v-if="hasChangedInTab(section.id)" class="ta-tab-dot ta-tab-dot--inline"></span></span>
             <button v-if="ui.isEditing" class="ta-btn-lwb ta-stack-stock-btn" @click="onSetStockParameters(section.id)">Set As Stock</button>
           </div>
-          <button class="ta-btn-lwb ta-stack-collapse-btn" @click="collapseToTab(section.id)">Tab View</button>
+          <button class="ta-btn-lwb ta-stack-collapse-btn" @click="switchToTabView(section.id)">Tab View</button>
         </div>
 
         <!-- Static / Variable toggle (edit mode only, not on gearing) -->
@@ -826,6 +914,7 @@ async function submitSuggestion() {
               v-else
               class="ta-row"
               :class="{ focused: focusedKey === r.key, changed: isChanged(r) }"
+              :data-key="r.key"
               tabindex="-1"
               @click="onRowClick(r, $event)"
               @focusin="focusedKey = r.key; if (($event.target as Element)?.tagName !== 'INPUT') ($event.currentTarget as HTMLElement).focus({ preventScroll: true })"
@@ -856,9 +945,10 @@ async function submitSuggestion() {
 
                 <!-- Track -->
                 <div class="ta-track-wrap">
-                  <div v-if="isBipolar(r)" class="ta-center-mark" :style="centerMarkStyle(r)"></div>
+                  <div v-if="isBipolar(r) || r._centerMark" class="ta-center-mark" :style="centerMarkStyle(r)"></div>
                   <div class="ta-stock-tick" :style="stockDotStyle(r)"></div>
                   <input type="range" class="ta-slider"
+                    :class="{ 'ta-slider--stock': !isChanged(r) }"
                     :data-key="r.key"
                     :min="r.min" :max="r.max" :step="r.step"
                     :value="r.value"
@@ -886,6 +976,21 @@ async function submitSuggestion() {
 
     <p v-else-if="!ui.isEditing" class="ta-empty">No adjustments recorded.</p>
 
+    <!-- Apply preset confirm dialog (has unsaved slider changes) -->
+    <div v-if="applyConfirmOpen" class="ta-overlay" @click.self="applyConfirmOpen = false">
+      <div class="ta-dialog">
+        <div class="ta-dialog-head">
+          <span>Discard Changes?</span>
+          <button class="ta-dialog-close" @click="applyConfirmOpen = false">×</button>
+        </div>
+        <p class="ta-dialog-body">You have {{ changedRows.length }} modified slider{{ changedRows.length === 1 ? '' : 's' }}. Applying the preset will reset them to the preset defaults.</p>
+        <div class="ta-dialog-btns">
+          <button class="ta-dlg-discard" @click="executeApplyPreset">Apply Anyway</button>
+          <button class="ta-dlg-cancel" @click="applyConfirmOpen = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Delete preset confirm dialog -->
     <div v-if="deleteConfirmOpen" class="ta-overlay" @click.self="deleteConfirmOpen = false">
       <div class="ta-dialog">
@@ -893,7 +998,10 @@ async function submitSuggestion() {
           <span>Delete Preset</span>
           <button class="ta-dialog-close" @click="deleteConfirmOpen = false">×</button>
         </div>
-        <p class="ta-dialog-body">Delete "{{ presets.find(p => p.id === selectedPresetId)?.name }}"? This cannot be undone.</p>
+        <p class="ta-dialog-body">
+          Delete "{{ presets.find(p => p.id === selectedPresetId)?.name }}"? This cannot be undone.
+          <template v-if="changedRows.length > 0"> Your {{ changedRows.length }} unsaved slider change{{ changedRows.length === 1 ? '' : 's' }} will also be lost.</template>
+        </p>
         <div class="ta-dialog-btns">
           <button class="ta-dlg-discard" :disabled="presetBusy" @click="confirmDeletePreset">{{ presetBusy ? '…' : 'Delete' }}</button>
           <button class="ta-dlg-cancel" @click="deleteConfirmOpen = false">Cancel</button>
@@ -1111,9 +1219,23 @@ async function submitSuggestion() {
   line-height: 1.75;
 }
 .ta-nonstock-col { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.ta-nonstock-tab-block { display: flex; flex-direction: column; gap: 6px; }
-.ta-nonstock-group { display: flex; flex-direction: column; }
-.ta-nonstock-group-title {
+.ta-nonstock-tab-block {
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--tabc, var(--panel-edge)) 8%, var(--panel-well));
+  border: 1px solid color-mix(in srgb, var(--tabc, var(--panel-edge)) 22%, transparent);
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  outline: none;
+}
+.ta-nonstock-tab-block:hover:not(:has(.ta-nonstock-line:hover)),
+.ta-nonstock-tab-block:focus-visible {
+  background: color-mix(in srgb, var(--tabc, var(--panel-edge)) 16%, var(--panel-well));
+  border-color: color-mix(in srgb, var(--tabc, var(--panel-edge)) 50%, transparent);
+}
+.ta-nonstock-tab-header {
   text-align: center;
   font-size: 0.85em;
   letter-spacing: 0.07em;
@@ -1121,9 +1243,23 @@ async function submitSuggestion() {
   color: var(--steel-light);
   background: color-mix(in srgb, var(--tabc, var(--panel-edge)) 28%, var(--panel-edge));
   padding: 2px 6px;
+}
+.ta-nonstock-subgroup { display: flex; flex-direction: column; padding: 3px 0 4px; }
+.ta-nonstock-subgroup + .ta-nonstock-subgroup {
+  padding-top: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--tabc, var(--panel-edge)) 18%, transparent);
+}
+.ta-nonstock-subgroup-title {
+  font-size: 0.75em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--steel);
+  background: color-mix(in srgb, var(--panel-edge) 35%, transparent);
+  padding: 1px 6px;
   margin-bottom: 2px;
 }
-.ta-nonstock-line  { display: flex; gap: 5px; align-items: baseline; min-width: 0; overflow: hidden; }
+.ta-nonstock-line  { display: flex; gap: 5px; align-items: baseline; min-width: 0; overflow: hidden; padding: 0 6px; cursor: pointer; transition: color 0.1s; }
+.ta-nonstock-line:hover { color: var(--gold); }
 .ta-nonstock-loc   { color: var(--steel-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; }
 .ta-nonstock-vals  { flex-shrink: 0; white-space: nowrap; font-weight: 600; }
 .ta-nonstock-stock { color: var(--steel); font-weight: 400; }
@@ -1232,8 +1368,8 @@ async function submitSuggestion() {
 .ta-tab--brakes       { --tabc: var(--tabc-brakes); }
 .ta-tab--differential { --tabc: var(--tabc-differential); }
 
-.ta-stack-collapse-btn { margin-left: auto; color: var(--magenta); border-color: var(--magenta-tint-40); }
-.ta-stack-collapse-btn:hover { color: var(--paper); border-color: var(--magenta); }
+.ta-stack-collapse-btn { margin-left: auto; color: var(--tabc, var(--magenta)); border-color: color-mix(in srgb, var(--tabc, var(--magenta)) 40%, transparent); }
+.ta-stack-collapse-btn:hover { color: var(--paper); border-color: var(--tabc, var(--magenta)); }
 
 .ta-group {
   margin-bottom: 16px;
@@ -1445,7 +1581,7 @@ async function submitSuggestion() {
   transition: background 0.2s;
 }
 .ta-mode-switch input:checked + .ta-mode-track {
-  background: var(--magenta);
+  background: var(--tabc, var(--magenta));
 }
 .ta-mode-thumb {
   position: absolute;
@@ -1464,7 +1600,7 @@ async function submitSuggestion() {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   letter-spacing: 0.08em;
-  color: var(--magenta);
+  color: var(--tabc, var(--magenta));
 }
 .ta-mode-state.static {
   color: var(--steel-light);
@@ -1562,11 +1698,14 @@ async function submitSuggestion() {
   box-shadow: 0 0 0 2px var(--panel-well);
 }
 .ta-slider.readonly::-webkit-slider-thumb { cursor: default; }
+.ta-slider--stock::-webkit-slider-thumb { background: var(--steel-light); }
 .ta-slider::-moz-range-thumb {
   width: 14px; height: 14px; border-radius: 50%;
   background: var(--track-color, var(--magenta)); border: none; cursor: pointer;
   box-shadow: 0 0 0 2px var(--panel-well);
 }
+.ta-slider--stock::-moz-range-thumb { background: var(--steel-light); }
+.ta-slider--stock::-moz-range-progress { background: var(--steel-light); }
 
 .ta-gear-select-row {
   margin-bottom: 14px;

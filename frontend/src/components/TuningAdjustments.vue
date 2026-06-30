@@ -110,7 +110,10 @@ const CANONICAL_TABS: CanonicalTab[] = [
 
 // ── Gear count (transmission) ─────────────────────────────────────────────────
 function ordinal(n: number) {
-  return n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`
+  const s = n % 100
+  if (s >= 11 && s <= 13) return `${n}th`
+  const t = n % 10
+  return t === 1 ? `${n}st` : t === 2 ? `${n}nd` : t === 3 ? `${n}rd` : `${n}th`
 }
 
 function storedGearCount(): number {
@@ -174,7 +177,10 @@ function isTabStatic(tabId: string) {
 }
 
 function setTabMode(tabId: string, isStatic: boolean) {
-  tabModes.value = { ...tabModes.value, [tabId]: isStatic }
+  const next = { ...tabModes.value }
+  if (isStatic) next[tabId] = true
+  else delete next[tabId]
+  tabModes.value = next
   flush()
 }
 
@@ -222,6 +228,7 @@ watch(() => props.adjustments, () => {
   initTabModes()
   localRows.value = buildLocalRows()
   endDisplay.value = {}
+  suggestCollapsed.value = false
 }, { deep: false })
 
 watch(gearCount, () => {
@@ -339,10 +346,12 @@ const changedByTab = computed(() => {
   }
   return tabMap
 })
+type TabBlock = { tabLabel: string; groups: Map<string, { label: string; rows: LocalRow[] }> }
+
 // Distribute tab blocks across explicit columns using a greedy height-balance algorithm.
 // Each tab block's height ≈ number of total rows across its groups + groups (for title rows).
 const tweakColumns = computed(() => {
-  const cols: Array<Array<[string, typeof changedByTab.value extends Map<string, infer V> ? V : never]>> = Array.from({ length: TWEAK_COLS }, () => [])
+  const cols: Array<Array<[string, TabBlock]>> = Array.from({ length: TWEAK_COLS }, () => [])
   const heights = new Array(TWEAK_COLS).fill(0)
   for (const entry of changedByTab.value) {
     const [, { groups }] = entry
@@ -549,7 +558,7 @@ const deleteConfirmOpen = ref(false)
 
 async function loadPresets() {
   try { presets.value = await api.listTuningPresets() }
-  catch (e: any) { presetError.value = e.message }
+  catch (e: unknown) { presetError.value = e instanceof Error ? e.message : String(e) }
 }
 
 function applyPreset() {
@@ -573,11 +582,11 @@ async function saveAsPreset() {
       if (!r.locked) values[r.key] = r.value
     }
     const created = await api.createTuningPreset({ name, values })
-    presets.value.push({ ...created, createdAt: new Date().toISOString() })
+    presets.value.push(created)
     selectedPresetId.value = created.id
     presetNameOpen.value = false
     presetNameInput.value = ''
-  } catch (e: any) { presetError.value = e.message }
+  } catch (e: unknown) { presetError.value = e instanceof Error ? e.message : String(e) }
   finally { presetBusy.value = false }
 }
 
@@ -594,7 +603,7 @@ async function confirmDeletePreset() {
     await api.deleteTuningPreset(selectedPresetId.value)
     presets.value = presets.value.filter(p => p.id !== selectedPresetId.value)
     selectedPresetId.value = presets.value[0]?.id ?? null
-  } catch (e: any) { presetError.value = e.message }
+  } catch (e: unknown) { presetError.value = e instanceof Error ? e.message : String(e) }
   finally { presetBusy.value = false }
 }
 
@@ -622,6 +631,7 @@ function openSuggestModal() {
 
 async function submitSuggestion() {
   suggestError.value = null
+  if (!props.cardId) { suggestError.value = 'Cannot submit: no card context.'; return }
   const title = suggestTitle.value.trim()
   if (!title) { suggestError.value = 'A title is required.'; return }
   if (title.length > 60) { suggestError.value = 'Title must be 60 characters or less.'; return }
@@ -634,14 +644,14 @@ async function submitSuggestion() {
         ({ key, tab, group, label, unit, step, min, max, stock, value })
       )
     await api.submitSuggestion({
-      cardId: props.cardId ?? 'unknown',
+      cardId: props.cardId,
       title,
       credit: suggestCredit.value.trim() || undefined,
       adjustments,
     })
     suggestDone.value = true
-  } catch (e: any) {
-    suggestError.value = e.message ?? 'Something went wrong.'
+  } catch (e: unknown) {
+    suggestError.value = e instanceof Error ? e.message : 'Something went wrong.'
   } finally {
     suggestBusy.value = false
   }
@@ -986,14 +996,6 @@ async function submitSuggestion() {
   margin-top: 10px;
 }
 
-.ta-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
 .ta-preset-bar {
   display: flex;
   align-items: center;
@@ -1078,6 +1080,7 @@ async function submitSuggestion() {
   user-select: none;
 }
 .ta-nonstock-summary:hover { background: color-mix(in srgb, var(--magenta) 12%, transparent); color: var(--gold); }
+.ta-nonstock-summary:hover .ta-nonstock-chev::before { border-right-color: var(--gold); }
 .ta-nonstock[open] > .ta-nonstock-summary { background: color-mix(in srgb, var(--magenta) 10%, transparent); }
 .ta-nonstock-summary::-webkit-details-marker { display: none; }
 
@@ -1119,7 +1122,6 @@ async function submitSuggestion() {
   padding: 2px 6px;
   margin-bottom: 2px;
 }
-.ta-nonstock-group-rows { display: flex; flex-direction: column; }
 .ta-nonstock-line  { display: flex; gap: 5px; align-items: baseline; min-width: 0; overflow: hidden; }
 .ta-nonstock-loc   { color: var(--steel-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; }
 .ta-nonstock-vals  { flex-shrink: 0; white-space: nowrap; font-weight: 600; }
@@ -1231,7 +1233,6 @@ async function submitSuggestion() {
 
 .ta-stack-collapse-btn { margin-left: auto; color: var(--magenta); border-color: var(--magenta-tint-40); }
 .ta-stack-collapse-btn:hover { color: var(--paper); border-color: var(--magenta); }
-.ta-stack-stock-btn {}
 
 .ta-group {
   margin-bottom: 16px;
@@ -1533,7 +1534,6 @@ async function submitSuggestion() {
   outline: none;
   position: relative;
   z-index: 3;
-  position: relative; z-index: 3;
   cursor: pointer;
   padding: 0; margin: 0;
 }
@@ -1595,7 +1595,7 @@ async function submitSuggestion() {
   border-radius: 10px;
   background: rgba(0,0,0,0.65);
   display: flex; align-items: center; justify-content: center;
-  z-index: 100;
+  z-index: 130;
 }
 .ta-overlay--fixed { position: fixed; border-radius: 0; }
 .ta-dialog {

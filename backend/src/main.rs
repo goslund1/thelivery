@@ -501,7 +501,12 @@ async fn create_tuning_preset(
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
     let id = result.last_insert_rowid();
-    Ok(Json(json!({ "id": id, "name": name, "values": req.values })))
+    let created_at: String = sqlx::query_scalar("SELECT created_at FROM tuning_presets WHERE id = ?")
+        .bind(id)
+        .fetch_one(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(json!({ "id": id, "name": name, "values": req.values, "createdAt": created_at })))
 }
 
 async fn delete_tuning_preset(

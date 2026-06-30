@@ -132,7 +132,7 @@ export const api = {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...authHeaders() },
       body: JSON.stringify(payload),
-    }).then(json<{ id: number; name: string; values: Record<string, number> }>),
+    }).then(json<{ id: number; name: string; values: Record<string, number>; createdAt: string }>),
 
   deleteTuningPreset: (id: number) =>
     fetch(`/api/tuning-presets/${id}`, { method: 'DELETE', headers: authHeaders() }).then(

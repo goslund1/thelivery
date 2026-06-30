@@ -1447,9 +1447,10 @@ async function submitSuggestion() {
   display: flex;
   align-items: center;
   cursor: pointer;
-  transition: background 0.1s, box-shadow 0.1s;
+  transition: background 0.1s;
 }
-.ta-row.focused    { background: color-mix(in srgb, var(--panel-well) 80%, #000); box-shadow: inset 0 0 0 1px var(--magenta); outline: none; }
+.ta-row.focused    { outline: none; }
+.ta-row.focused .ta-right-section { background: color-mix(in srgb, var(--panel-well) 80%, #000); box-shadow: inset 0 0 0 1px var(--magenta); }
 .ta-row:focus      { outline: none; }
 .ta-row--locked    { border-radius: 6px; border: 1px dashed var(--panel-edge); }
 .ta-group > .ta-row:not(:last-child):not(.ta-row--locked) { border-bottom: 2px solid var(--panel); }

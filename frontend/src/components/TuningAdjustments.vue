@@ -496,7 +496,10 @@ function onSliderMouseDown(r: LocalRow, e: MouseEvent) {
     const thumbPx = 7 + p * (rect.width - 14)
     const clickPx = e.clientX - rect.left
     if (Math.abs(clickPx - thumbPx) > 12) {
+      // Prevent jump-to-click, but e.preventDefault() also kills native focus.
+      // Manually focus the row div so arrow keys work after a track click.
       e.preventDefault()
+      ;(slider.closest('.ta-row') as HTMLElement | null)?.focus({ preventScroll: true })
       return
     }
   }
@@ -525,10 +528,9 @@ function onRowClick(r: LocalRow, e: MouseEvent) {
 }
 
 function onRowKeydown(r: LocalRow, e: KeyboardEvent) {
-if (!ui.isEditing || r.locked) return
-
-  // Cmd/Ctrl+Z — undo last slider move or nudge
+  // Cmd/Ctrl+Z — undo (edit mode only)
   if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+    if (!ui.isEditing || r.locked) return
     e.preventDefault()
     const stack = undoStacks.get(r.key)
     if (stack?.length) {
@@ -538,7 +540,7 @@ if (!ui.isEditing || r.locked) return
     return
   }
 
-  // Up/Down: move focus to adjacent row
+  // Up/Down: move focus to adjacent row (all modes)
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
     e.preventDefault()
     const rows = localRows.value.filter(row => !row.locked)
@@ -551,13 +553,14 @@ if (!ui.isEditing || r.locked) return
     return
   }
 
-  // Left/Right: adjust slider value
+  // Left/Right: adjust slider value (all modes; flush only in edit mode)
+  if (r.locked) return
   const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
   if (!dir) return
   e.preventDefault()
-  pushUndo(r.key, r.value)
+  if (ui.isEditing) pushUndo(r.key, r.value)
   r.value = parseFloat(Math.max(r.min, Math.min(r.max, r.value + dir * r.step)).toFixed(decimals(r)))
-  flush()
+  if (ui.isEditing) flush()
 }
 
 function onSliderInput(r: LocalRow, e: Event) {

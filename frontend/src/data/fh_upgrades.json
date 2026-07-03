@@ -41,7 +41,7 @@
     {
       "name": "Drivetrain",
       "parts": [
-        { "part": "Clutch", "tiers": ["Race Clutch"], "tierCosts": {"Race Clutch": 2250} },
+        { "part": "Clutch", "tiers": ["Street Clutch", "Sport Clutch", "Race Clutch"], "specialTiers": ["No Upgrade", "Not Available"], "tierCosts": {"Race Clutch": 2250} },
         { "part": "Transmission", "tiers": ["Street Transmission", "Sport Transmission", "Race 6-Speed Transmission", "Race 7-Speed Transmission", "Race 8-Speed Transmission", "Race 9-Speed Transmission", "Race 10-Speed Transmission", "Drift Transmission"], "tierCosts": {"Street Transmission": 800, "Sport Transmission": 1600, "Race 6-Speed Transmission": 2400, "Race 7-Speed Transmission": 3000, "Race 8-Speed Transmission": 3000, "Race 9-Speed Transmission": 3000, "Race 10-Speed Transmission": 3000, "Drift Transmission": 3000} },
         { "part": "Driveline", "tiers": ["Street Driveline", "Sport Driveline", "Race Driveline"], "tierCosts": {"Street Driveline": 700, "Sport Driveline": 1400, "Race Driveline": 2100} },
         { "part": "Differential", "tiers": ["Sport Differential", "Race Differential", "Rally Differential", "Drift Differential", "Offroad Differential"], "tierCosts": {"Sport Differential": 1500, "Race Differential": 2250, "Rally Differential": 2500, "Drift Differential": 2500, "Offroad Differential": 2500} }

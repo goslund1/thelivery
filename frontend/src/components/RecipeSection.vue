@@ -64,8 +64,10 @@ const partCount = computed(() =>
 )
 
 // Full upgrade part list for "Show Stock" view mode and cost tallying
-type UpgJPart = { part: string; tiers: string[] | 'stepped' | 'cosmetic'; tierCosts?: Record<string, number> }
+type UpgJPart = { part: string; tiers: string[] | 'stepped' | 'cosmetic'; specialTiers?: string[]; tierCosts?: Record<string, number> }
 type UpgJCat  = { name: string; parts: UpgJPart[] }
+
+const SPECIAL_STATES = new Set(['No Upgrade', 'Not Available'])
 const allUpgCats = rawUpgrades.categories as UpgJCat[]
 
 const CAT_ORDER = [
@@ -84,21 +86,22 @@ const STEPPED_SET = new Set([
   'Front Rim Size', 'Rear Rim Size',
   'Front Track Width', 'Rear Track Width',
 ])
-function viewInstalledTier(tiers: string[]): string | null {
+function viewInstalledTier(tiers: string[], specialTiers?: string[]): string | null {
+  const all = specialTiers ? [...tiers, ...specialTiers] : tiers
   for (const cat of local.upgrades) {
-    const hit = tiers.find(t => cat.parts.includes(t))
+    const hit = all.find(t => cat.parts.includes(t))
     if (hit) return hit
   }
   return null
 }
-function viewPartLabel(part: string, tiers: string[]): string {
-  const tier = viewInstalledTier(tiers)
-  if (!tier || tier === 'Stock') return 'Stock ' + part
+function viewPartLabel(part: string, tiers: string[], specialTiers?: string[]): string {
+  const tier = viewInstalledTier(tiers, specialTiers)
+  if (!tier || tier === 'Stock' || tier === 'No Upgrade') return 'Stock ' + part
   return tier
 }
-function isCustomTier(tiers: string[]): boolean {
-  const tier = viewInstalledTier(tiers)
-  return !!tier && tier !== 'Stock'
+function isCustomTier(tiers: string[], specialTiers?: string[]): boolean {
+  const tier = viewInstalledTier(tiers, specialTiers)
+  return !!tier && tier !== 'Stock' && !SPECIAL_STATES.has(tier)
 }
 function viewSteppedValue(partName: string): number {
   for (const cat of local.upgrades) {
@@ -112,8 +115,8 @@ function viewSteppedValue(partName: string): number {
 }
 function viewPartCost(p: UpgJPart): number | null {
   if (!p.tierCosts || !Array.isArray(p.tiers)) return null
-  const tier = viewInstalledTier(p.tiers)
-  if (!tier || tier === 'Stock') return null
+  const tier = viewInstalledTier(p.tiers, p.specialTiers)
+  if (!tier || tier === 'Stock' || SPECIAL_STATES.has(tier)) return null
   return p.tierCosts[tier] ?? null
 }
 function viewSteppedLabel(partName: string): string {
@@ -127,8 +130,8 @@ const totalUpgradeCost = computed(() => {
   for (const cat of allUpgCats) {
     for (const p of cat.parts) {
       if (!Array.isArray(p.tiers) || !p.tierCosts) continue
-      const hit = viewInstalledTier(p.tiers)
-      if (hit) total += p.tierCosts[hit] ?? 0
+      const hit = viewInstalledTier(p.tiers, p.specialTiers)
+      if (hit && !SPECIAL_STATES.has(hit)) total += p.tierCosts[hit] ?? 0
     }
   }
   return total
@@ -342,8 +345,11 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
               <p class="kit-cat-label">{{ cat.name }}</p>
               <ul class="kit-list">
                 <template v-for="p in cat.parts" :key="p.part">
-                  <li v-if="Array.isArray(p.tiers)" :class="{ 'kit-item--buy': isCustomTier(p.tiers) }">
-                    {{ viewPartLabel(p.part, p.tiers) }}<span v-if="viewPartCost(p) !== null" class="kit-item-cost"> · CR {{ viewPartCost(p)!.toLocaleString() }}</span>
+                  <li
+                    v-if="Array.isArray(p.tiers) && viewInstalledTier(p.tiers, p.specialTiers) !== 'Not Available'"
+                    :class="{ 'kit-item--buy': isCustomTier(p.tiers, p.specialTiers) }"
+                  >
+                    {{ viewPartLabel(p.part, p.tiers, p.specialTiers) }}<span v-if="viewPartCost(p) !== null" class="kit-item-cost"> · CR {{ viewPartCost(p)!.toLocaleString() }}</span>
                   </li>
                   <li v-else-if="p.tiers === 'stepped' && STEPPED_SET.has(p.part)" :class="{ 'kit-item--buy': viewSteppedValue(p.part) !== 0 }">
                     {{ viewSteppedLabel(p.part) }}
@@ -359,7 +365,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
             <div v-for="(cat, ci) in local.upgrades" :key="ci" class="kit-cat">
               <p class="kit-cat-label">{{ cat.category }}</p>
               <ul class="kit-list">
-                <li v-for="(part, pi) in cat.parts" :key="pi">{{ part }}</li>
+                <li v-for="(part, pi) in cat.parts.filter(p => !SPECIAL_STATES.has(p))" :key="pi">{{ part }}</li>
               </ul>
             </div>
             <p v-if="!local.upgrades.length" class="kit-cat-label" style="opacity:0.35">No upgrades recorded</p>

@@ -8,7 +8,7 @@ const props = defineProps<{ upgrades: UpgradeCategory[]; showStock: boolean }>()
 const markDirty = inject(MarkDirtyKey, () => {})
 
 type UpgradeTiers = string[] | 'stepped' | 'cosmetic'
-type JsonPart     = { part: string; tiers: UpgradeTiers; tierCosts?: Record<string, number> }
+type JsonPart     = { part: string; tiers: UpgradeTiers; specialTiers?: string[]; tierCosts?: Record<string, number> }
 type JsonCategory = { name: string; parts: JsonPart[] }
 
 const categories = rawData.categories as JsonCategory[]
@@ -50,17 +50,18 @@ function getOrCreate(categoryName: string): UpgradeCategory {
   return cat
 }
 
-function getInstalledTier(tiers: string[]): string | null {
+function getInstalledTier(tiers: string[], specialTiers?: string[]): string | null {
+  const all = specialTiers ? [...tiers, ...specialTiers] : tiers
   for (const cat of props.upgrades) {
-    const hit = tiers.find(t => cat.parts.includes(t))
+    const hit = all.find(t => cat.parts.includes(t))
     if (hit) return hit
   }
   return null
 }
 
-function onTierChange(categoryName: string, allTiers: string[], e: Event) {
+function onTierChange(categoryName: string, allTiers: string[], e: Event, specialTiers?: string[]) {
   const newTier = (e.target as HTMLSelectElement).value
-  const current = getInstalledTier(allTiers)
+  const current = getInstalledTier(allTiers, specialTiers)
   if (current) {
     for (const cat of props.upgrades) cat.parts = cat.parts.filter(p => p !== current)
   }
@@ -153,12 +154,16 @@ function steppedLabel(partName: string): string {
           <li v-else-if="Array.isArray(p.tiers)">
             <select
               class="up-inline-select"
-              :class="{ 'up-inline-set': !!getInstalledTier(p.tiers) || props.showStock }"
-              :value="getInstalledTier(p.tiers) ?? ''"
-              @change="onTierChange(cat.name, p.tiers, $event)"
+              :class="{ 'up-inline-set': !!getInstalledTier(p.tiers, p.specialTiers) || props.showStock }"
+              :value="getInstalledTier(p.tiers, p.specialTiers) ?? ''"
+              @change="onTierChange(cat.name, p.tiers, $event, p.specialTiers)"
             >
               <option value="">Stock {{ displayName(p.part) }}</option>
               <option v-for="tier in p.tiers" :key="tier" :value="tier">{{ displayName(tier) }}</option>
+              <template v-if="p.specialTiers?.length">
+                <optgroup label="─────────" />
+                <option v-for="tier in p.specialTiers" :key="tier" :value="tier">{{ tier }}</option>
+              </template>
             </select>
           </li>
         </template>

@@ -73,13 +73,33 @@ upgrade is present — this is the signal the auto-populate uses.
 **Tuning drives upgrades (all tabs except gearing):**
 Any slider where `value !== stock` implies the enabling upgrade is installed.
 Auto-populate adds the appropriate part to the upgrades list if not already present.
-Tier inference: Springs and Dampers defaults to "Race" (the minimum tier that
-unlocks the sliders). All other categories: any tier suffices; user corrects
-the specific tier manually if needed.
+
+For most categories, any tier suffices — user corrects the specific tier manually
+if needed. Springs and Dampers is the exception: the tier matters for unlock
+(Race/Rally/Drift unlock; Street/Sport do not), so a dialog is shown instead of
+guessing.
+
+**Springs and Dampers dialog:**
+Fires when a slider in Alignment, Springs, or Damping is moved off-stock AND no
+Springs and Dampers entry exists in the upgrades list yet. Only fires once per
+card per edit session (subsequent slider moves on the same card skip it).
+
+Options: **Race / Rally / Drift / Reset to stock**
+- Race / Rally / Drift → adds that tier to the upgrades list, keeps the slider value
+- Reset → returns the slider to stock, no upgrade added
+
+If a Springs and Dampers entry already exists, the dialog is skipped — tier is known.
 
 **Upgrades drive tuning (gearing tab):**
-Final Drive slider unlocks when Sport, Race, or Drift transmission is listed.
-Individual gear ratio sliders unlock when Race or Drift transmission is listed.
+Gearing sliders unlock based on transmission tier:
+
+| Transmission tier | Final Drive | Individual gear ratios |
+|---|---|---|
+| None / Street | Locked | Locked |
+| Sport | Unlocked | Locked |
+| Race | Unlocked | Unlocked (up to 10 gears) |
+| Drift | Unlocked | Unlocked (4 gears fixed) |
+
 The upgrade entry is the meaningful signal — slider position alone cannot
 determine which transmission tier is installed.
 
@@ -176,10 +196,5 @@ Migration of old cards → see `plan-card-migration-tool.md`.
 
 ## Open items
 
-- **Springs and Dampers tier variants**: if a card uses Rally or Drift springs,
-  auto-populate would suggest Race. Confirm whether to leave existing entries
-  alone or update the tier when sliders change.
-- **Gearing unlock threshold**: confirm whether Drift transmission unlocks
-  individual gear ratios the same as Race, or only Final Drive.
 - **None option for Clutch**: Drivetrain → Clutch should support a None entry
-  for cars that lack a clutch upgrade slot.
+  for cars that lack a clutch upgrade slot. Data and UI only, no logic impact.

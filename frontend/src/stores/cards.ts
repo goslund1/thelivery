@@ -6,6 +6,8 @@ import { api } from '../api'
 // Holds the catalog data and all mutations. Replaces the original app's
 // DOM-as-state model: every edit updates a reactive Card object, and save()
 // persists the whole object via the API.
+let _imageIdCounter = 0
+
 export const useCardsStore = defineStore('cards', () => {
   const cards = ref<Card[]>([])
   const loading = ref(false)
@@ -216,7 +218,7 @@ export const useCardsStore = defineStore('cards', () => {
     const c = byId(cardId)
     if (!c) return
     const maxOrder = c.images.reduce((m, i) => Math.max(m, i.order), -1)
-    c.images.push({ id: `${cardId}-${Date.now()}`, path, thumbPath, stagePath, order: maxOrder + 1, included })
+    c.images.push({ id: `${cardId}-${++_imageIdCounter}`, path, thumbPath, stagePath, order: maxOrder + 1, included })
   }
 
   function setColor(id: string, key: string, color: string | undefined) {

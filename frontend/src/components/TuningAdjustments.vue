@@ -160,10 +160,11 @@ function buildGearRows(): LocalRow[] {
   return rows
 }
 
-// ── Tab static/variable modes ─────────────────────────────────────────────────
+// ── Slider bounds mode ────────────────────────────────────────────────────────
+// Whether each tab's slider min/max bounds are fixed or editable by the author.
 // Stored as sentinel rows in props.adjustments with key "__mode_<tabId>".
-// Default is variable (false). Only static=true tabs are persisted.
-const tabModes = ref<Record<string, boolean>>({})
+// Default is variable (false). Only static=true entries are persisted.
+const sliderBoundsMode = ref<Record<string, boolean>>({})
 
 function initTabModes() {
   const modes: Record<string, boolean> = {}
@@ -172,18 +173,18 @@ function initTabModes() {
       modes[r.key.slice(7)] = r.value === 1
     }
   }
-  tabModes.value = modes
+  sliderBoundsMode.value = modes
 }
 
 function isTabStatic(tabId: string) {
-  return tabModes.value[tabId] === true
+  return sliderBoundsMode.value[tabId] === true
 }
 
 function setTabMode(tabId: string, isStatic: boolean) {
-  const next = { ...tabModes.value }
+  const next = { ...sliderBoundsMode.value }
   if (isStatic) next[tabId] = true
   else delete next[tabId]
-  tabModes.value = next
+  sliderBoundsMode.value = next
   flush()
 }
 
@@ -246,7 +247,7 @@ function getAdjustments(): AdjustmentRow[] {
   const active = localRows.value
     .filter(r => !r.locked)
     .map(({ locked, lockReason, _axis, _headerUnit, _bipolar, _centerMark, ...r }) => r)
-  const sentinels = Object.entries(tabModes.value)
+  const sentinels = Object.entries(sliderBoundsMode.value)
     .filter(([, isStatic]) => isStatic)
     .map(([tabId]) => ({
       key: `__mode_${tabId}`, tab: tabId, group: '', label: '', unit: '',

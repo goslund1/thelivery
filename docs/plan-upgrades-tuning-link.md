@@ -1,199 +1,185 @@
 # Upgrades ↔ Tuning Link — Plan
 
 Connect the upgrades parts list to the tuning adjustment sliders so that moving
-a slider off-stock automatically implies the appropriate race-quality upgrade part
-in the corresponding category. The gearing tab is the single exception where the
-relationship runs the other direction.
+a slider off-stock automatically implies the appropriate upgrade part in the
+corresponding category. The gearing tab is the exception where the relationship
+runs the other direction.
 
 ---
 
-## The rule
+## Canonical upgrade hierarchy
+
+From `FH5 & FH6 Upgrades Hierarchy.md`. Top-level categories and their
+subcategories as the game presents them. This is the ground truth for all
+data model and UI decisions.
+
+### Engine
+Intake, Intake Manifold/Throttle Body, Carburetor, Ignition, Exhaust,
+Camshaft, Valves, Displacement, Pistons/Compression, Single Turbo, Twin Turbo,
+Intercooler, Oil/Cooling, Flywheel
+
+### Platform and Handling
+Brakes, Springs and Dampers, Front Anti-Roll Bars, Rear Anti-Roll Bars,
+Chassis Reinforcement / Roll Cage, Weight Reduction
+
+### Drivetrain
+Clutch (Street / Sport / Race / None), Transmission, Driveline, Differential
+
+### Tires and Wheels
+Tire Compound, Front Tire Width, Rear Tire Width, Rim Style, Front/Rear Rim
+Size, Front/Rear Track Width
+
+### Aero and Appearance
+Front Bumper, Rear Wing, Rear Bumper
+
+### Body Kits and Conversions
+Engine Swap, Drivetrain Swap, Aspiration
+
+---
+
+## Which upgrades unlock which sliders
+
+Tabs are always visible. Sliders within a tab are locked at stock until the
+enabling upgrade is installed. Moving a slider off-stock is proof the enabling
+upgrade is present — this is the signal the auto-populate uses.
+
+| Tuning tab | Enabled by | Tier requirement |
+|---|---|---|
+| Tires | **Always unlocked** — tire pressure adjustable on any compound | — |
+| Alignment | Springs and Dampers | Race, Rally, or Drift only |
+| Springs | Springs and Dampers | Race, Rally, or Drift only |
+| Damping | Springs and Dampers | Race, Rally, or Drift only |
+| ARB | Front Anti-Roll Bars / Rear Anti-Roll Bars | Any tier; sides are independent |
+| Aero | Front Bumper / Rear Wing | Any tier; sides are independent |
+| Brakes | Brakes | Any tier |
+| Differential | Differential | Any tier |
+| Gearing — Final Drive | Transmission | Sport, Race, or Drift |
+| Gearing — individual gear ratios | Transmission | Race or Drift only |
+
+**Key notes:**
+- Springs and Dampers is the single upgrade that unlocks three tuning tabs at
+  once (Alignment, Springs, Damping). Street and Sport tiers do not unlock them.
+- ARB front and rear sliders are independent — either side can be absent.
+- Aero front bumper and rear wing are independent — each unlocks its own slider.
+- Tire pressure is always adjustable regardless of compound grade.
+- Chassis Reinforcement / Roll Cage and Weight Reduction (both subcategories of
+  Platform and Handling) do not enable any tuning sliders.
+- Clutch (Drivetrain subcategory) does not enable any tuning sliders.
+
+---
+
+## The auto-populate rules
 
 **Tuning drives upgrades (all tabs except gearing):**
-Any slider with `value !== stock` implies the race-quality part for that tab's
-upgrade category. The auto-populate adds that part to the card's upgrades list
-if it isn't already there.
+Any slider where `value !== stock` implies the enabling upgrade is installed.
+Auto-populate adds the appropriate part to the upgrades list if not already present.
+Tier inference: Springs and Dampers defaults to "Race" (the minimum tier that
+unlocks the sliders). All other categories: any tier suffices; user corrects
+the specific tier manually if needed.
 
-**Upgrades drive tuning (gearing tab only):**
-The transmission is adjustable at stock, so slider position alone can't imply an
-upgrade. Instead, selecting a Sport or Race transmission in the Drivetrain upgrade
-category sets the appropriate Transmission entry. The upgrade choice is the
-meaningful signal.
+**Upgrades drive tuning (gearing tab):**
+Final Drive slider unlocks when Sport, Race, or Drift transmission is listed.
+Individual gear ratio sliders unlock when Race or Drift transmission is listed.
+The upgrade entry is the meaningful signal — slider position alone cannot
+determine which transmission tier is installed.
+
+**Auto-populate does not remove parts** when a slider returns to stock.
+The user may have installed the upgrade for reasons the tuner doesn't touch.
 
 ---
 
-## Canonical upgrade categories
+## Implied upgrade mapping
 
-These replace all current free-form variants. Names mirror the tuning tab
-vocabulary exactly. Visual layout does not change — only the stored strings.
+```typescript
+// Defined in src/constants/tuning.ts
+// Tires tab omitted — always unlocked, no upgrade implied.
+// Gearing omitted — upgrade drives tuning, handled separately.
 
-### Tuning-connected categories
+const SLIDER_UPGRADE_MAP = {
+  alignment:    { category: 'Platform and Handling', subcategory: 'Springs and Dampers', impliedTier: 'Race' },
+  springs:      { category: 'Platform and Handling', subcategory: 'Springs and Dampers', impliedTier: 'Race' },
+  damping:      { category: 'Platform and Handling', subcategory: 'Springs and Dampers', impliedTier: 'Race' },
+  arb:          { category: 'Platform and Handling', subcategory: null, impliedTier: null }, // front/rear handled separately
+  brakes:       { category: 'Platform and Handling', subcategory: 'Brakes',              impliedTier: null },
+  differential: { category: 'Drivetrain',            subcategory: 'Differential',         impliedTier: null },
+  aero:         { category: 'Aero and Appearance',   subcategory: null, impliedTier: null }, // front/rear handled separately
+}
+```
 
-| Category | Tuning tab(s) | Notes |
-|---|---|---|
-| **Tires** | tires | Single item; tier varies — Race / Rally / Drift / Sport / Off-Road |
-| **Transmission** | gearing | Exception — upgrade drives tuning; named by speed + tier |
-| **Alignment** | alignment | Single item |
-| **Anti-Roll Bars** | arb | Front and rear are independent — either can be absent |
-| **Springs & Dampers** | springs + damping | One upgrade item covers both tabs |
-| **Aero** | aero | Front and rear are independent — bumper and wing separately |
-| **Brakes** | brakes | Single item; tier varies |
-| **Differential** | differential | Single item; tier varies |
-
-### Non-tuning categories (no auto-populate, unchanged)
-
-| Category | Notes |
-|---|---|
-| **Engine** | Internal parts; no tuning tab connection |
-| **Drivetrain** | Clutch, driveline — beyond differential and transmission |
-| **Conversions** | Engine swaps, drivetrain conversions, body conversions |
+ARB and Aero front/rear are handled by checking which slider groups are off-stock:
+- ARB front group off-stock → imply `Front Anti-Roll Bars`
+- ARB rear group off-stock → imply `Rear Anti-Roll Bars`
+- Aero front group off-stock → imply `Front Bumper`
+- Aero rear group off-stock → imply `Rear Wing`
 
 ---
 
 ## Category string cleanup
 
-Current variants in seed data → canonical replacement:
+Current seed data has inconsistent category names. Canonical replacements:
 
 | Current string | Canonical |
 |---|---|
-| `Platform & Handling` | split — see parts migration below |
-| `Platform and Handling` | split — see parts migration below |
-| `Tires & Rims` | `Tires` |
-| `Tires and Wheels` | `Tires` |
-| `Aero and Appearance` | `Aero` |
-| `Bodykits and Conversion` | `Conversions` |
-| `Body Kits and Conversions` | `Conversions` |
-| `Engine` | `Engine` (no change) |
-| `Drivetrain` | `Drivetrain` (no change) |
+| `Platform & Handling` | `Platform and Handling` |
+| `Platform and Handling` | `Platform and Handling` (correct) |
+| `Tires & Rims` | `Tires and Wheels` |
+| `Tires and Wheels` | `Tires and Wheels` (correct) |
+| `Aero and Appearance` | `Aero and Appearance` (correct) |
+| `Bodykits and Conversion` | `Body Kits and Conversions` |
+| `Body Kits and Conversions` | `Body Kits and Conversions` (correct) |
+| `Engine` | `Engine` (correct) |
+| `Drivetrain` | `Drivetrain` (correct) |
 
-**Parts migration out of Platform & Handling:**
-
-Current part strings → new category:
-
-| Part string | New category |
-|---|---|
-| `Race Springs & Dampers` | Springs & Dampers |
-| `Rally Springs & Dampers` | Springs & Dampers |
-| `Sport Springs and Dampers` | Springs & Dampers |
-| `Race Front Anti-Roll Bar` | Anti-Roll Bars |
-| `Race Rear Anti-Roll Bar` | Anti-Roll Bars |
-| `Sport Front Anti-Roll Bars` | Anti-Roll Bars |
-| `Street Front Anti-Roll Bars` | Anti-Roll Bars |
-| `Street Rear Anti-Roll Bars` | Anti-Roll Bars |
-| `Race Brakes` | Brakes |
-| `Street Brakes` | Brakes |
-| `Race Chassis Reinforcement` | Platform & Handling → **Chassis** (keep or merge into Conversions — decide) |
-| `Street Chassis Reinforcement / Roll Cage` | same |
-| `Full Cage` | same |
-| `Custom Control Arms (steering angle)` | Alignment |
-| `Off-Road Front Bumper` | Aero |
-| `Race Front Bumper` | Aero |
-| `Race Rear Wing` | Aero |
-| `Sport Weight Reduction` | Platform & Handling → **Chassis** or Conversions |
-
-> **Open item:** Chassis reinforcement, roll cage, weight reduction don't map
-> cleanly to a tuning tab. Options: keep a `Chassis` category, or fold into
-> `Conversions`. Decide before running the migration.
-
----
-
-## Tab → implied upgrade mapping table
-
-Defined in code (not in the DB). When a slider is off-stock, look up its tab
-here to find the category and the canonical part string to insert.
-
-```typescript
-const TAB_UPGRADE_MAP: Record<string, { category: string; part: string }> = {
-  tires:        { category: 'Tires',            part: 'Race Tire Compound' },
-  alignment:    { category: 'Alignment',         part: 'Race Control Arms' },
-  arb:          { category: 'Anti-Roll Bars',    part: 'Race Anti-Roll Bars' },
-  springs:      { category: 'Springs & Dampers', part: 'Race Springs & Dampers' },
-  damping:      { category: 'Springs & Dampers', part: 'Race Springs & Dampers' },
-  aero:         { category: 'Aero',              part: '' }, // front/rear handled separately
-  brakes:       { category: 'Brakes',            part: 'Race Brakes' },
-  differential: { category: 'Differential',      part: 'Race Differential' },
-  // gearing: handled by upgrade → tuning direction only
-}
-```
-
-**ARB and Aero** have front/rear parts that can be installed independently.
-Auto-populate for these checks which groups are off-stock:
-- ARB front group off-stock → add `Race Front Anti-Roll Bar`
-- ARB rear group off-stock → add `Race Rear Anti-Roll Bar`
-- Aero front group off-stock → add `Race Front Bumper`
-- Aero rear group off-stock → add `Race Rear Wing`
+This is a string normalization only. Visual layout does not change.
 
 ---
 
 ## Structured adjustments requirement
 
-**The auto-populate feature only works on cards with structured adjustment rows**
-(full `AdjustmentRow` shape: `tab`, `value`, `stock`, `min`, `max`, etc.).
+Auto-populate only works on cards with structured `AdjustmentRow` format
+(`tab`, `value`, `stock`, `min`, `max`, etc.). Most existing cards still
+have the old free-text format:
 
-Most existing cards still have the old free-text format:
 ```json
 { "name": "Front anti-roll bar", "description": "softened two clicks from stock" }
 ```
 
-Old-format cards are unaffected by auto-populate until their adjustments are
-migrated to the structured format. This is intentional — no data is lost or
-changed on old cards without explicit action.
+Old-format cards are unaffected until migrated. Only Smokin currently has
+fully structured adjustments. New cards built with the slider UI get structured
+adjustments automatically.
 
-**Only Smokin currently has fully structured adjustments.** New cards built
-with the slider UI will have structured adjustments automatically.
-
-Migration of old cards to structured format is a separate tool — see
-`plan-card-migration-tool.md`.
-
----
-
-## Auto-populate behaviour
-
-- Fires when a slider value changes (`value !== stock`)
-- Checks the card's existing upgrades list first — does not add duplicates
-- Adds the implied part to the correct category; creates the category if absent
-- Does **not** remove parts when a slider returns to stock — the user may have
-  installed the upgrade for reasons beyond what the tuner touches
-- Front/rear parts (ARB, Aero) are added independently based on which side
-  is off-stock
-- Gearing: when a Sport or Race transmission is added to Drivetrain upgrades,
-  the gearing tab unlocks (tab mode switches from static to adjustable)
+Migration of old cards → see `plan-card-migration-tool.md`.
 
 ---
 
 ## Implementation phases
 
 ### Phase 0 — Seed data cleanup
-- Migrate all upgrade categories to canonical names in `seed/cards.json`
-- Split Platform & Handling parts into their correct categories
-- Resolve the Chassis open item before running
+- Normalize category name strings in `seed/cards.json`
 - Re-import via Admin → Reload from Seed; verify visually
 
-### Phase 1 — Mapping table + store logic
-- Add `TAB_UPGRADE_MAP` constant (likely `src/constants/tuning.ts`)
-- Add `impliedUpgrades(adjustments, upgrades)` pure function — computes
-  what should be added without side effects; testable in isolation
-- Add `syncUpgradesFromTuning(cardId)` action to cards store — calls
-  `impliedUpgrades`, patches the card's upgrades list, marks card dirty
+### Phase 1 — Mapping constant + pure logic
+- Add `SLIDER_UPGRADE_MAP` to `src/constants/tuning.ts`
+- Add `impliedUpgrades(adjustments, upgrades)` pure function
+- Add `syncUpgradesFromTuning(cardId)` action to cards store
 
 ### Phase 2 — Wire into TuningAdjustments
 - Call `syncUpgradesFromTuning` when any slider value changes
-- Gearing direction: watch Drivetrain upgrade category for transmission
-  entries; toggle the gearing tab mode accordingly
+- Gearing direction: watch Drivetrain subcategory for transmission entries;
+  determine which gearing sliders to unlock based on tier
 
 ### Phase 3 — Visual feedback (optional)
-- In the upgrades list, show a small indicator on auto-populated parts
-  so it's clear they were implied by tuning, not manually entered
-- Allows easy review and manual override
+- Indicator on auto-populated parts in the upgrades list
+- Makes implied vs manually entered parts distinguishable
 
 ---
 
 ## Open items
 
-- **Chassis category**: decide whether chassis reinforcement / roll cage /
-  weight reduction gets its own `Chassis` category or folds into `Conversions`
-- **Tier variants**: the implied part is always "Race" quality. If a card
-  uses Rally or Off-Road springs, the auto-populate would suggest Race —
-  confirm whether to override or leave the existing entry alone
-- **Gearing unlock threshold**: does selecting any transmission (Sport or
-  Race) unlock the gearing tab, or only Race?
+- **Springs and Dampers tier variants**: if a card uses Rally or Drift springs,
+  auto-populate would suggest Race. Confirm whether to leave existing entries
+  alone or update the tier when sliders change.
+- **Gearing unlock threshold**: confirm whether Drift transmission unlocks
+  individual gear ratios the same as Race, or only Final Drive.
+- **None option for Clutch**: Drivetrain → Clutch should support a None entry
+  for cars that lack a clutch upgrade slot.

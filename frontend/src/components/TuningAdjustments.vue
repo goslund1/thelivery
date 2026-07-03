@@ -6,7 +6,7 @@ import { MarkDirtyKey } from '../keys'
 import { api } from '../api'
 
 const props = defineProps<{ adjustments: AdjustmentRow[]; cardId?: string }>()
-const emit = defineEmits<{ 'update:adjustments': [rows: AdjustmentRow[]] }>()
+const emit = defineEmits<{ change: [] }>()
 const ui = useUiStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
@@ -241,18 +241,24 @@ watch(gearCount, () => {
   flush()
 })
 
-function flush() {
+// Returns the current serialized adjustments — called by the parent at save/flush time.
+function getAdjustments(): AdjustmentRow[] {
   const active = localRows.value
     .filter(r => !r.locked)
     .map(({ locked, lockReason, _axis, _headerUnit, _bipolar, _centerMark, ...r }) => r)
-  // Persist static-mode flags as sentinel rows (only non-default static=true entries)
   const sentinels = Object.entries(tabModes.value)
     .filter(([, isStatic]) => isStatic)
     .map(([tabId]) => ({
       key: `__mode_${tabId}`, tab: tabId, group: '', label: '', unit: '',
       step: 1, min: 0, max: 1, stock: 0, value: 1,
     }))
-  emit('update:adjustments', [...active, ...sentinels])
+  return [...active, ...sentinels]
+}
+
+defineExpose({ getAdjustments })
+
+function flush() {
+  emit('change')
   markDirty()
 }
 

@@ -12,6 +12,7 @@ const props = defineProps<{ recipe: ForzaRecipeSection; cardId?: string; initial
 const emit = defineEmits<{ 'update:recipe': [recipe: ForzaRecipeSection] }>()
 const ui = useUiStore()
 const markDirty = inject(MarkDirtyKey, () => {})
+const taRef = ref<InstanceType<typeof TuningAdjustments> | null>(null)
 
 const CORE_SPEC_KEYS = ['Drivetrain', 'Engine', 'Transmission', 'Tires', 'Suspension']
 
@@ -40,8 +41,10 @@ watch(() => props.recipe, (r) => {
 }, { deep: true })
 
 function flush() {
+  const clone = JSON.parse(JSON.stringify(local)) as ForzaRecipeSection
+  if (taRef.value) clone.adjustments = taRef.value.getAdjustments()
   skipNextPropsSync = true
-  emit('update:recipe', JSON.parse(JSON.stringify(local)))
+  emit('update:recipe', clone)
 }
 
 // UpgradesPicker mutates local.upgrades in-place; detect those mutations and flush.
@@ -365,9 +368,10 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 
     <p class="kit-cat-label adj-label">Tune Adjustments</p>
     <TuningAdjustments
+      ref="taRef"
       :adjustments="local.adjustments"
       :card-id="props.cardId"
-      @update:adjustments="rows => { local.adjustments.splice(0, local.adjustments.length, ...rows); flush(); markDirty() }"
+      @change="flush()"
     />
   </div>
 </template>

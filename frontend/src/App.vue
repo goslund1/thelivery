@@ -2,6 +2,7 @@
 import { onMounted, onBeforeUnmount } from 'vue'
 import { useCardsStore } from './stores/cards'
 import { useUiStore } from './stores/ui'
+import { useFilterStore } from './stores/filters'
 import SideBug from './components/SideBug.vue'
 import Filters from './components/Filters.vue'
 import CardView from './components/CardView.vue'
@@ -19,6 +20,7 @@ import FactoidPanel from './components/FactoidPanel.vue'
 
 const store = useCardsStore()
 const ui = useUiStore()
+const filters = useFilterStore()
 
 function onKey(e: KeyboardEvent) {
   if (e.key !== 'Escape') return
@@ -64,7 +66,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
         v-for="c in store.cards"
         :key="c.id"
         :card="c"
-        v-show="c.isLegend ? ui.isEditing : ui.isCardVisible(c.collections, c.isFavorite)"
+        v-show="c.isLegend ? ui.isEditing : filters.isCardVisible(c.collections, c.isFavorite)"
       />
     </template>
   </div>

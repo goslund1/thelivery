@@ -46,42 +46,6 @@ export const useUiStore = defineStore('ui', () => {
     currentEditIndex.value = -1
   }
 
-  // --- Expand/collapse state --------------------------------------------------
-  // Per the original: the section checkboxes EXPAND/COLLAPSE all sections of a
-  // type (they don't hide them), and expand-all flips everything together.
-  const allExpanded = ref(false)
-  // Keyed by section key (e.g. "inspiration", "notes", "recipe"); populated
-  // dynamically from the cards' sections. Missing key = collapsed.
-  const sectionExpanded = ref<Record<string, boolean>>({})
-  const upgradesExpanded = ref(false) // the "Upgrades Installed" sub-list
-
-  function toggleAll() {
-    allExpanded.value = !allExpanded.value
-    const v = allExpanded.value
-    for (const { key } of useCardsStore().allSectionKeys()) sectionExpanded.value[key] = v
-    upgradesExpanded.value = v
-  }
-  function setSectionExpanded(key: string, v: boolean) {
-    sectionExpanded.value[key] = v
-  }
-
-  // --- Card filters -----------------------------------------------------------
-  const favoritesOnly = ref(false)
-  const disabledCollections = ref<Set<string>>(new Set()) // collections turned OFF
-
-  // A card is visible if it passes the favorites + collection filters.
-  // Mirrors the original recalcCardVisibility logic.
-  function isCardVisible(collections: string[], isFavorite: boolean) {
-    if (favoritesOnly.value && !isFavorite) return false
-    if (!collections.length) return true
-    return collections.some((c) => !disabledCollections.value.has(c))
-  }
-  function toggleCollection(name: string) {
-    const s = new Set(disabledCollections.value)
-    s.has(name) ? s.delete(name) : s.add(name)
-    disabledCollections.value = s
-  }
-
   // Edit lifecycle
   const exitConfirmOpen = ref(false)
   const saving = ref(false)
@@ -329,9 +293,6 @@ export const useUiStore = defineStore('ui', () => {
   return {
     theme, textDelta, isEditing,
     dirtyIds, hasUnsavedChanges, markCardDirty, isCardDirty, clearCardDirty, clearAllDirty,
-    allExpanded, sectionExpanded, upgradesExpanded, toggleAll, setSectionExpanded,
-    favoritesOnly, disabledCollections,
-    isCardVisible, toggleCollection,
     exitConfirmOpen, saving,
     legendConfirmOpen, confirmLegendUpdate, cancelLegendUpdate,
     loginOpen, openLogin, closeLogin, onLoginSuccess,

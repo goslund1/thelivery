@@ -2,6 +2,7 @@
 import { computed, inject, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import type { ForzaRecipeSection, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
+import { useFilterStore } from '../stores/filters'
 import { MarkDirtyKey } from '../keys'
 import EditableText from './EditableText.vue'
 import UpgradesPicker from './UpgradesPicker.vue'
@@ -11,6 +12,7 @@ import rawUpgrades from '../data/fh_upgrades.json'
 const props = defineProps<{ recipe: ForzaRecipeSection; cardId?: string; initialKitOpen?: boolean }>()
 const emit = defineEmits<{ 'update:recipe': [recipe: ForzaRecipeSection] }>()
 const ui = useUiStore()
+const filters = useFilterStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 const taRef = ref<InstanceType<typeof TuningAdjustments> | null>(null)
 
@@ -174,7 +176,7 @@ function onShareCodeInput(e: Event) {
 
 // The Upgrades sub-list follows its own filter checkbox + expand/collapse-all.
 const kitOpen = ref(props.initialKitOpen ?? false)
-watch(() => ui.upgradesExpanded, (v) => (kitOpen.value = v))
+watch(() => filters.upgradesExpanded, (v) => (kitOpen.value = v))
 function onKitToggle(e: Event) {
   kitOpen.value = (e.target as HTMLDetailsElement).open
 }

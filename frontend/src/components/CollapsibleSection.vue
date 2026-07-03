@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
-import { useUiStore } from '../stores/ui'
+import { useFilterStore } from '../stores/filters'
 
 const props = defineProps<{ sectionKey: string; label: string; domId?: string }>()
 const open = defineModel<boolean>('open', { default: false })
-const ui = useUiStore()
+const filters = useFilterStore()
 
-watch(() => ui.sectionExpanded[props.sectionKey], (v) => (open.value = v))
+watch(() => filters.sectionExpanded[props.sectionKey], (v) => (open.value = v))
 
 function onToggle(e: Event) {
   open.value = (e.target as HTMLDetailsElement).open

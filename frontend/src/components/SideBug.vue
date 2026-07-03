@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, nextTick, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useUiStore } from '../stores/ui'
+import { useFilterStore } from '../stores/filters'
 import { useCardsStore } from '../stores/cards'
 import { useAuthStore } from '../stores/auth'
 import { onClickOutside } from '../composables/onClickOutside'
@@ -8,6 +9,7 @@ import { hideTip, refreshTip } from '../composables/tooltip'
 import type { Theme } from '../types'
 
 const ui = useUiStore()
+const filters = useFilterStore()
 const store = useCardsStore()
 const auth = useAuthStore()
 
@@ -113,13 +115,13 @@ function onEditClick() {
 //   we hold a reference and scrollTo its post-collapse document position (measured
 //   after nextTick because other sections above it may also have collapsed).
 function onToggleAll() {
-  const willCollapse = ui.allExpanded
+  const willCollapse = filters.allExpanded
 
   if (willCollapse) {
     const el = document.elementFromPoint(window.innerWidth / 2, 1)
     const card = el?.closest('.card') as HTMLElement | null
 
-    ui.toggleAll()
+    filters.toggleAll()
 
     nextTick(() => {
       if (card) window.scrollTo({ top: card.getBoundingClientRect().top + window.scrollY })
@@ -129,7 +131,7 @@ function onToggleAll() {
     const anchor = nearestVisibleCard()
     const before = anchor?.getBoundingClientRect().top ?? null
 
-    ui.toggleAll()
+    filters.toggleAll()
 
     nextTick(() => {
       if (anchor && before !== null) window.scrollBy(0, anchor.getBoundingClientRect().top - before)
@@ -170,7 +172,7 @@ function onToggleAll() {
           <text x="10" y="13.5" text-anchor="middle" font-size="9" font-family="Oswald, sans-serif" font-weight="600" fill="currentColor">T</text>
         </svg>
       </button>
-      <button class="bug-btn bug-toggle-all" :class="{ 'all-expanded': ui.allExpanded }" aria-label="Expand or collapse all" v-tip="() => ui.allExpanded ? 'Collapse All Sections' : 'Expand All Sections'" @click="onToggleAll">
+      <button class="bug-btn bug-toggle-all" :class="{ 'all-expanded': filters.allExpanded }" aria-label="Expand or collapse all" v-tip="() => filters.allExpanded ? 'Collapse All Sections' : 'Expand All Sections'" @click="onToggleAll">
         <span class="bug-tri"></span>
       </button>
     </div>

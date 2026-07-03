@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useUiStore } from '../stores/ui'
+import { useFilterStore } from '../stores/filters'
 import { useCardsStore } from '../stores/cards'
 
-const ui = useUiStore()
+const filters = useFilterStore()
 const store = useCardsStore()
 </script>
 
@@ -11,25 +11,25 @@ const store = useCardsStore()
   <label v-for="s in store.allSectionKeys()" :key="s.key" class="bug-check">
     <input
       type="checkbox"
-      :checked="ui.sectionExpanded[s.key]"
-      @change="ui.setSectionExpanded(s.key, ($event.target as HTMLInputElement).checked)"
+      :checked="filters.sectionExpanded[s.key]"
+      @change="filters.setSectionExpanded(s.key, ($event.target as HTMLInputElement).checked)"
     />
     {{ s.label }}
   </label>
   <label class="bug-check">
-    <input type="checkbox" v-model="ui.upgradesExpanded" /> Upgrades
+    <input type="checkbox" v-model="filters.upgradesExpanded" /> Upgrades
   </label>
 
   <p class="bug-flyout-label bug-flyout-label-2">Collections</p>
   <label v-for="c in store.allCollectionValues()" :key="c" class="bug-check">
     <input
       type="checkbox"
-      :checked="!ui.disabledCollections.has(c)"
-      @change="ui.toggleCollection(c)"
+      :checked="!filters.disabledCollections.has(c)"
+      @change="filters.toggleCollection(c)"
     />
     {{ c }}
   </label>
   <label class="bug-check">
-    <input type="checkbox" v-model="ui.favoritesOnly" /> ★ Favorites only
+    <input type="checkbox" v-model="filters.favoritesOnly" /> ★ Favorites only
   </label>
 </template>

@@ -34,17 +34,15 @@ export const useUiStore = defineStore('ui', () => {
     const s = new Set(dirtyIds.value)
     s.delete(id)
     dirtyIds.value = s
-    const before = _editList.length
-    _editList.splice(0, _editList.length, ..._editList.filter(e => e.cardId !== id))
-    if (_editList.length !== before) {
-      editCount.value = _editList.length
+    const filtered = _editList.filter(e => e.cardId !== id)
+    if (filtered.length !== _editList.length) {
+      _setEditList(filtered)
       currentEditIndex.value = -1
     }
   }
   function clearAllDirty() {
     dirtyIds.value = new Set()
-    _editList.splice(0)
-    editCount.value = 0
+    _setEditList([])
     currentEditIndex.value = -1
   }
 
@@ -179,14 +177,19 @@ export const useUiStore = defineStore('ui', () => {
   // Flat ordered list of every contenteditable that received an input during this
   // edit session, plus each field's last cursor position. Plain JS — DOM refs
   // must NOT enter Vue's reactive system (Vue proxying breaks Range objects).
-  const _editList: Array<{ el: Element; cardId: string; range: Range | null }> = []
+  let _editList: Array<{ el: Element; cardId: string; range: Range | null }> = []
   const editCount = ref(0)
   const currentEditIndex = ref(-1) // index in _editList of the currently-focused entry
 
+  // Always update _editList and editCount together — never touch either directly.
+  function _setEditList(next: typeof _editList) {
+    _editList = next
+    editCount.value = next.length
+  }
+
   function addToEditList(cardId: string, el: Element) {
     if (_editList.some(e => e.el === el)) return
-    _editList.push({ el, cardId, range: null })
-    editCount.value = _editList.length
+    _setEditList([..._editList, { el, cardId, range: null }])
   }
   function saveRange(el: Element, range: Range | null) {
     const entry = _editList.find(e => e.el === el)

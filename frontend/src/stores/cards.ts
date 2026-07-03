@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Card, TextSection, UpgradeCategory, AdjustmentRow } from '../types'
 import { api } from '../api'
+import { impliedUpgrades, applyImpliedUpgrades } from '../constants/tuning'
 
 // Holds the catalog data and all mutations. Replaces the original app's
 // DOM-as-state model: every edit updates a reactive Card object, and save()
@@ -293,6 +294,32 @@ export const useCardsStore = defineStore('cards', () => {
     return result
   }
 
+  // ── Upgrades ↔ Tuning link ───────────────────────────────────────────────────
+
+  /**
+   * Returns implied upgrades for the given card's tuning adjustments without
+   * mutating anything. The caller decides whether to apply or show a dialog.
+   */
+  function getImpliedUpgrades(cardId: string) {
+    const card = byId(cardId)
+    if (!card) return null
+    const recipe = card.sections.find(s => s.type === 'forza_recipe')
+    if (!recipe || recipe.type !== 'forza_recipe') return null
+    return impliedUpgrades(recipe.adjustments, recipe.upgrades)
+  }
+
+  /**
+   * Apply the toAdd list from getImpliedUpgrades directly to the card.
+   * Does not handle the Springs dialog — that's the caller's responsibility.
+   */
+  function applyUpgradesFromTuning(cardId: string, toAdd: { category: string; part: string }[]) {
+    const card = byId(cardId)
+    if (!card) return
+    const recipe = card.sections.find(s => s.type === 'forza_recipe')
+    if (!recipe || recipe.type !== 'forza_recipe') return
+    applyImpliedUpgrades(recipe.upgrades, toAdd)
+  }
+
   // Distinct sections across the catalog, in first-seen order — drives the
   // generic section filter in the side-bug menu.
   function allSectionKeys() {
@@ -314,5 +341,6 @@ export const useCardsStore = defineStore('cards', () => {
     setLiveryShareCode,
     allTagValues, allCollectionValues, allSectionKeys, allSubtitleSegments,
     allLiveryCodes, allTuningCodes,
+    getImpliedUpgrades, applyUpgradesFromTuning,
   }
 })

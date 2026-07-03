@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 
-const ui = useUiStore()
+const modal = useModalStore()
 
 const shownSrc = ref<string | null>(null)
 const isUpgraded = ref(false)
 
-watch(() => ui.lightboxSrc, (display) => {
+watch(() => modal.lightboxSrc, (display) => {
   if (!display) { shownSrc.value = null; isUpgraded.value = false; return }
   shownSrc.value = display
   isUpgraded.value = false
 
-  const original = ui.lightboxOriginalSrc
+  const original = modal.lightboxOriginalSrc
   if (original && original !== display) {
     const preload = new Image()
     preload.onload = () => {
-      if (ui.lightboxSrc === display) {
+      if (modal.lightboxSrc === display) {
         shownSrc.value = original
         isUpgraded.value = true
       }
@@ -26,15 +26,15 @@ watch(() => ui.lightboxSrc, (display) => {
 })
 
 function onKey(e: KeyboardEvent) {
-  if (!ui.lightboxSrc) return
-  if (e.key === 'ArrowRight') { e.preventDefault(); ui.navigateLightbox(1) }
-  if (e.key === 'ArrowLeft')  { e.preventDefault(); ui.navigateLightbox(-1) }
+  if (!modal.lightboxSrc) return
+  if (e.key === 'ArrowRight') { e.preventDefault(); modal.navigateLightbox(1) }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); modal.navigateLightbox(-1) }
 }
 
 onMounted(() => window.addEventListener('keydown', onKey))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
-const hasMultiple = () => ui.lightboxImages.length > 1
+const hasMultiple = () => modal.lightboxImages.length > 1
 
 function downloadFilename(src: string) {
   return src.split('/').pop() ?? 'download.jpg'
@@ -42,15 +42,15 @@ function downloadFilename(src: string) {
 </script>
 
 <template>
-  <div class="lightbox" :class="{ open: !!ui.lightboxSrc }" @click.self="ui.closeLightbox()">
-    <button class="lightbox-close" aria-label="Close" @click="ui.closeLightbox()">×</button>
+  <div class="lightbox" :class="{ open: !!modal.lightboxSrc }" @click.self="modal.closeLightbox()">
+    <button class="lightbox-close" aria-label="Close" @click="modal.closeLightbox()">×</button>
 
     <!-- Left ear -->
     <button
       v-if="hasMultiple()"
       class="lightbox-ear lightbox-ear-left"
       aria-label="Previous image"
-      @click.stop="ui.navigateLightbox(-1)"
+      @click.stop="modal.navigateLightbox(-1)"
     >‹</button>
 
     <img v-if="shownSrc" :src="shownSrc" alt="" :class="{ upgraded: isUpgraded }" />
@@ -60,19 +60,19 @@ function downloadFilename(src: string) {
       v-if="hasMultiple()"
       class="lightbox-ear lightbox-ear-right"
       aria-label="Next image"
-      @click.stop="ui.navigateLightbox(1)"
+      @click.stop="modal.navigateLightbox(1)"
     >›</button>
 
     <!-- Image counter -->
     <span v-if="hasMultiple()" class="lightbox-counter">
-      {{ ui.lightboxIndex + 1 }} / {{ ui.lightboxImages.length }}
+      {{ modal.lightboxIndex + 1 }} / {{ modal.lightboxImages.length }}
     </span>
 
     <a
-      v-if="ui.lightboxOriginalSrc"
+      v-if="modal.lightboxOriginalSrc"
       class="lightbox-download"
-      :href="ui.lightboxOriginalSrc"
-      :download="downloadFilename(ui.lightboxOriginalSrc)"
+      :href="modal.lightboxOriginalSrc"
+      :download="downloadFilename(modal.lightboxOriginalSrc)"
       title="Download full-resolution original"
       @click.stop
     >↓ Download</a>

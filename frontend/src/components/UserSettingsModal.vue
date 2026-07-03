@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import { useAuthStore } from '../stores/auth'
 import { api } from '../api'
 
 const ui = useUiStore()
+const modal = useModalStore()
 const auth = useAuthStore()
 
 type Tab = 'password' | 'create' | 'admin'
@@ -62,7 +64,7 @@ async function submitCreateUser() {
 }
 
 function close() {
-  ui.closeSettings()
+  modal.closeSettings()
   pwError.value = ''; pwSuccess.value = ''
   userError.value = ''; userSuccess.value = ''
   currentPw.value = ''; newPw.value = ''; confirmPw.value = ''
@@ -72,7 +74,7 @@ function close() {
 function logout() {
   if (ui.isEditing) ui.toggleEdit()
   auth.logout()
-  ui.closeSettings()
+  modal.closeSettings()
 }
 
 // Suggestions
@@ -181,7 +183,7 @@ function onTabAdmin() {
 </script>
 
 <template>
-  <div v-if="ui.settingsOpen" class="image-picker open" @click.self="close()">
+  <div v-if="modal.settingsOpen" class="image-picker open" @click.self="close()">
     <div class="image-picker-panel settings-panel">
       <div class="image-picker-head">
         <span>Account — {{ auth.username }}</span>

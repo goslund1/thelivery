@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import type { Card } from '../types'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import EditableText from './EditableText.vue'
 import EditCardModal from './EditCardModal.vue'
 import SubtitleEditor from './SubtitleEditor.vue'
@@ -11,6 +12,7 @@ import { refreshTip } from '../composables/tooltip'
 const props = defineProps<{ card: Card }>()
 const store = useCardsStore()
 const ui = useUiStore()
+const modal = useModalStore()
 
 const catalogNo = computed(() => String(props.card.catalogNumber).padStart(3, '0'))
 const editOpen = ref(false)
@@ -52,7 +54,7 @@ function removeCollection(c: string) {
           class="collection-badge chip"
           data-chip-type="collection"
         >{{ c }}<button class="chip-remove" type="button" @click="removeCollection(c)">×</button></span>
-        <button class="chip-add" data-chip-type="collection" type="button" @click="ui.openChipPicker(card.id, 'collection')">+</button>
+        <button class="chip-add" data-chip-type="collection" type="button" @click="modal.openChipPicker(card.id, 'collection')">+</button>
       </p>
       <EditableText tag="h2" class="card-title" v-model="card.name" />
       <div v-if="ui.isEditing || card.liveryShareCode" class="plate livery-code-plate">

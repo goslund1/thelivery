@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, nextTick, watch, onUnmounted } from 'vue'
 import { useCardsStore } from '../stores/cards'
-import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import { api } from '../api'
 import type { ForzaRecipeSection } from '../types'
 import CollapsibleSection from './CollapsibleSection.vue'
@@ -9,7 +9,7 @@ import RecipeSection from './RecipeSection.vue'
 import SubtitleEditor from './SubtitleEditor.vue'
 
 const store = useCardsStore()
-const ui = useUiStore()
+const modal = useModalStore()
 
 // Fields
 const name = ref('')
@@ -127,7 +127,7 @@ const canCreateTag = computed(() => {
   return !existingTags.value.some(t => t.toLowerCase() === q.toLowerCase())
 })
 
-watch(() => ui.newCardOpen, async (open) => {
+watch(() => modal.newCardOpen, async (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
   if (!open) return
   name.value = ''
@@ -244,7 +244,7 @@ async function onCreate() {
     }
     if (staged.value.length > 0) await store.save(card.id)
     staged.value.forEach(s => URL.revokeObjectURL(s.url))
-    ui.closeNewCard()
+    modal.closeNewCard()
     await nextTick()
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
   } catch (e) {
@@ -254,13 +254,13 @@ async function onCreate() {
   }
 }
 
-function onCancel() { ui.closeNewCard() }
+function onCancel() { modal.closeNewCard() }
 function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel() }
 onUnmounted(() => { document.body.style.overflow = '' })
 </script>
 
 <template>
-  <div class="nc-overlay" :class="{ open: ui.newCardOpen }" @click="onOverlay">
+  <div class="nc-overlay" :class="{ open: modal.newCardOpen }" @click="onOverlay">
     <div class="card nc-modal-card">
       <button class="nc-close" aria-label="Cancel" @click="onCancel">×</button>
 
@@ -383,7 +383,7 @@ onUnmounted(() => { document.body.style.overflow = '' })
               v-if="inspirationFigurePath"
               class="gutter-figure-img"
               :src="inspirationFigurePath"
-              @click="ui.openLightbox(inspirationFigurePath!)"
+              @click="modal.openLightbox(inspirationFigurePath!)"
             />
             <span v-else class="gutter-figure-empty">Select image</span>
             <label class="change-image-btn" :class="{ 'nc-figure-saving': figureSaving }">
@@ -408,7 +408,7 @@ onUnmounted(() => { document.body.style.overflow = '' })
               v-if="notesFigurePath"
               class="gutter-figure-img"
               :src="notesFigurePath"
-              @click="ui.openLightbox(notesFigurePath!)"
+              @click="modal.openLightbox(notesFigurePath!)"
             />
             <span v-else class="gutter-figure-empty">Select image</span>
             <label class="change-image-btn" :class="{ 'nc-figure-saving': figureSaving }">

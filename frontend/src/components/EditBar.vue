@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import { hideTip, refreshTip } from '../composables/tooltip'
 
 const ui = useUiStore()
+const modal = useModalStore()
 const editCount = computed(() => ui.editCount)
 const hasUnsaved = computed(() => ui.dirtyIds.size > 0)
 
@@ -130,7 +132,7 @@ const pillLabel = computed(() => {
       class="tl-btn tl-green"
       aria-label="New card"
       v-tip="'New card'"
-      @click="ui.openNewCard()"
+      @click="modal.openNewCard()"
     >
       <svg class="icon-arrow" viewBox="0 0 20 20" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M 9 2 L 2 2 L 2 18 L 18 18 L 18 9"/>

@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue'
 import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
 
 const ui = useUiStore()
+const modal = useModalStore()
 const store = useCardsStore()
 const newValue = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
 
-const ctx = computed(() => ui.chipPicker)
+const ctx = computed(() => modal.chipPicker)
 const isTag = computed(() => ctx.value?.type === 'tag')
 const title = computed(() => (isTag.value ? 'Add a tag' : 'Add a collection'))
 
@@ -27,7 +29,7 @@ function add(value: string) {
   if (c.type === 'tag') store.addTag(c.cardId, value.trim())
   else store.addCollection(c.cardId, value.trim())
   ui.markCardDirty(c.cardId)
-  ui.closeChipPicker()
+  modal.closeChipPicker()
 }
 function createNew() {
   add(newValue.value)
@@ -44,11 +46,11 @@ watch(ctx, async (c) => {
 </script>
 
 <template>
-  <div class="image-picker" :class="{ open: !!ctx }" @click.self="ui.closeChipPicker()">
+  <div class="image-picker" :class="{ open: !!ctx }" @click.self="modal.closeChipPicker()">
     <div class="image-picker-panel">
       <div class="image-picker-head">
         <span>{{ title }}</span>
-        <button class="image-picker-close" aria-label="Close" @click="ui.closeChipPicker()">×</button>
+        <button class="image-picker-close" aria-label="Close" @click="modal.closeChipPicker()">×</button>
       </div>
       <div class="chip-picker-grid">
         <button v-for="v in options" :key="v" class="tag chip" @click="add(v)">{{ v }}</button>

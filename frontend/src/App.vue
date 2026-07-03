@@ -3,6 +3,7 @@ import { onMounted, onBeforeUnmount } from 'vue'
 import { useCardsStore } from './stores/cards'
 import { useUiStore } from './stores/ui'
 import { useFilterStore } from './stores/filters'
+import { useModalStore } from './stores/modal'
 import SideBug from './components/SideBug.vue'
 import Filters from './components/Filters.vue'
 import CardView from './components/CardView.vue'
@@ -21,17 +22,18 @@ import FactoidPanel from './components/FactoidPanel.vue'
 const store = useCardsStore()
 const ui = useUiStore()
 const filters = useFilterStore()
+const modal = useModalStore()
 
 function onKey(e: KeyboardEvent) {
   if (e.key !== 'Escape') return
-  ui.closeLightbox()
-  ui.closeChipPicker()
-  ui.closeImagePicker()
-  if (ui.loginOpen) ui.closeLogin()
-  if (ui.settingsOpen) ui.closeSettings()
-  ui.closeNewCard()
+  modal.closeLightbox()
+  modal.closeChipPicker()
+  modal.closeImagePicker()
+  if (modal.loginOpen) modal.closeLogin()
+  if (modal.settingsOpen) modal.closeSettings()
+  modal.closeNewCard()
   if (ui.exitConfirmOpen) ui.cancelExit()
-  if (ui.factoidPanelOpen) ui.closeFactoidPanel()
+  if (modal.factoidPanelOpen) modal.closeFactoidPanel()
 }
 
 onMounted(() => {
@@ -39,7 +41,7 @@ onMounted(() => {
   document.addEventListener('keydown', onKey)
   if (window.location.pathname === '/ignition' || window.location.hash === '#ignition') {
     window.history.replaceState(null, '', '/')
-    ui.openLogin(true)
+    modal.openLogin(true)
   }
 })
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))

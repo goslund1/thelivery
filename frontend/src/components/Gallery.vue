@@ -3,6 +3,7 @@ import { ref, computed, watch, nextTick, toRef } from 'vue'
 import type { Card } from '../types'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import { useSlideshow } from '../composables/useSlideshow'
 import { useNetworkQuality } from '../composables/useNetworkQuality'
 import { api } from '../api'
@@ -10,6 +11,7 @@ import { api } from '../api'
 const props = defineProps<{ card: Card }>()
 const store = useCardsStore()
 const ui = useUiStore()
+const modal = useModalStore()
 
 const images = toRef(props.card, 'images')
 
@@ -249,7 +251,7 @@ function cancelFolderImport() {
       v-if="ordered[index]"
       class="stage-expand"
       title="View full resolution"
-      @click.stop="ui.openLightbox(
+      @click.stop="modal.openLightbox(
         srcFor(ordered[index], 'stage'),
         ordered[index].path,
         ordered.map(img => ({ display: srcFor(img, 'stage'), original: img.path })),
@@ -359,7 +361,7 @@ function cancelFolderImport() {
       v-if="ui.isEditing"
       class="thumb-add-panel"
       :title="poolSorted.length > 0 ? 'Manage photos' : 'Add photos'"
-      @click="poolSorted.length > 0 ? ui.openGalleryManager(card.id) : folderInputRef?.click()"
+      @click="poolSorted.length > 0 ? modal.openGalleryManager(card.id) : folderInputRef?.click()"
     >
       <span class="thumb-add-icon">
         <span v-if="uploadProgress" class="thumb-add-progress">{{ uploadProgress.done }}/{{ uploadProgress.total }}</span>

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TextSection } from '../types'
-import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import EditableText from './EditableText.vue'
 
 const props = defineProps<{ cardId: string; section: TextSection }>()
-const ui = useUiStore()
+const modal = useModalStore()
 
 // Inspiration keeps its italic styling (.anecdote-text); other text sections use
 // the plain .gutter-text class — matching the original.
@@ -19,10 +19,10 @@ const bodyClass = computed(() => (props.section.key === 'inspiration' ? 'anecdot
         v-if="section.figurePath"
         class="gutter-figure-img"
         :src="section.figurePath"
-        @click="ui.openLightbox(section.figurePath!)"
+        @click="modal.openLightbox(section.figurePath!)"
       />
       <span v-else class="gutter-figure-empty">Select image</span>
-      <button class="change-image-btn" type="button" @click="ui.openImagePicker(cardId, section.key)">{{ section.figurePath ? 'Change Image' : 'Select Image' }}</button>
+      <button class="change-image-btn" type="button" @click="modal.openImagePicker(cardId, section.key)">{{ section.figurePath ? 'Change Image' : 'Select Image' }}</button>
     </div>
     <EditableText tag="div" :class="bodyClass" v-model="section.body" />
   </div>

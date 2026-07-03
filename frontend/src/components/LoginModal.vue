@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
-import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import { useAuthStore } from '../stores/auth'
 
-const ui = useUiStore()
+const modal = useModalStore()
 const auth = useAuthStore()
 
 const username = ref('')
@@ -19,7 +19,7 @@ async function submit() {
   try {
     await auth.login(username.value.trim(), password.value)
     password.value = ''
-    ui.onLoginSuccess()
+    modal.onLoginSuccess()
   } catch {
     error.value = 'Invalid username or password.'
   } finally {
@@ -28,7 +28,7 @@ async function submit() {
 }
 
 watch(
-  () => ui.loginOpen,
+  () => modal.loginOpen,
   async (open) => {
     if (open) {
       error.value = ''
@@ -42,11 +42,11 @@ watch(
 </script>
 
 <template>
-  <div v-if="ui.loginOpen" class="image-picker open" @click.self="ui.closeLogin()">
+  <div v-if="modal.loginOpen" class="image-picker open" @click.self="modal.closeLogin()">
     <div class="image-picker-panel login-panel">
       <div class="image-picker-head">
         <span>Sign in to edit</span>
-        <button class="image-picker-close" aria-label="Close" @click="ui.closeLogin()">×</button>
+        <button class="image-picker-close" aria-label="Close" @click="modal.closeLogin()">×</button>
       </div>
       <form class="login-form" @submit.prevent="submit">
         <input ref="userRef" v-model="username" type="text" placeholder="Username" autocomplete="username" />

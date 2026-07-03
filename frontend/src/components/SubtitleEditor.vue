@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, inject, computed } from 'vue'
 import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import { useFactoidSchema } from '../composables/useFactoidSchema'
 import { useCardsStore } from '../stores/cards'
 import { MarkDirtyKey } from '../keys'
@@ -9,6 +10,7 @@ const props = defineProps<{ modelValue: string }>()
 const emit = defineEmits<{ 'update:modelValue': [v: string] }>()
 
 const ui        = useUiStore()
+const modal     = useModalStore()
 const cards     = useCardsStore()
 const { schema, addOption } = useFactoidSchema()
 const markDirty = inject(MarkDirtyKey, () => {})
@@ -63,7 +65,7 @@ function onSelectChange(i: number, e: Event) {
   if (v === '__manage__') {
     // Reset select back to current value then open the panel
     sel.value = values.value[i] || ''
-    ui.openFactoidPanel()
+    modal.openFactoidPanel()
     return
   }
   if (v === '__add_new__') {
@@ -153,7 +155,7 @@ function addSlot() {
 
     <!-- Gear: open factoid panel -->
     <div class="sub-seg sub-seg--gear">
-      <button class="sub-gear" type="button" title="Manage factoid types" @click="ui.openFactoidPanel()">
+      <button class="sub-gear" type="button" title="Manage factoid types" @click="modal.openFactoidPanel()">
         <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="8" cy="8" r="2.5"></circle>
           <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.42 1.42M11.53 11.53l1.42 1.42M3.05 12.95l1.42-1.42M11.53 4.47l1.42-1.42"></path>

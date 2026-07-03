@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
 import { api } from '../api'
 
 const ui = useUiStore()
+const modal = useModalStore()
 const store = useCardsStore()
 
-const ctx = computed(() => ui.imagePicker)
+const ctx = computed(() => modal.imagePicker)
 const card = computed(() => (ctx.value ? store.byId(ctx.value.cardId) : undefined))
 const gallery = computed(() => [...(card.value?.images ?? [])].sort((a, b) => a.order - b.order))
 const isManage = computed(() => !!ctx.value && !ctx.value.sectionKey)
@@ -18,7 +20,7 @@ function pick(path: string) {
   if (!c?.sectionKey) return
   store.setFigure(c.cardId, c.sectionKey, path)
   ui.markCardDirty(c.cardId)
-  ui.closeImagePicker()
+  modal.closeImagePicker()
 }
 
 async function onPickUpload(e: Event) {
@@ -34,7 +36,7 @@ async function onPickUpload(e: Event) {
   store.setFigure(c.cardId, c.sectionKey, path)
   store.addImageToPool(c.cardId, path, thumbPath, stagePath, false)
   ui.markCardDirty(c.cardId)
-  ui.closeImagePicker()
+  modal.closeImagePicker()
 }
 
 // ── Manage mode — selection ───────────────────────────────────────────────────
@@ -205,14 +207,14 @@ async function onManageUpload(e: Event) {
 </script>
 
 <template>
-  <div class="image-picker" :class="{ open: !!ctx }" @click.self="ui.closeImagePicker()">
+  <div class="image-picker" :class="{ open: !!ctx }" @click.self="modal.closeImagePicker()">
     <div class="image-picker-panel" :class="{ 'mgr-panel': isManage }">
 
       <!-- ── Pick mode ─────────────────────────────────────────────────────── -->
       <template v-if="!isManage">
         <div class="image-picker-head">
           <span>Choose a feature image</span>
-          <button class="image-picker-close" aria-label="Close" @click="ui.closeImagePicker()">×</button>
+          <button class="image-picker-close" aria-label="Close" @click="modal.closeImagePicker()">×</button>
         </div>
         <div class="image-picker-grid">
           <img v-for="img in gallery" :key="img.id" :src="img.path" @click="pick(img.path)" />
@@ -227,7 +229,7 @@ async function onManageUpload(e: Event) {
       <template v-else>
         <div class="image-picker-head">
           <span>Card Photos</span>
-          <button class="image-picker-close" aria-label="Close" @click="ui.closeImagePicker()">×</button>
+          <button class="image-picker-close" aria-label="Close" @click="modal.closeImagePicker()">×</button>
         </div>
         <div class="mgr-grid" @dragleave.self="dropIdx = -1">
           <template v-for="(img, i) in gallery" :key="img.id">
@@ -278,7 +280,7 @@ async function onManageUpload(e: Event) {
             <span class="mgr-progress">Uploading {{ uploadProgress.done }}/{{ uploadProgress.total }}…</span>
           </template>
           <template v-else-if="gallery.length === 0">
-            <button class="mgr-action-btn mgr-add-btn" @click="ui.closeImagePicker()">Done</button>
+            <button class="mgr-action-btn mgr-add-btn" @click="modal.closeImagePicker()">Done</button>
           </template>
           <template v-else-if="pendingBatchDelete">
             <span class="mgr-confirm-label">Delete {{ selectedIds.size }} image{{ selectedIds.size !== 1 ? 's' : '' }}?</span>
@@ -308,7 +310,7 @@ async function onManageUpload(e: Event) {
                 <button class="mgr-action-btn mgr-cancel-btn" @click="clearSelection">Select None</button>
                 <button class="mgr-action-btn mgr-delete-btn" @click="pendingBatchDelete = true">Delete ({{ selectedIds.size }})</button>
               </template>
-              <button class="mgr-action-btn mgr-add-btn" @click="ui.closeImagePicker()">Done</button>
+              <button class="mgr-action-btn mgr-add-btn" @click="modal.closeImagePicker()">Done</button>
             </div>
           </template>
         </div>

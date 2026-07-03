@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import { useFactoidSchema } from '../composables/useFactoidSchema'
 
-const ui = useUiStore()
+const modal = useModalStore()
 const { schema, addType, removeType, renameType, addOption, removeOption, moveType } = useFactoidSchema()
 
 // Inline rename state: key → draft value
@@ -49,14 +49,14 @@ function confirmAddType() {
 <template>
   <Teleport to="body">
     <div
-      v-if="ui.factoidPanelOpen"
+      v-if="modal.factoidPanelOpen"
       class="fp-backdrop"
-      @click.self="ui.closeFactoidPanel()"
+      @click.self="modal.closeFactoidPanel()"
     ></div>
-    <div class="fp-panel" :class="{ open: ui.factoidPanelOpen }" :style="{ pointerEvents: ui.factoidPanelOpen ? 'auto' : 'none' }">
+    <div class="fp-panel" :class="{ open: modal.factoidPanelOpen }" :style="{ pointerEvents: modal.factoidPanelOpen ? 'auto' : 'none' }">
       <div class="fp-header">
         <span class="fp-title">Factoid Types</span>
-        <button class="fp-close" type="button" @click="ui.closeFactoidPanel()">×</button>
+        <button class="fp-close" type="button" @click="modal.closeFactoidPanel()">×</button>
       </div>
 
       <div class="fp-body">

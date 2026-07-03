@@ -267,6 +267,27 @@ export const useCardsStore = defineStore('cards', () => {
     return [...seen].sort()
   }
 
+  // All livery share codes across the catalog, one entry per card that has one.
+  function allLiveryCodes(): { cardId: string; name: string; code: string }[] {
+    return cards.value
+      .filter(c => !c.isLegend && c.liveryShareCode)
+      .map(c => ({ cardId: c.id, name: c.name, code: c.liveryShareCode! }))
+  }
+
+  // All tuning share codes across the catalog, one entry per recipe section that has one.
+  function allTuningCodes(): { cardId: string; name: string; tuneName: string; code: string }[] {
+    const result: { cardId: string; name: string; tuneName: string; code: string }[] = []
+    for (const c of cards.value) {
+      if (c.isLegend) continue
+      for (const s of c.sections) {
+        if (s.type === 'forza_recipe' && s.shareCode) {
+          result.push({ cardId: c.id, name: c.name, tuneName: s.tuneName, code: s.shareCode })
+        }
+      }
+    }
+    return result
+  }
+
   // Distinct sections across the catalog, in first-seen order — drives the
   // generic section filter in the side-bug menu.
   function allSectionKeys() {
@@ -286,5 +307,6 @@ export const useCardsStore = defineStore('cards', () => {
     setColor,
     addTag, removeTag, addCollection, removeCollection,
     allTagValues, allCollectionValues, allSectionKeys, allSubtitleSegments,
+    allLiveryCodes, allTuningCodes,
   }
 })

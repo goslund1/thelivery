@@ -32,8 +32,31 @@ Size, Front/Rear Track Width
 ### Aero and Appearance
 Front Bumper, Rear Wing, Rear Bumper
 
+### Motor and Battery *(EV cards only — replaces Engine; FH5+)*
+Motor (tier upgrades for existing electric motor), Battery (tier upgrades for existing battery pack)
+
 ### Body Kits and Conversions
-Engine Swap, Drivetrain Swap, Aspiration
+Engine Swap, Drivetrain Swap, Aspiration, Motor and Battery Swap *(FH6 only — EV powertrain conversion, equivalent to Engine Swap)*
+
+---
+
+## Not Available — general rule
+
+Any upgrade slot can be set to **Not Available** on a per-card basis. Reflects
+that the car has no such slot in the game. Never shown in the upgrades list,
+even with Show Stock active — distinct from No Upgrade (slot exists, stock part).
+
+Common patterns:
+
+| Slot | Not Available on |
+|---|---|
+| Engine | EV cards |
+| Motor, Battery | ICE cards |
+| Clutch | EVs and cars without a clutch upgrade option |
+| Transmission | EVs — unless a transmission was actually fitted (e.g. Rimac + Drift trans) |
+| Gearing sliders | EVs with no Transmission entry |
+| Front / Rear ARB | Cars where that side isn't available |
+| Aero pieces | Cars with no aero upgrade slot |
 
 ---
 

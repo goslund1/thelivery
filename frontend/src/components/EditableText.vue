@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, inject } from 'vue'
 import { useUiStore } from '../stores/ui'
-import { MarkDirtyKey } from '../keys'
+import { MarkDirtyKey, CardIdKey } from '../keys'
 
 // A text node that becomes contenteditable in edit mode and two-way binds to a
 // string. Content is written to the DOM imperatively (not via template
@@ -11,12 +11,12 @@ const props = defineProps<{ modelValue: string; tag?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
 const ui = useUiStore()
 const markDirty = inject(MarkDirtyKey, () => {})
+const cardId = inject(CardIdKey, null)
 const el = ref<HTMLElement | null>(null)
 
 function onInput() {
   emit('update:modelValue', el.value?.innerText ?? '')
   markDirty()
-  const cardId = el.value?.closest('[id^="card-"]')?.id?.slice(5) ?? null
   if (cardId && el.value) ui.addToEditList(cardId, el.value)
 }
 function onFocus() {

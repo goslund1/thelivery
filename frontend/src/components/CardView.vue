@@ -2,7 +2,7 @@
 import { reactive, computed, provide } from 'vue'
 import type { Card, Section } from '../types'
 import { useUiStore } from '../stores/ui'
-import { MarkDirtyKey } from '../keys'
+import { MarkDirtyKey, CardIdKey } from '../keys'
 import CardMeta from './CardMeta.vue'
 import Gallery from './Gallery.vue'
 import TagCloud from './TagCloud.vue'
@@ -14,6 +14,7 @@ const props = defineProps<{ card: Card }>()
 const ui = useUiStore()
 
 provide(MarkDirtyKey, () => { ui.markCardDirty(props.card.id) })
+provide(CardIdKey, props.card.id)
 
 // Hide sections with no content in view mode — they're still present on the card
 // and become visible in edit mode.

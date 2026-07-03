@@ -205,7 +205,7 @@ export const useCardsStore = defineStore('cards', () => {
     if (!c) return
     const img = c.images.find((i) => i.id === imageId)
     if (!img) return
-    img.included = img.included === false ? true : false
+    img.included = img.included === false ? undefined : false
   }
 
   function addImageToPool(

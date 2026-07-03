@@ -68,7 +68,7 @@
             ]
           },
           {
-            "category": "Platform & Handling",
+            "category": "Platform and Handling",
             "parts": [
               "e.g. Race Brakes"
             ]
@@ -396,7 +396,7 @@
         "type": "forza_recipe",
         "upgrades": [
           {
-            "category": "Bodykits and Conversion",
+            "category": "Body Kits and Conversions",
             "parts": [
               "Twin Supercharger Conversion",
               "Wide Fenders"
@@ -423,7 +423,7 @@
             ]
           },
           {
-            "category": "Platform & Handling",
+            "category": "Platform and Handling",
             "parts": [
               "Race Springs & Dampers",
               "Race Brakes",
@@ -590,7 +590,7 @@
         "type": "forza_recipe",
         "upgrades": [
           {
-            "category": "Bodykits and Conversion",
+            "category": "Body Kits and Conversions",
             "parts": [
               "AWD Drivetrain Conversion",
               "8.4L V10 Engine Swap",
@@ -615,7 +615,7 @@
             ]
           },
           {
-            "category": "Platform & Handling",
+            "category": "Platform and Handling",
             "parts": [
               "Rally Springs & Dampers",
               "Race Brakes",
@@ -625,7 +625,7 @@
             ]
           },
           {
-            "category": "Tires & Rims",
+            "category": "Tires and Wheels",
             "parts": [
               "Rally Tire Compound",
               "BBS RS Turbofan (front & rear)"
@@ -766,7 +766,7 @@
             ]
           },
           {
-            "category": "Platform & Handling",
+            "category": "Platform and Handling",
             "parts": [
               "Race Springs & Dampers",
               "Race Front Anti-Roll Bar",
@@ -774,7 +774,7 @@
             ]
           },
           {
-            "category": "Tires & Rims",
+            "category": "Tires and Wheels",
             "parts": [
               "Drift Tire Compound"
             ]
@@ -935,7 +935,7 @@
         "type": "forza_recipe",
         "upgrades": [
           {
-            "category": "Platform & Handling",
+            "category": "Platform and Handling",
             "parts": [
               "Rally Springs & Dampers",
               "Off-Road Front Bumper",
@@ -943,7 +943,7 @@
             ]
           },
           {
-            "category": "Tires & Rims",
+            "category": "Tires and Wheels",
             "parts": [
               "Off-Road Tire Compound"
             ]
@@ -1141,7 +1141,7 @@
         "type": "forza_recipe",
         "upgrades": [
           {
-            "category": "Bodykits and Conversion",
+            "category": "Body Kits and Conversions",
             "parts": [
               "2JZ Engine Swap",
               "Twin Turbo"
@@ -1162,14 +1162,14 @@
             ]
           },
           {
-            "category": "Platform & Handling",
+            "category": "Platform and Handling",
             "parts": [
               "Race Springs & Dampers",
               "Race Front Anti-Roll Bar"
             ]
           },
           {
-            "category": "Tires & Rims",
+            "category": "Tires and Wheels",
             "parts": [
               "Drift Tire Compound"
             ]
@@ -1322,7 +1322,7 @@
         "type": "forza_recipe",
         "upgrades": [
           {
-            "category": "Bodykits and Conversion",
+            "category": "Body Kits and Conversions",
             "parts": [
               "AWD Drivetrain Conversion",
               "7.7L V12 Engine Swap",
@@ -1347,7 +1347,7 @@
             ]
           },
           {
-            "category": "Platform & Handling",
+            "category": "Platform and Handling",
             "parts": [
               "Race Springs & Dampers",
               "Race Brakes",
@@ -1357,7 +1357,7 @@
             ]
           },
           {
-            "category": "Tires & Rims",
+            "category": "Tires and Wheels",
             "parts": [
               "Sport Tire Compound",
               "Fifteen52 Forged 3PC Formula TR (front & rear)"

@@ -24,7 +24,7 @@ function formatShareCode(raw: string): string {
 function onLiveryCodeInput(e: Event) {
   const input = e.target as HTMLInputElement
   const formatted = formatShareCode(input.value)
-  props.card.liveryShareCode = formatted
+  store.setLiveryShareCode(props.card.id, formatted)
   input.value = formatted
   ui.markCardDirty(props.card.id)
 }

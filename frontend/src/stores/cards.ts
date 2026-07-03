@@ -229,6 +229,11 @@ export const useCardsStore = defineStore('cards', () => {
     else delete c.colors[key]
   }
 
+  function setLiveryShareCode(id: string, code: string) {
+    const c = byId(id)
+    if (c) c.liveryShareCode = code
+  }
+
   function addTag(id: string, value: string) {
     const c = byId(id)
     if (c && value && !c.tags.includes(value)) c.tags.push(value)
@@ -306,6 +311,7 @@ export const useCardsStore = defineStore('cards', () => {
     removeImage, toggleImageIncluded, addImageToPool,
     setColor,
     addTag, removeTag, addCollection, removeCollection,
+    setLiveryShareCode,
     allTagValues, allCollectionValues, allSectionKeys, allSubtitleSegments,
     allLiveryCodes, allTuningCodes,
   }

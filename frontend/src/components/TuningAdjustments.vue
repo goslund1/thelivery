@@ -1939,15 +1939,14 @@ async function submitSuggestion() {
   width: calc(100vw - 40px);
 }
 
-/* secondary surface — dp-pane rotated 90°: wing + tab as siblings, height transitions */
+/* secondary surface — dp-pane rotated 90°: position:relative so tab can anchor */
 .ta-suggest-drawer {
   --ds-tab: 22px;
   width: 100%;
   height: var(--ds-tab);
   overflow: hidden;
   transition: height 0.22s ease;
-  display: flex;
-  flex-direction: column;
+  position: relative;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-bottom: none;
@@ -1959,10 +1958,13 @@ async function submitSuggestion() {
   height: calc(60px + var(--ds-tab));
 }
 
-/* wing: the message content, flex-fills above the tab */
+/* wing: sits above the tab, padded content */
 .ta-suggest-wing {
-  flex: 1;
-  min-height: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: var(--ds-tab);
   overflow: hidden;
   padding: 10px 14px 0;
 }
@@ -1975,11 +1977,13 @@ async function submitSuggestion() {
   margin: 0;
 }
 
-/* tab: horizontal handle at bottom of secondary — mirrors dp-tab */
+/* tab: anchored to bottom of secondary — always fully visible */
 .ta-suggest-tab {
-  flex-shrink: 0;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: var(--ds-tab);
-  width: 100%;
   background: transparent;
   border: none;
   border-top: 1px solid rgba(255,255,255,0.06);
@@ -1992,16 +1996,16 @@ async function submitSuggestion() {
 }
 .ta-suggest-tab:hover { color: var(--gold); }
 
-/* chevron rotates on open — mirrors dp-tab--open scaleX(-1) but vertical axis */
+/* chevron rotates on open */
 .ta-suggest-chevron {
   display: inline-block;
   font-size: 13px;
   line-height: 1;
-  transform: rotate(90deg);    /* ‹ → points up (∧) when collapsed */
+  transform: rotate(90deg);
   transition: transform 0.22s;
 }
 .ta-suggest-drawer.is-open .ta-suggest-chevron {
-  transform: rotate(-90deg);   /* flips to point down (∨) when open */
+  transform: rotate(-90deg);
 }
 
 /* primary surface: full width, opaque, always visible below */

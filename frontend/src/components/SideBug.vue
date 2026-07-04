@@ -8,6 +8,7 @@ import { useAuthStore } from '../stores/auth'
 import { onClickOutside } from '../composables/onClickOutside'
 import { hideTip, refreshTip } from '../composables/tooltip'
 import type { Theme } from '../types'
+import ThemeBuilder from './ThemeBuilder.vue'
 
 const ui = useUiStore()
 const modal = useModalStore()
@@ -33,6 +34,7 @@ function deltaLabel(d: number) {
 
 type FlyoutName = 'theme' | 'text' | 'menu' | null
 const open = ref<FlyoutName>(null)
+const themeBuilderOpen = ref(false)
 const bugRef = ref<HTMLElement | null>(null)
 const sideBugEl = ref<HTMLElement | null>(null)
 const hamburgerBtn = ref<HTMLElement | null>(null)
@@ -87,6 +89,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', positionSideBug))
 watch(() => store.cards.length, () => nextTick(positionSideBug))
 
 function pickTheme(t: Theme) { ui.theme = t; open.value = null }
+function openThemeBuilder() { open.value = null; themeBuilderOpen.value = true }
 function pickDelta(d: number) { ui.textDelta = d; open.value = null }
 
 function nearestVisibleCard(): Element | null {
@@ -184,6 +187,12 @@ function onToggleAll() {
       <button v-for="t in ui.THEMES" :key="t" class="theme-option" :class="{ active: ui.theme === t }" @click="pickTheme(t)">
         <span v-html="themeIcons[t]"></span> {{ themeLabels[t] }}
       </button>
+      <button class="theme-option theme-customize-btn" @click="openThemeBuilder">⚙ Customize</button>
+    </div>
+
+    <!-- Theme builder panel -->
+    <div v-if="themeBuilderOpen" class="bug-flyout bug-flyout--builder open" :style="flyoutStyle">
+      <ThemeBuilder @close="themeBuilderOpen = false" />
     </div>
 
     <!-- Text-size flyout -->
@@ -199,3 +208,22 @@ function onToggleAll() {
     </div>
   </div>
 </template>
+
+<style scoped>
+.theme-customize-btn {
+  margin-top: 4px;
+  border-top: 1px solid var(--panel-edge);
+  color: var(--steel) !important;
+  font-size: 11px !important;
+}
+.theme-customize-btn:hover {
+  color: var(--gold) !important;
+}
+.bug-flyout--builder {
+  padding: 0 !important;
+  min-width: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+</style>

@@ -232,22 +232,12 @@ function onReset() { theme.reset(); activeColor.value = null }
 </template>
 
 <style scoped>
-/* Single unified glass surface — panel and wing are transparent children */
 .tb-wrap {
   display: flex;
   flex-direction: row;
   align-items: stretch;
   max-height: 80vh;
   min-width: 0;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: 6px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  overflow: hidden;
 }
 
 /* ── Picker wing ── */
@@ -259,7 +249,14 @@ function onReset() { theme.reset(); activeColor.value = null }
   min-width: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--panel-edge);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-right: none;
+  border-radius: 6px 0 0 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
 }
 .tb-picker-wing.open {
   width: 272px;
@@ -309,10 +306,13 @@ function onReset() { theme.reset(); activeColor.value = null }
   width: 14px;
   align-self: flex-start;
   height: 36px;
-  background: transparent;
-  border: none;
-  border-right: 1px solid var(--panel-edge);
-  border-bottom: 1px solid var(--panel-edge);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-left: none;
+  border-right: none;
+  border-bottom-color: var(--panel-edge);
   color: var(--steel);
   font-size: 13px;
   cursor: pointer;
@@ -331,9 +331,16 @@ function onReset() { theme.reset(); activeColor.value = null }
   flex-shrink: 1;
   min-width: 200px;
   max-height: 80vh;
-  background: transparent;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   display: flex;
   flex-direction: column;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
   overflow: hidden;
 }
 .tb-header {

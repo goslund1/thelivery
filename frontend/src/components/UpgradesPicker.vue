@@ -4,7 +4,7 @@ import { MarkDirtyKey } from '../keys'
 import type { UpgradeCategory } from '../types'
 import rawData from '../data/fh_upgrades.json'
 
-const props = defineProps<{ upgrades: UpgradeCategory[]; showStock: boolean }>()
+const props = defineProps<{ upgrades: UpgradeCategory[]; showStock: boolean; impliedParts?: Set<string> }>()
 const markDirty = inject(MarkDirtyKey, () => {})
 
 type UpgradeTiers = string[] | 'stepped' | 'cosmetic'
@@ -104,6 +104,12 @@ function nudgeStepped(categoryName: string, partName: string, dir: 1 | -1) {
   markDirty()
 }
 
+function isImplied(partName: string, tiers: string[], specialTiers?: string[]): boolean {
+  if (!props.impliedParts?.has(partName)) return false
+  const tier = getInstalledTier(tiers, specialTiers)
+  return !!tier && tier !== 'No Upgrade' && tier !== 'Not Available'
+}
+
 function displayName(s: string): string {
   return s.replace(/^Chassis /i, '').replace(/^Intake (?=Manifold)/i, '')
 }
@@ -165,6 +171,11 @@ function steppedLabel(partName: string): string {
                 <option v-for="tier in p.specialTiers" :key="tier" :value="tier">{{ tier }}</option>
               </template>
             </select>
+            <span
+              v-if="isImplied(p.part, p.tiers, p.specialTiers)"
+              class="up-implied-badge"
+              title="Auto-populated from tuning sliders"
+            >⚡</span>
           </li>
         </template>
       </ul>
@@ -270,4 +281,13 @@ function steppedLabel(partName: string): string {
   text-align: center;
 }
 .up-step-set { color: var(--gold); opacity: 1; }
+
+.up-implied-badge {
+  flex-shrink: 0;
+  font-size: 9px;
+  opacity: 0.5;
+  cursor: default;
+  line-height: 1;
+}
+.up-implied-badge:hover { opacity: 0.9; }
 </style>

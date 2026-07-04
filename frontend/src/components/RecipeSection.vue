@@ -8,7 +8,7 @@ import EditableText from './EditableText.vue'
 import UpgradesPicker from './UpgradesPicker.vue'
 import TuningAdjustments from './TuningAdjustments.vue'
 import rawUpgrades from '../data/fh_upgrades.json'
-import { applyImpliedUpgrades, applySpringsChoice, type ImpliedUpgradesResult } from '../constants/tuning'
+import { impliedUpgrades, applyImpliedUpgrades, applySpringsChoice, type ImpliedUpgradesResult } from '../constants/tuning'
 
 const props = defineProps<{ recipe: ForzaRecipeSection; cardId?: string; initialKitOpen?: boolean }>()
 const emit = defineEmits<{ 'update:recipe': [recipe: ForzaRecipeSection] }>()
@@ -57,6 +57,20 @@ function onImpliedUpgrades(result: ImpliedUpgradesResult) {
 function onSpringsChoice(tier: 'Race' | 'Rally' | 'Drift') {
   applySpringsChoice(local.upgrades, tier)
 }
+
+// Set of upgrade part base names (e.g. 'Brakes', 'Springs and Dampers') implied
+// by the current slider state. Recomputed reactively; used by UpgradesPicker to
+// show the auto-populate indicator.
+const SPRINGS_TABS = new Set(['alignment', 'springs', 'damping'])
+const impliedPartNames = computed<Set<string>>(() => {
+  if (!ui.isEditing) return new Set()
+  const result = impliedUpgrades(local.adjustments, [])
+  const names = new Set<string>(result.toAdd.map(x => x.part))
+  if (local.adjustments.some(r => SPRINGS_TABS.has(r.tab) && r.value !== r.stock)) {
+    names.add('Springs and Dampers')
+  }
+  return names
+})
 
 // UpgradesPicker mutates local.upgrades in-place; detect those mutations and flush.
 watch(() => local.upgrades, () => {
@@ -338,7 +352,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
       </div>
 
       <div class="kit-body" :class="{ 'kit-body--grid': ui.isEditing || showStock }">
-        <UpgradesPicker v-if="ui.isEditing" :upgrades="local.upgrades" :show-stock="showStock" />
+        <UpgradesPicker v-if="ui.isEditing" :upgrades="local.upgrades" :show-stock="showStock" :implied-parts="impliedPartNames" />
         <template v-else-if="showStock">
           <!-- Show Stock: full list, Engine pinned left, other cats balanced across cols 2-3 -->
           <div class="upgrades-grid">

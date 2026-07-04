@@ -1153,18 +1153,20 @@ async function submitSuggestion() {
 
   <!-- Floating suggestion panel — view mode only, requires tuning data -->
   <Teleport to="body">
-    <div v-if="showSuggestBar" class="ta-suggest-bar" :class="{ collapsed: suggestCollapsed }">
-      <!-- sub-drawer: message only, collapsible, more transparent + narrower -->
-      <div class="ta-suggest-sub">
-        <p class="ta-suggest-message">
-          Looks like you've got some ideas on how to tweak this tune — want to submit it for testing?
-        </p>
-      </div>
-      <!-- main strip: always visible, houses toggle + buttons -->
-      <div class="ta-suggest-strip">
-        <button class="ta-suggest-toggle" @click="suggestCollapsed = !suggestCollapsed">
-          {{ suggestCollapsed ? '▲' : '▼' }}
+    <div v-if="showSuggestBar" class="ta-suggest-bar">
+      <!-- secondary surface: wing (message) + tab handle — mirrors dp-pane rotated 90° -->
+      <div class="ta-suggest-drawer" :class="{ 'is-open': !suggestCollapsed }">
+        <div class="ta-suggest-wing">
+          <p class="ta-suggest-message">
+            Looks like you've got some ideas on how to tweak this tune — want to submit it for testing?
+          </p>
+        </div>
+        <button class="ta-suggest-tab" @click="suggestCollapsed = !suggestCollapsed">
+          <span class="ta-suggest-chevron">‹</span>
         </button>
+      </div>
+      <!-- primary surface: always-visible button strip, no toggle here -->
+      <div class="ta-suggest-strip">
         <button class="ta-suggest-submit" @click="openSuggestModal">Done Tweaking</button>
         <button class="ta-suggest-later" @click="suggestCollapsed = true">Ask Me Later</button>
         <button class="ta-suggest-dismiss" @click="suggestDismissed = true; suggestModalOpen = false">Not for me</button>
@@ -1932,29 +1934,38 @@ async function submitSuggestion() {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 0;
   max-width: 480px;
   width: calc(100vw - 40px);
 }
 
-/* sub-drawer: message only — narrower, very transparent, sits above main strip */
-.ta-suggest-sub {
+/* secondary surface — dp-pane rotated 90°: wing + tab as siblings, height transitions */
+.ta-suggest-drawer {
+  --ds-tab: 22px;
   width: calc(100% - 20px);
-  background: color-mix(in srgb, var(--panel) 18%, transparent);
-  border: 1px solid var(--glass-border, rgba(255,255,255,0.08));
+  height: var(--ds-tab);
+  overflow: hidden;
+  transition: height 0.22s ease;
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-bottom: none;
   border-radius: 8px 8px 0 0;
-  backdrop-filter: var(--glass-blur, blur(10px));
-  -webkit-backdrop-filter: var(--glass-blur, blur(10px));
-  max-height: 80px;
-  overflow: hidden;
-  padding: 10px 14px;
-  transition: max-height 0.22s ease, padding 0.22s ease;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
-.ta-suggest-bar.collapsed .ta-suggest-sub {
-  max-height: 0;
-  padding: 0 14px;
+.ta-suggest-drawer.is-open {
+  height: calc(60px + var(--ds-tab));
 }
 
+/* wing: the message content, flex-fills above the tab */
+.ta-suggest-wing {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px 14px 0;
+}
 .ta-suggest-message {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -1964,33 +1975,49 @@ async function submitSuggestion() {
   margin: 0;
 }
 
-/* main strip: full width, primary glass, always visible */
+/* tab: horizontal handle at bottom of secondary — mirrors dp-tab */
+.ta-suggest-tab {
+  flex-shrink: 0;
+  height: var(--ds-tab);
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  color: var(--steel);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+.ta-suggest-tab:hover { color: var(--gold); }
+
+/* chevron rotates on open — mirrors dp-tab--open scaleX(-1) but vertical axis */
+.ta-suggest-chevron {
+  display: inline-block;
+  font-size: 13px;
+  line-height: 1;
+  transform: rotate(90deg);    /* ‹ → points up (∧) when collapsed */
+  transition: transform 0.22s;
+}
+.ta-suggest-drawer.is-open .ta-suggest-chevron {
+  transform: rotate(-90deg);   /* flips to point down (∨) when open */
+}
+
+/* primary surface: full width, opaque, always visible below */
 .ta-suggest-strip {
   width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
-  border: 1px solid var(--panel-edge);
-  border-radius: 8px;
-  backdrop-filter: var(--glass-blur, blur(10px));
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 0 0 8px 8px;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: 0 8px 32px rgba(0,0,0,0.45);
 }
-
-/* toggle chevron */
-.ta-suggest-toggle {
-  background: none;
-  border: none;
-  color: var(--steel);
-  font-size: 10px;
-  cursor: pointer;
-  padding: 2px 4px;
-  opacity: 0.5;
-  transition: opacity 0.12s;
-  flex-shrink: 0;
-}
-.ta-suggest-toggle:hover { opacity: 1; }
 
 /* buttons */
 .ta-suggest-submit {
@@ -2014,7 +2041,7 @@ async function submitSuggestion() {
 }
 .ta-suggest-later {
   background: none;
-  border: 1px solid var(--panel-edge);
+  border: 1px solid var(--glass-border);
   border-radius: 4px;
   color: var(--steel);
   font-family: 'JetBrains Mono', monospace;

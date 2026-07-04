@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useUiStore } from '../stores/ui'
 import { useModalStore } from '../stores/modal'
 import { useAuthStore } from '../stores/auth'
+import { useCardsStore } from '../stores/cards'
 import { api } from '../api'
+import type { Card, ForzaRecipeSection, AdjustmentRow } from '../types'
 
 const ui = useUiStore()
 const modal = useModalStore()
 const auth = useAuthStore()
 
-type Tab = 'password' | 'create' | 'admin'
+type Tab = 'password' | 'create' | 'admin' | 'migrate'
 const tab = ref<Tab>('password')
 
 // Change password
@@ -180,11 +182,194 @@ function onTabAdmin() {
   loadAdminStats()
   loadSuggestions()
 }
+
+// ── Migration ────────────────────────────────────────────────────────────────
+
+const cards = useCardsStore()
+
+const CATEGORY_ALIASES: Record<string, string> = {
+  'Platform & Handling':    'Platform and Handling',
+  'Tires & Rims':           'Tires and Wheels',
+  'Bodykits and Conversion':'Body Kits and Conversions',
+  'Body Kits and Conversion':'Body Kits and Conversions',
+}
+
+interface LegacyRow { name: string; description: string }
+type AnyRow = AdjustmentRow | LegacyRow
+
+function isLegacyRow(row: AnyRow): row is LegacyRow {
+  return 'name' in row && !('tab' in row)
+}
+
+function getRecipe(card: Card): ForzaRecipeSection | undefined {
+  return card.sections.find((s): s is ForzaRecipeSection => s.type === 'forza_recipe')
+}
+
+interface MigrateStatus { card: Card; needsCategories: boolean; legacyCount: number }
+
+const migrateStatus = computed<MigrateStatus[]>(() =>
+  cards.cards
+    .filter(c => !c.isLegend)
+    .map(c => {
+      const r = getRecipe(c)
+      if (!r) return { card: c, needsCategories: false, legacyCount: 0 }
+      return {
+        card: c,
+        needsCategories: r.upgrades.some(u => !!CATEGORY_ALIASES[u.category]),
+        legacyCount: (r.adjustments as AnyRow[]).filter(isLegacyRow).length,
+      }
+    })
+)
+
+const catBusy = ref(false)
+const catResult = ref<string | null>(null)
+
+async function fixAllCategories() {
+  catBusy.value = true
+  catResult.value = null
+  let fixed = 0
+  try {
+    for (const { card, needsCategories } of migrateStatus.value) {
+      if (!needsCategories) continue
+      const storeCard = cards.byId(card.id)!
+      const recipe = getRecipe(storeCard)!
+      recipe.upgrades = recipe.upgrades.map(u => ({
+        ...u, category: CATEGORY_ALIASES[u.category] ?? u.category,
+      }))
+      await cards.save(card.id)
+      fixed++
+    }
+    catResult.value = fixed ? `Fixed ${fixed} card${fixed !== 1 ? 's' : ''}.` : 'Nothing to fix.'
+  } catch (e: any) {
+    catResult.value = `Error: ${e.message}`
+  } finally {
+    catBusy.value = false
+  }
+}
+
+// Adjustment row migration — row-by-row form
+const adjCardId = ref<string | null>(null)
+const adjRowIdx  = ref(0)
+// Each handled row: AdjustmentRow (to keep) | 'skip' (leave as legacy)
+const adjResults = ref<Map<number, AdjustmentRow | 'skip'>>(new Map())
+const adjBusy    = ref(false)
+const adjResult  = ref<string | null>(null)
+
+const TABS = ['tires', 'alignment', 'arb', 'springs', 'damping', 'aero', 'brakes', 'differential', 'gearing']
+
+const TAB_DEFAULTS: Record<string, Pick<AdjustmentRow, 'unit' | 'min' | 'max' | 'stock' | 'step'>> = {
+  tires:        { unit: 'psi', min: 20,  max: 50,   stock: 32,  step: 0.5 },
+  alignment:    { unit: '°',   min: -5,  max: 5,    stock: 0,   step: 0.1 },
+  arb:          { unit: '',    min: 1,   max: 65,   stock: 5,   step: 0.5 },
+  springs:      { unit: '',    min: 100, max: 2000,  stock: 500, step: 10  },
+  damping:      { unit: '',    min: 1,   max: 20,   stock: 5,   step: 0.1 },
+  aero:         { unit: '',    min: 0,   max: 500,  stock: 0,   step: 1   },
+  brakes:       { unit: '%',   min: 0,   max: 200,  stock: 50,  step: 1   },
+  differential: { unit: '%',   min: 0,   max: 100,  stock: 50,  step: 1   },
+  gearing:      { unit: '',    min: 0,   max: 10,   stock: 3,   step: 0.01},
+}
+
+const adjDraft = ref<AdjustmentRow>({
+  tab: 'arb', group: '', key: '', label: '', unit: '',
+  min: 0, max: 0, stock: 0, value: 0, step: 1,
+})
+
+const adjLegacyRows = computed<LegacyRow[]>(() => {
+  if (!adjCardId.value) return []
+  const card = cards.byId(adjCardId.value)
+  const r = card ? getRecipe(card) : undefined
+  return r ? (r.adjustments as AnyRow[]).filter(isLegacyRow) : []
+})
+
+const adjCurrentRow = computed(() => adjLegacyRows.value[adjRowIdx.value])
+const adjAllHandled = computed(() => adjResults.value.size >= adjLegacyRows.value.length)
+
+function openAdjCard(cardId: string) {
+  adjCardId.value = cardId
+  adjRowIdx.value = 0
+  adjResults.value = new Map()
+  adjResult.value = null
+  applyTabDefaults()
+}
+
+function applyTabDefaults() {
+  const d = TAB_DEFAULTS[adjDraft.value.tab]
+  if (!d) return
+  adjDraft.value = { ...adjDraft.value, ...d, value: d.stock }
+}
+
+function onAdjTabChange() {
+  adjDraft.value.group = ''
+  adjDraft.value.label = ''
+  applyTabDefaults()
+}
+
+function adjAutoKey(): string {
+  const t = adjDraft.value.tab
+  const g = adjDraft.value.group.replace(/\s+/g, '')
+  const l = adjDraft.value.label.replace(/\s+/g, '')
+  return t + g + l
+}
+
+function saveRow() {
+  adjResults.value.set(adjRowIdx.value, { ...adjDraft.value, key: adjAutoKey() })
+  if (adjRowIdx.value < adjLegacyRows.value.length - 1) {
+    adjRowIdx.value++
+    applyTabDefaults()
+  }
+}
+
+function skipRow() {
+  adjResults.value.set(adjRowIdx.value, 'skip')
+  if (adjRowIdx.value < adjLegacyRows.value.length - 1) {
+    adjRowIdx.value++
+    applyTabDefaults()
+  }
+}
+
+async function commitAdjMigration() {
+  if (!adjCardId.value) return
+  adjBusy.value = true
+  adjResult.value = null
+  try {
+    const storeCard = cards.byId(adjCardId.value)!
+    const recipe = getRecipe(storeCard)!
+    const rows = recipe.adjustments as AnyRow[]
+    const newAdj: AdjustmentRow[] = []
+    let legacyIdx = 0
+    for (const row of rows) {
+      if (isLegacyRow(row)) {
+        const result = adjResults.value.get(legacyIdx)
+        if (result && result !== 'skip') newAdj.push(result)
+        legacyIdx++
+      } else {
+        newAdj.push(row)
+      }
+    }
+    recipe.adjustments = newAdj
+    await cards.save(adjCardId.value)
+    const saved = [...adjResults.value.values()].filter(v => v !== 'skip').length
+    const skipped = [...adjResults.value.values()].filter(v => v === 'skip').length
+    adjResult.value = `Saved ${saved} row${saved !== 1 ? 's' : ''}${skipped ? `, skipped ${skipped}` : ''}.`
+    adjCardId.value = null
+  } catch (e: any) {
+    adjResult.value = `Error: ${e.message}`
+  } finally {
+    adjBusy.value = false
+  }
+}
+
+function onTabMigrate() {
+  tab.value = 'migrate'
+  adjCardId.value = null
+  catResult.value = null
+  adjResult.value = null
+}
 </script>
 
 <template>
   <div v-if="modal.settingsOpen" class="image-picker open" @click.self="close()">
-    <div class="image-picker-panel settings-panel">
+    <div class="image-picker-panel settings-panel" :class="{ 'settings-panel--wide': tab === 'migrate' }">
       <div class="image-picker-head">
         <span>Account — {{ auth.username }}</span>
         <button class="image-picker-close" aria-label="Close" @click="close()">×</button>
@@ -194,6 +379,7 @@ function onTabAdmin() {
         <button :class="{ active: tab === 'password' }" @click="tab = 'password'">Password</button>
         <button :class="{ active: tab === 'create' }" @click="tab = 'create'">Users</button>
         <button :class="{ active: tab === 'admin' }" @click="onTabAdmin">Admin</button>
+        <button :class="{ active: tab === 'migrate' }" @click="onTabMigrate">Migrate</button>
       </div>
 
       <!-- Change Password -->
@@ -293,6 +479,132 @@ function onTabAdmin() {
 
       </div>
 
+      <!-- Migrate -->
+      <div v-if="tab === 'migrate'" class="admin-panel">
+
+        <!-- Category normalization -->
+        <div class="admin-section">
+          <div class="admin-section-head">Upgrade Category Names</div>
+          <p class="admin-muted">Rename legacy category strings to canonical values.</p>
+          <div class="mig-card-list">
+            <div v-for="s in migrateStatus" :key="s.card.id" class="mig-card-row">
+              <span class="mig-card-name">{{ s.card.name }}</span>
+              <span v-if="s.needsCategories" class="mig-badge mig-badge--warn">⚠ needs fix</span>
+              <span v-else class="mig-badge mig-badge--ok">✓</span>
+            </div>
+            <div v-if="migrateStatus.every(s => !s.needsCategories)" class="admin-muted">All canonical.</div>
+          </div>
+          <div v-if="migrateStatus.some(s => s.needsCategories)" class="admin-row">
+            <button class="admin-btn" :disabled="catBusy" @click="fixAllCategories">
+              {{ catBusy ? 'Fixing…' : 'Fix All' }}
+            </button>
+          </div>
+          <p v-if="catResult" class="admin-ok">{{ catResult }}</p>
+        </div>
+
+        <!-- Adjustment row migration -->
+        <div class="admin-section">
+          <div class="admin-section-head">Adjustment Rows</div>
+          <p class="admin-muted">Convert free-text rows to structured slider format.</p>
+
+          <!-- Card selector -->
+          <template v-if="!adjCardId">
+            <div class="mig-card-list">
+              <div
+                v-for="s in migrateStatus.filter(s => s.legacyCount > 0)"
+                :key="s.card.id"
+                class="mig-card-row"
+              >
+                <span class="mig-card-name">{{ s.card.name }}</span>
+                <span class="mig-badge mig-badge--warn">⚠ {{ s.legacyCount }} row{{ s.legacyCount !== 1 ? 's' : '' }}</span>
+                <button class="admin-btn mig-btn-sm" @click="openAdjCard(s.card.id)">Migrate →</button>
+              </div>
+              <div v-if="migrateStatus.every(s => s.legacyCount === 0)" class="admin-muted">All rows structured.</div>
+            </div>
+            <p v-if="adjResult" class="admin-ok">{{ adjResult }}</p>
+          </template>
+
+          <!-- Row-by-row form -->
+          <template v-else>
+            <div class="mig-form-header">
+              <span class="mig-form-title">{{ cards.byId(adjCardId)?.name }}</span>
+              <span class="mig-form-progress">Row {{ adjRowIdx + 1 }} / {{ adjLegacyRows.length }}</span>
+              <button class="admin-btn mig-btn-sm" @click="adjCardId = null">← Back</button>
+            </div>
+
+            <!-- Source row context -->
+            <div v-if="adjCurrentRow" class="mig-source-row">
+              <div class="mig-source-label">{{ adjCurrentRow.name }}</div>
+              <div class="mig-source-desc">{{ adjCurrentRow.description }}</div>
+            </div>
+
+            <!-- Already handled? -->
+            <div v-if="adjResults.has(adjRowIdx)" class="mig-handled">
+              <span v-if="adjResults.get(adjRowIdx) === 'skip'" class="mig-badge mig-badge--skip">Skipped</span>
+              <span v-else class="mig-badge mig-badge--ok">Saved</span>
+            </div>
+
+            <!-- Structured entry form -->
+            <div v-if="!adjAllHandled" class="mig-form">
+              <div class="mig-field-row">
+                <label class="mig-label">Tab</label>
+                <select v-model="adjDraft.tab" class="mig-select" @change="onAdjTabChange">
+                  <option v-for="t in TABS" :key="t" :value="t">{{ t }}</option>
+                </select>
+              </div>
+              <div class="mig-field-row">
+                <label class="mig-label">Group</label>
+                <input v-model="adjDraft.group" class="mig-input" placeholder="e.g. Front Anti-Roll Bar" />
+              </div>
+              <div class="mig-field-row">
+                <label class="mig-label">Label</label>
+                <input v-model="adjDraft.label" class="mig-input" placeholder="e.g. Front" />
+              </div>
+              <div class="mig-field-row">
+                <label class="mig-label">Unit</label>
+                <input v-model="adjDraft.unit" class="mig-input mig-input--short" placeholder="° or psi or blank" />
+              </div>
+              <div class="mig-nums-row">
+                <div class="mig-num">
+                  <label class="mig-label">Min</label>
+                  <input v-model.number="adjDraft.min" type="number" class="mig-input mig-input--num" />
+                </div>
+                <div class="mig-num">
+                  <label class="mig-label">Max</label>
+                  <input v-model.number="adjDraft.max" type="number" class="mig-input mig-input--num" />
+                </div>
+                <div class="mig-num">
+                  <label class="mig-label">Stock</label>
+                  <input v-model.number="adjDraft.stock" type="number" class="mig-input mig-input--num" />
+                </div>
+                <div class="mig-num">
+                  <label class="mig-label">Value</label>
+                  <input v-model.number="adjDraft.value" type="number" class="mig-input mig-input--num" />
+                </div>
+                <div class="mig-num">
+                  <label class="mig-label">Step</label>
+                  <input v-model.number="adjDraft.step" type="number" class="mig-input mig-input--num" />
+                </div>
+              </div>
+              <div class="admin-row">
+                <button class="admin-btn" @click="saveRow">Save Row →</button>
+                <button class="admin-btn" @click="skipRow">Skip</button>
+              </div>
+            </div>
+
+            <!-- Commit when all handled -->
+            <div v-if="adjAllHandled" class="mig-commit">
+              <p class="admin-muted">All rows handled. Commit to save the card.</p>
+              <button class="admin-btn" :disabled="adjBusy" @click="commitAdjMigration">
+                {{ adjBusy ? 'Saving…' : 'Commit Migration' }}
+              </button>
+              <p v-if="adjResult" class="admin-ok">{{ adjResult }}</p>
+            </div>
+          </template>
+        </div>
+
+      </div>
+
       <div class="settings-footer">
         <button class="logout-btn" @click="logout">Sign Out</button>
       </div>
@@ -302,6 +614,7 @@ function onTabAdmin() {
 
 <style scoped>
 .settings-panel { max-width: 360px; }
+.settings-panel--wide { max-width: 540px; }
 
 /* Tabs */
 .settings-tabs {
@@ -510,4 +823,116 @@ function onTabAdmin() {
   color: var(--gold);
 }
 .admin-suggestion-dismiss { align-self: flex-start; margin-top: 4px; }
+
+/* Migration tab */
+.mig-card-list { display: flex; flex-direction: column; gap: 4px; }
+.mig-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.mig-card-name { flex: 1; color: var(--paper); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mig-badge {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.mig-badge--ok   { background: color-mix(in srgb, var(--gold) 15%, transparent); color: var(--gold); }
+.mig-badge--warn { background: color-mix(in srgb, var(--magenta) 15%, transparent); color: var(--magenta); }
+.mig-badge--skip { background: color-mix(in srgb, var(--steel) 15%, transparent); color: var(--steel); }
+.mig-btn-sm { padding: 3px 10px; font-size: 10px; flex-shrink: 0; }
+
+.mig-form-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mig-form-title {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--paper);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mig-form-progress {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--steel);
+  flex-shrink: 0;
+}
+
+.mig-source-row {
+  border-left: 2px solid var(--magenta);
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  background: color-mix(in srgb, var(--magenta) 6%, transparent);
+  border-radius: 0 4px 4px 0;
+}
+.mig-source-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--paper);
+}
+.mig-source-desc {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--steel-light);
+  margin-top: 2px;
+}
+
+.mig-handled { margin-bottom: 8px; }
+
+.mig-form { display: flex; flex-direction: column; gap: 8px; }
+.mig-field-row { display: flex; align-items: center; gap: 8px; }
+.mig-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--steel);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  width: 46px;
+  flex-shrink: 0;
+}
+.mig-input {
+  flex: 1;
+  background: var(--panel-well);
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 5px 8px;
+}
+.mig-input:focus { outline: none; border-color: var(--gold); }
+.mig-input--short { max-width: 90px; }
+.mig-input--num { width: 72px; flex: none; }
+.mig-select {
+  flex: 1;
+  background: var(--panel-well);
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 5px 8px;
+}
+.mig-select:focus { outline: none; border-color: var(--gold); }
+
+.mig-nums-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.mig-num { display: flex; flex-direction: column; gap: 3px; }
+.mig-num .mig-label { width: auto; }
+
+.mig-commit { display: flex; flex-direction: column; gap: 8px; }
 </style>

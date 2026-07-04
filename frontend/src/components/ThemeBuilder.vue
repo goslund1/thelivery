@@ -324,10 +324,13 @@ function onReset() { theme.reset() }
 }
 .tb-picker-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
   padding: 14px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Toggle tab — right edge of the pane, same plane as wing ── */

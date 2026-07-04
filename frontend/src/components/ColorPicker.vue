@@ -127,18 +127,6 @@ function onHslInput(channel: 'h' | 's' | 'l', e: Event) {
   emit_(hslToHex(next.h, next.s, next.l))
 }
 
-function snapToNearest() {
-  const cur = hexToRgb(props.modelValue)
-  let best = FH_PALETTE[0].hex
-  let bestDist = Infinity
-  for (const sw of FH_PALETTE) {
-    const s = hexToRgb(sw.hex)
-    const d = Math.sqrt((cur.r - s.r) ** 2 + (cur.g - s.g) ** 2 + (cur.b - s.b) ** 2)
-    if (d < bestDist) { bestDist = d; best = sw.hex }
-  }
-  emit_(best)
-}
-
 const FH_PALETTE = [
   { name: 'Bright Tokyo red',         hex: '#FF3B2F' },
   { name: 'Rising sun red',           hex: '#D6432C' },
@@ -169,24 +157,58 @@ const FH_PALETTE = [
   { name: 'Checkered black',          hex: '#0A0A0A' },
 ]
 
-function isActive(sw: string): boolean {
-  return props.modelValue.toLowerCase() === sw.toLowerCase()
-}
+type Swatch = { name: string; hex: string; builtin: boolean }
 
-const USER_SWATCHES_KEY = 'cp-user-swatches'
+const PALETTE_KEY = 'cp-palette'
 
-type UserSwatch = { name: string; hex: string }
+const DEFAULT_PALETTE: Swatch[] = FH_PALETTE.map(s => ({ ...s, builtin: true }))
 
-function loadUserSwatches(): UserSwatch[] {
+function loadPalette(): Swatch[] {
   try {
-    return JSON.parse(localStorage.getItem(USER_SWATCHES_KEY) ?? '[]')
-  } catch { return [] }
+    const stored = localStorage.getItem(PALETTE_KEY)
+    if (stored) return JSON.parse(stored)
+    // migrate old separate user-swatches if present
+    const old = JSON.parse(localStorage.getItem('cp-user-swatches') ?? '[]')
+    return [...DEFAULT_PALETTE, ...old.map((s: { name: string; hex: string }) => ({ ...s, builtin: false }))]
+  } catch { return [...DEFAULT_PALETTE] }
 }
 
-const userSwatches = ref<UserSwatch[]>(loadUserSwatches())
+const palette = ref<Swatch[]>(loadPalette())
 
-function saveUserSwatches() {
-  localStorage.setItem(USER_SWATCHES_KEY, JSON.stringify(userSwatches.value))
+function savePalette() {
+  localStorage.setItem(PALETTE_KEY, JSON.stringify(palette.value))
+}
+
+function snapToNearest() {
+  const cur = hexToRgb(props.modelValue)
+  let best = palette.value[0]?.hex ?? FH_PALETTE[0].hex
+  let bestDist = Infinity
+  for (const sw of palette.value) {
+    const s = hexToRgb(sw.hex)
+    const d = Math.sqrt((cur.r - s.r) ** 2 + (cur.g - s.g) ** 2 + (cur.b - s.b) ** 2)
+    if (d < bestDist) { bestDist = d; best = sw.hex }
+  }
+  emit_(best)
+}
+
+const selectedSwatch = ref<Swatch | null>(null)
+
+const swatchDeviated = computed(() =>
+  !!selectedSwatch.value &&
+  hexInput.value.toLowerCase() !== selectedSwatch.value.hex.toLowerCase()
+)
+
+function isActive(hex: string): boolean {
+  return selectedSwatch.value?.hex.toLowerCase() === hex.toLowerCase()
+}
+
+function clickSwatch(sw: Swatch) {
+  if (selectedSwatch.value?.hex.toLowerCase() === sw.hex.toLowerCase()) {
+    selectedSwatch.value = null
+  } else {
+    selectedSwatch.value = sw
+    emit_(sw.hex)
+  }
 }
 
 const addDialogOpen = ref(false)
@@ -196,17 +218,15 @@ const addDialogNameInput = ref<HTMLInputElement | null>(null)
 function openAddDialog() {
   addDialogName.value = hexInput.value
   addDialogOpen.value = true
-  nextTick(() => {
-    addDialogNameInput.value?.select()
-  })
+  nextTick(() => { addDialogNameInput.value?.select() })
 }
 
 function confirmAddSwatch() {
   const hex = hexInput.value
   const name = addDialogName.value.trim() || hex
-  if (!userSwatches.value.some(s => s.hex.toLowerCase() === hex.toLowerCase())) {
-    userSwatches.value.push({ name, hex })
-    saveUserSwatches()
+  if (!palette.value.some(s => s.hex.toLowerCase() === hex.toLowerCase())) {
+    palette.value.push({ name, hex, builtin: false })
+    savePalette()
   }
   addDialogOpen.value = false
 }
@@ -216,14 +236,77 @@ function cancelAddSwatch() {
 }
 
 function removeSwatch(hex: string) {
-  userSwatches.value = userSwatches.value.filter(s => s.hex !== hex)
-  saveUserSwatches()
+  const i = palette.value.findIndex(s => s.hex === hex && !s.builtin)
+  if (i !== -1) { palette.value.splice(i, 1); savePalette() }
+}
+
+const isDragging = ref(false)
+const draggedHex = ref<string | null>(null)
+const liveItems = ref<Swatch[]>([])
+
+function onSwatchPointerDown(e: PointerEvent, hex: string) {
+  const startX = e.clientX
+  const startY = e.clientY
+  let dragged = false
+  let reorderPending = false
+
+  const onMove = (ev: PointerEvent) => {
+    if (!dragged && Math.hypot(ev.clientX - startX, ev.clientY - startY) > 5) {
+      dragged = true
+      isDragging.value = true
+      draggedHex.value = hex
+      liveItems.value = [...palette.value]
+    }
+    if (!dragged || reorderPending) return
+    const el = document.elementFromPoint(ev.clientX, ev.clientY)
+    const targetHex = (el?.closest('[data-hex]') as HTMLElement | null)?.dataset.hex
+    if (!targetHex || targetHex === draggedHex.value) return
+    const from = liveItems.value.findIndex(s => s.hex === draggedHex.value)
+    const to = liveItems.value.findIndex(s => s.hex === targetHex)
+    if (from === -1 || to === -1) return
+    reorderPending = true
+    const items = [...liveItems.value]
+    const [moved] = items.splice(from, 1)
+    items.splice(to, 0, moved)
+    liveItems.value = items
+    // wait two frames so the DOM settles before the next reorder can fire
+    requestAnimationFrame(() => requestAnimationFrame(() => { reorderPending = false }))
+  }
+
+  const onUp = () => {
+    document.removeEventListener('pointermove', onMove)
+    document.removeEventListener('pointerup', onUp)
+    if (dragged) {
+      palette.value = liveItems.value
+      savePalette()
+    }
+    liveItems.value = []
+    draggedHex.value = null
+    isDragging.value = false
+  }
+
+  document.addEventListener('pointermove', onMove)
+  document.addEventListener('pointerup', onUp)
 }
 </script>
 
 <template>
   <div class="cp-wrap">
-    <div class="cp-label" v-if="label">{{ label }}</div>
+    <!-- Title / selection indicator -->
+    <div class="cp-title">
+      <span
+        class="cp-title-swatch"
+        :style="{ background: selectedSwatch?.hex ?? 'transparent', border: selectedSwatch ? 'none' : '1px solid var(--steel)' }"
+        :class="{ 'cp-title-swatch--clickable': selectedSwatch && swatchDeviated }"
+        :title="selectedSwatch && swatchDeviated ? 'Reset to ' + selectedSwatch.name : undefined"
+        @click="selectedSwatch && swatchDeviated && emit_(selectedSwatch.hex)"
+      />
+      <span class="cp-title-name" :class="{ 'cp-title-name--empty': !selectedSwatch }">
+        {{ selectedSwatch?.name ?? '—' }}
+      </span>
+      <span v-if="swatchDeviated" class="cp-title-modified">+</span>
+      <button v-if="selectedSwatch" class="cp-title-clear" type="button" title="Deselect swatch" @click="selectedSwatch = null">×</button>
+    </div>
 
     <!-- Gradient picker -->
     <hex-color-picker ref="pickerEl" class="cp-picker" />
@@ -285,33 +368,23 @@ function removeSwatch(hex: string) {
       <button class="cp-add-swatch" type="button" title="Add current color to palette" @click="openAddDialog">+</button>
     </div>
     <div class="cp-swatches-scroll">
-      <div class="cp-swatches">
+      <TransitionGroup tag="div" class="cp-swatches" name="sw">
         <button
-          v-for="sw in FH_PALETTE"
+          v-for="sw in (isDragging ? liveItems : palette)"
           :key="sw.hex"
           class="cp-swatch"
-          :class="{ 'cp-swatch--active': isActive(sw.hex) }"
+          :class="{ 'cp-swatch--active': isActive(sw.hex), 'cp-swatch--dragging': sw.hex === draggedHex }"
           type="button"
+          :data-hex="sw.hex"
           :title="sw.name"
           :style="{ background: sw.hex }"
-          @click="emit_(sw.hex)"
+          @click="clickSwatch(sw)"
+          @pointerdown="onSwatchPointerDown($event, sw.hex)"
         >
           <span v-if="isActive(sw.hex)" class="cp-swatch-dot" />
+          <span v-if="!sw.builtin" class="cp-swatch-remove" @click.stop="removeSwatch(sw.hex)">×</span>
         </button>
-        <button
-          v-for="sw in userSwatches"
-          :key="sw.hex"
-          class="cp-swatch cp-swatch--user"
-          :class="{ 'cp-swatch--active': isActive(sw.hex) }"
-          type="button"
-          :title="sw.name"
-          :style="{ background: sw.hex }"
-          @click="emit_(sw.hex)"
-        >
-          <span v-if="isActive(sw.hex)" class="cp-swatch-dot" />
-          <span class="cp-swatch-remove" @click.stop="removeSwatch(sw.hex)">×</span>
-        </button>
-      </div>
+      </TransitionGroup>
     </div>
 
     <!-- Add swatch dialog -->
@@ -347,11 +420,64 @@ function removeSwatch(hex: string) {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  height: 100%;
 }
 .cp-label {
   color: var(--steel);
   text-transform: uppercase;
   letter-spacing: .08em;
+}
+.cp-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 18px;
+}
+.cp-title-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.cp-title-swatch--clickable {
+  cursor: pointer;
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+.cp-title-name {
+  flex: 1;
+  font-family: 'Oswald', sans-serif;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: var(--paper);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: .06em;
+}
+.cp-title-name--empty {
+  color: var(--steel);
+}
+.cp-title-modified {
+  color: var(--gold);
+  font-size: 10px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.cp-title-clear {
+  background: none;
+  border: none;
+  color: var(--steel);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+.cp-title-clear:hover {
+  color: var(--paper);
+  opacity: 1;
 }
 .cp-picker {
   width: 100%;
@@ -441,7 +567,8 @@ function removeSwatch(hex: string) {
 }
 .cp-add-swatch:hover { border-color: var(--gold); color: var(--gold); }
 .cp-swatches-scroll {
-  max-height: 108px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -449,32 +576,44 @@ function removeSwatch(hex: string) {
 .cp-swatches-scroll::-webkit-scrollbar-track { background: transparent; }
 .cp-swatches-scroll::-webkit-scrollbar-thumb { background: var(--panel-edge); border-radius: 2px; }
 .cp-swatches {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 22px);
+  display: flex;
+  flex-wrap: wrap;
   gap: 3px;
   padding: 4px 0;
 }
+.sw-move {
+  transition: transform 0.15s ease;
+}
 .cp-swatch {
-  width: 22px;
-  height: 22px;
-  border-radius: 3px;
+  width: 44px;
+  height: 44px;
+  border-radius: 4px;
   border: 1px solid rgba(255,255,255,0.1);
-  cursor: pointer;
+  cursor: grab;
+  touch-action: none;
   position: relative;
   padding: 0;
 }
 .cp-swatch--active {
   box-shadow: 0 0 0 2px var(--gold);
 }
+.cp-swatch--dragging {
+  cursor: grabbing;
+  box-shadow: 0 0 0 2px var(--gold), 0 0 10px 2px rgba(201,162,39,0.5);
+  z-index: 1;
+}
 .cp-swatch--user .cp-swatch-remove {
   position: absolute;
-  inset: 0;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.7);
   color: #fff;
-  font-size: 14px;
+  font-size: 11px;
   line-height: 1;
   border-radius: 2px;
 }

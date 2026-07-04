@@ -1162,6 +1162,7 @@
     min-width:170px;
     max-height:calc(100vh - 24px);
     overflow-y:auto;
+    overscroll-behavior:contain;
     z-index:29;
     opacity:0;
     pointer-events:none;
@@ -1364,6 +1365,7 @@
     grid-template-columns:repeat(auto-fill, minmax(110px, 1fr));
     gap:10px;
     overflow-y:auto;
+    overscroll-behavior:contain;
     min-height:0;
   }
 

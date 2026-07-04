@@ -94,6 +94,7 @@ function onReset() {
       <button class="tb-close" type="button" @click="emit('close')">×</button>
     </div>
 
+    <div class="tb-body">
     <!-- Ambiance base -->
     <div class="tb-section">
       <div class="tb-section-label">Base ambiance</div>
@@ -168,6 +169,8 @@ function onReset() {
       />
     </div>
 
+    </div><!-- /.tb-body -->
+
     <!-- Footer -->
     <div class="tb-footer">
       <span v-if="theme.error" class="tb-error">{{ theme.error }}</span>
@@ -193,7 +196,6 @@ function onReset() {
 .tb-panel {
   width: 300px;
   max-height: 80vh;
-  overflow-y: auto;
   background: var(--panel);
   border: 1px solid var(--panel-edge);
   border-radius: 6px;
@@ -202,6 +204,7 @@ function onReset() {
   flex-direction: column;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
+  overflow: hidden;
 }
 .tb-header {
   display: flex;
@@ -209,6 +212,13 @@ function onReset() {
   justify-content: space-between;
   padding: 12px 14px 10px;
   border-bottom: 1px solid var(--panel-edge);
+  flex-shrink: 0;
+}
+.tb-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  overscroll-behavior: contain;
 }
 .tb-title {
   color: var(--paper);
@@ -331,6 +341,8 @@ function onReset() {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--panel-edge);
 }
 .tb-error {
   color: #c0392b;

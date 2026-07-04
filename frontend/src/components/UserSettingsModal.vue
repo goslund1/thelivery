@@ -632,7 +632,7 @@ function onTabMigrate() {
 </template>
 
 <style scoped>
-.settings-panel { max-width: 360px; max-height: 88vh; overflow-y: auto; }
+.settings-panel { max-width: 360px; max-height: 88vh; overflow-y: auto; overscroll-behavior: contain; }
 .settings-panel--wide { max-width: 540px; }
 
 /* Tabs */

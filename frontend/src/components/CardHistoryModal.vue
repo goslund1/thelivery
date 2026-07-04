@@ -333,7 +333,7 @@ function fmtVal(v: number | null) {
 .ch-sidebar {
   width: 210px; flex-shrink: 0;
   border-right: 1px solid var(--panel-edge);
-  overflow-y: auto; padding: 10px 0;
+  overflow-y: auto; overscroll-behavior: contain; padding: 10px 0;
 }
 .ch-version-list { list-style: none; margin: 0; padding: 0; }
 .ch-version-item {
@@ -355,7 +355,7 @@ function fmtVal(v: number | null) {
 
 /* Diff panel */
 .ch-diff {
-  flex: 1; overflow-y: auto; padding: 16px 20px;
+  flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 16px 20px;
   display: flex; flex-direction: column; gap: 16px;
 }
 .ch-diff-empty {

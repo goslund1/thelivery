@@ -1155,8 +1155,10 @@
   .bug-flyout{
     position:fixed;
     transform:translateX(8px);
-    background:var(--panel);
-    border:1px solid var(--panel-edge);
+    background:color-mix(in srgb, var(--panel) 82%, transparent);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    border:1px solid color-mix(in srgb, var(--panel-edge) 70%, transparent);
     border-radius:6px;
     padding:14px 18px;
     min-width:170px;

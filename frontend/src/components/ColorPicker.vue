@@ -4,7 +4,6 @@ import 'vanilla-colorful/hex-color-picker.js'
 
 const props = defineProps<{
   modelValue: string
-  label?: string
 }>()
 const emit = defineEmits<{ 'update:modelValue': [v: string] }>()
 
@@ -78,11 +77,64 @@ const litGradient = computed(() => {
   return `linear-gradient(to right,hsl(${h},${s}%,0%),hsl(${h},${s}%,50%),hsl(${h},${s}%,100%))`
 })
 
+function colorName(hex: string): string {
+  const { h, s, l } = hexToHsl(hex)
+
+  if (l < 5)  return 'Near Black'
+  if (l > 96) return 'Near White'
+
+  // Truly achromatic — no hue cast at all
+  if (s < 5) {
+    if (l < 18) return 'Charcoal'
+    if (l < 38) return 'Dark Grey'
+    if (l < 60) return 'Grey'
+    if (l < 80) return 'Light Grey'
+    return 'Silver'
+  }
+
+  // Tinted neutrals — even a subtle cast gets named (this is where the nuance lives)
+  if (s < 50) {
+    const tint =
+      (h < 30 || h >= 335) ? 0 :  // warm (red/orange)
+      h < 75               ? 1 :  // earthy (yellow/khaki)
+      h < 110              ? 2 :  // grey-green (olive)
+      h < 165              ? 3 :  // sage (muted green)
+      h < 200              ? 4 :  // slate (teal-grey)
+      h < 265              ? 5 :  // cool (blue-grey)
+      h < 300              ? 6 :  // mauve (purple-grey)
+                             0    // pink → warm
+    //                  l<20            l<40            l<62          l<80          l>=80
+    const names = [
+      ['Dark Warm Grey',   'Warm Dark Grey',  'Warm Grey',   'Warm Silver', 'Blush'     ],
+      ['Dark Earthy Grey', 'Earthy Grey',     'Warm Taupe',  'Warm Ivory',  'Ivory'     ],
+      ['Dark Grey-Green',  'Muted Olive',     'Dusty Green', 'Pale Green',  'Pale Green'],
+      ['Dark Sage',        'Sage Grey',       'Sage',        'Pale Sage',   'Pale Sage' ],
+      ['Dark Slate',       'Slate',           'Slate Blue',  'Pale Slate',  'Ice Blue'  ],
+      ['Dark Cool Grey',   'Cool Dark Grey',  'Cool Grey',   'Cool Silver', 'Ice'       ],
+      ['Dark Mauve',       'Dusty Mauve',     'Mauve',       'Pale Mauve',  'Lavender'  ],
+    ]
+    const band = l < 20 ? 0 : l < 40 ? 1 : l < 62 ? 2 : l < 80 ? 3 : 4
+    return names[tint][band]
+  }
+
+  // Fully saturated
+  const hueName =
+    h < 16  ? 'Red'    : h < 40  ? 'Orange' : h < 65  ? 'Yellow' :
+    h < 80  ? 'Lime'   : h < 150 ? 'Green'  : h < 185 ? 'Teal'   :
+    h < 210 ? 'Cyan'   : h < 255 ? 'Blue'   : h < 280 ? 'Violet' :
+    h < 315 ? 'Purple' : h < 345 ? 'Pink'   : 'Red'
+  const light = l < 22 ? 'Deep' : l < 40 ? 'Dark' : l > 78 ? 'Pale' : l > 62 ? 'Light' : ''
+  const sat   = s > 75 ? 'Vivid' : ''
+  return [light, sat, hueName].filter(Boolean).join(' ')
+}
+
+const generatedName = computed(() => colorName(hexInput.value))
+
 const panelColor = computed(() =>
   getComputedStyle(document.documentElement).getPropertyValue('--panel').trim() || '#15151a'
 )
 
-const lowContrast = computed(() => contrastRatio(props.modelValue, panelColor.value) < 4.5)
+const lowContrast = computed(() => contrastRatio(hexInput.value, panelColor.value) < 4.5)
 
 function emit_(hex: string) {
   hexInput.value = hex
@@ -114,7 +166,7 @@ function onHexInput(e: Event) {
 function onRgbInput(channel: 'r' | 'g' | 'b', e: Event) {
   const v = parseInt((e.target as HTMLInputElement).value)
   if (isNaN(v)) return
-  const cur = hexToRgb(props.modelValue)
+  const cur = hexToRgb(hexInput.value)
   cur[channel] = v
   emit_(rgbToHex(cur.r, cur.g, cur.b))
 }
@@ -302,7 +354,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
         @click="selectedSwatch && swatchDeviated && emit_(selectedSwatch.hex)"
       />
       <span class="cp-title-name" :class="{ 'cp-title-name--empty': !selectedSwatch }">
-        {{ selectedSwatch?.name ?? '—' }}
+        {{ selectedSwatch?.name ?? generatedName }}
       </span>
       <span v-if="swatchDeviated" class="cp-title-modified">+</span>
       <button v-if="selectedSwatch" class="cp-title-clear" type="button" title="Deselect swatch" @click="selectedSwatch = null">×</button>
@@ -421,11 +473,6 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   flex-direction: column;
   gap: 10px;
   height: 100%;
-}
-.cp-label {
-  color: var(--steel);
-  text-transform: uppercase;
-  letter-spacing: .08em;
 }
 .cp-title {
   display: flex;
@@ -571,6 +618,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
 }
 .cp-swatches-scroll::-webkit-scrollbar { width: 4px; }
 .cp-swatches-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -602,7 +650,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   box-shadow: 0 0 0 2px var(--gold), 0 0 10px 2px rgba(201,162,39,0.5);
   z-index: 1;
 }
-.cp-swatch--user .cp-swatch-remove {
+.cp-swatch .cp-swatch-remove {
   position: absolute;
   top: 2px;
   right: 2px;
@@ -617,7 +665,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   line-height: 1;
   border-radius: 2px;
 }
-.cp-swatch--user:hover .cp-swatch-remove {
+.cp-swatch:hover .cp-swatch-remove {
   display: flex;
 }
 .cp-swatch-dot {

@@ -286,13 +286,16 @@ async function onDelete() {
   </div>
 
   <Teleport to="body">
-    <div v-if="confirmDelete" class="ec-delete-overlay" @click.self="confirmDelete = false">
-      <div class="ec-delete-dialog">
-        <p class="ec-delete-msg">Delete <strong>{{ card.name }}</strong>?</p>
-        <p class="ec-delete-sub">This cannot be undone.</p>
-        <div class="ec-delete-actions">
-          <button class="nc-btn-cancel" type="button" @click="confirmDelete = false">Cancel</button>
-          <button class="ec-btn-delete ec-btn-delete--confirm" type="button" @click="onDelete">Yes, delete it</button>
+    <div v-if="confirmDelete" class="conf-overlay open" @click.self="confirmDelete = false">
+      <div class="conf-panel">
+        <div class="conf-head">
+          <span>Delete Card</span>
+          <button class="conf-close" @click="confirmDelete = false">×</button>
+        </div>
+        <p class="conf-body"><strong style="color:var(--paper)">{{ card.name }}</strong> will be permanently deleted. This cannot be undone.</p>
+        <div class="conf-actions">
+          <button class="conf-btn conf-btn--discard" type="button" @click="onDelete">Yes, Delete It</button>
+          <button class="conf-btn conf-btn--neutral" type="button" @click="confirmDelete = false">Cancel</button>
         </div>
       </div>
     </div>
@@ -332,18 +335,18 @@ async function onDelete() {
 }
 .ec-btn-delete {
   background: transparent;
-  border: 1px solid #c0392b;
+  border: 1px solid var(--danger);
   border-radius: 4px;
-  color: #c0392b;
+  color: var(--danger-bright);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: .08em;
   text-transform: uppercase;
   padding: 10px 18px;
   cursor: pointer;
-  transition: background .15s, color .15s;
+  transition: background .15s, color .15s, border-color .15s;
 }
-.ec-btn-delete:hover, .ec-btn-delete--confirm { background: #c0392b; color: #fff; }
+.ec-btn-delete:hover { background: color-mix(in srgb, var(--danger) 20%, transparent); border-color: var(--danger-bright); }
 .ec-btn-history {
   position: absolute;
   top: 18px;
@@ -363,41 +366,4 @@ async function onDelete() {
 }
 .ec-btn-history:hover { border-color: var(--gold); color: var(--gold); }
 
-.ec-delete-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.ec-delete-dialog {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: 6px;
-  padding: 28px 32px 24px;
-  max-width: 360px;
-  width: 90vw;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
-}
-.ec-delete-msg {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
-  color: var(--paper);
-  margin: 0 0 6px;
-}
-.ec-delete-sub {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--steel);
-  margin: 0 0 22px;
-}
-.ec-delete-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
 </style>

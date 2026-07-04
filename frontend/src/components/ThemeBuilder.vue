@@ -90,42 +90,43 @@ function togglePicker() {
 }
 
 async function onSave() { await theme.save() }
-function onReset() { theme.reset(); activeColor.value = null }
+function onReset() { theme.reset() }
 </script>
 
 <template>
   <div class="tb-wrap">
-    <!-- Picker wing — slides in to the left -->
-    <div class="tb-picker-wing" :class="{ open: pickerOpen }" :style="{ background: pickerBg }" v-scroll-contain>
-      <div class="tb-picker-header">
-        <span class="tb-picker-for">
-          <span
+    <!-- Picker pane — single glass surface containing wing + tab -->
+    <div class="tb-picker-pane" :class="{ open: pickerOpen }" :style="{ background: pickerBg }">
+      <div class="tb-picker-wing" v-scroll-contain>
+        <div class="tb-picker-header">
+          <span class="tb-picker-for">
+            <span
+              v-if="activeColor"
+              class="tb-picker-swatch"
+              :style="{ background: activeValue }"
+            />
+            {{ activeLabel || 'Select a color →' }}
+          </span>
+        </div>
+        <div class="tb-picker-body">
+          <ColorPicker
             v-if="activeColor"
-            class="tb-picker-swatch"
-            :style="{ background: activeValue }"
+            :model-value="activeValue"
+            @update:model-value="onPickerUpdate"
           />
-          {{ activeLabel || 'Select a color →' }}
-        </span>
+          <p v-else class="tb-picker-hint">Select a color from the list</p>
+        </div>
       </div>
-      <div class="tb-picker-body">
-        <ColorPicker
-          v-if="activeColor"
-          :model-value="activeValue"
-          @update:model-value="onPickerUpdate"
-        />
-        <p v-else class="tb-picker-hint">Select a color from the list</p>
-      </div>
-    </div>
 
-    <!-- Toggle tab — sits between wing and panel, always visible -->
-    <button
-      class="tb-picker-tab"
-      :class="{ open: pickerOpen }"
-      :style="{ background: pickerBg }"
-      type="button"
-      :title="pickerOpen ? 'Hide color picker' : 'Show color picker'"
-      @click="togglePicker"
-    >‹</button>
+      <!-- Toggle tab — right edge of the pane, always visible -->
+      <button
+        class="tb-picker-tab"
+        :class="{ open: pickerOpen }"
+        type="button"
+        :title="pickerOpen ? 'Hide color picker' : 'Show color picker'"
+        @click="togglePicker"
+      >‹</button>
+    </div>
 
     <!-- Main list panel -->
     <div class="tb-panel" v-scroll-contain>
@@ -247,26 +248,34 @@ function onReset() { theme.reset(); activeColor.value = null }
   min-width: 0;
 }
 
-/* ── Picker wing ── */
-.tb-picker-wing {
-  width: 0;
+/* ── Picker pane — single unified glass surface (wing + tab) ── */
+.tb-picker-pane {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 14px;
   overflow: hidden;
   transition: width 0.22s ease;
-  flex-shrink: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--glass-bg);
+  flex-shrink: 0;
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-right: none;
   border-radius: 6px 0 0 6px;
+}
+.tb-picker-pane.open {
+  width: 286px; /* 272px wing + 14px tab */
+}
+
+/* ── Picker wing — transparent child, fills pane ── */
+.tb-picker-wing {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-}
-.tb-picker-wing.open {
-  width: 272px;
 }
 .tb-picker-header {
   padding: 12px 14px 10px;
@@ -307,19 +316,14 @@ function onReset() { theme.reset(); activeColor.value = null }
   margin-top: 40px;
 }
 
-/* ── Toggle tab — aligns with header bar ── */
+/* ── Toggle tab — right edge of the pane, same plane as wing ── */
 .tb-picker-tab {
   flex-shrink: 0;
   width: 14px;
-  align-self: flex-start;
-  height: 36px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-left: none;
-  border-right: none;
-  border-bottom-color: var(--panel-edge);
+  align-self: stretch;
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(255,255,255,0.06);
   color: var(--steel);
   font-size: 13px;
   cursor: pointer;

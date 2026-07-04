@@ -249,7 +249,7 @@ function onReset() { theme.reset(); activeColor.value = null }
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background: color-mix(in srgb, var(--panel) calc(var(--glass-opacity) * 0.5), transparent);
+  background: var(--picker-glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
@@ -306,7 +306,7 @@ function onReset() { theme.reset(); activeColor.value = null }
   width: 14px;
   align-self: flex-start;
   height: 36px;
-  background: var(--glass-bg);
+  background: var(--picker-glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);

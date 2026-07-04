@@ -1939,15 +1939,15 @@ async function submitSuggestion() {
   width: calc(100vw - 40px);
 }
 
-/* secondary surface — dp-pane rotated 90°: position:relative so tab can anchor */
+/* secondary surface — clear glass pane, 4px inset each side from the bar */
 .ta-suggest-drawer {
   --ds-tab: 22px;
-  width: 100%;
+  width: calc(100% - 8px);
   height: var(--ds-tab);
   overflow: hidden;
   transition: height 0.22s ease;
   position: relative;
-  background: var(--glass-bg);
+  background: color-mix(in srgb, var(--glass-bg) 35%, transparent);
   border: 1px solid var(--glass-border);
   border-bottom: none;
   border-radius: 8px 8px 0 0;
@@ -2008,7 +2008,7 @@ async function submitSuggestion() {
   transform: rotate(-90deg);
 }
 
-/* primary surface: full width, opaque, always visible below */
+/* primary surface: full width smoked bar — top border visible 4px each side of secondary */
 .ta-suggest-strip {
   width: 100%;
   display: flex;
@@ -2017,8 +2017,7 @@ async function submitSuggestion() {
   padding: 8px 14px;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  border-top: none;
-  border-radius: 0 0 8px 8px;
+  border-radius: 4px 4px 8px 8px;
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: 0 8px 32px rgba(0,0,0,0.45);

@@ -1988,7 +1988,7 @@ async function submitSuggestion() {
   border: none;
   border-top: 1px solid transparent;
   transition: border-color 0.22s, color 0.15s;
-  color: var(--steel);
+  color: var(--magenta);
   cursor: pointer;
   display: flex;
   align-items: center;

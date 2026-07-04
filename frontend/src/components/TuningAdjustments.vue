@@ -267,6 +267,7 @@ watch(() => props.adjustments, () => {
   localRows.value = buildLocalRows()
   endDisplay.value = {}
   suggestCollapsed.value = false
+  suggestDismissed.value = false
 }, { deep: false })
 
 watch(gearCount, () => {
@@ -789,6 +790,7 @@ watch(() => ui.isEditing, (editing) => { if (editing && !presets.value.length) l
 // ── Suggestion panel ──────────────────────────────────────────────────────────
 
 const suggestCollapsed = ref(false)
+const suggestDismissed = ref(false)
 const suggestModalOpen = ref(false)
 const suggestTitle = ref('')
 const suggestCredit = ref('')
@@ -1143,7 +1145,7 @@ async function submitSuggestion() {
 
   <!-- Floating suggestion panel — view mode only, requires tuning data -->
   <Teleport to="body">
-    <div v-if="!ui.isEditing && hasSuggestionData" class="ta-suggest-bar" :class="{ collapsed: suggestCollapsed }">
+    <div v-if="!ui.isEditing && hasSuggestionData && !suggestDismissed" class="ta-suggest-bar" :class="{ collapsed: suggestCollapsed }">
       <div v-if="!suggestCollapsed" class="ta-suggest-message">
         Think you can improve this tune? Make the changes you'd use, and suggest them for testing.
       </div>
@@ -1152,6 +1154,7 @@ async function submitSuggestion() {
           {{ suggestCollapsed ? '▲' : '▼' }}
         </button>
         <button class="ta-suggest-submit" @click="openSuggestModal">Submit Tune</button>
+        <button class="ta-suggest-dismiss" @click="suggestDismissed = true; suggestModalOpen = false" title="Dismiss">×</button>
       </div>
     </div>
 
@@ -1973,6 +1976,19 @@ async function submitSuggestion() {
   border-color: var(--gold);
   box-shadow: 0 0 12px color-mix(in srgb, var(--gold) 30%, transparent);
 }
+
+.ta-suggest-dismiss {
+  background: none;
+  border: none;
+  color: var(--steel);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 0.12s, color 0.12s;
+}
+.ta-suggest-dismiss:hover { opacity: 1; color: var(--paper); }
 
 /* Suggestion modal specifics */
 .ta-suggest-dialog { max-width: 440px; }

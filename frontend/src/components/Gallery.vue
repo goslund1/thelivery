@@ -237,6 +237,7 @@ function cancelFolderImport() {
       v-for="(img, i) in ordered"
       :key="img.id"
       :src="srcFor(img, 'stage')"
+      :alt="img.alt ?? ''"
       :class="{ active: i === index }"
       :data-index="i"
       @click="toggle"

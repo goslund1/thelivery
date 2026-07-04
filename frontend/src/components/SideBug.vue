@@ -236,6 +236,8 @@ function onToggleAll() {
   padding: 0 !important;
   min-width: 0 !important;
   background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border: none !important;
   box-shadow: none !important;
 }

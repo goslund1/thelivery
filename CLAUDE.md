@@ -156,9 +156,10 @@ String template refs (`ref="x"`) aren't counted as "used" by `vue-tsc`'s unused-
 - **Card history** — per-card version list, structured diff (sliders, upgrades, specs, text), one-click restore; accessed via History button in EditCardModal top-right (`CardHistoryModal.vue`)
 - **Tuning adjustments** (`TuningAdjustments.vue`) — full per-tab slider UI; gear sliders unlock based on transmission tier (Race/Drift); transmissionTier reads from `props.upgrades`/`props.coreSpecs` passed from RecipeSection's local state; gear count dropdown always visible; suggest bar capped to one instance via module-level singleton; dismiss × on suggest overlay
 - **SideBug** — car key button inverts colors (gold bg, panel icon) when edit mode is active
+- **Theme builder** (`ThemeBuilder.vue` + `ColorPicker.vue`) — launched from SideBug → Theme flyout → Customize. Three-panel layout: left picker wing (slides in, contains ColorPicker), center toggle tab, right list panel. Sections: Base ambiance (5 presets), Effects (glass opacity slider), Main palette (7 colors), Advanced (panelWell + steelLight), Tuning palette (9 colors). Picker wing and tab share a lighter glass surface (`pickerBg` computed in ThemeBuilder script from `theme.current?.colors.panel` at 0.18 opacity). Right panel uses standard `var(--glass-bg)`. Theme store persists to backend; `applyAll()` sets CSS vars on `document.documentElement` at load and on every change. `effects.glassOpacity` drives `--glass-opacity`; `applyColors()` drives all `--*` color vars.
 
 ### Pending / in progress
-- **Theme builder** — planned as a slide-in panel launched from the Themes flyout in SideBug; waiting for mockup from Jason
+- **Theme builder** — core UI built and working; see `docs/handoff-theme-builder-glass.md` for active issue and next steps
 - **Mobile layout** — not yet designed or implemented
 - **Submit Tune feature** — suggest bar overlay exists but trigger logic (how many slider moves before soliciting) and spam prevention are undesigned; tabled until production lull
 

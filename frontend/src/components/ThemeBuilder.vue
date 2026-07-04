@@ -9,6 +9,12 @@ const emit = defineEmits<{ close: [] }>()
 
 const theme = useThemeStore()
 
+const pickerBg = computed(() => {
+  const hex = (theme.current?.colors.panel ?? '#15151a').replace('#', '')
+  const n = parseInt(hex.length === 3 ? hex.split('').map(c => c+c).join('') : hex, 16)
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},0.18)`
+})
+
 const paletteOpen  = ref(true)
 const tuningOpen   = ref(false)
 const advancedOpen = ref(false)
@@ -90,7 +96,7 @@ function onReset() { theme.reset(); activeColor.value = null }
 <template>
   <div class="tb-wrap">
     <!-- Picker wing — slides in to the left -->
-    <div class="tb-picker-wing" :class="{ open: pickerOpen }" v-scroll-contain>
+    <div class="tb-picker-wing" :class="{ open: pickerOpen }" :style="{ background: pickerBg }" v-scroll-contain>
       <div class="tb-picker-header">
         <span class="tb-picker-for">
           <span
@@ -115,6 +121,7 @@ function onReset() { theme.reset(); activeColor.value = null }
     <button
       class="tb-picker-tab"
       :class="{ open: pickerOpen }"
+      :style="{ background: pickerBg }"
       type="button"
       :title="pickerOpen ? 'Hide color picker' : 'Show color picker'"
       @click="togglePicker"
@@ -249,7 +256,7 @@ function onReset() { theme.reset(); activeColor.value = null }
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background: var(--picker-glass-bg);
+  background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
@@ -306,7 +313,7 @@ function onReset() { theme.reset(); activeColor.value = null }
   width: 14px;
   align-self: flex-start;
   height: 36px;
-  background: var(--picker-glass-bg);
+  background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);

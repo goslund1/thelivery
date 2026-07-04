@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import 'vanilla-colorful/hex-color-picker.js'
 
 const props = defineProps<{
@@ -8,7 +8,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ 'update:modelValue': [v: string] }>()
 
-const pickerEl = ref<(HTMLElement & { value: string }) | null>(null)
+const pickerEl = ref<(HTMLElement & { color: string }) | null>(null)
 const hexInput = ref(props.modelValue)
 
 function hexToRgb(h: string): { r: number; g: number; b: number } {
@@ -65,8 +65,8 @@ function contrastRatio(a: string, b: string): number {
   }
 }
 
-const rgb = computed(() => hexToRgb(props.modelValue))
-const hsl = computed(() => hexToHsl(props.modelValue))
+const rgb = computed(() => hexToRgb(hexInput.value))
+const hsl = computed(() => hexToHsl(hexInput.value))
 
 const hueGradient = 'linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%)'
 const satGradient = computed(() => {
@@ -86,14 +86,14 @@ const lowContrast = computed(() => contrastRatio(props.modelValue, panelColor.va
 
 function emit_(hex: string) {
   hexInput.value = hex
-  if (pickerEl.value) pickerEl.value.value = hex
+  if (pickerEl.value) pickerEl.value.color = hex
   emit('update:modelValue', hex)
 }
 
 onMounted(() => {
   const el = pickerEl.value
   if (!el) return
-  el.value = props.modelValue
+  el.color = hexInput.value
   el.addEventListener('color-changed', (e: Event) => {
     const v = (e as CustomEvent<{ value: string }>).detail.value
     hexInput.value = v
@@ -103,7 +103,7 @@ onMounted(() => {
 
 watch(() => props.modelValue, (v) => {
   hexInput.value = v
-  if (pickerEl.value && pickerEl.value.value !== v) pickerEl.value.value = v
+  if (pickerEl.value && pickerEl.value.color !== v) pickerEl.value.color = v
 })
 
 function onHexInput(e: Event) {
@@ -172,6 +172,53 @@ const FH_PALETTE = [
 function isActive(sw: string): boolean {
   return props.modelValue.toLowerCase() === sw.toLowerCase()
 }
+
+const USER_SWATCHES_KEY = 'cp-user-swatches'
+
+type UserSwatch = { name: string; hex: string }
+
+function loadUserSwatches(): UserSwatch[] {
+  try {
+    return JSON.parse(localStorage.getItem(USER_SWATCHES_KEY) ?? '[]')
+  } catch { return [] }
+}
+
+const userSwatches = ref<UserSwatch[]>(loadUserSwatches())
+
+function saveUserSwatches() {
+  localStorage.setItem(USER_SWATCHES_KEY, JSON.stringify(userSwatches.value))
+}
+
+const addDialogOpen = ref(false)
+const addDialogName = ref('')
+const addDialogNameInput = ref<HTMLInputElement | null>(null)
+
+function openAddDialog() {
+  addDialogName.value = hexInput.value
+  addDialogOpen.value = true
+  nextTick(() => {
+    addDialogNameInput.value?.select()
+  })
+}
+
+function confirmAddSwatch() {
+  const hex = hexInput.value
+  const name = addDialogName.value.trim() || hex
+  if (!userSwatches.value.some(s => s.hex.toLowerCase() === hex.toLowerCase())) {
+    userSwatches.value.push({ name, hex })
+    saveUserSwatches()
+  }
+  addDialogOpen.value = false
+}
+
+function cancelAddSwatch() {
+  addDialogOpen.value = false
+}
+
+function removeSwatch(hex: string) {
+  userSwatches.value = userSwatches.value.filter(s => s.hex !== hex)
+  saveUserSwatches()
+}
 </script>
 
 <template>
@@ -232,20 +279,63 @@ function isActive(sw: string): boolean {
       </div>
     </div>
 
-    <!-- FH palette swatches -->
-    <div class="cp-swatches">
-      <button
-        v-for="sw in FH_PALETTE"
-        :key="sw.hex"
-        class="cp-swatch"
-        :class="{ 'cp-swatch--active': isActive(sw.hex) }"
-        type="button"
-        :title="sw.name"
-        :style="{ background: sw.hex }"
-        @click="emit_(sw.hex)"
-      >
-        <span v-if="isActive(sw.hex)" class="cp-swatch-dot" />
-      </button>
+    <!-- Palette -->
+    <div class="cp-palette-header">
+      <span class="cp-palette-label">Palette</span>
+      <button class="cp-add-swatch" type="button" title="Add current color to palette" @click="openAddDialog">+</button>
+    </div>
+    <div class="cp-swatches-scroll">
+      <div class="cp-swatches">
+        <button
+          v-for="sw in FH_PALETTE"
+          :key="sw.hex"
+          class="cp-swatch"
+          :class="{ 'cp-swatch--active': isActive(sw.hex) }"
+          type="button"
+          :title="sw.name"
+          :style="{ background: sw.hex }"
+          @click="emit_(sw.hex)"
+        >
+          <span v-if="isActive(sw.hex)" class="cp-swatch-dot" />
+        </button>
+        <button
+          v-for="sw in userSwatches"
+          :key="sw.hex"
+          class="cp-swatch cp-swatch--user"
+          :class="{ 'cp-swatch--active': isActive(sw.hex) }"
+          type="button"
+          :title="sw.name"
+          :style="{ background: sw.hex }"
+          @click="emit_(sw.hex)"
+        >
+          <span v-if="isActive(sw.hex)" class="cp-swatch-dot" />
+          <span class="cp-swatch-remove" @click.stop="removeSwatch(sw.hex)">×</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Add swatch dialog -->
+    <div v-if="addDialogOpen" class="cp-dialog">
+      <div class="cp-dialog-preview" :style="{ background: hexInput }" />
+      <div class="cp-dialog-info">
+        <span class="cp-dialog-hex">{{ hexInput }}</span>
+        <span class="cp-dialog-rgb">{{ rgb.r }}, {{ rgb.g }}, {{ rgb.b }}</span>
+        <span class="cp-dialog-hsl">{{ hsl.h }}° {{ hsl.s }}% {{ hsl.l }}%</span>
+      </div>
+      <input
+        ref="addDialogNameInput"
+        class="cp-dialog-name"
+        type="text"
+        placeholder="Name this swatch…"
+        :value="addDialogName"
+        @input="addDialogName = ($event.target as HTMLInputElement).value"
+        @keydown.enter="confirmAddSwatch"
+        @keydown.esc="cancelAddSwatch"
+      />
+      <div class="cp-dialog-actions">
+        <button class="cp-dialog-btn cp-dialog-btn--cancel" type="button" @click="cancelAddSwatch">Cancel</button>
+        <button class="cp-dialog-btn cp-dialog-btn--add" type="button" @click="confirmAddSwatch">Add</button>
+      </div>
     </div>
   </div>
 </template>
@@ -321,12 +411,48 @@ function isActive(sw: string): boolean {
   color: #f4a636;
   font-size: 12px;
 }
+.cp-palette-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px solid var(--panel-edge);
+}
+.cp-palette-label {
+  color: var(--steel);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.cp-add-swatch {
+  background: none;
+  border: 1px solid var(--panel-edge);
+  border-radius: 3px;
+  color: var(--steel);
+  font-size: 15px;
+  line-height: 1;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color .15s, color .15s;
+}
+.cp-add-swatch:hover { border-color: var(--gold); color: var(--gold); }
+.cp-swatches-scroll {
+  max-height: 108px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.cp-swatches-scroll::-webkit-scrollbar { width: 4px; }
+.cp-swatches-scroll::-webkit-scrollbar-track { background: transparent; }
+.cp-swatches-scroll::-webkit-scrollbar-thumb { background: var(--panel-edge); border-radius: 2px; }
 .cp-swatches {
   display: grid;
   grid-template-columns: repeat(auto-fill, 22px);
   gap: 3px;
-  padding-top: 4px;
-  border-top: 1px solid var(--panel-edge);
+  padding: 4px 0;
 }
 .cp-swatch {
   width: 22px;
@@ -339,6 +465,21 @@ function isActive(sw: string): boolean {
 }
 .cp-swatch--active {
   box-shadow: 0 0 0 2px var(--gold);
+}
+.cp-swatch--user .cp-swatch-remove {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 2px;
+}
+.cp-swatch--user:hover .cp-swatch-remove {
+  display: flex;
 }
 .cp-swatch-dot {
   position: absolute;
@@ -410,4 +551,79 @@ function isActive(sw: string): boolean {
   min-width: 30px;
   text-align: right;
 }
+
+/* Add-swatch dialog */
+.cp-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--panel-well);
+  border: 1px solid var(--panel-edge);
+  border-radius: 5px;
+  margin-top: 2px;
+}
+.cp-dialog-preview {
+  width: 100%;
+  height: 36px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.2);
+  flex-shrink: 0;
+}
+.cp-dialog-info {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.cp-dialog-hex {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--paper);
+  letter-spacing: .04em;
+}
+.cp-dialog-rgb,
+.cp-dialog-hsl {
+  font-size: 10px;
+  color: var(--steel);
+  white-space: nowrap;
+}
+.cp-dialog-name {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--glass-bg);
+  border: 1px solid var(--panel-edge);
+  border-radius: 3px;
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 5px 7px;
+}
+.cp-dialog-name:focus { outline: none; border-color: var(--gold); }
+.cp-dialog-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.cp-dialog-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  border: 1px solid var(--panel-edge);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.cp-dialog-btn--cancel {
+  background: none;
+  color: var(--steel);
+}
+.cp-dialog-btn--cancel:hover { border-color: var(--steel); color: var(--paper); }
+.cp-dialog-btn--add {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+}
+.cp-dialog-btn--add:hover { filter: brightness(1.15); }
 </style>

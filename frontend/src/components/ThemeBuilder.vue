@@ -348,6 +348,24 @@ function onReset() { theme.reset() }
   transition: color .15s, transform .22s;
 }
 .tb-picker-tab:hover { color: var(--gold); }
+.tb-picker-tab {
+  position: relative;
+}
+.tb-picker-tab::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  right: 0;
+  top: 36px;
+  height: 1px;
+  background: var(--panel-edge);
+  opacity: 0;
+  transition: opacity 0s 0.22s;
+}
+.tb-picker-pane.open .tb-picker-tab::after {
+  opacity: 1;
+  transition: opacity 0s;
+}
 .tb-picker-tab.open { transform: scaleX(-1); }
 
 /* ── Main panel ── */
@@ -363,6 +381,7 @@ function onReset() { theme.reset() }
   border: 1px solid var(--glass-border);
   border-radius: 0 6px 6px 0;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  clip-path: inset(0 -60px -60px 0);
   display: flex;
   flex-direction: column;
   font-family: 'JetBrains Mono', monospace;

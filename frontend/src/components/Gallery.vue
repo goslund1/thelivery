@@ -406,8 +406,8 @@ function cancelFolderImport() {
   opacity: 1;
 }
 .stage-expand:hover {
-  color: var(--gold);
-  border-color: var(--gold);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .thumb.excluded {
   opacity: 0.35;
@@ -455,11 +455,11 @@ function cancelFolderImport() {
 /* ★ lead — gold when this is the lead image */
 .thumb-ctrl-lead.is-lead,
 .thumb-ctrl-lead:hover {
-  color: var(--gold);
+  color: var(--accent);
 }
 /* ● pool — gold when included in slideshow, dim when excluded */
 .thumb-ctrl-pool.included {
-  color: var(--gold);
+  color: var(--accent);
 }
 .thumb-ctrl-pool:not(.included) {
   color: rgba(255, 255, 255, 0.3);
@@ -476,10 +476,10 @@ function cancelFolderImport() {
 }
 .thumb.excluded .thumb-ctrl-lead.is-lead,
 .thumb.excluded .thumb-ctrl-lead:hover {
-  color: var(--gold);
+  color: var(--accent);
 }
 .thumb.excluded .thumb-ctrl-pool.included {
-  color: var(--gold);
+  color: var(--accent);
 }
 .thumb.excluded .thumb-ctrl-pool:not(.included) {
   color: rgba(0, 0, 0, 0.3);
@@ -507,7 +507,7 @@ function cancelFolderImport() {
 .thumb-delete-confirm span {
   width: 100%;
   text-align: center;
-  color: var(--gold);
+  color: var(--accent);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.04em;
@@ -531,14 +531,14 @@ function cancelFolderImport() {
   box-shadow: 0 0 10px color-mix(in srgb, var(--danger-bright) 50%, transparent);
 }
 .thumb-delete-confirm button:last-of-type {
-  background: color-mix(in srgb, var(--gold) 20%, transparent);
-  color: var(--gold);
-  border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
 }
 .thumb-delete-confirm button:last-of-type:hover {
-  background: color-mix(in srgb, var(--gold) 35%, transparent);
-  border-color: var(--gold);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
 }
 .thumb-dragging {
   opacity: 0.3;
@@ -547,7 +547,7 @@ function cancelFolderImport() {
   width: 3px;
   height: 60px;
   flex: 0 0 auto;
-  background: var(--gold);
+  background: var(--accent);
   border-radius: 2px;
   box-shadow: 0 0 8px rgba(201,162,39,0.7);
 }
@@ -579,13 +579,13 @@ function cancelFolderImport() {
   background: var(--panel);
   border: 1px dashed rgba(140, 140, 140, 0.5);
   border-radius: 2px;
-  color: var(--steel);
+  color: var(--muted);
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 .thumb-add-panel:hover .thumb-add-icon {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: var(--gold-tint-04);
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-tint-04);
 }
 .folder-import-banner {
   display: flex;
@@ -601,32 +601,32 @@ function cancelFolderImport() {
 .fi-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--paper);
+  color: var(--fg);
   flex: 1;
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.fi-label em { color: var(--steel); font-style: normal; }
-.fi-warn { color: var(--gold); }
+.fi-label em { color: var(--muted); font-style: normal; }
+.fi-warn { color: var(--accent); }
 .fi-input {
   background: var(--panel-bg);
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   padding: 4px 8px;
   width: 72px;
   outline: none;
 }
-.fi-input:focus { border-color: var(--gold); }
+.fi-input:focus { border-color: var(--accent); }
 .fi-input-wide { width: 180px; }
 .fi-count {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--steel);
+  color: var(--muted);
   white-space: nowrap;
 }
 .fi-btn {
@@ -641,7 +641,7 @@ function cancelFolderImport() {
   white-space: nowrap;
 }
 .fi-confirm {
-  background: var(--gold);
+  background: var(--accent);
   color: var(--ink);
   font-weight: 700;
 }
@@ -649,10 +649,10 @@ function cancelFolderImport() {
 .fi-cancel {
   background: transparent;
   border: 1px solid var(--panel-edge);
-  color: var(--steel);
+  color: var(--muted);
 }
-.fi-cancel:hover { color: var(--paper); }
-.fi-has-errors { border-color: var(--gold); }
+.fi-cancel:hover { color: var(--fg); }
+.fi-has-errors { border-color: var(--accent); }
 /* In edit mode, chevron sits over the add panel's fade zone. background:none so
    the arrow's own gradient doesn't extend the fade leftward on canRight changes. */
 .thumb-rail-editing .edge-arrow-right {
@@ -663,7 +663,7 @@ function cancelFolderImport() {
 .thumb-add-progress {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--gold);
+  color: var(--accent);
   letter-spacing: 0.05em;
   text-align: center;
 }

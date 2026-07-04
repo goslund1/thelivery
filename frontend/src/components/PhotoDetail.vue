@@ -183,7 +183,7 @@ function onCarId(carId: string | null) {
   font: 12px/1 'Oswald', sans-serif;
   padding: 4px 6px;
   border-radius: 4px;
-  border: 1px solid var(--steel-light, #444);
+  border: 1px solid var(--muted-light, #444);
   background: color-mix(in srgb, var(--panel-well, #111) 80%, transparent);
   color: var(--text-primary, #e0e0e0);
   outline: none;

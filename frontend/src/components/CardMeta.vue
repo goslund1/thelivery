@@ -91,7 +91,7 @@ function removeCollection(c: string) {
   background: none;
   border: none;
   border-bottom: 1px solid var(--panel-edge);
-  color: var(--magenta);
+  color: var(--highlight);
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   font-weight: bold;
@@ -101,7 +101,7 @@ function removeCollection(c: string) {
 }
 .livery-code-input:focus {
   outline: none;
-  border-bottom-color: var(--gold);
+  border-bottom-color: var(--accent);
 }
 .livery-code-input::placeholder { opacity: 0.35; font-weight: normal; }
 
@@ -122,7 +122,7 @@ function removeCollection(c: string) {
   background: transparent;
   border: 1px solid var(--panel-edge);
   border-radius: 4px;
-  color: var(--steel);
+  color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   text-transform: uppercase;
@@ -133,7 +133,7 @@ function removeCollection(c: string) {
   transition: border-color .15s, color .15s;
 }
 .edit-card-btn:hover {
-  border-color: var(--gold);
-  color: var(--gold);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 </style>

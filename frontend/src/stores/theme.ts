@@ -4,15 +4,15 @@ import type { Theme } from '../types'
 import { api } from '../api'
 
 export interface ThemeColors {
-  asphalt:    string
+  base:    string
   panel:      string
   panelEdge:  string
-  gold:       string
-  magenta:    string
-  paper:      string
-  steel:      string
+  accent:       string
+  highlight:    string
+  fg:      string
+  muted:      string
   panelWell:  string
-  steelLight: string
+  mutedLight: string
 }
 
 export interface ThemeTuning {
@@ -46,23 +46,23 @@ export interface ThemeData {
 
 // Default colors per ambiance — used when switching base theme to reset the palette.
 export const AMBIANCE_DEFAULTS: Record<Theme, ThemeColors> = {
-  dark:    { asphalt: '#0b0b0d', panel: '#15151a', panelEdge: '#23232b', gold: '#c9a227', magenta: '#d6478f', paper: '#ece9e4', steel: '#7a7e87', panelWell: '#0e0e11', steelLight: '#a8a4ab' },
-  light:   { asphalt: '#f3efe6', panel: '#ffffff',  panelEdge: '#ddd8cd', gold: '#ebd150', magenta: '#30acb8', paper: '#201f1c', steel: '#6b6f76', panelWell: '#f0ede4', steelLight: '#56565c' },
-  rainbow: { asphalt: '#0b0b14', panel: '#16151f',  panelEdge: '#2a2838', gold: '#e83d9c', magenta: '#3dc7e8', paper: '#f1edf7', steel: '#8d87a3', panelWell: '#100f18', steelLight: '#b3adc6' },
-  clouds:  { asphalt: '#eef3f7', panel: '#f8fafc',  panelEdge: '#d7e3ec', gold: '#5b8fb0', magenta: '#8a7bc4', paper: '#2c3e4a', steel: '#7188a0', panelWell: '#e9eff4', steelLight: '#5c7488' },
-  stormy:  { asphalt: '#2a2e33', panel: '#353a40',  panelEdge: '#454b52', gold: '#7badc9', magenta: '#a596d6', paper: '#e4e7ea', steel: '#9aa2a9', panelWell: '#232629', steelLight: '#c5cbd1' },
+  dark:    { base: '#0b0b0d', panel: '#15151a', panelEdge: '#23232b', accent: '#c9a227', highlight: '#d6478f', fg: '#ece9e4', muted: '#7a7e87', panelWell: '#0e0e11', mutedLight: '#a8a4ab' },
+  light:   { base: '#f3efe6', panel: '#ffffff',  panelEdge: '#ddd8cd', accent: '#ebd150', highlight: '#30acb8', fg: '#201f1c', muted: '#6b6f76', panelWell: '#f0ede4', mutedLight: '#56565c' },
+  rainbow: { base: '#0b0b14', panel: '#16151f',  panelEdge: '#2a2838', accent: '#e83d9c', highlight: '#3dc7e8', fg: '#f1edf7', muted: '#8d87a3', panelWell: '#100f18', mutedLight: '#b3adc6' },
+  clouds:  { base: '#eef3f7', panel: '#f8fafc',  panelEdge: '#d7e3ec', accent: '#5b8fb0', highlight: '#8a7bc4', fg: '#2c3e4a', muted: '#7188a0', panelWell: '#e9eff4', mutedLight: '#5c7488' },
+  stormy:  { base: '#2a2e33', panel: '#353a40',  panelEdge: '#454b52', accent: '#7badc9', highlight: '#a596d6', fg: '#e4e7ea', muted: '#9aa2a9', panelWell: '#232629', mutedLight: '#c5cbd1' },
 }
 
 const COLOR_VAR_MAP: Record<keyof ThemeColors, string> = {
-  asphalt:    '--asphalt',
+  base:    '--base',
   panel:      '--panel',
   panelEdge:  '--panel-edge',
-  gold:       '--gold',
-  magenta:    '--magenta',
-  paper:      '--paper',
-  steel:      '--steel',
+  accent:       '--accent',
+  highlight:    '--highlight',
+  fg:      '--fg',
+  muted:      '--muted',
   panelWell:  '--panel-well',
-  steelLight: '--steel-light',
+  mutedLight: '--muted-light',
 }
 
 const TUNING_VAR_MAP: Record<keyof ThemeTuning, string> = {

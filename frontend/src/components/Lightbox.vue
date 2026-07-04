@@ -102,8 +102,8 @@ function downloadFilename(src: string) {
 }
 .lightbox-ear:hover {
   background: rgba(0, 0, 0, 0.85);
-  border-color: var(--gold);
-  color: var(--gold);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .lightbox-ear-left  { left: 20px; }
 .lightbox-ear-right { right: 20px; }
@@ -128,7 +128,7 @@ function downloadFilename(src: string) {
   transform: translateX(-50%);
   background: rgba(0, 0, 0, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.1em;
@@ -142,8 +142,8 @@ function downloadFilename(src: string) {
 }
 .lightbox-download:hover {
   background: rgba(0, 0, 0, 0.9);
-  border-color: var(--gold);
-  color: var(--gold);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .lightbox img.upgraded {
   animation: lb-upgrade 0.4s ease;

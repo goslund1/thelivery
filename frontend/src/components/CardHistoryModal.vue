@@ -315,14 +315,14 @@ function fmtVal(v: number | null) {
 .ch-title {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px; text-transform: uppercase; letter-spacing: .1em;
-  color: var(--steel);
+  color: var(--muted);
 }
 .ch-card-name {
-  font-size: 13px; font-weight: 600; color: var(--gold);
+  font-size: 13px; font-weight: 600; color: var(--accent);
   flex: 1;
 }
 .ch-close {
-  background: none; border: none; color: var(--steel);
+  background: none; border: none; color: var(--muted);
   font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1;
 }
 .ch-close:hover { color: var(--text); }
@@ -346,14 +346,14 @@ function fmtVal(v: number | null) {
 }
 .ch-version-item:hover { background: var(--panel-hover, rgba(255,255,255,.04)); }
 .ch-version-item.active {
-  border-left-color: var(--gold);
+  border-left-color: var(--accent);
   background: var(--panel-hover, rgba(255,255,255,.06));
 }
 .ch-version-num {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px; color: var(--gold); font-weight: 600;
+  font-size: 11px; color: var(--accent); font-weight: 600;
 }
-.ch-version-date { font-size: 10px; color: var(--steel); }
+.ch-version-date { font-size: 10px; color: var(--muted); }
 
 /* Diff panel */
 .ch-diff {
@@ -363,13 +363,13 @@ function fmtVal(v: number | null) {
 .ch-diff-empty {
   flex: 1; display: flex; align-items: center; justify-content: center;
 }
-.ch-muted { color: var(--steel); font-size: 12px; }
-.ch-error { color: var(--magenta); }
+.ch-muted { color: var(--muted); font-size: 12px; }
+.ch-error { color: var(--highlight); }
 .ch-no-diff { margin: 0; }
 
 .ch-diff-header {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  font-size: 11px; color: var(--steel);
+  font-size: 11px; color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--panel-edge);
@@ -377,15 +377,15 @@ function fmtVal(v: number | null) {
 .ch-restore-btn {
   margin-left: auto;
   background: transparent;
-  border: 1px solid var(--gold);
+  border: 1px solid var(--accent);
   border-radius: 4px;
-  color: var(--gold);
+  color: var(--accent);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
   padding: 4px 10px; cursor: pointer;
   transition: background .15s, color .15s;
 }
-.ch-restore-btn:hover:not(:disabled) { background: var(--gold); color: var(--panel); }
+.ch-restore-btn:hover:not(:disabled) { background: var(--accent); color: var(--panel); }
 .ch-restore-btn:disabled { opacity: .5; cursor: default; }
 .ch-restore-ok { font-size: 11px; color: var(--teal, #4ecdc4); }
 
@@ -393,7 +393,7 @@ function fmtVal(v: number | null) {
 .ch-section-title {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
-  color: var(--steel); margin: 0;
+  color: var(--muted); margin: 0;
 }
 
 .ch-table {
@@ -403,13 +403,13 @@ function fmtVal(v: number | null) {
   text-align: left; padding: 4px 8px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px; text-transform: uppercase; letter-spacing: .07em;
-  color: var(--steel);
+  color: var(--muted);
   border-bottom: 1px solid var(--panel-edge);
 }
 .ch-table td { padding: 5px 8px; border-bottom: 1px solid var(--panel-edge); }
-.ch-tab { color: var(--steel); font-size: 11px; }
-.ch-val-hist { color: var(--gold); font-family: 'JetBrains Mono', monospace; }
-.ch-val-cur  { color: var(--steel); font-family: 'JetBrains Mono', monospace; }
+.ch-tab { color: var(--muted); font-size: 11px; }
+.ch-val-hist { color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+.ch-val-cur  { color: var(--muted); font-family: 'JetBrains Mono', monospace; }
 
 .ch-change-list {
   list-style: none; margin: 0; padding: 0;
@@ -423,5 +423,5 @@ function fmtVal(v: number | null) {
   padding: 1px 5px; border-radius: 3px; margin-right: 6px;
 }
 .ch-change-list li.added   .ch-badge { background: rgba(78,205,196,.15); color: var(--teal, #4ecdc4); }
-.ch-change-list li.removed .ch-badge { background: rgba(255,80,80,.12);  color: var(--magenta); }
+.ch-change-list li.removed .ch-badge { background: rgba(255,80,80,.12);  color: var(--highlight); }
 </style>

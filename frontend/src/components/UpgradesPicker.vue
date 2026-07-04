@@ -245,8 +245,8 @@ function steppedLabel(partName: string): string {
   appearance: auto;
 }
 .up-inline-select:hover { opacity: 1; }
-.up-inline-select:focus { outline: 1px solid var(--gold); border-radius: 2px; outline-offset: 1px; }
-.up-inline-set { color: var(--gold); opacity: 1; }
+.up-inline-select:focus { outline: 1px solid var(--accent); border-radius: 2px; outline-offset: 1px; }
+.up-inline-set { color: var(--accent); opacity: 1; }
 
 .up-step-row {
   display: flex;
@@ -260,7 +260,7 @@ function steppedLabel(partName: string): string {
   background: color-mix(in srgb, var(--panel-edge) 35%, transparent);
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--paper);
+  color: var(--fg);
   font-size: 13px;
   line-height: 1;
   width: 20px;
@@ -270,7 +270,7 @@ function steppedLabel(partName: string): string {
   align-items: center;
   justify-content: center;
 }
-.up-step-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.up-step-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .up-step-btn:disabled { opacity: 0.2; cursor: default; }
 .up-step-val {
   font-family: 'JetBrains Mono', monospace;
@@ -280,7 +280,7 @@ function steppedLabel(partName: string): string {
   min-width: 30px;
   text-align: center;
 }
-.up-step-set { color: var(--gold); opacity: 1; }
+.up-step-set { color: var(--accent); opacity: 1; }
 
 .up-implied-badge {
   flex-shrink: 0;

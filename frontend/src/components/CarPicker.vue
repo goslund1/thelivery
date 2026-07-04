@@ -154,7 +154,7 @@ watch(() => props.carId, () => {
   letter-spacing: 0.04em;
   padding: 3px 8px;
   border-radius: 4px;
-  border: 1px solid var(--steel-light, #555);
+  border: 1px solid var(--muted-light, #555);
   background: transparent;
   color: var(--text-muted, #888);
   cursor: pointer;
@@ -171,7 +171,7 @@ watch(() => props.carId, () => {
   letter-spacing: 0.08em;
   padding: 2px 5px;
   border-radius: 3px;
-  background: var(--steel-light, #444);
+  background: var(--muted-light, #444);
   color: var(--text-muted, #aaa);
   white-space: nowrap;
 }
@@ -187,7 +187,7 @@ watch(() => props.carId, () => {
   gap: 5px;
   padding: 3px 6px 3px 4px;
   border-radius: 4px;
-  border: 1px solid var(--steel-light, #444);
+  border: 1px solid var(--muted-light, #444);
   background: color-mix(in srgb, var(--panel-well, #1a1a1a) 60%, transparent);
 }
 .cp-car-label {
@@ -239,7 +239,7 @@ watch(() => props.carId, () => {
   max-height: 220px;
   overflow-y: auto;
   border-radius: 4px;
-  border: 1px solid var(--steel-light, #444);
+  border: 1px solid var(--muted-light, #444);
   background: color-mix(in srgb, var(--panel-bg, #1e1e1e) 95%, transparent);
   list-style: none;
   margin: 0;

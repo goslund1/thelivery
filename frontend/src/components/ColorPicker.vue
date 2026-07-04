@@ -348,7 +348,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
     <div class="cp-title">
       <span
         class="cp-title-swatch"
-        :style="{ background: selectedSwatch?.hex ?? 'transparent', border: selectedSwatch ? 'none' : '1px solid var(--steel)' }"
+        :style="{ background: selectedSwatch?.hex ?? 'transparent', border: selectedSwatch ? 'none' : '1px solid var(--muted)' }"
         :class="{ 'cp-title-swatch--clickable': selectedSwatch && swatchDeviated }"
         :title="selectedSwatch && swatchDeviated ? 'Reset to ' + selectedSwatch.name : undefined"
         @click="selectedSwatch && swatchDeviated && emit_(selectedSwatch.hex)"
@@ -488,7 +488,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
 }
 .cp-title-swatch--clickable {
   cursor: pointer;
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 .cp-title-name {
@@ -496,17 +496,17 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   font-family: 'Oswald', sans-serif;
   font-size: 14px;
   text-transform: uppercase;
-  color: var(--paper);
+  color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: .06em;
 }
 .cp-title-name--empty {
-  color: var(--steel);
+  color: var(--muted);
 }
 .cp-title-modified {
-  color: var(--gold);
+  color: var(--accent);
   font-size: 10px;
   line-height: 1;
   flex-shrink: 0;
@@ -514,7 +514,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
 .cp-title-clear {
   background: none;
   border: none;
-  color: var(--steel);
+  color: var(--muted);
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
@@ -523,7 +523,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   opacity: 0.6;
 }
 .cp-title-clear:hover {
-  color: var(--paper);
+  color: var(--fg);
   opacity: 1;
 }
 .cp-picker {
@@ -541,7 +541,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   gap: 5px;
 }
 .cp-field-label {
-  color: var(--steel);
+  color: var(--muted);
   min-width: 12px;
 }
 .cp-hex-input {
@@ -549,18 +549,18 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   background: var(--panel-well);
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   padding: 3px 5px;
 }
-.cp-hex-input:focus { outline: none; border-color: var(--gold); }
+.cp-hex-input:focus { outline: none; border-color: var(--accent); }
 .cp-rgb-input {
   flex: 1;
   background: var(--panel-well);
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   padding: 3px 5px;
@@ -568,18 +568,18 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
 }
 .cp-rgb-input::-webkit-outer-spin-button,
 .cp-rgb-input::-webkit-inner-spin-button { -webkit-appearance: none; }
-.cp-rgb-input:focus { outline: none; border-color: var(--gold); }
+.cp-rgb-input:focus { outline: none; border-color: var(--accent); }
 .cp-snap {
   background: none;
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--steel);
+  color: var(--muted);
   font-size: 13px;
   line-height: 1;
   padding: 2px 4px;
   cursor: pointer;
 }
-.cp-snap:hover { border-color: var(--gold); color: var(--gold); }
+.cp-snap:hover { border-color: var(--accent); color: var(--accent); }
 .cp-warn {
   color: #f4a636;
   font-size: 12px;
@@ -592,7 +592,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   border-top: 1px solid var(--panel-edge);
 }
 .cp-palette-label {
-  color: var(--steel);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: .08em;
 }
@@ -600,7 +600,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   background: none;
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--steel);
+  color: var(--muted);
   font-size: 15px;
   line-height: 1;
   width: 20px;
@@ -612,7 +612,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   padding: 0;
   transition: border-color .15s, color .15s;
 }
-.cp-add-swatch:hover { border-color: var(--gold); color: var(--gold); }
+.cp-add-swatch:hover { border-color: var(--accent); color: var(--accent); }
 .cp-swatches-scroll {
   flex: 1;
   min-height: 0;
@@ -643,11 +643,11 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   padding: 0;
 }
 .cp-swatch--active {
-  box-shadow: 0 0 0 2px var(--gold);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 .cp-swatch--dragging {
   cursor: grabbing;
-  box-shadow: 0 0 0 2px var(--gold), 0 0 10px 2px rgba(201,162,39,0.5);
+  box-shadow: 0 0 0 2px var(--accent), 0 0 10px 2px rgba(201,162,39,0.5);
   z-index: 1;
 }
 .cp-swatch .cp-swatch-remove {
@@ -733,7 +733,7 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   box-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 .cp-hsl-val {
-  color: var(--steel);
+  color: var(--muted);
   font-size: 10px;
   min-width: 30px;
   text-align: right;
@@ -765,13 +765,13 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
 .cp-dialog-hex {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--paper);
+  color: var(--fg);
   letter-spacing: .04em;
 }
 .cp-dialog-rgb,
 .cp-dialog-hsl {
   font-size: 10px;
-  color: var(--steel);
+  color: var(--muted);
   white-space: nowrap;
 }
 .cp-dialog-name {
@@ -780,12 +780,12 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
   background: var(--glass-bg);
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   padding: 5px 7px;
 }
-.cp-dialog-name:focus { outline: none; border-color: var(--gold); }
+.cp-dialog-name:focus { outline: none; border-color: var(--accent); }
 .cp-dialog-actions {
   display: flex;
   gap: 6px;
@@ -804,12 +804,12 @@ function onSwatchPointerDown(e: PointerEvent, hex: string) {
 }
 .cp-dialog-btn--cancel {
   background: none;
-  color: var(--steel);
+  color: var(--muted);
 }
-.cp-dialog-btn--cancel:hover { border-color: var(--steel); color: var(--paper); }
+.cp-dialog-btn--cancel:hover { border-color: var(--muted); color: var(--fg); }
 .cp-dialog-btn--add {
-  background: var(--gold);
-  border-color: var(--gold);
+  background: var(--accent);
+  border-color: var(--accent);
   color: #000;
 }
 .cp-dialog-btn--add:hover { filter: brightness(1.15); }

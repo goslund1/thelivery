@@ -204,7 +204,7 @@ function addSlot() {
   flex: 1;
   background: none;
   border: none;
-  color: var(--steel);
+  color: var(--muted);
   font-family: inherit;
   font-size: 13px;
   padding: 0;
@@ -216,7 +216,7 @@ function addSlot() {
   appearance: auto;
 }
 .sub-select:hover  { opacity: 1; }
-.sub-select:focus  { outline: 1px solid var(--gold); border-radius: 2px; outline-offset: 1px; }
+.sub-select:focus  { outline: 1px solid var(--accent); border-radius: 2px; outline-offset: 1px; }
 .sub-select--set   { opacity: 1; }
 
 .sub-edit {
@@ -230,7 +230,7 @@ function addSlot() {
   min-width: 0;
   background: none;
   border: none;
-  color: var(--steel);
+  color: var(--muted);
   font-family: inherit;
   font-size: 13px;
   padding: 0;
@@ -242,7 +242,7 @@ function addSlot() {
   flex: 0 0 auto;
   background: none;
   border: none;
-  color: var(--gold);
+  color: var(--accent);
   font-size: 14px;
   line-height: 1;
   padding: 0 2px 0 4px;
@@ -255,7 +255,7 @@ function addSlot() {
 .sub-add {
   background: none;
   border: none;
-  color: var(--steel);
+  color: var(--muted);
   font-size: 14px;
   line-height: 1;
   padding: 2px 4px 4px;
@@ -263,17 +263,17 @@ function addSlot() {
   opacity: 0.45;
   transition: opacity 0.12s, color 0.12s;
 }
-.sub-add:hover { color: var(--gold); opacity: 1; }
+.sub-add:hover { color: var(--accent); opacity: 1; }
 
 .sub-gear {
   background: none;
   border: none;
-  color: var(--steel);
+  color: var(--muted);
   line-height: 1;
   padding: 2px 2px 4px 4px;
   cursor: pointer;
   opacity: 0.3;
   transition: opacity 0.12s, color 0.12s;
 }
-.sub-gear:hover { color: var(--gold); opacity: 0.8; }
+.sub-gear:hover { color: var(--accent); opacity: 0.8; }
 </style>

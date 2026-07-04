@@ -292,7 +292,7 @@ async function onDelete() {
           <span>Delete Card</span>
           <button class="conf-close" @click="confirmDelete = false">×</button>
         </div>
-        <p class="conf-body"><strong style="color:var(--paper)">{{ card.name }}</strong> will be permanently deleted. This cannot be undone.</p>
+        <p class="conf-body"><strong style="color:var(--fg)">{{ card.name }}</strong> will be permanently deleted. This cannot be undone.</p>
         <div class="conf-actions">
           <button class="conf-btn conf-btn--discard" type="button" @click="onDelete">Yes, Delete It</button>
           <button class="conf-btn conf-btn--neutral" type="button" @click="confirmDelete = false">Cancel</button>
@@ -310,7 +310,7 @@ async function onDelete() {
   background: none;
   border: none;
   border-bottom: 1px solid var(--panel-edge);
-  color: var(--magenta);
+  color: var(--highlight);
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   font-weight: bold;
@@ -320,7 +320,7 @@ async function onDelete() {
 }
 .nc-livery-code-input:focus {
   outline: none;
-  border-bottom-color: var(--gold);
+  border-bottom-color: var(--accent);
 }
 .nc-livery-code-input::placeholder { opacity: 0.35; font-weight: normal; }
 
@@ -355,7 +355,7 @@ async function onDelete() {
   background: transparent;
   border: 1px solid var(--panel-edge);
   border-radius: 4px;
-  color: var(--steel);
+  color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: .08em;
@@ -364,6 +364,6 @@ async function onDelete() {
   cursor: pointer;
   transition: border-color .15s, color .15s;
 }
-.ec-btn-history:hover { border-color: var(--gold); color: var(--gold); }
+.ec-btn-history:hover { border-color: var(--accent); color: var(--accent); }
 
 </style>

@@ -649,7 +649,7 @@ function onTabMigrate() {
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
   background: none;
-  color: var(--steel);
+  color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.05em;
@@ -657,10 +657,10 @@ function onTabMigrate() {
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
-.settings-tabs button:hover { color: var(--paper); }
+.settings-tabs button:hover { color: var(--fg); }
 .settings-tabs button.active {
-  color: var(--gold);
-  border-bottom-color: var(--gold);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 /* Form — mirrors LoginModal scoped styles */
@@ -675,13 +675,13 @@ function onTabMigrate() {
   border-radius: 4px;
   border: 1px solid var(--panel-edge);
   background: var(--panel-well);
-  color: var(--paper);
+  color: var(--fg);
   font-family: inherit;
   font-size: 14px;
 }
 .settings-form input:focus {
   outline: none;
-  border-color: var(--gold);
+  border-color: var(--accent);
 }
 .settings-form button[type='submit'] {
   margin-top: 4px;
@@ -700,7 +700,7 @@ function onTabMigrate() {
 .settings-form button[type='submit']:disabled { opacity: 0.6; cursor: default; }
 
 .settings-error { color: var(--danger-bright); font-size: 13px; margin: 0; }
-.settings-ok    { color: var(--gold);          font-size: 13px; margin: 0; }
+.settings-ok    { color: var(--accent);          font-size: 13px; margin: 0; }
 
 .admin-panel {
   display: flex;
@@ -718,7 +718,7 @@ function onTabMigrate() {
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--accent);
   padding-bottom: 4px;
   border-bottom: 1px solid var(--panel-edge);
 }
@@ -729,18 +729,18 @@ function onTabMigrate() {
   font-size: 11px;
 }
 .admin-stats-table td { padding: 3px 0; }
-.admin-stats-table td:first-child { color: var(--steel); }
-.admin-stats-table td:last-child { text-align: right; color: var(--paper); }
+.admin-stats-table td:first-child { color: var(--muted); }
+.admin-stats-table td:last-child { text-align: right; color: var(--fg); }
 .admin-muted {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--steel);
+  color: var(--muted);
   margin: 0;
 }
 .admin-ok {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--gold);
+  color: var(--accent);
   margin: 0;
 }
 .admin-row {
@@ -753,7 +753,7 @@ function onTabMigrate() {
   border-radius: 4px;
   border: 1px solid var(--panel-edge);
   background: var(--panel-well);
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.05em;
@@ -761,7 +761,7 @@ function onTabMigrate() {
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
-.admin-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.admin-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .admin-btn:disabled { opacity: 0.5; cursor: default; }
 .admin-btn-red {
   border-color: var(--danger);
@@ -801,7 +801,7 @@ function onTabMigrate() {
 
 .admin-badge {
   display: inline-block;
-  background: var(--magenta);
+  background: var(--highlight);
   color: #fff;
   font-size: 9px;
   border-radius: 100px;
@@ -828,18 +828,18 @@ function onTabMigrate() {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   font-weight: 600;
-  color: var(--paper);
+  color: var(--fg);
 }
 .admin-suggestion-meta {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--steel);
+  color: var(--muted);
   white-space: nowrap;
 }
 .admin-suggestion-credit {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--gold);
+  color: var(--accent);
 }
 .admin-suggestion-dismiss { align-self: flex-start; margin-top: 4px; }
 
@@ -852,16 +852,16 @@ function onTabMigrate() {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
 }
-.mig-card-name { flex: 1; color: var(--paper); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mig-card-name { flex: 1; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mig-badge {
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 10px;
   flex-shrink: 0;
 }
-.mig-badge--ok   { background: color-mix(in srgb, var(--gold) 15%, transparent); color: var(--gold); }
-.mig-badge--warn { background: color-mix(in srgb, var(--magenta) 15%, transparent); color: var(--magenta); }
-.mig-badge--skip { background: color-mix(in srgb, var(--steel) 15%, transparent); color: var(--steel); }
+.mig-badge--ok   { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.mig-badge--warn { background: color-mix(in srgb, var(--highlight) 15%, transparent); color: var(--highlight); }
+.mig-badge--skip { background: color-mix(in srgb, var(--muted) 15%, transparent); color: var(--muted); }
 .mig-btn-sm { padding: 3px 10px; font-size: 10px; flex-shrink: 0; }
 
 .mig-form-header {
@@ -875,7 +875,7 @@ function onTabMigrate() {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   font-weight: 600;
-  color: var(--paper);
+  color: var(--fg);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -883,27 +883,27 @@ function onTabMigrate() {
 .mig-form-progress {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--steel);
+  color: var(--muted);
   flex-shrink: 0;
 }
 
 .mig-source-row {
-  border-left: 2px solid var(--magenta);
+  border-left: 2px solid var(--highlight);
   padding: 6px 10px;
   margin-bottom: 10px;
-  background: color-mix(in srgb, var(--magenta) 6%, transparent);
+  background: color-mix(in srgb, var(--highlight) 6%, transparent);
   border-radius: 0 4px 4px 0;
 }
 .mig-source-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   font-weight: 600;
-  color: var(--paper);
+  color: var(--fg);
 }
 .mig-source-desc {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--steel-light);
+  color: var(--muted-light);
   margin-top: 2px;
 }
 
@@ -914,7 +914,7 @@ function onTabMigrate() {
 .mig-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: var(--steel);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   width: 46px;
@@ -925,12 +925,12 @@ function onTabMigrate() {
   background: var(--panel-well);
   border: 1px solid var(--panel-edge);
   border-radius: 4px;
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   padding: 5px 8px;
 }
-.mig-input:focus { outline: none; border-color: var(--gold); }
+.mig-input:focus { outline: none; border-color: var(--accent); }
 .mig-input--short { max-width: 90px; }
 .mig-input--num { width: 72px; flex: none; }
 .mig-select {
@@ -938,12 +938,12 @@ function onTabMigrate() {
   background: var(--panel-well);
   border: 1px solid var(--panel-edge);
   border-radius: 4px;
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   padding: 5px 8px;
 }
-.mig-select:focus { outline: none; border-color: var(--gold); }
+.mig-select:focus { outline: none; border-color: var(--accent); }
 
 .mig-nums-row {
   display: flex;

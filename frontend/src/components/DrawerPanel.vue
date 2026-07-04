@@ -105,7 +105,7 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
   background: transparent;
   border: none;
   border-left: 1px solid rgba(255, 255, 255, 0.06);
-  color: var(--steel);
+  color: var(--muted);
   font-size: 13px;
   cursor: pointer;
   display: flex;
@@ -115,7 +115,7 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
   transition: color 0.15s, transform 0.22s;
   position: relative;
 }
-.dp-tab:hover { color: var(--gold); }
+.dp-tab:hover { color: var(--accent); }
 .dp-tab.dp-tab--open { transform: scaleX(-1); }
 
 /* Separator line that appears between header and tab once open */

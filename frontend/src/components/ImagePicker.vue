@@ -396,7 +396,7 @@ async function onManageUpload(e: Event) {
   display: block;
 }
 .mgr-thumb.selected {
-  border-color: var(--gold);
+  border-color: var(--accent);
 }
 .mgr-thumb.excluded {
   opacity: 0.4;
@@ -414,7 +414,7 @@ async function onManageUpload(e: Event) {
   width: 3px;
   height: 60px;
   flex: 0 0 auto;
-  background: var(--gold);
+  background: var(--accent);
   border-radius: 2px;
   box-shadow: 0 0 8px rgba(201,162,39,0.7);
 }
@@ -461,8 +461,8 @@ async function onManageUpload(e: Event) {
   transition: background 0.12s ease, color 0.12s ease;
 }
 .mgr-ctrl-lead.is-lead,
-.mgr-ctrl-lead:hover { color: var(--gold); }
-.mgr-ctrl-pool.included { color: var(--gold); }
+.mgr-ctrl-lead:hover { color: var(--accent); }
+.mgr-ctrl-pool.included { color: var(--accent); }
 .mgr-ctrl-pool:not(.included) { color: rgba(255, 255, 255, 0.3); }
 .mgr-ctrl-del:hover { background: rgba(170, 30, 30, 0.9); color: #fff; }
 
@@ -491,7 +491,7 @@ async function onManageUpload(e: Event) {
 .mgr-delete-confirm span {
   width: 100%;
   text-align: center;
-  color: var(--gold);
+  color: var(--accent);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.04em;
@@ -548,12 +548,12 @@ async function onManageUpload(e: Event) {
 .mgr-add-btn { background:color-mix(in srgb, var(--success) 35%, transparent); border:2px solid var(--success); color:var(--success-bright); }
 .mgr-add-btn:hover { background:var(--success-unlit); border-color:var(--success-bright); box-shadow:0 0 14px color-mix(in srgb, var(--success-bright) 50%, transparent); }
 /* Yellow light — Cancel */
-.mgr-cancel-btn { background:color-mix(in srgb, var(--gold) 30%, transparent); border:2px solid color-mix(in srgb, var(--gold) 60%, transparent); color:var(--gold); }
-.mgr-cancel-btn:hover { background:color-mix(in srgb, var(--gold) 45%, transparent); border-color:var(--gold); box-shadow:0 0 14px color-mix(in srgb, var(--gold) 45%, transparent); }
+.mgr-cancel-btn { background:color-mix(in srgb, var(--accent) 30%, transparent); border:2px solid color-mix(in srgb, var(--accent) 60%, transparent); color:var(--accent); }
+.mgr-cancel-btn:hover { background:color-mix(in srgb, var(--accent) 45%, transparent); border-color:var(--accent); box-shadow:0 0 14px color-mix(in srgb, var(--accent) 45%, transparent); }
 .mgr-confirm-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--gold);
+  color: var(--accent);
   letter-spacing: 0.04em;
   margin-right: 4px;
 }
@@ -561,7 +561,7 @@ async function onManageUpload(e: Event) {
 .mgr-progress {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--gold);
+  color: var(--accent);
   letter-spacing: 0.04em;
 }
 </style>

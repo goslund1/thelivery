@@ -518,14 +518,14 @@ onUnmounted(() => { document.body.style.overflow = '' })
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .08em;
-  color: var(--paper);
+  color: var(--fg);
   padding-bottom: 10px;
   border-bottom: 1px solid var(--glass-border);
 }
 .nc-folder-prompt-sub {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--steel);
+  color: var(--muted);
   line-height: 1.6;
 }
 .nc-folder-prompt-input {
@@ -536,12 +536,12 @@ onUnmounted(() => { document.body.style.overflow = '' })
   background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
   border: 1px solid var(--glass-border);
   border-radius: 4px;
-  color: var(--paper);
+  color: var(--fg);
   padding: 9px 12px;
 }
 .nc-folder-prompt-input:focus {
   outline: none;
-  border-color: var(--gold);
+  border-color: var(--accent);
 }
 .nc-folder-prompt-btns {
   display: flex;

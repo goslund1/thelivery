@@ -54,7 +54,7 @@ watch(ctx, async (c) => {
       </div>
       <div class="chip-picker-grid">
         <button v-for="v in options" :key="v" class="tag chip" @click="add(v)">{{ v }}</button>
-        <p v-if="!options.length" style="color: var(--steel); font-size: 13px; margin: 4px 0;">
+        <p v-if="!options.length" style="color: var(--muted); font-size: 13px; margin: 4px 0;">
           No existing values — create one below.
         </p>
       </div>

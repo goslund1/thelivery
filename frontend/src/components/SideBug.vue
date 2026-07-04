@@ -226,11 +226,11 @@ function onToggleAll() {
 .theme-customize-btn {
   margin-top: 4px;
   border-top: 1px solid var(--panel-edge);
-  color: var(--steel) !important;
+  color: var(--muted) !important;
   font-size: 11px !important;
 }
 .theme-customize-btn:hover {
-  color: var(--gold) !important;
+  color: var(--accent) !important;
 }
 .bug-flyout--builder {
   padding: 0 !important;

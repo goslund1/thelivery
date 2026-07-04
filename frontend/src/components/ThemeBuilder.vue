@@ -22,15 +22,15 @@ const advancedOpen = ref(false)
 const pickerOpen   = ref(false)
 
 const COLOR_LABELS: Record<keyof ThemeColors, string> = {
-  asphalt:    'Page background',
+  base:       'Page background',
   panel:      'Card / panel',
   panelEdge:  'Panel border',
-  gold:       'Gold accent',
-  magenta:    'Magenta accent',
-  paper:      'Primary text',
-  steel:      'Muted text',
+  accent:     'Primary accent',
+  highlight:  'Secondary accent',
+  fg:         'Primary text',
+  muted:      'Muted text',
   panelWell:  'Inset / well',
-  steelLight: 'Light muted text',
+  mutedLight: 'Light muted text',
 }
 
 const TUNING_LABELS: Record<keyof ThemeTuning, string> = {
@@ -39,8 +39,8 @@ const TUNING_LABELS: Record<keyof ThemeTuning, string> = {
   aero: 'Aero', brakes: 'Brakes', differential: 'Differential',
 }
 
-const MAIN_KEYS:     (keyof ThemeColors)[] = ['asphalt', 'panel', 'panelEdge', 'gold', 'magenta', 'paper', 'steel']
-const ADVANCED_KEYS: (keyof ThemeColors)[] = ['panelWell', 'steelLight']
+const MAIN_KEYS:     (keyof ThemeColors)[] = ['base', 'panel', 'panelEdge', 'accent', 'highlight', 'fg', 'muted']
+const ADVANCED_KEYS: (keyof ThemeColors)[] = ['panelWell', 'mutedLight']
 
 const THEMES: Theme[] = ['dark', 'light', 'rainbow', 'clouds', 'stormy']
 const THEME_LABELS: Record<Theme, string> = {
@@ -50,7 +50,7 @@ const THEME_LABELS: Record<Theme, string> = {
 const activeColor = ref<{ group: 'colors' | 'tuning'; key: string } | null>(null)
 
 // pickerColor is the picker's own state — independent of what's selected in the list
-const pickerColor = ref(theme.current?.colors.gold ?? '#d4a017')
+const pickerColor = ref(theme.current?.colors.accent ?? '#d4a017')
 
 // Swatch in the header reflects the active item's current store value
 const activeValue = computed<string>(() => {
@@ -244,7 +244,7 @@ function onReset() { theme.reset() }
 
 /* ── Header content slots ── */
 .tb-picker-for {
-  color: var(--paper);
+  color: var(--fg);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .07em;
@@ -295,7 +295,7 @@ function onReset() { theme.reset() }
   overscroll-behavior: contain;
 }
 .tb-title {
-  color: var(--paper);
+  color: var(--fg);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: .1em;
@@ -303,20 +303,20 @@ function onReset() { theme.reset() }
 .tb-close {
   background: none;
   border: none;
-  color: var(--steel);
+  color: var(--muted);
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
   padding: 0;
 }
-.tb-close:hover { color: var(--paper); }
+.tb-close:hover { color: var(--fg); }
 
 .tb-section {
   border-bottom: 1px solid var(--panel-edge);
   padding: 10px 14px;
 }
 .tb-section-label {
-  color: var(--steel);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: .08em;
   font-size: 10px;
@@ -332,9 +332,9 @@ function onReset() { theme.reset() }
   padding: 0;
   margin-bottom: 2px;
 }
-.tb-section-toggle:hover .tb-section-label { color: var(--paper); }
+.tb-section-toggle:hover .tb-section-label { color: var(--fg); }
 .tb-chevron {
-  color: var(--steel);
+  color: var(--muted);
   font-size: 14px;
   transition: transform .15s;
   display: inline-block;
@@ -348,17 +348,17 @@ function onReset() { theme.reset() }
   margin-top: 8px;
 }
 .tb-effect-label {
-  color: var(--paper);
+  color: var(--fg);
   font-size: 11px;
   flex: 1;
 }
 .tb-slider {
   flex: 1;
-  accent-color: var(--gold);
+  accent-color: var(--accent);
   cursor: pointer;
 }
 .tb-effect-val {
-  color: var(--steel);
+  color: var(--muted);
   font-size: 10px;
   min-width: 32px;
   text-align: right;
@@ -374,7 +374,7 @@ function onReset() { theme.reset() }
   background: var(--panel-well);
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--steel);
+  color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   text-transform: uppercase;
@@ -383,8 +383,8 @@ function onReset() { theme.reset() }
   cursor: pointer;
   transition: border-color .12s, color .12s;
 }
-.tb-ambiance-btn:hover { border-color: var(--gold); color: var(--gold); }
-.tb-ambiance-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-tint-06); }
+.tb-ambiance-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tb-ambiance-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-tint-06); }
 
 .tb-swatches-grid {
   display: flex;
@@ -407,8 +407,8 @@ function onReset() { theme.reset() }
 }
 .tb-color-row:hover { background: var(--panel-well); }
 .tb-color-row.active {
-  background: var(--gold-tint-06);
-  border-color: var(--gold);
+  background: var(--accent-tint-06);
+  border-color: var(--accent);
 }
 .tb-swatch {
   width: 16px;
@@ -419,11 +419,11 @@ function onReset() { theme.reset() }
 }
 .tb-color-label {
   flex: 1;
-  color: var(--paper);
+  color: var(--fg);
   font-size: 11px;
 }
 .tb-color-hex {
-  color: var(--steel);
+  color: var(--muted);
   font-size: 10px;
 }
 
@@ -445,7 +445,7 @@ function onReset() { theme.reset() }
   background: none;
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--steel);
+  color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   text-transform: uppercase;
@@ -454,13 +454,13 @@ function onReset() { theme.reset() }
   cursor: pointer;
   transition: border-color .12s, color .12s;
 }
-.tb-btn-reset:hover:not(:disabled) { border-color: var(--paper); color: var(--paper); }
+.tb-btn-reset:hover:not(:disabled) { border-color: var(--fg); color: var(--fg); }
 .tb-btn-reset:disabled { opacity: 0.35; cursor: default; }
 .tb-btn-save {
-  background: var(--gold-tint-14);
-  border: 1px solid var(--gold);
+  background: var(--accent-tint-14);
+  border: 1px solid var(--accent);
   border-radius: 3px;
-  color: var(--gold);
+  color: var(--accent);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   text-transform: uppercase;

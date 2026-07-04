@@ -73,12 +73,12 @@ watch(
   border-radius: 4px;
   border: 1px solid var(--panel-edge);
   background: var(--panel-well);
-  color: var(--paper);
+  color: var(--fg);
   font-size: 14px;
 }
 .login-form input:focus {
   outline: none;
-  border-color: var(--gold);
+  border-color: var(--accent);
 }
 .login-form button[type='submit'] {
   margin-top: 4px;

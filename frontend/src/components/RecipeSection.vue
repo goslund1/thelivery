@@ -447,11 +447,11 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   box-sizing: border-box;
 }
 .spec-select:focus {
-  outline: 1px solid var(--gold);
+  outline: 1px solid var(--accent);
   outline-offset: 1px;
 }
 .kit-item-cost {
-  color: var(--gold);
+  color: var(--accent);
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   letter-spacing: 0.02em;
@@ -472,7 +472,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 }
 .share-code-input:focus {
   outline: none;
-  border-bottom-color: var(--gold);
+  border-bottom-color: var(--accent);
 }
 .share-code-input::placeholder { opacity: 0.35; font-weight: normal; }
 
@@ -497,7 +497,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   letter-spacing: 0.08em;
   padding: 2px 5px;
   border-radius: 3px;
-  background: var(--steel-light, #444);
+  background: var(--muted-light, #444);
   color: var(--text-muted, #aaa);
 }
 .rs-car-name {
@@ -545,7 +545,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   flex: 1;
   background: none;
   border: none;
-  color: var(--steel);
+  color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.04em;
@@ -555,7 +555,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   opacity: 0.5;
   transition: opacity 0.12s, color 0.12s;
 }
-.kit-preset-trigger:hover { opacity: 1; color: var(--gold); }
+.kit-preset-trigger:hover { opacity: 1; color: var(--accent); }
 /* Make the label take all available space so the button + chevron sit together on the right */
 .kit-label-group { flex: 1; }
 
@@ -563,7 +563,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   background: none;
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--steel);
+  color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.05em;
@@ -576,7 +576,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   flex-shrink: 0;
 }
 .kit-stock-btn:hover { opacity: 1; }
-.kit-stock-btn.active { color: var(--gold); border-color: var(--gold); opacity: 1; }
+.kit-stock-btn.active { color: var(--accent); border-color: var(--accent); opacity: 1; }
 
 /* Preset dropdown menu */
 .kit-preset-menu {
@@ -595,18 +595,18 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 .up-preset-item { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
 .up-preset-apply {
   flex: 1; background: none; border: none; text-align: left;
-  color: var(--steel); font-size: 12px; padding: 5px 4px; cursor: pointer; border-radius: 3px;
+  color: var(--muted); font-size: 12px; padding: 5px 4px; cursor: pointer; border-radius: 3px;
 }
-.up-preset-apply:hover { color: var(--gold); }
+.up-preset-apply:hover { color: var(--accent); }
 .up-preset-del {
-  background: none; border: none; color: var(--steel); opacity: 0.4;
+  background: none; border: none; color: var(--muted); opacity: 0.4;
   font-size: 14px; cursor: pointer; padding: 2px 4px; line-height: 1;
 }
 .up-preset-del:hover { opacity: 1; color: #e03030; }
 .up-preset-divider { height: 1px; background: var(--panel-edge); margin: 4px 8px; }
-.up-preset-empty { font-size: 11px; color: var(--steel); opacity: 0.4; padding: 4px 12px 8px; }
+.up-preset-empty { font-size: 11px; color: var(--muted); opacity: 0.4; padding: 4px 12px 8px; }
 .up-preset-save-link {
-  background: none; border: none; color: var(--gold); font-size: 11px;
+  background: none; border: none; color: var(--accent); font-size: 11px;
   padding: 4px 12px; cursor: pointer; width: 100%; text-align: left; opacity: 0.8;
 }
 .up-preset-save-link:hover { opacity: 1; }
@@ -616,21 +616,21 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   background: color-mix(in srgb, var(--panel) 70%, #000);
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
-  color: var(--paper); font-size: 11px; padding: 3px 6px;
+  color: var(--fg); font-size: 11px; padding: 3px 6px;
 }
 .up-preset-confirm {
-  background: none; border: 1px solid var(--gold); border-radius: 3px;
-  color: var(--gold); font-size: 10px; padding: 3px 8px; cursor: pointer;
+  background: none; border: 1px solid var(--accent); border-radius: 3px;
+  color: var(--accent); font-size: 10px; padding: 3px 8px; cursor: pointer;
 }
 .up-preset-cancel {
-  background: none; border: none; color: var(--steel); opacity: 0.5;
+  background: none; border: none; color: var(--muted); opacity: 0.5;
   font-size: 14px; padding: 2px 4px; cursor: pointer; line-height: 1;
 }
 .up-preset-clear {
-  background: none; border: none; color: var(--steel); font-size: 11px;
+  background: none; border: none; color: var(--muted); font-size: 11px;
   opacity: 0.4; cursor: pointer; padding: 5px 12px; width: 100%; text-align: left;
 }
 .up-preset-clear:hover { opacity: 0.9; color: #e03030; }
 
-.kit-item--buy { color: var(--gold); }
+.kit-item--buy { color: var(--accent); }
 </style>

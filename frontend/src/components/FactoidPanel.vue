@@ -194,13 +194,13 @@ function confirmAddType() {
   font-weight: 600;
   letter-spacing: .1em;
   text-transform: uppercase;
-  color: var(--steel);
+  color: var(--muted);
 }
 
 .fp-close {
   background: none;
   border: none;
-  color: var(--steel);
+  color: var(--muted);
   font-size: 18px;
   line-height: 1;
   padding: 0 2px;
@@ -208,7 +208,7 @@ function confirmAddType() {
   opacity: 0.6;
   transition: opacity 0.12s, color 0.12s;
 }
-.fp-close:hover { opacity: 1; color: var(--paper); }
+.fp-close:hover { opacity: 1; color: var(--fg); }
 
 .fp-body {
   flex: 1;
@@ -238,7 +238,7 @@ function confirmAddType() {
   flex: 1;
   background: none;
   border: none;
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   font-weight: 600;
@@ -249,7 +249,7 @@ function confirmAddType() {
   opacity: 0.85;
   transition: opacity 0.12s, color 0.12s;
 }
-.fp-type-name:hover { opacity: 1; color: var(--gold); }
+.fp-type-name:hover { opacity: 1; color: var(--accent); }
 
 .fp-rename {
   flex: 1;
@@ -261,9 +261,9 @@ function confirmAddType() {
 .fp-rename-input {
   flex: 1;
   background: var(--panel);
-  border: 1px solid var(--gold);
+  border: 1px solid var(--accent);
   border-radius: 3px;
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   padding: 2px 6px;
@@ -284,15 +284,15 @@ function confirmAddType() {
   line-height: 1;
   padding: 2px 4px;
   border-radius: 3px;
-  color: var(--steel);
+  color: var(--muted);
   opacity: 0.6;
   transition: opacity 0.12s, color 0.12s, background 0.12s;
 }
 .fp-btn-icon:hover { opacity: 1; }
 .fp-btn-icon:disabled { opacity: 0.2; cursor: default; }
 
-.fp-btn-confirm { color: var(--gold); }
-.fp-btn-confirm:hover { color: var(--gold-bright); }
+.fp-btn-confirm { color: var(--accent); }
+.fp-btn-confirm:hover { color: var(--accent-bright); }
 .fp-btn-delete:hover { color: var(--danger-bright); opacity: 1; }
 .fp-btn-move { font-size: 13px; }
 
@@ -314,13 +314,13 @@ function confirmAddType() {
   padding: 2px 8px 2px 10px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--steel);
+  color: var(--muted);
 }
 
 .fp-pill-x {
   background: none;
   border: none;
-  color: var(--steel);
+  color: var(--muted);
   font-size: 11px;
   line-height: 1;
   padding: 0 1px;
@@ -344,14 +344,14 @@ function confirmAddType() {
   background: none;
   border: none;
   border-bottom: 1px solid var(--panel-edge);
-  color: var(--steel);
+  color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   padding: 2px 0;
   outline: none;
   transition: border-color 0.12s;
 }
-.fp-add-input:focus { border-color: var(--gold); }
+.fp-add-input:focus { border-color: var(--accent); }
 .fp-add-input::placeholder { opacity: 0.4; }
 
 .fp-add-type {
@@ -365,6 +365,6 @@ function confirmAddType() {
 
 .fp-add-type-input {
   font-size: 12px;
-  color: var(--paper);
+  color: var(--fg);
 }
 </style>

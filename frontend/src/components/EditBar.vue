@@ -157,14 +157,14 @@ const pillLabel = computed(() => {
   gap: 10px;
   padding: 7px 10px 7px 18px;
   background: color-mix(in srgb, var(--panel) 80%, transparent);
-  border: 1px solid var(--gold);
+  border: 1px solid var(--accent);
   border-radius: 999px;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.05em;
-  color: var(--gold);
+  color: var(--accent);
   white-space: nowrap;
   pointer-events: auto;
   box-shadow: 0 2px 16px rgba(0,0,0,0.4);
@@ -174,9 +174,9 @@ const pillLabel = computed(() => {
 }
 .edit-pill-save {
   background: none;
-  border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
   border-radius: 999px;
-  color: var(--gold);
+  color: var(--accent);
   font-family: inherit;
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -185,9 +185,9 @@ const pillLabel = computed(() => {
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .edit-pill-save:hover {
-  background: var(--gold);
+  background: var(--accent);
   color: var(--ink);
-  border-color: var(--gold);
+  border-color: var(--accent);
 }
 
 .tl-dock {
@@ -213,7 +213,7 @@ const pillLabel = computed(() => {
   font-size: 8px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--accent);
   opacity: 0.75;
   pointer-events: none;
   width: 100%;
@@ -257,8 +257,8 @@ const pillLabel = computed(() => {
   cursor: default;
 }
 .tl-yellow.tl-idle:hover {
-  background: color-mix(in srgb, var(--gold) 40%, transparent);
-  border-color: var(--gold);
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
+  border-color: var(--accent);
   transform: none;
   box-shadow: none;
 }
@@ -282,14 +282,14 @@ const pillLabel = computed(() => {
 }
 
 .tl-yellow {
-  background: color-mix(in srgb, var(--gold) 35%, transparent);
-  border-color: var(--gold);
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  border-color: var(--accent);
   color: #fff;
 }
 .tl-yellow:hover {
-  background: var(--gold);
-  border-color: var(--gold);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--gold) 60%, transparent);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 .icon-ibeam {
   width: 8px;

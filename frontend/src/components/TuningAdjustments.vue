@@ -528,7 +528,7 @@ function isBipolar(r: AdjustmentRow) {
   return (r as LocalRow)._bipolar || (r.min < 0 && r.max > 0)
 }
 function trackStyle(r: AdjustmentRow) {
-  const color = isChanged(r) ? 'var(--tabc, var(--magenta))' : 'var(--steel-light)'
+  const color = isChanged(r) ? 'var(--tabc, var(--highlight))' : 'var(--muted-light)'
   const fill = pct(r, r.value)
   const center = isBipolar(r) ? 50 : 0
   return `--fill: ${fill}%; --center: ${center}%; --track-color: ${color}`
@@ -549,7 +549,7 @@ function stockDotStyle(r: AdjustmentRow) {
   return {
     ...thumbPct(r, r.stock),
     background: 'var(--panel-edge)',
-    border: inFill ? '2px solid var(--steel-light)' : 'none',
+    border: inFill ? '2px solid var(--muted-light)' : 'none',
   }
 }
 function centerMarkStyle(r: AdjustmentRow) {
@@ -1250,7 +1250,7 @@ async function submitSuggestion() {
   background: transparent;
   border: 1px solid var(--panel-edge);
   border-radius: 4px;
-  color: var(--steel);
+  color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.05em;
@@ -1259,10 +1259,10 @@ async function submitSuggestion() {
   outline: none;
   min-width: 140px;
 }
-.ta-preset-select option { background: var(--panel); color: var(--paper); }
+.ta-preset-select option { background: var(--panel); color: var(--fg); }
 .ta-preset-btn { font-size: 9px; padding: 3px 8px; }
 .ta-preset-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
-.ta-preset-btn--delete { color: color-mix(in srgb, #cc0000 70%, var(--steel)); border-color: color-mix(in srgb, #cc0000 30%, transparent); }
+.ta-preset-btn--delete { color: color-mix(in srgb, #cc0000 70%, var(--muted)); border-color: color-mix(in srgb, #cc0000 30%, transparent); }
 .ta-preset-btn--delete:hover { color: #ff4444; border-color: #cc0000; }
 .ta-preset-save { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 .ta-preset-error {
@@ -1275,9 +1275,9 @@ async function submitSuggestion() {
 }
 .ta-preset-name-input {
   background: var(--panel-well);
-  border: 1px solid var(--gold);
+  border: 1px solid var(--accent);
   border-radius: 4px;
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   padding: 3px 8px;
@@ -1290,12 +1290,12 @@ async function submitSuggestion() {
   border-radius: 6px;
   border: 1px solid var(--panel-edge);
   background: color-mix(in srgb, var(--panel) 70%, transparent);
-  color: var(--steel);
+  color: var(--muted);
   cursor: pointer;
   transition: color 0.12s, border-color 0.12s, background 0.12s;
 }
-.ta-toggle-btn:hover { color: var(--paper); border-color: var(--steel); }
-.ta-stock-btn:hover  { color: var(--steel-light); border-color: var(--steel); }
+.ta-toggle-btn:hover { color: var(--fg); border-color: var(--muted); }
+.ta-stock-btn:hover  { color: var(--muted-light); border-color: var(--muted); }
 
 
 
@@ -1312,16 +1312,16 @@ async function submitSuggestion() {
   font-size: 12.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--magenta);
+  color: var(--highlight);
   display: flex;
   align-items: center;
   justify-content: space-between;
   transition: background 0.2s ease;
   user-select: none;
 }
-.ta-nonstock-summary:hover { background: color-mix(in srgb, var(--magenta) 12%, transparent); color: var(--gold); }
-.ta-nonstock-summary:hover .ta-nonstock-chev::before { border-right-color: var(--gold); }
-.ta-nonstock[open] > .ta-nonstock-summary { background: color-mix(in srgb, var(--magenta) 10%, transparent); }
+.ta-nonstock-summary:hover { background: color-mix(in srgb, var(--highlight) 12%, transparent); color: var(--accent); }
+.ta-nonstock-summary:hover .ta-nonstock-chev::before { border-right-color: var(--accent); }
+.ta-nonstock[open] > .ta-nonstock-summary { background: color-mix(in srgb, var(--highlight) 10%, transparent); }
 .ta-nonstock-summary::-webkit-details-marker { display: none; }
 
 .ta-nonstock-chev {
@@ -1337,7 +1337,7 @@ async function submitSuggestion() {
   width: 0; height: 0;
   border-top: 4.5px solid transparent;
   border-bottom: 4.5px solid transparent;
-  border-right: 9px solid var(--magenta);
+  border-right: 9px solid var(--highlight);
 }
 
 .ta-nonstock-body  {
@@ -1346,7 +1346,7 @@ async function submitSuggestion() {
   gap: 16px;
   align-items: start;
   font-size: 12px;
-  color: var(--paper);
+  color: var(--fg);
   line-height: 1.75;
 }
 .ta-nonstock-col { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
@@ -1371,7 +1371,7 @@ async function submitSuggestion() {
   font-size: 0.85em;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--steel-light);
+  color: var(--muted-light);
   background: color-mix(in srgb, var(--tabc, var(--panel-edge)) 28%, var(--panel-edge));
   padding: 2px 6px;
 }
@@ -1384,17 +1384,17 @@ async function submitSuggestion() {
   font-size: 0.75em;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--steel);
+  color: var(--muted);
   background: color-mix(in srgb, var(--panel-edge) 35%, transparent);
   padding: 1px 6px;
   margin-bottom: 2px;
 }
 .ta-nonstock-line  { display: flex; gap: 5px; align-items: baseline; min-width: 0; overflow: hidden; padding: 0 6px; cursor: pointer; transition: color 0.1s; }
-.ta-nonstock-line:hover { color: var(--gold); }
-.ta-nonstock-loc   { color: var(--steel-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; }
+.ta-nonstock-line:hover { color: var(--accent); }
+.ta-nonstock-loc   { color: var(--muted-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; }
 .ta-nonstock-vals  { flex-shrink: 0; white-space: nowrap; font-weight: 600; }
-.ta-nonstock-stock { color: var(--steel); font-weight: 400; }
-.ta-nonstock-empty { color: var(--steel); }
+.ta-nonstock-stock { color: var(--muted); font-weight: 400; }
+.ta-nonstock-empty { color: var(--muted); }
 
 .ta-tabbar {
   display: flex;
@@ -1412,33 +1412,33 @@ async function submitSuggestion() {
   border-radius: 6px;
   border: 1px solid var(--panel-edge);
   background: color-mix(in srgb, var(--panel) 60%, transparent);
-  color: var(--steel);
+  color: var(--muted);
   font-size: 11px;
   cursor: pointer;
   white-space: nowrap;
   transition: color 0.12s, background 0.12s, border-color 0.12s;
 }
-.ta-tab-btn:hover { color: var(--paper); border-color: var(--tabc, var(--steel)); }
-.ta-tab-btn.active { background: var(--tabc, var(--magenta)); border-color: var(--tabc, var(--magenta)); color: #fff; font-weight: 600; }
+.ta-tab-btn:hover { color: var(--fg); border-color: var(--tabc, var(--muted)); }
+.ta-tab-btn.active { background: var(--tabc, var(--highlight)); border-color: var(--tabc, var(--highlight)); color: #fff; font-weight: 600; }
 .ta-tab-dot {
   position: absolute;
   top: 2px; right: 2px;
   width: 5px; height: 5px;
   border-radius: 50%;
-  background: var(--magenta);
+  background: var(--highlight);
 }
 .ta-tab-btn.active .ta-tab-dot { background: #fff; }
-.ta-tab-btn--stack { margin-left: auto; color: var(--magenta); border-color: color-mix(in srgb, var(--magenta) 40%, transparent); }
-.ta-tab-btn--stack:hover:not(.ta-suppress-hover) { color: #fff; border-color: var(--magenta); background: color-mix(in srgb, var(--magenta) 10%, transparent); }
-.ta-tab-btn--stack.ta-suppress-hover:hover { color: var(--magenta); border-color: color-mix(in srgb, var(--magenta) 40%, transparent); background: color-mix(in srgb, var(--panel) 60%, transparent); }
-.ta-tab-btn--stack.active.ta-suppress-hover:hover { background: var(--magenta); border-color: var(--magenta); color: #fff; }
+.ta-tab-btn--stack { margin-left: auto; color: var(--highlight); border-color: color-mix(in srgb, var(--highlight) 40%, transparent); }
+.ta-tab-btn--stack:hover:not(.ta-suppress-hover) { color: #fff; border-color: var(--highlight); background: color-mix(in srgb, var(--highlight) 10%, transparent); }
+.ta-tab-btn--stack.ta-suppress-hover:hover { color: var(--highlight); border-color: color-mix(in srgb, var(--highlight) 40%, transparent); background: color-mix(in srgb, var(--panel) 60%, transparent); }
+.ta-tab-btn--stack.active.ta-suppress-hover:hover { background: var(--highlight); border-color: var(--highlight); color: #fff; }
 
 .ta-stack-header {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--paper);
+  color: var(--fg);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 10px 0;
@@ -1467,7 +1467,7 @@ async function submitSuggestion() {
   display: inline-block;
   width: 5px; height: 5px;
   border-radius: 50%;
-  background: var(--magenta);
+  background: var(--highlight);
   margin-left: 4px;
   vertical-align: middle;
   top: -1px;
@@ -1475,9 +1475,9 @@ async function submitSuggestion() {
 /* Light Weight Border button — reusable style for subtle action buttons */
 .ta-btn-lwb {
   background: none;
-  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: 4px;
-  color: var(--gold);
+  color: var(--accent);
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   letter-spacing: 0.08em;
@@ -1486,7 +1486,7 @@ async function submitSuggestion() {
   cursor: pointer;
   transition: color 0.12s, border-color 0.12s;
 }
-.ta-btn-lwb:hover { color: var(--gold-bright, var(--gold)); border-color: var(--gold); }
+.ta-btn-lwb:hover { color: var(--accent-bright, var(--accent)); border-color: var(--accent); }
 
 /* Tab color tokens — set --tabc on the element, everything inside inherits it */
 .ta-tab--tires        { --tabc: var(--tabc-tires); }
@@ -1499,14 +1499,14 @@ async function submitSuggestion() {
 .ta-tab--brakes       { --tabc: var(--tabc-brakes); }
 .ta-tab--differential { --tabc: var(--tabc-differential); }
 
-.ta-stack-collapse-btn { margin-left: auto; color: var(--tabc, var(--magenta)); border-color: color-mix(in srgb, var(--tabc, var(--magenta)) 40%, transparent); }
-.ta-stack-collapse-btn:hover { color: var(--paper); border-color: var(--tabc, var(--magenta)); }
+.ta-stack-collapse-btn { margin-left: auto; color: var(--tabc, var(--highlight)); border-color: color-mix(in srgb, var(--tabc, var(--highlight)) 40%, transparent); }
+.ta-stack-collapse-btn:hover { color: var(--fg); border-color: var(--tabc, var(--highlight)); }
 
 .ta-group {
   margin-bottom: 16px;
   overflow: hidden;
   border-radius: 0 0 0 4px;
-  --track-color: var(--tabc, var(--magenta));
+  --track-color: var(--tabc, var(--highlight));
 }
 .ta-group-header {
   display: flex;
@@ -1520,7 +1520,7 @@ async function submitSuggestion() {
 .ta-group-header .ta-caps-nudge { transform: translateY(0.26em); }
 .ta-group-title {
   font-size: 11px;
-  color: var(--steel);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
@@ -1555,7 +1555,7 @@ async function submitSuggestion() {
   flex-shrink: 0;
   text-align: center;
   font-size: 10px;
-  color: var(--steel);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -1569,7 +1569,7 @@ async function submitSuggestion() {
   min-width: 80px;
   text-align: center;
   font-size: 10px;
-  color: var(--steel-light);
+  color: var(--muted-light);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -1581,7 +1581,7 @@ async function submitSuggestion() {
   transition: background 0.1s;
 }
 .ta-row.focused    { outline: none; }
-.ta-row.focused .ta-right-section { background: color-mix(in srgb, var(--panel-well) 80%, #000); box-shadow: inset 0 0 0 1px var(--magenta); }
+.ta-row.focused .ta-right-section { background: color-mix(in srgb, var(--panel-well) 80%, #000); box-shadow: inset 0 0 0 1px var(--highlight); }
 .ta-row:focus      { outline: none; }
 .ta-row--locked    { border-radius: 6px; border: 1px dashed var(--panel-edge); }
 .ta-group > .ta-row:not(:last-child):not(.ta-row--locked) { border-bottom: 2px solid var(--panel); }
@@ -1590,20 +1590,20 @@ async function submitSuggestion() {
   width: var(--col-label);
   flex-shrink: 0;
   font-size: 11px;
-  color: var(--paper);
+  color: var(--fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.ta-lock-line   { font-size: 11px; color: var(--gold); }
-.ta-lock-reason { font-size: 10px; color: var(--steel); margin-left: 4px; }
+.ta-lock-line   { font-size: 11px; color: var(--accent); }
+.ta-lock-reason { font-size: 10px; color: var(--muted); margin-left: 4px; }
 
 .ta-end-field {
   width: var(--col-end);
   background: color-mix(in srgb, var(--panel) 80%, transparent);
   border: 1px solid var(--panel-edge);
-  color: var(--paper);
+  color: var(--fg);
   font-size: 11px;
   font-family: 'JetBrains Mono', monospace;
   border-radius: 5px;
@@ -1611,7 +1611,7 @@ async function submitSuggestion() {
   text-align: center;
   flex-shrink: 0;
 }
-.ta-end-field:focus { outline: 1px solid var(--magenta); outline-offset: 1px; }
+.ta-end-field:focus { outline: 1px solid var(--highlight); outline-offset: 1px; }
 .ta-end-field::-webkit-inner-spin-button,
 .ta-end-field::-webkit-outer-spin-button { -webkit-appearance: none; }
 .ta-end-field { -moz-appearance: textfield; }
@@ -1621,7 +1621,7 @@ async function submitSuggestion() {
   flex-shrink: 0;
   font-size: 10px;
   font-family: 'JetBrains Mono', monospace;
-  color: var(--paper);
+  color: var(--fg);
   text-align: center;
   opacity: 0.5;
 }
@@ -1640,7 +1640,7 @@ async function submitSuggestion() {
   width: min(var(--col-left-zone), 40%);
   flex-shrink: 0;
   box-sizing: border-box;
-  background: var(--tabc, var(--magenta));
+  background: var(--tabc, var(--highlight));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1669,7 +1669,7 @@ async function submitSuggestion() {
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--steel-light);
+  color: var(--muted-light);
   pointer-events: none;
 }
 .ta-section-title-text {
@@ -1677,7 +1677,7 @@ async function submitSuggestion() {
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--paper);
+  color: var(--fg);
   pointer-events: none;
 }
 
@@ -1690,7 +1690,7 @@ async function submitSuggestion() {
   font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--steel-light);
+  color: var(--muted-light);
 }
 .ta-mode-switch {
   position: relative;
@@ -1708,12 +1708,12 @@ async function submitSuggestion() {
   width: 28px;
   height: 14px;
   border-radius: 7px;
-  background: var(--steel-light);
+  background: var(--muted-light);
   position: relative;
   transition: background 0.2s;
 }
 .ta-mode-switch input:checked + .ta-mode-track {
-  background: var(--tabc, var(--magenta));
+  background: var(--tabc, var(--highlight));
 }
 .ta-mode-thumb {
   position: absolute;
@@ -1732,10 +1732,10 @@ async function submitSuggestion() {
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   letter-spacing: 0.08em;
-  color: var(--tabc, var(--magenta));
+  color: var(--tabc, var(--highlight));
 }
 .ta-mode-state.static {
-  color: var(--steel-light);
+  color: var(--muted-light);
 }
 
 .ta-val-box {
@@ -1745,7 +1745,7 @@ async function submitSuggestion() {
   height: 22px;
   background: color-mix(in srgb, var(--panel-well) 90%, #000);
   border: 1px solid var(--panel-edge);
-  color: var(--paper);
+  color: var(--fg);
   font-size: 11px;
   font-family: 'JetBrains Mono', monospace;
   border-radius: 4px;
@@ -1788,7 +1788,7 @@ async function submitSuggestion() {
   top: 50%;
   transform: translate(-50%, -50%);
   width: 2px; height: 14px;
-  background: var(--steel-light);
+  background: var(--muted-light);
   z-index: 4;
   pointer-events: none;
   border-radius: 1px;
@@ -1813,31 +1813,31 @@ async function submitSuggestion() {
   background: linear-gradient(to right,
     var(--panel-edge) 0%,
     var(--panel-edge) min(var(--center, 0%), var(--fill, 0%)),
-    var(--track-color, var(--magenta)) min(var(--center, 0%), var(--fill, 0%)),
-    var(--track-color, var(--magenta)) max(var(--center, 0%), var(--fill, 0%)),
+    var(--track-color, var(--highlight)) min(var(--center, 0%), var(--fill, 0%)),
+    var(--track-color, var(--highlight)) max(var(--center, 0%), var(--fill, 0%)),
     var(--panel-edge) max(var(--center, 0%), var(--fill, 0%)),
     var(--panel-edge) 100%
   );
 }
 .ta-slider::-moz-range-track    { height: 6px; border-radius: 3px; background: var(--panel-edge); }
-.ta-slider::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--track-color, var(--magenta)); }
+.ta-slider::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--track-color, var(--highlight)); }
 .ta-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 14px; height: 14px; border-radius: 50%;
   margin-top: -4px;
-  background: var(--track-color, var(--magenta)); cursor: pointer;
+  background: var(--track-color, var(--highlight)); cursor: pointer;
   position: relative; z-index: 2;
   box-shadow: 0 0 0 2px var(--panel-well);
 }
 .ta-slider.readonly::-webkit-slider-thumb { cursor: default; }
-.ta-slider--stock::-webkit-slider-thumb { background: var(--steel-light); }
+.ta-slider--stock::-webkit-slider-thumb { background: var(--muted-light); }
 .ta-slider::-moz-range-thumb {
   width: 14px; height: 14px; border-radius: 50%;
-  background: var(--track-color, var(--magenta)); border: none; cursor: pointer;
+  background: var(--track-color, var(--highlight)); border: none; cursor: pointer;
   box-shadow: 0 0 0 2px var(--panel-well);
 }
-.ta-slider--stock::-moz-range-thumb { background: var(--steel-light); }
-.ta-slider--stock::-moz-range-progress { background: var(--steel-light); }
+.ta-slider--stock::-moz-range-thumb { background: var(--muted-light); }
+.ta-slider--stock::-moz-range-progress { background: var(--muted-light); }
 
 .ta-gear-select-row {
   margin-bottom: 14px;
@@ -1845,7 +1845,7 @@ async function submitSuggestion() {
 .ta-gear-select {
   background: transparent;
   border: none;
-  color: var(--paper);
+  color: var(--fg);
   font-size: 10px;
   font-family: 'JetBrains Mono', monospace;
   font-weight: 600;
@@ -1855,10 +1855,10 @@ async function submitSuggestion() {
   cursor: pointer;
   outline: none;
 }
-.ta-gear-select option { background: var(--panel); color: var(--paper); }
+.ta-gear-select option { background: var(--panel); color: var(--fg); }
 
 .ta-empty {
-  font-size: 12px; color: var(--steel); opacity: 0.5;
+  font-size: 12px; color: var(--muted); opacity: 0.5;
   margin: 4px 0 0; text-align: center; padding: 8px 0;
 }
 
@@ -1883,17 +1883,17 @@ async function submitSuggestion() {
   justify-content: space-between;
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
-  color: var(--paper);
+  color: var(--fg);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 14px;
 }
 .ta-dialog-close {
   background: transparent; border: none;
-  color: var(--steel); font-size: 24px; line-height: 1; cursor: pointer;
+  color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer;
 }
 .ta-dialog-body {
-  color: var(--steel);
+  color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
   margin: 0 0 16px;
@@ -1971,7 +1971,7 @@ async function submitSuggestion() {
 .ta-suggest-message {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: var(--steel);
+  color: var(--muted);
   line-height: 1.55;
   letter-spacing: 0.02em;
   margin: 0;
@@ -1988,7 +1988,7 @@ async function submitSuggestion() {
   border: none;
   border-top: 1px solid transparent;
   transition: border-color 0.22s, color 0.15s;
-  color: var(--magenta);
+  color: var(--highlight);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1996,7 +1996,7 @@ async function submitSuggestion() {
   padding: 0;
   transition: color 0.15s;
 }
-.ta-suggest-tab:hover { color: var(--gold); }
+.ta-suggest-tab:hover { color: var(--accent); }
 
 .ta-suggest-chevron {
   display: block;
@@ -2032,9 +2032,9 @@ async function submitSuggestion() {
 /* buttons */
 .ta-suggest-submit {
   background: none;
-  border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
   border-radius: 4px;
-  color: var(--gold);
+  color: var(--accent);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 600;
@@ -2045,15 +2045,15 @@ async function submitSuggestion() {
   transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
 .ta-suggest-submit:hover {
-  background: color-mix(in srgb, var(--gold) 12%, transparent);
-  border-color: var(--gold);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 28%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 28%, transparent);
 }
 .ta-suggest-later {
   background: none;
   border: 1px solid var(--glass-border);
   border-radius: 4px;
-  color: var(--steel);
+  color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.07em;
@@ -2063,11 +2063,11 @@ async function submitSuggestion() {
   opacity: 0.7;
   transition: opacity 0.12s, border-color 0.12s;
 }
-.ta-suggest-later:hover { opacity: 1; border-color: var(--steel); }
+.ta-suggest-later:hover { opacity: 1; border-color: var(--muted); }
 .ta-suggest-dismiss {
   background: none;
   border: none;
-  color: var(--steel);
+  color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -2092,15 +2092,15 @@ async function submitSuggestion() {
   background: var(--panel-well);
   border: 1px solid var(--panel-edge);
   border-radius: 5px;
-  color: var(--paper);
+  color: var(--fg);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   padding: 7px 10px;
   outline: none;
   transition: border-color 0.12s;
 }
-.ta-suggest-input:focus { border-color: var(--gold); }
-.ta-suggest-input::placeholder { color: var(--steel); opacity: 0.5; }
+.ta-suggest-input:focus { border-color: var(--accent); }
+.ta-suggest-input::placeholder { color: var(--muted); opacity: 0.5; }
 .ta-suggest-input:disabled { opacity: 0.5; }
 .ta-suggest-error {
   font-family: 'JetBrains Mono', monospace;

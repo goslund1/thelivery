@@ -164,8 +164,10 @@ function confirmAddType() {
   width: 320px;
   max-width: 90vw;
   z-index: 200;
-  background: var(--panel);
-  border-left: 1px solid var(--panel-edge);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-left: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
   transform: translateX(100%);

@@ -361,8 +361,10 @@ async function onDelete() {
   justify-content: center;
 }
 .ec-delete-dialog {
-  background: var(--panel);
-  border: 1px solid var(--panel-edge);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: 6px;
   padding: 28px 32px 24px;
   max-width: 360px;

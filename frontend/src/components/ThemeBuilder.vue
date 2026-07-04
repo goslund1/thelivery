@@ -196,10 +196,10 @@ function onReset() {
 .tb-panel {
   width: 300px;
   max-height: 80vh;
-  background: color-mix(in srgb, var(--panel) 82%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid color-mix(in srgb, var(--panel-edge) 70%, transparent);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: 6px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   display: flex;

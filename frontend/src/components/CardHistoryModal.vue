@@ -296,8 +296,10 @@ function fmtVal(v: number | null) {
   display: flex; align-items: center; justify-content: center;
 }
 .ch-modal {
-  background: var(--panel);
-  border: 1px solid var(--panel-edge);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
   width: min(900px, 95vw);
   max-height: 80vh;

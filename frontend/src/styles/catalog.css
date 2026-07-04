@@ -28,6 +28,9 @@
     --success:#5d8e40;
     --success-bright:#74b050;
     --success-unlit:#405b30;
+    --glass-bg:color-mix(in srgb, var(--panel) 82%, transparent);
+    --glass-border:color-mix(in srgb, var(--panel-edge) 70%, transparent);
+    --glass-blur:blur(16px);
     --build-it-border:var(--gold);
     --build-it-bg:var(--success-unlit);
     --build-it-bg-hover:var(--success-bright);
@@ -1155,10 +1158,10 @@
   .bug-flyout{
     position:fixed;
     transform:translateX(8px);
-    background:color-mix(in srgb, var(--panel) 82%, transparent);
-    backdrop-filter:blur(16px);
-    -webkit-backdrop-filter:blur(16px);
-    border:1px solid color-mix(in srgb, var(--panel-edge) 70%, transparent);
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
     border-radius:6px;
     padding:14px 18px;
     min-width:170px;
@@ -1330,8 +1333,10 @@
   }
 
   .image-picker-panel{
-    background:var(--panel);
-    border:1px solid var(--panel-edge);
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
     border-radius:8px;
     padding:20px;
     max-width:600px;
@@ -1660,6 +1665,10 @@
   max-width: 900px;
   margin: 0 auto;
   position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-border);
 }
 
 .nc-close {

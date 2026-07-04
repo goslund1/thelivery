@@ -1936,14 +1936,15 @@ async function submitSuggestion() {
   width: calc(100vw - 40px);
 }
 
-/* sub-drawer: message only — narrower, more transparent, sits above main strip */
+/* sub-drawer: message only — narrower, very transparent, sits above main strip */
 .ta-suggest-sub {
   width: calc(100% - 20px);
-  background: color-mix(in srgb, var(--panel) 55%, transparent);
-  border: 1px solid var(--panel-edge);
+  background: color-mix(in srgb, var(--panel) 18%, transparent);
+  border: 1px solid var(--glass-border, rgba(255,255,255,0.08));
   border-bottom: none;
   border-radius: 8px 8px 0 0;
   backdrop-filter: var(--glass-blur, blur(10px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(10px));
   max-height: 80px;
   overflow: hidden;
   padding: 10px 14px;

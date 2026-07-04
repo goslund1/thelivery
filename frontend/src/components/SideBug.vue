@@ -52,9 +52,11 @@ async function toggle(name: Exclude<FlyoutName, null>, anchor: HTMLElement) {
   // Place the flyout just left of the side bug, vertically aligned to the button.
   const bug = sideBugEl.value!.getBoundingClientRect()
   const a = anchor.getBoundingClientRect()
+  const flyoutRight = window.innerWidth - bug.left + 8
   flyoutStyle.value = {
     top: `${Math.max(12, a.top)}px`,
-    right: `${window.innerWidth - bug.left + 8}px`,
+    right: `${flyoutRight}px`,
+    maxWidth: `${window.innerWidth - flyoutRight - 8}px`,
   }
 }
 
@@ -76,9 +78,11 @@ function positionSideBug() {
 
   // Keep any open flyout or theme builder anchored to the new bug position
   if (Object.keys(flyoutStyle.value).length > 0) {
+    const flyoutRight = bugWidth + rightVal + 8
     flyoutStyle.value = {
       ...flyoutStyle.value,
-      right: `${bugWidth + rightVal + 8}px`,
+      right: `${flyoutRight}px`,
+      maxWidth: `${window.innerWidth - flyoutRight - 8}px`,
     }
   }
 

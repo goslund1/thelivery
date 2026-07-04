@@ -237,6 +237,7 @@ function onReset() { theme.reset(); activeColor.value = null }
   flex-direction: row;
   align-items: stretch;
   max-height: 80vh;
+  min-width: 0;
 }
 
 /* ── Picker wing ── */
@@ -244,7 +245,8 @@ function onReset() { theme.reset(); activeColor.value = null }
   width: 0;
   overflow: hidden;
   transition: width 0.22s ease;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background: var(--glass-bg);
@@ -287,6 +289,7 @@ function onReset() { theme.reset(); activeColor.value = null }
 .tb-picker-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   padding: 14px;
 }
@@ -325,6 +328,8 @@ function onReset() { theme.reset(); activeColor.value = null }
 /* ── Main panel ── */
 .tb-panel {
   width: 300px;
+  flex-shrink: 1;
+  min-width: 200px;
   max-height: 80vh;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);

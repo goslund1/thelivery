@@ -134,6 +134,23 @@ function storedGearCount(): number {
 const gearCount = ref(storedGearCount())
 const GEAR_OPTIONS = [4, 5, 6, 7, 8, 9, 10]
 
+// Derived from installed transmission upgrade — drives gearing slider lock state.
+type TransmissionTier = 'none' | 'sport' | 'race' | 'drift'
+const transmissionTier = computed<TransmissionTier>(() => {
+  if (!props.cardId) return 'none'
+  const card = cards.byId(props.cardId)
+  const recipe = card?.sections.find(s => s.type === 'forza_recipe')
+  if (!recipe || recipe.type !== 'forza_recipe') return 'none'
+  for (const cat of recipe.upgrades) {
+    for (const part of cat.parts) {
+      if (part === 'Drift Transmission') return 'drift'
+      if (part.startsWith('Race') && part.includes('Transmission')) return 'race'
+      if (part === 'Sport Transmission') return 'sport'
+    }
+  }
+  return 'none'
+})
+
 // ── Local row state (edit mode) ───────────────────────────────────────────────
 interface LocalRow extends AdjustmentRow {
   locked?: boolean
@@ -145,6 +162,11 @@ interface LocalRow extends AdjustmentRow {
 }
 
 function buildGearRows(): LocalRow[] {
+  const tier = transmissionTier.value
+  const fdLocked    = tier === 'none'
+  const gearsLocked = tier !== 'race' && tier !== 'drift'
+  const count       = tier === 'drift' ? 4 : gearCount.value
+
   const s = (k: string) => props.adjustments.find(r => r.key === k)
   const rows: LocalRow[] = []
   const fd = s('finalDrive')
@@ -153,8 +175,10 @@ function buildGearRows(): LocalRow[] {
     label: 'Final Drive', unit: '', step: 0.01,
     min: fd?.min ?? 0, max: fd?.max ?? 100, stock: fd?.stock ?? 0, value: fd?.value ?? 0,
     _axis: ['Short', 'Long'], _headerUnit: undefined,
+    locked:     fdLocked,
+    lockReason: fdLocked ? 'Sport, Race, or Drift transmission required' : undefined,
   })
-  for (let i = 1; i <= gearCount.value; i++) {
+  for (let i = 1; i <= count; i++) {
     const key = `gear${i}`
     const g = s(key)
     rows.push({
@@ -162,6 +186,8 @@ function buildGearRows(): LocalRow[] {
       label: ordinal(i), unit: '', step: 0.01,
       min: g?.min ?? 0, max: g?.max ?? 100, stock: g?.stock ?? 0, value: g?.value ?? 0,
       _axis: ['Short', 'Long'], _headerUnit: undefined,
+      locked:     gearsLocked,
+      lockReason: gearsLocked ? 'Race or Drift transmission required' : undefined,
     })
   }
   return rows
@@ -247,6 +273,11 @@ watch(gearCount, () => {
   const nonGear = localRows.value.filter(r => r.tab !== 'gearing')
   localRows.value = [...nonGear, ...buildGearRows()]
   flush()
+})
+
+watch(transmissionTier, () => {
+  const nonGear = localRows.value.filter(r => r.tab !== 'gearing')
+  localRows.value = [...nonGear, ...buildGearRows()]
 })
 
 // Returns the current serialized adjustments — called by the parent at save/flush time.
@@ -931,9 +962,16 @@ async function submitSuggestion() {
           <div v-if="gi > 0" class="ta-section-title-bar">
             <div class="ta-title-label-zone">
               <template v-if="section.id === 'gearing' && ui.isEditing">
-                <select class="ta-gear-select ta-caps-nudge" :value="gearCount" @change="gearCount = parseInt(($event.target as HTMLSelectElement).value)">
+                <select
+                  v-if="transmissionTier === 'race'"
+                  class="ta-gear-select ta-caps-nudge"
+                  :value="gearCount"
+                  @change="gearCount = parseInt(($event.target as HTMLSelectElement).value)"
+                >
                   <option v-for="n in GEAR_OPTIONS" :key="n" :value="n">{{ n }}-Speed</option>
                 </select>
+                <span v-else-if="transmissionTier === 'drift'" class="ta-section-title-text ta-caps-nudge">4-Speed Drift</span>
+                <span v-else class="ta-section-title-text ta-caps-nudge" style="opacity:0.4">Race or Drift Trans required</span>
               </template>
               <span v-else class="ta-section-title-text ta-caps-nudge">{{ group.title }}</span>
             </div>

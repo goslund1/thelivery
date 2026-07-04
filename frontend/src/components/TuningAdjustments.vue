@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
-import type { AdjustmentRow } from '../types'
+import type { AdjustmentRow, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
-import { useCardsStore } from '../stores/cards'
 import { MarkDirtyKey } from '../keys'
 import { api } from '../api'
 import { impliedUpgrades, type ImpliedUpgradesResult } from '../constants/tuning'
@@ -10,14 +9,18 @@ import { impliedUpgrades, type ImpliedUpgradesResult } from '../constants/tuning
 // Only one suggest bar visible at a time across all card instances
 const activeSuggestCardId = ref<string | null>(null)
 
-const props = defineProps<{ adjustments: AdjustmentRow[]; cardId?: string }>()
+const props = defineProps<{
+  adjustments: AdjustmentRow[]
+  cardId?: string
+  upgrades?: UpgradeCategory[]
+  coreSpecs?: Record<string, string>
+}>()
 const emit = defineEmits<{
   change: []
   'implied-upgrades': [result: ImpliedUpgradesResult]
   'springs-choice': [tier: 'Race' | 'Rally' | 'Drift']
 }>()
 const ui = useUiStore()
-const cards = useCardsStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
 // ── Canonical structure ───────────────────────────────────────────────────────
@@ -140,16 +143,18 @@ const GEAR_OPTIONS = [4, 5, 6, 7, 8, 9, 10]
 // Derived from installed transmission upgrade — drives gearing slider lock state.
 type TransmissionTier = 'none' | 'sport' | 'race' | 'drift'
 const transmissionTier = computed<TransmissionTier>(() => {
-  if (!props.cardId) return 'none'
-  const card = cards.byId(props.cardId)
-  const recipe = card?.sections.find(s => s.type === 'forza_recipe')
-  if (!recipe || recipe.type !== 'forza_recipe') return 'none'
-  for (const cat of recipe.upgrades) {
+  for (const cat of (props.upgrades ?? [])) {
     for (const part of cat.parts) {
       if (part === 'Drift Transmission') return 'drift'
-      if (part.startsWith('Race') && part.includes('Transmission')) return 'race'
+      if (part.includes('Transmission') && (part.includes('Race') || part.includes('Racing'))) return 'race'
       if (part === 'Sport Transmission') return 'sport'
     }
+  }
+  const spec = props.coreSpecs?.Transmission
+  if (spec) {
+    if (spec.toLowerCase() === 'drift') return 'drift'
+    if (spec.includes('Race') || spec.includes('Racing')) return 'race'
+    if (spec === 'Sport') return 'sport'
   }
   return 'none'
 })
@@ -306,16 +311,13 @@ let springsDialogFiredThisSession = false
 watch(() => props.cardId, () => { springsDialogFiredThisSession = false })
 
 function checkImplied() {
-  if (!ui.isEditing || !props.cardId) return
-  const card = cards.byId(props.cardId)
-  const recipe = card?.sections.find(s => s.type === 'forza_recipe')
-  if (!recipe || recipe.type !== 'forza_recipe') return
+  if (!ui.isEditing || !props.upgrades) return
 
   const adjustments = localRows.value
     .filter(r => !r.locked)
     .map(({ locked, lockReason, _axis, _headerUnit, _bipolar, _centerMark, ...r }) => r)
 
-  const result = impliedUpgrades(adjustments, recipe.upgrades)
+  const result = impliedUpgrades(adjustments, props.upgrades)
 
   if (result.toAdd.length > 0) emit('implied-upgrades', result)
 
@@ -788,6 +790,13 @@ watch(() => ui.isEditing, (editing) => { if (editing && !presets.value.length) l
 const suggestCollapsed = ref(false)
 const suggestDismissed = ref(false)
 const suggestModalOpen = ref(false)
+const suggestTitle = ref('')
+const suggestCredit = ref('')
+const suggestBusy = ref(false)
+const suggestError = ref<string | null>(null)
+const suggestDone = ref(false)
+
+const hasSuggestionData = computed(() => storedRows.value.length > 0)
 
 const showSuggestBar = computed(() =>
   !ui.isEditing && hasSuggestionData.value && !suggestDismissed.value &&
@@ -801,13 +810,6 @@ watchEffect(() => {
     activeSuggestCardId.value = null
   }
 })
-const suggestTitle = ref('')
-const suggestCredit = ref('')
-const suggestBusy = ref(false)
-const suggestError = ref<string | null>(null)
-const suggestDone = ref(false)
-
-const hasSuggestionData = computed(() => storedRows.value.length > 0)
 
 function openSuggestModal() {
   suggestTitle.value = ''
@@ -974,15 +976,13 @@ async function submitSuggestion() {
             <div class="ta-title-label-zone">
               <template v-if="section.id === 'gearing' && ui.isEditing">
                 <select
-                  v-if="transmissionTier === 'race'"
                   class="ta-gear-select ta-caps-nudge"
-                  :value="gearCount"
+                  :value="transmissionTier === 'drift' ? 4 : gearCount"
+                  :disabled="transmissionTier === 'drift'"
                   @change="gearCount = parseInt(($event.target as HTMLSelectElement).value)"
                 >
                   <option v-for="n in GEAR_OPTIONS" :key="n" :value="n">{{ n }}-Speed</option>
                 </select>
-                <span v-else-if="transmissionTier === 'drift'" class="ta-section-title-text ta-caps-nudge">4-Speed Drift</span>
-                <span v-else class="ta-section-title-text ta-caps-nudge" style="opacity:0.4">Race or Drift Trans required</span>
               </template>
               <span v-else class="ta-section-title-text ta-caps-nudge">{{ group.title }}</span>
             </div>

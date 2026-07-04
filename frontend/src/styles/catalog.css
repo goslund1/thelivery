@@ -1096,6 +1096,16 @@
     color:var(--gold-bright);
   }
 
+  .bug-btn.active{
+    background:var(--gold);
+    color:var(--panel);
+  }
+
+  .bug-btn.active:hover{
+    background:var(--gold-bright);
+    color:var(--panel);
+  }
+
   .bug-lines{
     display:flex;
     flex-direction:column;
@@ -1391,11 +1401,7 @@
     display:none;
   }
 
-  #bug-edit-toggle.active{
-    background:var(--gold-tint-14);
-  }
-
-  /* Editable fields only show their affordance once edit mode is on —
+/* Editable fields only show their affordance once edit mode is on —
      otherwise the page should look completely unchanged from view mode. */
   .editable{
     cursor:default;

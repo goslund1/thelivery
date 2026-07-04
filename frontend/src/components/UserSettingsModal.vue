@@ -250,8 +250,8 @@ async function fixAllCategories() {
 // Adjustment row migration — row-by-row form
 const adjCardId = ref<string | null>(null)
 const adjRowIdx  = ref(0)
-// Each handled row: AdjustmentRow (to keep) | 'skip' (leave as legacy)
-const adjResults = ref<Map<number, AdjustmentRow | 'skip'>>(new Map())
+// Each legacy row maps to an array of structured rows (1+) or 'skip'
+const adjResults = ref<Map<number, AdjustmentRow[] | 'skip'>>(new Map())
 const adjBusy    = ref(false)
 const adjResult  = ref<string | null>(null)
 
@@ -282,6 +282,10 @@ const adjLegacyRows = computed<LegacyRow[]>(() => {
 })
 
 const adjCurrentRow = computed(() => adjLegacyRows.value[adjRowIdx.value])
+const adjCurrentSaved = computed<AdjustmentRow[]>(() => {
+  const r = adjResults.value.get(adjRowIdx.value)
+  return Array.isArray(r) ? r : []
+})
 const adjAllHandled = computed(() => adjResults.value.size >= adjLegacyRows.value.length)
 
 function openAdjCard(cardId: string) {
@@ -312,7 +316,13 @@ function adjAutoKey(): string {
 }
 
 function saveRow() {
-  adjResults.value.set(adjRowIdx.value, { ...adjDraft.value, key: adjAutoKey() })
+  const existing = adjCurrentSaved.value
+  adjResults.value.set(adjRowIdx.value, [...existing, { ...adjDraft.value, key: adjAutoKey() }])
+  // Reset just label so user can fill in the next sub-row (e.g. Rear after Front)
+  adjDraft.value.label = ''
+}
+
+function nextRow() {
   if (adjRowIdx.value < adjLegacyRows.value.length - 1) {
     adjRowIdx.value++
     applyTabDefaults()
@@ -340,7 +350,7 @@ async function commitAdjMigration() {
     for (const row of rows) {
       if (isLegacyRow(row)) {
         const result = adjResults.value.get(legacyIdx)
-        if (result && result !== 'skip') newAdj.push(result)
+        if (Array.isArray(result)) newAdj.push(...result)
         legacyIdx++
       } else {
         newAdj.push(row)
@@ -348,7 +358,7 @@ async function commitAdjMigration() {
     }
     recipe.adjustments = newAdj
     await cards.save(adjCardId.value)
-    const saved = [...adjResults.value.values()].filter(v => v !== 'skip').length
+    const saved = [...adjResults.value.values()].reduce<number>((n, v) => n + (Array.isArray(v) ? v.length : 0), 0)
     const skipped = [...adjResults.value.values()].filter(v => v === 'skip').length
     adjResult.value = `Saved ${saved} row${saved !== 1 ? 's' : ''}${skipped ? `, skipped ${skipped}` : ''}.`
     adjCardId.value = null
@@ -541,7 +551,11 @@ function onTabMigrate() {
             <!-- Already handled? -->
             <div v-if="adjResults.has(adjRowIdx)" class="mig-handled">
               <span v-if="adjResults.get(adjRowIdx) === 'skip'" class="mig-badge mig-badge--skip">Skipped</span>
-              <span v-else class="mig-badge mig-badge--ok">Saved</span>
+              <template v-else>
+                <span v-for="(r, i) in adjCurrentSaved" :key="i" class="mig-badge mig-badge--ok">
+                  {{ r.group }} {{ r.label }}
+                </span>
+              </template>
             </div>
 
             <!-- Structured entry form -->
@@ -587,7 +601,12 @@ function onTabMigrate() {
                 </div>
               </div>
               <div class="admin-row">
-                <button class="admin-btn" @click="saveRow">Save Row →</button>
+                <button class="admin-btn" @click="saveRow">Save Row</button>
+                <button
+                  class="admin-btn"
+                  :disabled="adjCurrentSaved.length === 0"
+                  @click="nextRow"
+                >Next →</button>
                 <button class="admin-btn" @click="skipRow">Skip</button>
               </div>
             </div>

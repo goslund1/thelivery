@@ -36,15 +36,23 @@ function onKey(e: KeyboardEvent) {
   if (modal.factoidPanelOpen) modal.closeFactoidPanel()
 }
 
-onMounted(() => {
-  store.load()
-  document.addEventListener('keydown', onKey)
+function checkIgnition() {
   if (window.location.pathname === '/ignition' || window.location.hash === '#ignition') {
     window.history.replaceState(null, '', '/')
     modal.openLogin(true)
   }
+}
+
+onMounted(() => {
+  store.load()
+  document.addEventListener('keydown', onKey)
+  window.addEventListener('hashchange', checkIgnition)
+  checkIgnition()
 })
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', onKey)
+  window.removeEventListener('hashchange', checkIgnition)
+})
 </script>
 
 <template>

@@ -1942,7 +1942,7 @@ async function submitSuggestion() {
 /* secondary surface — dp-pane rotated 90°: wing + tab as siblings, height transitions */
 .ta-suggest-drawer {
   --ds-tab: 22px;
-  width: calc(100% - 20px);
+  width: 100%;
   height: var(--ds-tab);
   overflow: hidden;
   transition: height 0.22s ease;
@@ -2013,6 +2013,7 @@ async function submitSuggestion() {
   padding: 8px 14px;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
+  border-top: none;
   border-radius: 0 0 8px 8px;
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);

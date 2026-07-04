@@ -1503,79 +1503,118 @@
     border-color:var(--danger-bright);
   }
 
-  .exit-confirm-panel{
+  /* ── Confirm overlay — shared pattern for all destructive/save confirms ──── */
+  .conf-overlay{
+    position:fixed;
+    inset:0;
+    z-index:1200;
+    background:rgba(0,0,0,0.65);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  .conf-overlay.open{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .conf-panel{
+    background:var(--glass-bg);
+    backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border);
+    border-radius:8px;
+    padding:22px 24px 20px;
     max-width:380px;
+    width:90vw;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
   }
-
-  .exit-confirm-text{
+  .conf-head{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--paper);
+    padding-bottom:12px;
+    border-bottom:1px solid var(--glass-border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .conf-close{
+    background:transparent;
+    border:none;
     color:var(--steel);
-    font-size:14px;
-    line-height:1.5;
-    margin:0 0 16px;
+    font-size:20px;
+    line-height:1;
+    cursor:pointer;
+    transition:color .15s;
   }
-
-  .exit-confirm-options{
+  .conf-close:hover{ color:var(--paper); }
+  .conf-body{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--steel);
+    line-height:1.6;
+  }
+  .conf-actions{
     display:flex;
     flex-direction:column;
     gap:8px;
   }
-
-  .exit-confirm-options button{
+  .conf-btn{
     width:100%;
-    color:#fff;
     font-family:'JetBrains Mono',monospace;
-    font-size:13px;
+    font-size:12px;
     text-transform:uppercase;
-    letter-spacing:.04em;
-    padding:12px 0;
+    letter-spacing:.06em;
+    padding:11px 0;
     border-radius:5px;
     cursor:pointer;
-    transition:background .15s ease, border-color .15s ease, box-shadow .15s ease;
+    background:transparent;
+    transition:background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
   }
-
-  /* Green light — Save and Exit */
-  #exit-save-btn{
-    background:#1e3d00;
-    border:2px solid #2e5f00;
-    animation:exit-save-pulse 1.8s ease-in-out infinite;
+  /* confirm / save — green */
+  .conf-btn--confirm{
+    color:var(--success-bright);
+    border:1px solid var(--success);
+    animation:conf-pulse-green 1.8s ease-in-out infinite;
   }
-  #exit-save-btn:hover{
-    background:#74b050;
-    border-color:#a8d888;
-    box-shadow:0 0 16px rgba(116,176,80,0.85);
+  .conf-btn--confirm:hover{
+    background:var(--success-unlit);
+    border-color:var(--success-bright);
+    box-shadow:0 0 14px color-mix(in srgb, var(--success-bright) 55%, transparent);
     animation:none;
   }
-  @keyframes exit-save-pulse{
-    0%,100%{ box-shadow:0 0 0 0 rgba(116,176,80,0.7); }
-    50%    { box-shadow:0 0 0 8px rgba(116,176,80,0); }
+  @keyframes conf-pulse-green{
+    0%,100%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--success-bright) 60%, transparent); }
+    50%    { box-shadow:0 0 0 7px transparent; }
   }
-
-  /* Yellow light — Continue Editing */
-  #exit-continue-btn{
-    background:#7a5800;
-    border:2px solid #a07800;
+  /* neutral / back — gold */
+  .conf-btn--neutral{
+    color:var(--gold);
+    border:1px solid color-mix(in srgb, var(--gold) 50%, transparent);
   }
-  #exit-continue-btn:hover{
-    background:#ffc200;
-    border-color:#ffe870;
-    box-shadow:0 0 16px rgba(255,194,0,0.85);
+  .conf-btn--neutral:hover{
+    border-color:var(--gold);
+    box-shadow:0 0 12px color-mix(in srgb, var(--gold) 40%, transparent);
   }
-
-  /* Red light — Discard and Exit */
-  #exit-discard-btn{
-    background:#5c0000;
-    border:2px solid #7a0000;
+  /* discard / danger — red */
+  .conf-btn--discard{
+    color:var(--danger-bright);
+    border:1px solid var(--danger);
   }
-  #exit-discard-btn:hover{
-    background:#cc0000;
-    border-color:#ff4444;
-    box-shadow:0 0 16px rgba(200,0,0,0.85);
+  .conf-btn--discard:hover{
+    background:color-mix(in srgb, var(--danger) 20%, transparent);
+    border-color:var(--danger-bright);
+    box-shadow:0 0 14px color-mix(in srgb, var(--danger-bright) 45%, transparent);
   }
-
-  #legend-save-btn { background:#1e3d00; border:2px solid #2e5f00; animation:exit-save-pulse 1.8s ease-in-out infinite; }
-  #legend-save-btn:hover { background:#74b050; border-color:#a8d888; box-shadow:0 0 16px rgba(116,176,80,0.85); animation:none; }
-  #legend-cancel-btn { background:#7a5800; border:2px solid #a07800; }
-  #legend-cancel-btn:hover { background:#ffc200; border-color:#ffe870; box-shadow:0 0 16px rgba(255,194,0,0.85); }
 
   .bug-check{
     display:flex;

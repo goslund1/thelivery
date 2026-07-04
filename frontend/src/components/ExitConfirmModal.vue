@@ -4,17 +4,17 @@ const ui = useUiStore()
 </script>
 
 <template>
-  <div class="image-picker" :class="{ open: ui.exitConfirmOpen }" @click.self="ui.cancelExit()">
-    <div class="image-picker-panel exit-confirm-panel">
-      <div class="image-picker-head">
+  <div class="conf-overlay" :class="{ open: ui.exitConfirmOpen }" @click.self="ui.cancelExit()">
+    <div class="conf-panel">
+      <div class="conf-head">
         <span>Unsaved Changes</span>
-        <button class="image-picker-close" aria-label="Close" @click="ui.cancelExit()">×</button>
+        <button class="conf-close" aria-label="Close" @click="ui.cancelExit()">×</button>
       </div>
-      <p class="exit-confirm-text">You have unsaved changes. What would you like to do?</p>
-      <div class="exit-confirm-options">
-        <button id="exit-save-btn" :disabled="ui.saving" @click="ui.confirmSaveAndExit()">Save and Exit</button>
-        <button id="exit-continue-btn" @click="ui.cancelExit()">Continue Editing</button>
-        <button id="exit-discard-btn" @click="ui.confirmDiscardAndExit()">Discard and Exit</button>
+      <p class="conf-body">You have unsaved changes. What would you like to do?</p>
+      <div class="conf-actions">
+        <button class="conf-btn conf-btn--confirm" :disabled="ui.saving" @click="ui.confirmSaveAndExit()">Save and Exit</button>
+        <button class="conf-btn conf-btn--neutral" @click="ui.cancelExit()">Continue Editing</button>
+        <button class="conf-btn conf-btn--discard" @click="ui.confirmDiscardAndExit()">Discard and Exit</button>
       </div>
     </div>
   </div>

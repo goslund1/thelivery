@@ -488,50 +488,56 @@ onUnmounted(() => { document.body.style.overflow = '' })
   align-self: stretch;
 }
 
-/* Folder-name prompt overlay — sits inside .nc-modal-card */
+/* Folder-name prompt — fixed to viewport, not the modal card */
 .nc-folder-prompt {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: 1300;
   background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
-  border-radius: inherit;
 }
 .nc-folder-prompt-inner {
-  background: var(--panel);
-  border: 1px solid var(--panel-edge);
-  border-radius: 6px;
-  padding: 24px 28px 20px;
-  max-width: 340px;
-  width: 90%;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 22px 24px 20px;
+  max-width: 360px;
+  width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .nc-folder-prompt-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
   color: var(--paper);
-  margin: 0 0 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--glass-border);
 }
 .nc-folder-prompt-sub {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--steel);
-  margin: 0 0 14px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 .nc-folder-prompt-input {
   width: 100%;
   box-sizing: border-box;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  background: var(--stage-bg);
-  border: 1px solid var(--panel-edge);
-  border-radius: 3px;
+  background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
   color: var(--paper);
-  padding: 8px 10px;
-  margin-bottom: 14px;
+  padding: 9px 12px;
 }
 .nc-folder-prompt-input:focus {
   outline: none;

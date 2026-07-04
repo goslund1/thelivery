@@ -6,14 +6,14 @@
     --panel-edge:#23232b;
     --panel-well:#0e0e11;
     --gold:#c9a227;
-    --gold-bright:#e0b430;
-    --gold-chip:#cc9a1f;
-    --gold-tint-04:rgba(201,162,39,0.04);
-    --gold-tint-06:rgba(201,162,39,0.06);
-    --gold-tint-14:rgba(201,162,39,0.14);
+    --gold-bright:   color-mix(in srgb, var(--gold) 85%, white);
+    --gold-chip:     color-mix(in srgb, var(--gold) 88%, black);
+    --gold-tint-04:  color-mix(in srgb, var(--gold)  4%, transparent);
+    --gold-tint-06:  color-mix(in srgb, var(--gold)  6%, transparent);
+    --gold-tint-14:  color-mix(in srgb, var(--gold) 14%, transparent);
     --magenta:#d6478f;
-    --magenta-tint-06:rgba(214,71,143,0.06);
-    --magenta-tint-40:rgba(214,71,143,.4);
+    --magenta-tint-06: color-mix(in srgb, var(--magenta)  6%, transparent);
+    --magenta-tint-40: color-mix(in srgb, var(--magenta) 40%, transparent);
     --paper:#ece9e4;
     --steel:#7a7e87;
     --steel-light:#a8a4ab;
@@ -34,16 +34,16 @@
     --bug-bg:var(--panel);
     --dissolve: 2s;
     --text-delta: 0px;
-    /* Tab accent colors — one per tuning section */
-    --tabc-tires:        #00d4f5;
-    --tabc-gearing:      #0fc4a0;
-    --tabc-alignment:    #c870d0;
-    --tabc-arb:          #8c5cf6;
-    --tabc-springs:      #f5906a;
-    --tabc-damping:      #e85d2a;
-    --tabc-aero:         #84cc16;
-    --tabc-brakes:       #f04060;
-    --tabc-differential: #6884f8;
+    /* Tab accent colors — snapped to FH in-game palette */
+    --tabc-tires:        #29C5F6;  /* Speed flare cyan */
+    --tabc-gearing:      #1FD1A5;  /* Danger sign teal */
+    --tabc-alignment:    #E63DD0;  /* Festival night pink */
+    --tabc-arb:          #8A2BE2;  /* Drift zone purple */
+    --tabc-springs:      #F4831F;  /* Horizon orange */
+    --tabc-damping:      #E8650F;  /* Sunset orange */
+    --tabc-aero:         #5BDB2E;  /* Battle green */
+    --tabc-brakes:       #FF3B2F;  /* Bright Tokyo red */
+    --tabc-differential: #1E6FE0;  /* Speed trap blue */
   }
 
   /* Light theme — overrides the same variables, nothing else changes */
@@ -53,10 +53,6 @@
     --panel-edge:#ddd8cd;
     --panel-well:#f0ede4;
     --gold:#ebd150;
-    --gold-bright:#f3dd71;
-    --gold-tint-04:rgba(235,209,80,0.05);
-    --gold-tint-06:rgba(235,209,80,0.07);
-    --gold-tint-14:rgba(235,209,80,0.16);
     --danger:#d73333;
     --danger-bright:#df5d5d;
     --success:#74b050;
@@ -65,8 +61,6 @@
     --build-it-bg:#8fbf73;
     --build-it-bg-hover:#b3d3a0;
     --magenta:#30acb8;
-    --magenta-tint-06:rgba(48,172,184,0.06);
-    --magenta-tint-40:rgba(48,172,184,.35);
     --paper:#201f1c;
     --steel:#6b6f76;
     --steel-light:#56565c;
@@ -86,13 +80,7 @@
     --panel-edge:#2a2838;
     --panel-well:#100f18;
     --gold:#e83d9c;
-    --gold-bright:#ff5fc0;
-    --gold-tint-04:rgba(232,61,156,0.05);
-    --gold-tint-06:rgba(232,61,156,0.08);
-    --gold-tint-14:rgba(232,61,156,0.18);
     --magenta:#3dc7e8;
-    --magenta-tint-06:rgba(61,199,232,0.08);
-    --magenta-tint-40:rgba(61,199,232,.4);
     --paper:#f1edf7;
     --steel:#8d87a3;
     --steel-light:#b3adc6;
@@ -110,13 +98,7 @@
     --panel-edge:#d7e3ec;
     --panel-well:#e9eff4;
     --gold:#5b8fb0;
-    --gold-bright:#4a7a98;
-    --gold-tint-04:rgba(91,143,176,0.05);
-    --gold-tint-06:rgba(91,143,176,0.08);
-    --gold-tint-14:rgba(91,143,176,0.16);
     --magenta:#8a7bc4;
-    --magenta-tint-06:rgba(138,123,196,0.06);
-    --magenta-tint-40:rgba(138,123,196,.3);
     --paper:#2c3e4a;
     --steel:#7188a0;
     --steel-light:#5c7488;
@@ -136,13 +118,7 @@
     --panel-edge:#454b52;
     --panel-well:#232629;
     --gold:#7badc9;
-    --gold-bright:#93c2dc;
-    --gold-tint-04:rgba(123,173,201,0.05);
-    --gold-tint-06:rgba(123,173,201,0.08);
-    --gold-tint-14:rgba(123,173,201,0.18);
     --magenta:#a596d6;
-    --magenta-tint-06:rgba(165,150,214,0.06);
-    --magenta-tint-40:rgba(165,150,214,.35);
     --paper:#e4e7ea;
     --steel:#9aa2a9;
     --steel-light:#c5cbd1;

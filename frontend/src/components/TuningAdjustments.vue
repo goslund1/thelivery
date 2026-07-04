@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { AdjustmentRow } from '../types'
 import { useUiStore } from '../stores/ui'
 import { useCardsStore } from '../stores/cards'
 import { MarkDirtyKey } from '../keys'
 import { api } from '../api'
 import { impliedUpgrades, type ImpliedUpgradesResult } from '../constants/tuning'
+
+// Only one suggest bar visible at a time across all card instances
+const activeSuggestCardId = ref<string | null>(null)
 
 const props = defineProps<{ adjustments: AdjustmentRow[]; cardId?: string }>()
 const emit = defineEmits<{
@@ -347,11 +350,7 @@ function flush() {
 const storedRows = computed(() => props.adjustments.filter(r => r?.key && typeof r.tab === 'string' && !r.key.startsWith('__mode_')))
 
 // ── Tabs & sections ───────────────────────────────────────────────────────────
-const activeTabs = computed(() => {
-  if (ui.isEditing) return CANONICAL_TABS.filter(t => !t.deferred)
-  const ids = new Set(storedRows.value.map(r => r.tab))
-  return CANONICAL_TABS.filter(t => !t.deferred && ids.has(t.id))
-})
+const activeTabs = computed(() => CANONICAL_TABS.filter(t => !t.deferred))
 
 const activeTabId = ref('')
 watch(activeTabs, tabs => {
@@ -436,10 +435,7 @@ function onTabClick(tabId: string) {
 }
 
 function groupsForTab(tabId: string) {
-  const storedKeys = ui.isEditing ? null : new Set(storedRows.value.map(r => r.key))
-  const source = localRows.value.filter(r =>
-    r.tab === tabId && (storedKeys === null || storedKeys.has(r.key))
-  )
+  const source = localRows.value.filter(r => r.tab === tabId)
 
   const map = new Map<string, LocalRow[]>()
   for (const r of source) {
@@ -792,6 +788,19 @@ watch(() => ui.isEditing, (editing) => { if (editing && !presets.value.length) l
 const suggestCollapsed = ref(false)
 const suggestDismissed = ref(false)
 const suggestModalOpen = ref(false)
+
+const showSuggestBar = computed(() =>
+  !ui.isEditing && hasSuggestionData.value && !suggestDismissed.value &&
+  (activeSuggestCardId.value === null || activeSuggestCardId.value === props.cardId)
+)
+
+watchEffect(() => {
+  if (showSuggestBar.value && props.cardId) {
+    activeSuggestCardId.value = props.cardId
+  } else if (activeSuggestCardId.value === props.cardId && (!showSuggestBar.value || suggestDismissed.value)) {
+    activeSuggestCardId.value = null
+  }
+})
 const suggestTitle = ref('')
 const suggestCredit = ref('')
 const suggestBusy = ref(false)
@@ -1145,7 +1154,7 @@ async function submitSuggestion() {
 
   <!-- Floating suggestion panel — view mode only, requires tuning data -->
   <Teleport to="body">
-    <div v-if="!ui.isEditing && hasSuggestionData && !suggestDismissed" class="ta-suggest-bar" :class="{ collapsed: suggestCollapsed }">
+    <div v-if="showSuggestBar" class="ta-suggest-bar" :class="{ collapsed: suggestCollapsed }">
       <div v-if="!suggestCollapsed" class="ta-suggest-message">
         Think you can improve this tune? Make the changes you'd use, and suggest them for testing.
       </div>

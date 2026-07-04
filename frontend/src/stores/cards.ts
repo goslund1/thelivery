@@ -224,6 +224,15 @@ export const useCardsStore = defineStore('cards', () => {
     c.images.push({ id: `${cardId}-${++_imageIdCounter}`, path, thumbPath, stagePath, order: maxOrder + 1, included })
   }
 
+  function setImageMeta(cardId: string, imageId: string, meta: { carId?: string | null; alt?: string }) {
+    const c = byId(cardId)
+    if (!c) return
+    const img = c.images.find(i => i.id === imageId)
+    if (!img) return
+    if ('carId' in meta) img.carId = meta.carId ?? undefined
+    if ('alt' in meta) img.alt = meta.alt
+  }
+
   function setColor(id: string, key: string, color: string | undefined) {
     const c = byId(id)
     if (!c) return
@@ -359,7 +368,7 @@ export const useCardsStore = defineStore('cards', () => {
     byId, load, save, deleteCard, createNewCard,
     takeSnapshot, restoreSnapshot, setFigure,
     toggleFavorite, setLeadImage, reorderImages, restoreImageOrders,
-    removeImage, toggleImageIncluded, addImageToPool,
+    removeImage, toggleImageIncluded, addImageToPool, setImageMeta,
     setColor,
     addTag, removeTag, addCollection, removeCollection,
     setLiveryShareCode, setCarId,

@@ -4,6 +4,7 @@ import { useUiStore } from '../stores/ui'
 import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
 import { api } from '../api'
+import PhotoDetail from './PhotoDetail.vue'
 
 const ui = useUiStore()
 const modal = useModalStore()
@@ -129,6 +130,24 @@ function deleteSelected() {
   selectedIds.value = new Set()
   pendingDeleteId.value = null
   pendingBatchDelete.value = false
+}
+
+// ── Per-photo detail ─────────────────────────────────────────────────────────
+const detailIdx = ref<number | null>(null)
+const detailImage = computed(() => detailIdx.value != null ? gallery.value[detailIdx.value] : null)
+
+function openDetail(i: number) { detailIdx.value = i }
+function closeDetail() { detailIdx.value = null }
+function prevDetail() { if (detailIdx.value != null && detailIdx.value > 0) detailIdx.value-- }
+function nextDetail() { if (detailIdx.value != null && detailIdx.value < gallery.value.length - 1) detailIdx.value++ }
+
+function onDetailAlt(imageId: string, alt: string) {
+  const c = ctx.value
+  if (c) { store.setImageMeta(c.cardId, imageId, { alt }); ui.markCardDirty(c.cardId) }
+}
+function onDetailCarId(imageId: string, carId: string | null) {
+  const c = ctx.value
+  if (c) { store.setImageMeta(c.cardId, imageId, { carId }); ui.markCardDirty(c.cardId) }
 }
 
 // ── Manage mode — drag reorder ───────────────────────────────────────────────
@@ -260,11 +279,18 @@ async function onManageUpload(e: Event) {
                   @click="doToggleIncluded(img.id)"
                 >●</button>
               </div>
-              <button
-                class="mgr-ctrl mgr-ctrl-del"
-                title="Remove from card"
-                @click="pendingDeleteId = img.id"
-              >✕</button>
+              <div class="mgr-ctrl-right">
+                <button
+                  class="mgr-ctrl mgr-ctrl-detail"
+                  title="Photo details"
+                  @click="openDetail(i)"
+                >⤢</button>
+                <button
+                  class="mgr-ctrl mgr-ctrl-del"
+                  title="Remove from card"
+                  @click="pendingDeleteId = img.id"
+                >✕</button>
+              </div>
             </div>
             <div v-if="pendingDeleteId === img.id" class="mgr-delete-confirm" @click.stop>
               <span>Remove?</span>
@@ -318,6 +344,22 @@ async function onManageUpload(e: Event) {
 
     </div>
   </div>
+
+  <!-- Per-photo detail shadowbox -->
+  <PhotoDetail
+    v-if="detailImage"
+    :image="detailImage"
+    :card-car-id="card?.carId"
+    :position="detailIdx! + 1"
+    :total="gallery.length"
+    :has-prev="detailIdx! > 0"
+    :has-next="detailIdx! < gallery.length - 1"
+    @close="closeDetail"
+    @prev="prevDetail"
+    @next="nextDetail"
+    @update:alt="onDetailAlt"
+    @update:car-id="onDetailCarId"
+  />
 </template>
 
 <style scoped>
@@ -397,6 +439,11 @@ async function onManageUpload(e: Event) {
   display: flex;
   gap: 2px;
 }
+.mgr-ctrl-right {
+  display: flex;
+  gap: 2px;
+}
+.mgr-ctrl-detail:hover { color: var(--accent, #c9aa71); }
 .mgr-ctrl {
   width: 19px;
   height: 19px;

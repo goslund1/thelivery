@@ -48,8 +48,12 @@ const THEME_LABELS: Record<Theme, string> = {
 
 const activeColor = ref<{ group: 'colors' | 'tuning'; key: string } | null>(null)
 
+// pickerColor is the picker's own state — independent of what's selected in the list
+const pickerColor = ref(theme.current?.colors.gold ?? '#d4a017')
+
+// Swatch in the header reflects the active item's current store value
 const activeValue = computed<string>(() => {
-  if (!activeColor.value || !theme.current) return '#000000'
+  if (!activeColor.value || !theme.current) return pickerColor.value
   const { group, key } = activeColor.value
   return group === 'colors'
     ? theme.current.colors[key as keyof ThemeColors]
@@ -65,6 +69,8 @@ const activeLabel = computed<string>(() => {
 })
 
 function onPickerUpdate(val: string) {
+  pickerColor.value = val
+  // Live-update the active item while dragging
   if (!activeColor.value) return
   const { group, key } = activeColor.value
   if (group === 'colors') theme.setColor(key as keyof ThemeColors, val)
@@ -72,8 +78,20 @@ function onPickerUpdate(val: string) {
 }
 
 function selectColor(group: 'colors' | 'tuning', key: string) {
-  activeColor.value = { group, key }
-  pickerOpen.value = true
+  if (pickerOpen.value) {
+    // Picker is open: stamp current pickerColor onto the clicked item
+    if (group === 'colors') theme.setColor(key as keyof ThemeColors, pickerColor.value)
+    else theme.setTuningColor(key as keyof ThemeTuning, pickerColor.value)
+    activeColor.value = { group, key }
+  } else {
+    // Picker is closed: load the item's color and open
+    const val = group === 'colors'
+      ? (theme.current?.colors[key as keyof ThemeColors] ?? pickerColor.value)
+      : (theme.current?.tuning[key as keyof ThemeTuning] ?? pickerColor.value)
+    pickerColor.value = val
+    activeColor.value = { group, key }
+    pickerOpen.value = true
+  }
 }
 
 function isActive(group: 'colors' | 'tuning', key: string) {
@@ -110,11 +128,9 @@ function onReset() { theme.reset() }
         </div>
         <div class="tb-picker-body">
           <ColorPicker
-            v-if="activeColor"
-            :model-value="activeValue"
+            :model-value="pickerColor"
             @update:model-value="onPickerUpdate"
           />
-          <p v-else class="tb-picker-hint">Select a color from the list</p>
         </div>
       </div>
 
@@ -244,8 +260,9 @@ function onReset() { theme.reset() }
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  max-height: 80vh;
   min-width: 0;
+  height: 600px;
+  max-height: 85vh;
 }
 
 /* ── Picker pane — single unified glass surface (wing + tab) ── */
@@ -257,11 +274,14 @@ function onReset() { theme.reset() }
   overflow: hidden;
   transition: width 0.22s ease;
   flex-shrink: 0;
+  align-self: stretch;
+  margin-top: 4px;
+  margin-bottom: 4px;
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-right: none;
-  border-radius: 6px 0 0 6px;
+  border-radius: 6px 0 0 0;
 }
 .tb-picker-pane.open {
   width: 286px; /* 272px wing + 14px tab */
@@ -309,12 +329,6 @@ function onReset() { theme.reset() }
   overscroll-behavior: contain;
   padding: 14px;
 }
-.tb-picker-hint {
-  color: var(--steel);
-  font-size: 10px;
-  text-align: center;
-  margin-top: 40px;
-}
 
 /* ── Toggle tab — right edge of the pane, same plane as wing ── */
 .tb-picker-tab {
@@ -328,10 +342,10 @@ function onReset() { theme.reset() }
   font-size: 13px;
   cursor: pointer;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding: 10px 0 0;
   transition: color .15s, transform .22s;
-  padding: 0;
 }
 .tb-picker-tab:hover { color: var(--gold); }
 .tb-picker-tab.open { transform: scaleX(-1); }
@@ -341,12 +355,13 @@ function onReset() { theme.reset() }
   width: 300px;
   flex-shrink: 1;
   min-width: 200px;
-  max-height: 80vh;
+  height: 600px;
+  max-height: 85vh;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
-  border-radius: 6px;
+  border-radius: 0 6px 6px 0;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
   display: flex;
   flex-direction: column;

@@ -22,6 +22,31 @@ function rgbToHex(r: number, g: number, b: number): string {
     .join('')
 }
 
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const { r, g, b } = hexToRgb(hex)
+  const r1 = r / 255, g1 = g / 255, b1 = b / 255
+  const max = Math.max(r1, g1, b1), min = Math.min(r1, g1, b1)
+  const l = (max + min) / 2
+  if (max === min) return { h: 0, s: 0, l: Math.round(l * 100) }
+  const d = max - min
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+  let h = 0
+  if (max === r1) h = ((g1 - b1) / d + (g1 < b1 ? 6 : 0)) / 6
+  else if (max === g1) h = ((b1 - r1) / d + 2) / 6
+  else h = ((r1 - g1) / d + 4) / 6
+  return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) }
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  const s1 = s / 100, l1 = l / 100
+  const a = s1 * Math.min(l1, 1 - l1)
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12
+    return Math.round(255 * (l1 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))))
+  }
+  return rgbToHex(f(0), f(8), f(4))
+}
+
 function luminance(hex: string): number {
   const { r, g, b } = hexToRgb(hex)
   const weights = [0.2126, 0.7152, 0.0722]
@@ -41,6 +66,17 @@ function contrastRatio(a: string, b: string): number {
 }
 
 const rgb = computed(() => hexToRgb(props.modelValue))
+const hsl = computed(() => hexToHsl(props.modelValue))
+
+const hueGradient = 'linear-gradient(to right,#f00 0%,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00 100%)'
+const satGradient = computed(() => {
+  const { h, l } = hsl.value
+  return `linear-gradient(to right,hsl(${h},0%,${l}%),hsl(${h},100%,${l}%))`
+})
+const litGradient = computed(() => {
+  const { h, s } = hsl.value
+  return `linear-gradient(to right,hsl(${h},${s}%,0%),hsl(${h},${s}%,50%),hsl(${h},${s}%,100%))`
+})
 
 const panelColor = computed(() =>
   getComputedStyle(document.documentElement).getPropertyValue('--panel').trim() || '#15151a'
@@ -81,6 +117,14 @@ function onRgbInput(channel: 'r' | 'g' | 'b', e: Event) {
   const cur = hexToRgb(props.modelValue)
   cur[channel] = v
   emit_(rgbToHex(cur.r, cur.g, cur.b))
+}
+
+function onHslInput(channel: 'h' | 's' | 'l', e: Event) {
+  const v = parseInt((e.target as HTMLInputElement).value)
+  if (isNaN(v)) return
+  const cur = hsl.value
+  const next = { ...cur, [channel]: v }
+  emit_(hslToHex(next.h, next.s, next.l))
 }
 
 function snapToNearest() {
@@ -163,6 +207,28 @@ function isActive(sw: string): boolean {
         <input class="cp-rgb-input" type="number" min="0" max="255" :value="rgb.g" @change="onRgbInput('g', $event)" />
         <label class="cp-field-label">B</label>
         <input class="cp-rgb-input" type="number" min="0" max="255" :value="rgb.b" @change="onRgbInput('b', $event)" />
+      </div>
+
+      <div class="cp-hsl-row">
+        <label class="cp-field-label">H</label>
+        <div class="cp-slider-wrap" :style="{ '--track-bg': hueGradient }">
+          <input class="cp-slider" type="range" min="0" max="360" :value="hsl.h" @input="onHslInput('h', $event)" />
+        </div>
+        <span class="cp-hsl-val">{{ hsl.h }}°</span>
+      </div>
+      <div class="cp-hsl-row">
+        <label class="cp-field-label">S</label>
+        <div class="cp-slider-wrap" :style="{ '--track-bg': satGradient }">
+          <input class="cp-slider" type="range" min="0" max="100" :value="hsl.s" @input="onHslInput('s', $event)" />
+        </div>
+        <span class="cp-hsl-val">{{ hsl.s }}%</span>
+      </div>
+      <div class="cp-hsl-row">
+        <label class="cp-field-label">L</label>
+        <div class="cp-slider-wrap" :style="{ '--track-bg': litGradient }">
+          <input class="cp-slider" type="range" min="0" max="100" :value="hsl.l" @input="onHslInput('l', $event)" />
+        </div>
+        <span class="cp-hsl-val">{{ hsl.l }}%</span>
       </div>
     </div>
 
@@ -288,5 +354,60 @@ function isActive(sw: string): boolean {
   border-radius: 50%;
   background: rgba(255,255,255,0.9);
   box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.cp-hsl-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cp-slider-wrap {
+  flex: 1;
+  height: 14px;
+  display: flex;
+  align-items: center;
+}
+.cp-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.cp-slider::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--track-bg);
+  border: 1px solid rgba(0,0,0,0.2);
+}
+.cp-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.35);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  margin-top: -4px;
+}
+.cp-slider::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--track-bg);
+  border: 1px solid rgba(0,0,0,0.2);
+}
+.cp-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.35);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.cp-hsl-val {
+  color: var(--steel);
+  font-size: 10px;
+  min-width: 30px;
+  text-align: right;
 }
 </style>

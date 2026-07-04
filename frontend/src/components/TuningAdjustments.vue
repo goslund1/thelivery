@@ -1941,7 +1941,7 @@ async function submitSuggestion() {
 
 /* secondary surface — clear glass pane, 4px inset each side from the bar */
 .ta-suggest-drawer {
-  --ds-tab: 22px;
+  --ds-tab: 14px;
   width: calc(100% - 8px);
   height: var(--ds-tab);
   overflow: hidden;
@@ -1992,15 +1992,20 @@ async function submitSuggestion() {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
   transition: color 0.15s;
 }
 .ta-suggest-tab:hover { color: var(--gold); }
 
-/* chevron rotates on open */
 .ta-suggest-chevron {
-  display: inline-block;
-  font-size: 13px;
+  display: block;
+  font-size: 10px;
   line-height: 1;
+  width: 10px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transform: rotate(90deg);
   transition: transform 0.22s;
 }

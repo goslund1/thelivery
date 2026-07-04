@@ -9,30 +9,31 @@ const emit = defineEmits<{ close: [] }>()
 
 const theme = useThemeStore()
 
-const paletteOpen = ref(true)
-const tuningOpen  = ref(false)
+const paletteOpen  = ref(true)
+const tuningOpen   = ref(false)
+const advancedOpen = ref(false)
+const pickerOpen   = ref(false)
 
 const COLOR_LABELS: Record<keyof ThemeColors, string> = {
-  asphalt:   'Page background',
-  panel:     'Card / panel',
-  panelEdge: 'Panel border',
-  gold:      'Gold accent',
-  magenta:   'Magenta accent',
-  paper:     'Primary text',
-  steel:     'Muted text',
+  asphalt:    'Page background',
+  panel:      'Card / panel',
+  panelEdge:  'Panel border',
+  gold:       'Gold accent',
+  magenta:    'Magenta accent',
+  paper:      'Primary text',
+  steel:      'Muted text',
+  panelWell:  'Inset / well',
+  steelLight: 'Light muted text',
 }
 
 const TUNING_LABELS: Record<keyof ThemeTuning, string> = {
-  tires:        'Tires',
-  gearing:      'Gearing',
-  alignment:    'Alignment',
-  arb:          'ARB',
-  springs:      'Springs',
-  damping:      'Damping',
-  aero:         'Aero',
-  brakes:       'Brakes',
-  differential: 'Differential',
+  tires: 'Tires', gearing: 'Gearing', alignment: 'Alignment',
+  arb: 'ARB', springs: 'Springs', damping: 'Damping',
+  aero: 'Aero', brakes: 'Brakes', differential: 'Differential',
 }
+
+const MAIN_KEYS:     (keyof ThemeColors)[] = ['asphalt', 'panel', 'panelEdge', 'gold', 'magenta', 'paper', 'steel']
+const ADVANCED_KEYS: (keyof ThemeColors)[] = ['panelWell', 'steelLight']
 
 const THEMES: Theme[] = ['dark', 'light', 'rainbow', 'clouds', 'stormy']
 const THEME_LABELS: Record<Theme, string> = {
@@ -65,11 +66,12 @@ function onPickerUpdate(val: string) {
 }
 
 function selectColor(group: 'colors' | 'tuning', key: string) {
-  if (activeColor.value?.group === group && activeColor.value?.key === key) {
-    activeColor.value = null
-  } else {
-    activeColor.value = { group, key }
-  }
+  activeColor.value = { group, key }
+  pickerOpen.value = true
+}
+
+function isActive(group: 'colors' | 'tuning', key: string) {
+  return activeColor.value?.group === group && activeColor.value?.key === key
 }
 
 function onAmbianceChange(t: Theme) {
@@ -77,137 +79,257 @@ function onAmbianceChange(t: Theme) {
   activeColor.value = null
 }
 
-async function onSave() {
-  await theme.save()
+function togglePicker() {
+  pickerOpen.value = !pickerOpen.value
 }
 
-function onReset() {
-  theme.reset()
-  activeColor.value = null
-}
+async function onSave() { await theme.save() }
+function onReset() { theme.reset(); activeColor.value = null }
 </script>
 
 <template>
-  <div class="tb-panel" v-scroll-contain>
-    <div class="tb-header">
-      <span class="tb-title">Theme Builder</span>
-      <button class="tb-close" type="button" @click="emit('close')">×</button>
-    </div>
-
-    <div class="tb-body">
-    <!-- Ambiance base -->
-    <div class="tb-section">
-      <div class="tb-section-label">Base ambiance</div>
-      <div class="tb-ambiance-row">
-        <button
-          v-for="t in THEMES"
-          :key="t"
-          class="tb-ambiance-btn"
-          :class="{ active: theme.current?.ambiance === t }"
-          type="button"
-          @click="onAmbianceChange(t)"
-        >{{ THEME_LABELS[t] }}</button>
-      </div>
-    </div>
-
-    <!-- Effects -->
-    <div class="tb-section">
-      <div class="tb-section-label">Effects</div>
-      <div class="tb-effect-row">
-        <span class="tb-effect-label">Panel opacity</span>
-        <input
-          class="tb-slider"
-          type="range" min="20" max="100"
-          :value="theme.current?.effects.glassOpacity ?? 82"
-          @input="theme.setGlassOpacity(+($event.target as HTMLInputElement).value)"
-        />
-        <span class="tb-effect-val">{{ theme.current?.effects.glassOpacity ?? 82 }}%</span>
-      </div>
-    </div>
-
-    <!-- Main palette -->
-    <div class="tb-section">
-      <button class="tb-section-toggle" type="button" @click="paletteOpen = !paletteOpen">
-        <span class="tb-section-label">Main palette</span>
-        <span class="tb-chevron" :class="{ open: paletteOpen }">›</span>
-      </button>
-      <div v-if="paletteOpen" class="tb-swatches-grid">
-        <button
-          v-for="(label, key) in COLOR_LABELS"
-          :key="key"
-          class="tb-color-row"
-          :class="{ active: activeColor?.group === 'colors' && activeColor?.key === key }"
-          type="button"
-          @click="selectColor('colors', key)"
-        >
-          <span
-            class="tb-swatch"
-            :style="{ background: theme.current?.colors[key as keyof ThemeColors] }"
+  <div class="tb-wrap">
+    <!-- Picker wing — slides in to the left -->
+    <div class="tb-picker-wing" :class="{ open: pickerOpen }" v-scroll-contain>
+      <div class="tb-picker-wing-inner">
+        <div class="tb-picker-header">
+          <span class="tb-picker-for">
+            <span
+              v-if="activeColor"
+              class="tb-picker-swatch"
+              :style="{ background: activeValue }"
+            />
+            {{ activeLabel || 'Select a color' }}
+          </span>
+        </div>
+        <div class="tb-picker-body">
+          <ColorPicker
+            v-if="activeColor"
+            :model-value="activeValue"
+            @update:model-value="onPickerUpdate"
           />
-          <span class="tb-color-label">{{ label }}</span>
-          <span class="tb-color-hex">{{ theme.current?.colors[key as keyof ThemeColors] }}</span>
-        </button>
+          <p v-else class="tb-picker-hint">Select a color from the list →</p>
+        </div>
       </div>
     </div>
 
-    <!-- Tuning palette -->
-    <div class="tb-section">
-      <button class="tb-section-toggle" type="button" @click="tuningOpen = !tuningOpen">
-        <span class="tb-section-label">Tuning palette</span>
-        <span class="tb-chevron" :class="{ open: tuningOpen }">›</span>
-      </button>
-      <div v-if="tuningOpen" class="tb-swatches-grid">
-        <button
-          v-for="(label, key) in TUNING_LABELS"
-          :key="key"
-          class="tb-color-row"
-          :class="{ active: activeColor?.group === 'tuning' && activeColor?.key === key }"
-          type="button"
-          @click="selectColor('tuning', key)"
-        >
-          <span
-            class="tb-swatch"
-            :style="{ background: theme.current?.tuning[key as keyof ThemeTuning] }"
-          />
-          <span class="tb-color-label">{{ label }}</span>
-          <span class="tb-color-hex">{{ theme.current?.tuning[key as keyof ThemeTuning] }}</span>
-        </button>
+    <!-- Main list panel -->
+    <div class="tb-panel" v-scroll-contain>
+
+      <!-- Toggle tab on left edge -->
+      <button
+        class="tb-picker-tab"
+        :class="{ open: pickerOpen }"
+        type="button"
+        :title="pickerOpen ? 'Hide color picker' : 'Show color picker'"
+        @click="togglePicker"
+      >‹</button>
+
+      <div class="tb-header">
+        <span class="tb-title">Theme Builder</span>
+        <button class="tb-close" type="button" @click="emit('close')">×</button>
       </div>
-    </div>
 
-    <!-- Inline color picker (appears when a swatch row is selected) -->
-    <div v-if="activeColor" class="tb-picker-area">
-      <ColorPicker
-        :label="activeLabel"
-        :model-value="activeValue"
-        @update:model-value="onPickerUpdate"
-      />
-    </div>
+      <div class="tb-body">
 
-    </div><!-- /.tb-body -->
+        <!-- Ambiance -->
+        <div class="tb-section">
+          <div class="tb-section-label">Base ambiance</div>
+          <div class="tb-ambiance-row">
+            <button
+              v-for="t in THEMES" :key="t"
+              class="tb-ambiance-btn"
+              :class="{ active: theme.current?.ambiance === t }"
+              type="button"
+              @click="onAmbianceChange(t)"
+            >{{ THEME_LABELS[t] }}</button>
+          </div>
+        </div>
 
-    <!-- Footer -->
-    <div class="tb-footer">
-      <span v-if="theme.error" class="tb-error">{{ theme.error }}</span>
-      <div class="tb-footer-actions">
-        <button
-          class="tb-btn-reset"
-          type="button"
-          :disabled="!theme.isDirty"
-          @click="onReset"
-        >Reset</button>
-        <button
-          class="tb-btn-save"
-          type="button"
-          :disabled="!theme.isDirty || theme.saving"
-          @click="onSave"
-        >{{ theme.saving ? 'Saving…' : 'Save →' }}</button>
+        <!-- Effects -->
+        <div class="tb-section">
+          <div class="tb-section-label">Effects</div>
+          <div class="tb-effect-row">
+            <span class="tb-effect-label">Panel opacity</span>
+            <input
+              class="tb-slider" type="range" min="20" max="100"
+              :value="theme.current?.effects.glassOpacity ?? 82"
+              @input="theme.setGlassOpacity(+($event.target as HTMLInputElement).value)"
+            />
+            <span class="tb-effect-val">{{ theme.current?.effects.glassOpacity ?? 82 }}%</span>
+          </div>
+        </div>
+
+        <!-- Main palette -->
+        <div class="tb-section">
+          <button class="tb-section-toggle" type="button" @click="paletteOpen = !paletteOpen">
+            <span class="tb-section-label">Main palette</span>
+            <span class="tb-chevron" :class="{ open: paletteOpen }">›</span>
+          </button>
+          <div v-if="paletteOpen" class="tb-swatches-grid">
+            <button
+              v-for="key in MAIN_KEYS" :key="key"
+              class="tb-color-row" :class="{ active: isActive('colors', key) }"
+              type="button" @click="selectColor('colors', key)"
+            >
+              <span class="tb-swatch" :style="{ background: theme.current?.colors[key] }" />
+              <span class="tb-color-label">{{ COLOR_LABELS[key] }}</span>
+              <span class="tb-color-hex">{{ theme.current?.colors[key] }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Advanced -->
+        <div class="tb-section">
+          <button class="tb-section-toggle" type="button" @click="advancedOpen = !advancedOpen">
+            <span class="tb-section-label">Advanced</span>
+            <span class="tb-chevron" :class="{ open: advancedOpen }">›</span>
+          </button>
+          <div v-if="advancedOpen" class="tb-swatches-grid">
+            <button
+              v-for="key in ADVANCED_KEYS" :key="key"
+              class="tb-color-row" :class="{ active: isActive('colors', key) }"
+              type="button" @click="selectColor('colors', key)"
+            >
+              <span class="tb-swatch" :style="{ background: theme.current?.colors[key] }" />
+              <span class="tb-color-label">{{ COLOR_LABELS[key] }}</span>
+              <span class="tb-color-hex">{{ theme.current?.colors[key] }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tuning palette -->
+        <div class="tb-section">
+          <button class="tb-section-toggle" type="button" @click="tuningOpen = !tuningOpen">
+            <span class="tb-section-label">Tuning palette</span>
+            <span class="tb-chevron" :class="{ open: tuningOpen }">›</span>
+          </button>
+          <div v-if="tuningOpen" class="tb-swatches-grid">
+            <button
+              v-for="(label, key) in TUNING_LABELS" :key="key"
+              class="tb-color-row" :class="{ active: isActive('tuning', key) }"
+              type="button" @click="selectColor('tuning', key)"
+            >
+              <span class="tb-swatch" :style="{ background: theme.current?.tuning[key as keyof ThemeTuning] }" />
+              <span class="tb-color-label">{{ label }}</span>
+              <span class="tb-color-hex">{{ theme.current?.tuning[key as keyof ThemeTuning] }}</span>
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /.tb-body -->
+
+      <div class="tb-footer">
+        <span v-if="theme.error" class="tb-error">{{ theme.error }}</span>
+        <div class="tb-footer-actions">
+          <button class="tb-btn-reset" type="button" :disabled="!theme.isDirty" @click="onReset">Reset</button>
+          <button class="tb-btn-save" type="button" :disabled="!theme.isDirty || theme.saving" @click="onSave">
+            {{ theme.saving ? 'Saving…' : 'Save →' }}
+          </button>
+        </div>
       </div>
-    </div>
+
+    </div><!-- /.tb-panel -->
   </div>
 </template>
 
 <style scoped>
+.tb-wrap {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  max-height: 80vh;
+}
+
+/* ── Picker wing ── */
+.tb-picker-wing {
+  width: 0;
+  overflow: hidden;
+  transition: width 0.22s ease;
+  flex-shrink: 0;
+}
+.tb-picker-wing.open {
+  width: 272px;
+}
+.tb-picker-wing-inner {
+  width: 272px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-right: none;
+  border-radius: 6px 0 0 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.tb-picker-header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--panel-edge);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tb-picker-for {
+  color: var(--paper);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.tb-picker-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.15);
+  flex-shrink: 0;
+}
+.tb-picker-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px;
+}
+.tb-picker-hint {
+  color: var(--steel);
+  font-size: 10px;
+  text-align: center;
+  margin-top: 40px;
+}
+
+/* ── Toggle tab ── */
+.tb-picker-tab {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) translateX(-100%);
+  width: 16px;
+  height: 48px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-right: none;
+  border-radius: 6px 0 0 6px;
+  color: var(--steel);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color .15s;
+  padding: 0;
+  z-index: 1;
+}
+.tb-picker-tab:hover { color: var(--gold); }
+.tb-picker-tab.open { transform: translateY(-50%) translateX(-100%) scaleX(-1); }
+
+/* ── Main panel ── */
 .tb-panel {
   width: 300px;
   max-height: 80vh;
@@ -222,6 +344,7 @@ function onReset() {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   overflow: hidden;
+  position: relative;
 }
 .tb-header {
   display: flex;
@@ -306,6 +429,7 @@ function onReset() {
   min-width: 32px;
   text-align: right;
 }
+
 .tb-ambiance-row {
   display: flex;
   gap: 5px;
@@ -369,12 +493,6 @@ function onReset() {
   font-size: 10px;
 }
 
-.tb-picker-area {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--panel-edge);
-  background: var(--panel-well);
-}
-
 .tb-footer {
   padding: 10px 14px;
   display: flex;
@@ -383,10 +501,7 @@ function onReset() {
   flex-shrink: 0;
   border-top: 1px solid var(--panel-edge);
 }
-.tb-error {
-  color: #c0392b;
-  font-size: 10px;
-}
+.tb-error { color: #c0392b; font-size: 10px; }
 .tb-footer-actions {
   display: flex;
   gap: 8px;
@@ -420,6 +535,6 @@ function onReset() {
   cursor: pointer;
   transition: background .12s;
 }
-.tb-btn-save:hover:not(:disabled) { background: var(--gold-tint-14); filter: brightness(1.15); }
+.tb-btn-save:hover:not(:disabled) { filter: brightness(1.15); }
 .tb-btn-save:disabled { opacity: 0.35; cursor: default; }
 </style>

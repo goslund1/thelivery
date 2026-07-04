@@ -530,13 +530,15 @@ async fn delete_tuning_preset(
 
 const THEME_DEFAULT: &str = r##"{
   "colors": {
-    "asphalt":   "#0b0b0d",
-    "panel":     "#15151a",
-    "panelEdge": "#23232b",
-    "gold":      "#c9a227",
-    "magenta":   "#d6478f",
-    "paper":     "#ece9e4",
-    "steel":     "#7a7e87"
+    "asphalt":    "#0b0b0d",
+    "panel":      "#15151a",
+    "panelEdge":  "#23232b",
+    "gold":       "#c9a227",
+    "magenta":    "#d6478f",
+    "paper":      "#ece9e4",
+    "steel":      "#7a7e87",
+    "panelWell":  "#0e0e11",
+    "steelLight": "#a8a4ab"
   },
   "tuning": {
     "tires":        "#29C5F6",

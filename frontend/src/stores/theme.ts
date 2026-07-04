@@ -4,13 +4,15 @@ import type { Theme } from '../types'
 import { api } from '../api'
 
 export interface ThemeColors {
-  asphalt:   string
-  panel:     string
-  panelEdge: string
-  gold:      string
-  magenta:   string
-  paper:     string
-  steel:     string
+  asphalt:    string
+  panel:      string
+  panelEdge:  string
+  gold:       string
+  magenta:    string
+  paper:      string
+  steel:      string
+  panelWell:  string
+  steelLight: string
 }
 
 export interface ThemeTuning {
@@ -44,21 +46,23 @@ export interface ThemeData {
 
 // Default colors per ambiance — used when switching base theme to reset the palette.
 export const AMBIANCE_DEFAULTS: Record<Theme, ThemeColors> = {
-  dark:    { asphalt: '#0b0b0d', panel: '#15151a', panelEdge: '#23232b', gold: '#c9a227', magenta: '#d6478f', paper: '#ece9e4', steel: '#7a7e87' },
-  light:   { asphalt: '#f3efe6', panel: '#ffffff',  panelEdge: '#ddd8cd', gold: '#ebd150', magenta: '#30acb8', paper: '#201f1c', steel: '#6b6f76' },
-  rainbow: { asphalt: '#0b0b14', panel: '#16151f',  panelEdge: '#2a2838', gold: '#e83d9c', magenta: '#3dc7e8', paper: '#f1edf7', steel: '#8d87a3' },
-  clouds:  { asphalt: '#eef3f7', panel: '#f8fafc',  panelEdge: '#d7e3ec', gold: '#5b8fb0', magenta: '#8a7bc4', paper: '#2c3e4a', steel: '#7188a0' },
-  stormy:  { asphalt: '#2a2e33', panel: '#353a40',  panelEdge: '#454b52', gold: '#7badc9', magenta: '#a596d6', paper: '#e4e7ea', steel: '#9aa2a9' },
+  dark:    { asphalt: '#0b0b0d', panel: '#15151a', panelEdge: '#23232b', gold: '#c9a227', magenta: '#d6478f', paper: '#ece9e4', steel: '#7a7e87', panelWell: '#0e0e11', steelLight: '#a8a4ab' },
+  light:   { asphalt: '#f3efe6', panel: '#ffffff',  panelEdge: '#ddd8cd', gold: '#ebd150', magenta: '#30acb8', paper: '#201f1c', steel: '#6b6f76', panelWell: '#f0ede4', steelLight: '#56565c' },
+  rainbow: { asphalt: '#0b0b14', panel: '#16151f',  panelEdge: '#2a2838', gold: '#e83d9c', magenta: '#3dc7e8', paper: '#f1edf7', steel: '#8d87a3', panelWell: '#100f18', steelLight: '#b3adc6' },
+  clouds:  { asphalt: '#eef3f7', panel: '#f8fafc',  panelEdge: '#d7e3ec', gold: '#5b8fb0', magenta: '#8a7bc4', paper: '#2c3e4a', steel: '#7188a0', panelWell: '#e9eff4', steelLight: '#5c7488' },
+  stormy:  { asphalt: '#2a2e33', panel: '#353a40',  panelEdge: '#454b52', gold: '#7badc9', magenta: '#a596d6', paper: '#e4e7ea', steel: '#9aa2a9', panelWell: '#232629', steelLight: '#c5cbd1' },
 }
 
 const COLOR_VAR_MAP: Record<keyof ThemeColors, string> = {
-  asphalt:   '--asphalt',
-  panel:     '--panel',
-  panelEdge: '--panel-edge',
-  gold:      '--gold',
-  magenta:   '--magenta',
-  paper:     '--paper',
-  steel:     '--steel',
+  asphalt:    '--asphalt',
+  panel:      '--panel',
+  panelEdge:  '--panel-edge',
+  gold:       '--gold',
+  magenta:    '--magenta',
+  paper:      '--paper',
+  steel:      '--steel',
+  panelWell:  '--panel-well',
+  steelLight: '--steel-light',
 }
 
 const TUNING_VAR_MAP: Record<keyof ThemeTuning, string> = {
@@ -84,8 +88,11 @@ function applyEffects(effects: ThemeEffects) {
 }
 
 function normalize(data: ThemeData): ThemeData {
+  const ambiance = data.ambiance ?? 'dark'
+  const defaults = AMBIANCE_DEFAULTS[ambiance] ?? AMBIANCE_DEFAULTS.dark
   return {
     ...data,
+    colors:  { ...defaults, ...data.colors },
     effects: { ...EFFECTS_DEFAULTS, ...(data.effects ?? {}) },
   }
 }

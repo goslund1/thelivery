@@ -1986,7 +1986,8 @@ async function submitSuggestion() {
   height: var(--ds-tab);
   background: transparent;
   border: none;
-  border-top: 1px solid rgba(255,255,255,0.06);
+  border-top: 1px solid transparent;
+  transition: border-color 0.22s, color 0.15s;
   color: var(--steel);
   cursor: pointer;
   display: flex;

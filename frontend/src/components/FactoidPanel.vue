@@ -293,7 +293,7 @@ function confirmAddType() {
 
 .fp-btn-confirm { color: var(--gold); }
 .fp-btn-confirm:hover { color: var(--gold-bright); }
-.fp-btn-delete:hover { color: #c0392b; opacity: 1; }
+.fp-btn-delete:hover { color: var(--danger-bright); opacity: 1; }
 .fp-btn-move { font-size: 13px; }
 
 .fp-options {
@@ -328,7 +328,7 @@ function confirmAddType() {
   opacity: 0.5;
   transition: color 0.1s, opacity 0.1s;
 }
-.fp-pill-x:hover { color: #c0392b; opacity: 1; }
+.fp-pill-x:hover { color: var(--danger-bright); opacity: 1; }
 
 .fp-add-option {
   display: flex;

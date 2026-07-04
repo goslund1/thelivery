@@ -186,7 +186,7 @@ const pillLabel = computed(() => {
 }
 .edit-pill-save:hover {
   background: var(--gold);
-  color: #111;
+  color: var(--ink);
   border-color: var(--gold);
 }
 
@@ -257,8 +257,8 @@ const pillLabel = computed(() => {
   cursor: default;
 }
 .tl-yellow.tl-idle:hover {
-  background: #9a7400;
-  border-color: #b89000;
+  background: color-mix(in srgb, var(--gold) 40%, transparent);
+  border-color: var(--gold);
   transform: none;
   box-shadow: none;
 }
@@ -267,14 +267,14 @@ const pillLabel = computed(() => {
 }
 
 .tl-red {
-  background: #8b1a12;
-  border-color: #c0392b;
+  background: color-mix(in srgb, var(--danger) 45%, transparent);
+  border-color: var(--danger);
   color: #fff;
 }
 .tl-red:hover {
-  background: #e82810;
-  border-color: #ff4830;
-  box-shadow: 0 0 12px rgba(232,40,16,0.75);
+  background: var(--danger-bright);
+  border-color: var(--danger-bright);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--danger-bright) 60%, transparent);
 }
 .tl-red svg {
   width: 14px;
@@ -282,14 +282,14 @@ const pillLabel = computed(() => {
 }
 
 .tl-yellow {
-  background: #7a5800;
-  border-color: #a07800;
+  background: color-mix(in srgb, var(--gold) 35%, transparent);
+  border-color: var(--gold);
   color: #fff;
 }
 .tl-yellow:hover {
-  background: #ffc200;
-  border-color: #ffe870;
-  box-shadow: 0 0 16px rgba(255,194,0,0.85);
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--gold) 60%, transparent);
 }
 .icon-ibeam {
   width: 8px;
@@ -297,13 +297,13 @@ const pillLabel = computed(() => {
 }
 
 .tl-green {
-  background: #0f4020;
-  border-color: #1e7a3a;
+  background: color-mix(in srgb, var(--success) 40%, transparent);
+  border-color: var(--success);
 }
 .tl-green:hover {
-  background: #16c24a;
-  border-color: #34e068;
-  box-shadow: 0 0 12px rgba(22,194,74,0.75);
+  background: var(--success-bright);
+  border-color: var(--success-bright);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--success-bright) 60%, transparent);
 }
 .icon-arrow {
   width: 17px;

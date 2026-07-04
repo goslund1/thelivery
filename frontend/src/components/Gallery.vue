@@ -476,10 +476,10 @@ function cancelFolderImport() {
 }
 .thumb.excluded .thumb-ctrl-lead.is-lead,
 .thumb.excluded .thumb-ctrl-lead:hover {
-  color: #9a7800;
+  color: var(--gold);
 }
 .thumb.excluded .thumb-ctrl-pool.included {
-  color: #9a7800;
+  color: var(--gold);
 }
 .thumb.excluded .thumb-ctrl-pool:not(.included) {
   color: rgba(0, 0, 0, 0.3);
@@ -521,24 +521,24 @@ function cancelFolderImport() {
   transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
 .thumb-delete-confirm button:first-of-type {
-  background: #5c0000;
-  color: #fff;
-  border: 1px solid #7a0000;
+  background: color-mix(in srgb, var(--danger) 30%, transparent);
+  color: var(--danger-bright);
+  border: 1px solid var(--danger);
 }
 .thumb-delete-confirm button:first-of-type:hover {
-  background: #cc0000;
-  border-color: #ff4444;
-  box-shadow: 0 0 10px rgba(200,0,0,0.8);
+  background: color-mix(in srgb, var(--danger) 55%, transparent);
+  border-color: var(--danger-bright);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--danger-bright) 50%, transparent);
 }
 .thumb-delete-confirm button:last-of-type {
-  background: #7a5800;
-  color: #fff;
-  border: 1px solid #a07800;
+  background: color-mix(in srgb, var(--gold) 20%, transparent);
+  color: var(--gold);
+  border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
 }
 .thumb-delete-confirm button:last-of-type:hover {
-  background: #ffc200;
-  border-color: #ffe870;
-  box-shadow: 0 0 10px rgba(255,194,0,0.85);
+  background: color-mix(in srgb, var(--gold) 35%, transparent);
+  border-color: var(--gold);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--gold) 40%, transparent);
 }
 .thumb-dragging {
   opacity: 0.3;

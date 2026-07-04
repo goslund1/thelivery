@@ -542,14 +542,14 @@ async function onManageUpload(e: Event) {
   transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
 /* Red light — Delete */
-.mgr-delete-btn { background:#5c0000; border:2px solid #7a0000; }
-.mgr-delete-btn:hover { background:#cc0000; border-color:#ff4444; box-shadow:0 0 14px rgba(200,0,0,0.8); }
+.mgr-delete-btn { background:color-mix(in srgb, var(--danger) 40%, transparent); border:2px solid var(--danger); color:var(--danger-bright); }
+.mgr-delete-btn:hover { background:color-mix(in srgb, var(--danger) 65%, transparent); border-color:var(--danger-bright); box-shadow:0 0 14px color-mix(in srgb, var(--danger-bright) 50%, transparent); }
 /* Green light — Add Photos */
-.mgr-add-btn { background:#1e3d00; border:2px solid #2e5f00; }
-.mgr-add-btn:hover { background:#74b050; border-color:#a8d888; box-shadow:0 0 14px rgba(116,176,80,0.8); }
+.mgr-add-btn { background:color-mix(in srgb, var(--success) 35%, transparent); border:2px solid var(--success); color:var(--success-bright); }
+.mgr-add-btn:hover { background:var(--success-unlit); border-color:var(--success-bright); box-shadow:0 0 14px color-mix(in srgb, var(--success-bright) 50%, transparent); }
 /* Yellow light — Cancel */
-.mgr-cancel-btn { background:#7a5800; border:2px solid #a07800; }
-.mgr-cancel-btn:hover { background:#ffc200; border-color:#ffe870; box-shadow:0 0 14px rgba(255,194,0,0.85); }
+.mgr-cancel-btn { background:color-mix(in srgb, var(--gold) 30%, transparent); border:2px solid color-mix(in srgb, var(--gold) 60%, transparent); color:var(--gold); }
+.mgr-cancel-btn:hover { background:color-mix(in srgb, var(--gold) 45%, transparent); border-color:var(--gold); box-shadow:0 0 14px color-mix(in srgb, var(--gold) 45%, transparent); }
 .mgr-confirm-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;

@@ -764,14 +764,14 @@ function onTabMigrate() {
 .admin-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
 .admin-btn:disabled { opacity: 0.5; cursor: default; }
 .admin-btn-red {
-  border-color: #7a0000;
-  background: #5c0000;
-  color: #fff;
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger-bright);
 }
 .admin-btn-red:hover:not(:disabled) {
-  background: #cc0000;
-  border-color: #ff4444;
-  box-shadow: 0 0 12px rgba(200, 0, 0, 0.7);
+  background: color-mix(in srgb, var(--danger) 60%, transparent);
+  border-color: var(--danger-bright);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--danger-bright) 50%, transparent);
 }
 
 .settings-footer {

@@ -15,6 +15,8 @@
 //!   DELETE /api/admin/orphans                -> { deleted }          (auth required)
 //!   POST   /api/admin/export-seed            -> { exported }         (auth required)
 //!   GET    /uploads/*                        -> static files
+//!   GET    /api/cars                          -> [Car]   (public; ?game=FH5|FH6 to filter)
+//!   POST   /api/cars                         -> Car     (upsert; auth required)
 //!   GET    /api/theme                        -> ThemeBody (public)
 //!   PUT    /api/theme                        -> ThemeBody (auth required)
 //!   GET    /api/health                       -> "ok"
@@ -29,7 +31,7 @@ use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, Salt
 use argon2::Argon2;
 use axum::{
     async_trait,
-    extract::{ConnectInfo, DefaultBodyLimit, FromRequestParts, Multipart, Path, State},
+    extract::{ConnectInfo, DefaultBodyLimit, FromRequestParts, Multipart, Path, Query, State},
     http::{header::AUTHORIZATION, request::Parts, HeaderName, HeaderValue, StatusCode},
     routing::{delete, get, post, put},
     Json, Router,
@@ -305,6 +307,7 @@ async fn main() -> anyhow::Result<()> {
     seed_if_empty(&pool, &seed_path).await?;
     seed_users_if_empty(&pool, "seed/users.json").await?;
     seed_theme_if_empty(&pool).await?;
+    seed_cars_if_empty(&pool).await?;
     normalize_bodies(&pool).await?;
 
     let state = AppState {
@@ -342,6 +345,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/suggestions", post(submit_suggestion))
         .route("/api/admin/suggestions", get(admin_list_suggestions))
         .route("/api/admin/suggestions/:id", delete(admin_dismiss_suggestion))
+        .route("/api/cars", get(list_cars).post(create_car))
         .route("/api/theme", get(get_theme).put(put_theme))
         .route("/api/tuning-presets", get(list_tuning_presets).post(create_tuning_preset))
         .route("/api/tuning-presets/:id", delete(delete_tuning_preset))
@@ -601,6 +605,111 @@ async fn put_theme(
     .await
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     Ok(Json(body))
+}
+
+// --- Cars -------------------------------------------------------------------
+
+async fn upsert_car(pool: &SqlitePool, c: &Value) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO cars (id, game, make, model, year, class, pi, drive, country, category, decade, status, dlc)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           game=excluded.game, make=excluded.make, model=excluded.model,
+           year=excluded.year, class=excluded.class, pi=excluded.pi,
+           drive=excluded.drive, country=excluded.country, category=excluded.category,
+           decade=excluded.decade, status=excluded.status, dlc=excluded.dlc",
+    )
+    .bind(c["id"].as_str().unwrap_or_default())
+    .bind(c["game"].as_str().unwrap_or_default())
+    .bind(c["make"].as_str().unwrap_or_default())
+    .bind(c["model"].as_str().unwrap_or_default())
+    .bind(c["year"].as_i64())
+    .bind(c["class"].as_str())
+    .bind(c["pi"].as_i64())
+    .bind(c["drive"].as_str())
+    .bind(c["country"].as_str())
+    .bind(c["category"].as_str())
+    .bind(c["decade"].as_str())
+    .bind(c["status"].as_str())
+    .bind(c["dlc"].as_str())
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+fn car_row_to_json(r: &sqlx::sqlite::SqliteRow) -> Value {
+    json!({
+        "id":       r.get::<String, _>("id"),
+        "game":     r.get::<String, _>("game"),
+        "make":     r.get::<String, _>("make"),
+        "model":    r.get::<String, _>("model"),
+        "year":     r.get::<Option<i64>, _>("year"),
+        "class":    r.get::<Option<String>, _>("class"),
+        "pi":       r.get::<Option<i64>, _>("pi"),
+        "drive":    r.get::<Option<String>, _>("drive"),
+        "country":  r.get::<Option<String>, _>("country"),
+        "category": r.get::<Option<String>, _>("category"),
+        "decade":   r.get::<Option<String>, _>("decade"),
+        "status":   r.get::<Option<String>, _>("status"),
+        "dlc":      r.get::<Option<String>, _>("dlc"),
+    })
+}
+
+async fn list_cars(
+    State(st): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<Value>, ApiError> {
+    let rows = if let Some(game) = params.get("game") {
+        sqlx::query(
+            "SELECT id,game,make,model,year,class,pi,drive,country,category,decade,status,dlc
+             FROM cars WHERE game = ? ORDER BY make, model, year",
+        )
+        .bind(game)
+        .fetch_all(&st.pool)
+        .await
+    } else {
+        sqlx::query(
+            "SELECT id,game,make,model,year,class,pi,drive,country,category,decade,status,dlc
+             FROM cars ORDER BY game, make, model, year",
+        )
+        .fetch_all(&st.pool)
+        .await
+    }
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let cars: Vec<Value> = rows.iter().map(car_row_to_json).collect();
+    Ok(Json(json!(cars)))
+}
+
+async fn create_car(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Json(body): Json<Value>,
+) -> Result<(StatusCode, Json<Value>), ApiError> {
+    upsert_car(&st.pool, &body)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok((StatusCode::CREATED, Json(body)))
+}
+
+async fn seed_cars_if_empty(pool: &SqlitePool) -> anyhow::Result<()> {
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM cars")
+        .fetch_one(pool)
+        .await?;
+    if count > 0 {
+        tracing::info!("db already has {count} cars; skipping car seed");
+        return Ok(());
+    }
+    let Ok(raw) = std::fs::read_to_string("seed/cars.json") else {
+        tracing::warn!("no cars seed at seed/cars.json; car registry will be empty");
+        return Ok(());
+    };
+    let cars: Vec<Value> = serde_json::from_str(&raw)?;
+    for c in &cars {
+        upsert_car(pool, c).await?;
+    }
+    tracing::info!("seeded {} cars from seed/cars.json", cars.len());
+    Ok(())
 }
 
 // --- Seed -------------------------------------------------------------------

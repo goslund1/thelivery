@@ -66,7 +66,24 @@ export interface Card {
   tags: string[]
   images: CardImage[]
   sections: Section[]
-  colors?: Record<string, string>  // per-field color overrides, e.g. { name: '#ff0000' }
+  colors?: Record<string, string>
+  carId?: string  // FK into the cars registry; null for multi-car/showcase cards
+}
+
+export interface Car {
+  id: string       // e.g. fh6-nissan-skyline-gtr-r34
+  game: 'FH5' | 'FH6'
+  make: string
+  model: string
+  year: number | null
+  class: string | null    // D/C/B/A/S1/S2/X
+  pi: number | null       // stock PI (FH5 only)
+  drive: string | null    // FWD/RWD/AWD (FH6 only)
+  country: string | null
+  category: string | null // e.g. Modern Sports (FH6 only)
+  decade: string | null
+  status: string | null
+  dlc: string | null      // null = base game; pack name = paid DLC
 }
 
 export type Theme = 'dark' | 'light' | 'rainbow' | 'clouds' | 'stormy'

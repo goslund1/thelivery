@@ -1151,28 +1151,26 @@ async function submitSuggestion() {
 
   </div>
 
-  <!-- Suggestion drawer — view mode only, anchored to bottom of tune section -->
-  <div v-if="showSuggestBar" class="ta-suggest-drawer" :class="{ 'is-open': !suggestCollapsed }">
-    <!-- body slides up above the tab strip -->
-    <div class="ta-suggest-body">
-      <p class="ta-suggest-message">
-        Looks like you've got some ideas on how to tweak this tune — want to submit it for testing?
-      </p>
-      <div class="ta-suggest-actions">
-        <button class="ta-suggest-submit" @click="openSuggestModal">Done Tweaking</button>
-        <button class="ta-suggest-later" @click="suggestCollapsed = true">Ask Me Later</button>
-        <button class="ta-suggest-dismiss" @click="suggestDismissed = true; suggestModalOpen = false">Not for me</button>
+  <!-- Floating suggestion panel — view mode only, requires tuning data -->
+  <Teleport to="body">
+    <div v-if="showSuggestBar" class="ta-suggest-bar" :class="{ collapsed: suggestCollapsed }">
+      <div class="ta-suggest-body">
+        <p class="ta-suggest-message">
+          Looks like you've got some ideas on how to tweak this tune — want to submit it for testing?
+        </p>
+        <div class="ta-suggest-actions">
+          <button class="ta-suggest-submit" @click="openSuggestModal">Done Tweaking</button>
+          <button class="ta-suggest-later" @click="suggestCollapsed = true">Ask Me Later</button>
+          <button class="ta-suggest-dismiss" @click="suggestDismissed = true; suggestModalOpen = false">Not for me</button>
+        </div>
+      </div>
+      <div class="ta-suggest-tab" @click="suggestCollapsed = !suggestCollapsed">
+        <span class="ta-suggest-tab-chevron">{{ suggestCollapsed ? '▲' : '▼' }}</span>
+        <span class="ta-suggest-tab-label">Submit a tune tweak</span>
       </div>
     </div>
-    <!-- tab strip — always visible -->
-    <div class="ta-suggest-tab" @click="suggestCollapsed = !suggestCollapsed">
-      <span class="ta-suggest-tab-chevron">{{ suggestCollapsed ? '▲' : '▼' }}</span>
-      <span class="ta-suggest-tab-label">Submit a tune tweak</span>
-    </div>
-  </div>
 
-  <!-- Suggestion submit modal -->
-  <Teleport to="body">
+    <!-- Suggestion submit modal -->
     <div v-if="suggestModalOpen" class="ta-overlay ta-overlay--fixed" @click.self="suggestModalOpen = false">
       <div class="ta-dialog ta-suggest-dialog">
         <div class="ta-dialog-head">
@@ -1219,7 +1217,6 @@ async function submitSuggestion() {
   </Teleport>
 
 </template>
-
 
 <style scoped>
 .ta {
@@ -1924,29 +1921,38 @@ async function submitSuggestion() {
 .ta-dlg-cancel  { background: #5c0000; border: 2px solid #7a0000; }
 .ta-dlg-cancel:hover  { background: #cc0000; border-color: #ff4444; box-shadow: 0 0 16px rgba(200,0,0,0.85); }
 
-/* ── Suggestion drawer ──────────────────────────────────────────────────────── */
-.ta-suggest-drawer {
-  margin-top: 12px;
-  border: 1px solid var(--panel-edge);
-  border-radius: 6px 6px 0 0;
+/* ── Suggestion floating panel ──────────────────────────────────────────────── */
+.ta-suggest-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+  width: calc(100vw - 40px);
   background: color-mix(in srgb, var(--panel) 92%, transparent);
-  backdrop-filter: blur(8px);
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  backdrop-filter: var(--glass-blur, blur(10px));
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
   overflow: hidden;
 }
 
-/* body — hidden when collapsed, slides open */
+/* body — collapses to zero height when collapsed */
 .ta-suggest-body {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.22s ease, padding 0.22s ease;
-  padding: 0 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-.ta-suggest-drawer.is-open .ta-suggest-body {
-  max-height: 120px;
   padding: 14px 16px 10px;
+  max-height: 120px;
+  overflow: hidden;
+  transition: max-height 0.22s ease, padding 0.22s ease;
+}
+.ta-suggest-bar.collapsed .ta-suggest-body {
+  max-height: 0;
+  padding: 0 16px;
 }
 
 .ta-suggest-message {
@@ -1957,7 +1963,6 @@ async function submitSuggestion() {
   letter-spacing: 0.02em;
   margin: 0;
 }
-
 .ta-suggest-actions {
   display: flex;
   align-items: center;
@@ -1965,19 +1970,18 @@ async function submitSuggestion() {
   flex-wrap: wrap;
 }
 
-/* tab strip — always visible, clickable to toggle */
+/* tab strip — always visible */
 .ta-suggest-tab {
   display: flex;
   align-items: center;
   gap: 7px;
   padding: 7px 14px;
-  cursor: pointer;
   border-top: 1px solid var(--panel-edge);
+  cursor: pointer;
   transition: background 0.12s;
 }
-.ta-suggest-tab:hover {
-  background: color-mix(in srgb, var(--gold) 6%, transparent);
-}
+.ta-suggest-bar.collapsed .ta-suggest-tab { border-top: none; }
+.ta-suggest-tab:hover { background: color-mix(in srgb, var(--gold) 6%, transparent); }
 .ta-suggest-tab-chevron {
   font-size: 9px;
   color: var(--steel);
@@ -2033,7 +2037,7 @@ async function submitSuggestion() {
   color: var(--steel);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   padding: 5px 4px;
   cursor: pointer;

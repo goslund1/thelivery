@@ -8,6 +8,7 @@ import EditableText from './EditableText.vue'
 import UpgradesPicker from './UpgradesPicker.vue'
 import TuningAdjustments from './TuningAdjustments.vue'
 import rawUpgrades from '../data/fh_upgrades.json'
+import { applyImpliedUpgrades, applySpringsChoice, type ImpliedUpgradesResult } from '../constants/tuning'
 
 const props = defineProps<{ recipe: ForzaRecipeSection; cardId?: string; initialKitOpen?: boolean }>()
 const emit = defineEmits<{ 'update:recipe': [recipe: ForzaRecipeSection] }>()
@@ -47,6 +48,14 @@ function flush() {
   if (taRef.value) clone.adjustments = taRef.value.getAdjustments()
   skipNextPropsSync = true
   emit('update:recipe', clone)
+}
+
+function onImpliedUpgrades(result: ImpliedUpgradesResult) {
+  if (result.toAdd.length) applyImpliedUpgrades(local.upgrades, result.toAdd)
+}
+
+function onSpringsChoice(tier: 'Race' | 'Rally' | 'Drift') {
+  applySpringsChoice(local.upgrades, tier)
 }
 
 // UpgradesPicker mutates local.upgrades in-place; detect those mutations and flush.
@@ -380,6 +389,8 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
       :adjustments="local.adjustments"
       :card-id="props.cardId"
       @change="flush()"
+      @implied-upgrades="onImpliedUpgrades"
+      @springs-choice="onSpringsChoice"
     />
   </div>
 </template>

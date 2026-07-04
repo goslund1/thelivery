@@ -121,7 +121,7 @@ export function applySpringsChoice(
   upgrades: UpgradeCategory[],
   tier: 'Race' | 'Rally' | 'Drift',
 ): void {
-  const part = `${tier} Springs and Dampers`
+  const part = `${tier} Springs and Dampers` // matches fh_upgrades.json tier strings
   if (hasPart(upgrades, part)) return
   let cat = upgrades.find(u => u.category === 'Platform and Handling')
   if (!cat) {

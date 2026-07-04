@@ -2,12 +2,19 @@
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { AdjustmentRow } from '../types'
 import { useUiStore } from '../stores/ui'
+import { useCardsStore } from '../stores/cards'
 import { MarkDirtyKey } from '../keys'
 import { api } from '../api'
+import { impliedUpgrades, type ImpliedUpgradesResult } from '../constants/tuning'
 
 const props = defineProps<{ adjustments: AdjustmentRow[]; cardId?: string }>()
-const emit = defineEmits<{ change: [] }>()
+const emit = defineEmits<{
+  change: []
+  'implied-upgrades': [result: ImpliedUpgradesResult]
+  'springs-choice': [tier: 'Race' | 'Rally' | 'Drift']
+}>()
 const ui = useUiStore()
+const cards = useCardsStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
 // ── Canonical structure ───────────────────────────────────────────────────────
@@ -258,9 +265,50 @@ function getAdjustments(): AdjustmentRow[] {
 
 defineExpose({ getAdjustments })
 
+// ── Springs and Dampers dialog ────────────────────────────────────────────────
+const springsDialogOpen = ref(false)
+let springsDialogFiredThisSession = false
+watch(() => props.cardId, () => { springsDialogFiredThisSession = false })
+
+function checkImplied() {
+  if (!ui.isEditing || !props.cardId) return
+  const card = cards.byId(props.cardId)
+  const recipe = card?.sections.find(s => s.type === 'forza_recipe')
+  if (!recipe || recipe.type !== 'forza_recipe') return
+
+  const adjustments = localRows.value
+    .filter(r => !r.locked)
+    .map(({ locked, lockReason, _axis, _headerUnit, _bipolar, _centerMark, ...r }) => r)
+
+  const result = impliedUpgrades(adjustments, recipe.upgrades)
+
+  if (result.toAdd.length > 0) emit('implied-upgrades', result)
+
+  if (result.needsSpringsDialog && !springsDialogFiredThisSession) {
+    springsDialogFiredThisSession = true
+    springsDialogOpen.value = true
+  }
+}
+
+function onSpringsChoice(tier: 'Race' | 'Rally' | 'Drift') {
+  springsDialogOpen.value = false
+  emit('springs-choice', tier)
+}
+
+function onSpringsReset() {
+  springsDialogOpen.value = false
+  for (const r of localRows.value) {
+    if (r.tab === 'alignment' || r.tab === 'springs' || r.tab === 'damping') {
+      r.value = r.stock
+    }
+  }
+  flush()
+}
+
 function flush() {
   emit('change')
   markDirty()
+  checkImplied()
 }
 
 // ── View-mode rows ────────────────────────────────────────────────────────────
@@ -985,6 +1033,23 @@ async function submitSuggestion() {
     </div>
 
     <p v-else-if="!ui.isEditing" class="ta-empty">No adjustments recorded.</p>
+
+    <!-- Springs and Dampers tier dialog -->
+    <div v-if="springsDialogOpen" class="ta-overlay" @click.self="springsDialogOpen = false">
+      <div class="ta-dialog">
+        <div class="ta-dialog-head">
+          <span>Springs &amp; Dampers</span>
+          <button class="ta-dialog-close" @click="springsDialogOpen = false">×</button>
+        </div>
+        <p class="ta-dialog-body">A slider is off-stock. Which tier of Springs and Dampers is installed?</p>
+        <div class="ta-dialog-btns">
+          <button class="ta-dlg-keep" @click="onSpringsChoice('Race')">Race</button>
+          <button class="ta-dlg-keep" @click="onSpringsChoice('Rally')">Rally</button>
+          <button class="ta-dlg-keep" @click="onSpringsChoice('Drift')">Drift</button>
+          <button class="ta-dlg-cancel" @click="onSpringsReset">Reset to Stock</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Apply preset confirm dialog (has unsaved slider changes) -->
     <div v-if="applyConfirmOpen" class="ta-overlay" @click.self="applyConfirmOpen = false">

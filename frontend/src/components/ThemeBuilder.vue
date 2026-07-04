@@ -249,7 +249,7 @@ function onReset() { theme.reset(); activeColor.value = null }
   min-width: 0;
   display: flex;
   flex-direction: column;
-  background: var(--glass-bg);
+  background: color-mix(in srgb, var(--panel) calc(var(--glass-opacity) * 0.5), transparent);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);

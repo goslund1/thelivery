@@ -2,6 +2,7 @@
 import { reactive, computed, provide } from 'vue'
 import type { Card, Section } from '../types'
 import { useUiStore } from '../stores/ui'
+import { useCardsStore } from '../stores/cards'
 import { MarkDirtyKey, CardIdKey } from '../keys'
 import CardMeta from './CardMeta.vue'
 import Gallery from './Gallery.vue'
@@ -12,6 +13,7 @@ import RecipeSection from './RecipeSection.vue'
 
 const props = defineProps<{ card: Card }>()
 const ui = useUiStore()
+const cardsStore = useCardsStore()
 
 provide(MarkDirtyKey, () => { ui.markCardDirty(props.card.id) })
 provide(CardIdKey, props.card.id)
@@ -54,7 +56,14 @@ function onBuildIt() {
       v-model:open="openState[section.key]"
     >
       <TextSection v-if="section.type === 'text'" :card-id="card.id" :section="section" />
-      <RecipeSection v-else-if="section.type === 'forza_recipe'" :recipe="section" :card-id="card.id" @update:recipe="updated => Object.assign(section, updated)" />
+      <RecipeSection
+        v-else-if="section.type === 'forza_recipe'"
+        :recipe="section"
+        :card-id="card.id"
+        :car-id="card.carId"
+        @update:recipe="updated => Object.assign(section, updated)"
+        @update:car-id="id => { cardsStore.setCarId(card.id, id); ui.markCardDirty(card.id) }"
+      />
     </CollapsibleSection>
 
   </div>

@@ -61,6 +61,7 @@ export const useCardsStore = defineStore('cards', () => {
     coreSpecs?: Record<string, string>
     upgrades?: UpgradeCategory[]
     adjustments?: AdjustmentRow[]
+    carId?: string
   }): Promise<Card> {
     const maxCatalog = cards.value.reduce((m, c) => Math.max(m, c.catalogNumber), 0)
     const nextNum = maxCatalog + 1
@@ -79,6 +80,7 @@ export const useCardsStore = defineStore('cards', () => {
         { type: 'text', key: 'notes', label: 'Design Notes', body: fields.notesBody ?? '', figurePath: fields.notesFigurePath },
         { type: 'forza_recipe', key: 'recipe', label: 'Tune / Build Parts', tuneName: fields.tuneName ?? '', shareCode: fields.shareCode ?? '', coreSpecs: fields.coreSpecs ?? {}, upgrades: fields.upgrades ?? [], adjustments: fields.adjustments ?? [] },
       ],
+      carId: fields.carId,
     }
     const created = await api.createCard(newCard)
     cards.value.push(created)
@@ -235,6 +237,11 @@ export const useCardsStore = defineStore('cards', () => {
     if (c) c.liveryShareCode = code
   }
 
+  function setCarId(id: string, carId: string | null) {
+    const c = byId(id)
+    if (c) c.carId = carId ?? undefined
+  }
+
   function addTag(id: string, value: string) {
     const c = byId(id)
     if (c && value && !c.tags.includes(value)) c.tags.push(value)
@@ -355,7 +362,7 @@ export const useCardsStore = defineStore('cards', () => {
     removeImage, toggleImageIncluded, addImageToPool,
     setColor,
     addTag, removeTag, addCollection, removeCollection,
-    setLiveryShareCode,
+    setLiveryShareCode, setCarId,
     allTagValues, allCollectionValues, allSectionKeys, allSubtitleSegments,
     allLiveryCodes, allTuningCodes,
     getImpliedUpgrades, applyUpgradesFromTuning,

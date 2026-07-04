@@ -92,6 +92,7 @@ function blankRecipe(): ForzaRecipeSection {
   }
 }
 const recipe = ref<ForzaRecipeSection>(blankRecipe())
+const newCarId = ref<string | null>(null)
 
 const sectionOpen = reactive({ insp: true, notes: true, recipe: true })
 
@@ -143,6 +144,7 @@ watch(() => modal.newCardOpen, async (open) => {
   figureSaving.value = false
   figureError.value = ''
   recipe.value = blankRecipe()
+  newCarId.value = null
   staged.value.forEach(s => URL.revokeObjectURL(s.url))
   staged.value = []
   activeStaged.value = 0
@@ -237,6 +239,7 @@ async function onCreate() {
       coreSpecs: { ...recipe.value.coreSpecs },
       upgrades: JSON.parse(JSON.stringify(recipe.value.upgrades)),
       adjustments: JSON.parse(JSON.stringify(recipe.value.adjustments)),
+      carId: newCarId.value ?? undefined,
     })
     for (let i = 0; i < staged.value.length; i++) {
       const result = await api.uploadImage(staged.value[i].file, card, i)
@@ -427,7 +430,13 @@ onUnmounted(() => { document.body.style.overflow = '' })
 
       <!-- Tune / Build Parts — RecipeSection for full edit-mode parity -->
       <CollapsibleSection label="Tune / Build Parts" section-key="nc-recipe" v-model:open="sectionOpen.recipe">
-        <RecipeSection :recipe="recipe" :initial-kit-open="true" @update:recipe="updated => Object.assign(recipe, updated)" />
+        <RecipeSection
+          :recipe="recipe"
+          :initial-kit-open="true"
+          :car-id="newCarId"
+          @update:recipe="updated => Object.assign(recipe, updated)"
+          @update:car-id="id => { newCarId = id }"
+        />
       </CollapsibleSection>
 
       <!-- Footer -->

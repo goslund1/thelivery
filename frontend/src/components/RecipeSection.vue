@@ -3,18 +3,31 @@ import { computed, inject, onBeforeUnmount, onMounted, reactive, ref, watch } fr
 import type { ForzaRecipeSection, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
 import { useFilterStore } from '../stores/filters'
+import { useCarsStore } from '../stores/cars'
 import { MarkDirtyKey } from '../keys'
 import EditableText from './EditableText.vue'
 import UpgradesPicker from './UpgradesPicker.vue'
 import TuningAdjustments from './TuningAdjustments.vue'
+import CarPicker from './CarPicker.vue'
 import rawUpgrades from '../data/fh_upgrades.json'
 import { impliedUpgrades, applyImpliedUpgrades, applySpringsChoice, type ImpliedUpgradesResult } from '../constants/tuning'
 
-const props = defineProps<{ recipe: ForzaRecipeSection; cardId?: string; initialKitOpen?: boolean }>()
-const emit = defineEmits<{ 'update:recipe': [recipe: ForzaRecipeSection] }>()
+const props = defineProps<{
+  recipe: ForzaRecipeSection
+  cardId?: string
+  carId?: string | null
+  initialKitOpen?: boolean
+}>()
+const emit = defineEmits<{
+  'update:recipe': [recipe: ForzaRecipeSection]
+  'update:carId': [id: string | null]
+}>()
 const ui = useUiStore()
 const filters = useFilterStore()
+const carsStore = useCarsStore()
 const markDirty = inject(MarkDirtyKey, () => {})
+
+const linkedCar = computed(() => props.carId ? carsStore.byId(props.carId) : undefined)
 const taRef = ref<InstanceType<typeof TuningAdjustments> | null>(null)
 
 const CORE_SPEC_KEYS = ['Drivetrain', 'Engine', 'Transmission', 'Tires', 'Suspension']
@@ -283,6 +296,14 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         />
         <b v-else>{{ local.shareCode || '—' }}</b>
       </div>
+      <!-- Car identity -->
+      <div v-if="ui.isEditing" class="rs-car-row">
+        <CarPicker :car-id="props.carId" @update:car-id="id => { markDirty(); emit('update:carId', id) }" />
+      </div>
+      <div v-else-if="linkedCar" class="rs-car-badge">
+        <span class="rs-game-badge">{{ linkedCar.game }}</span>
+        <span class="rs-car-name">{{ linkedCar.year }} {{ linkedCar.make }} {{ linkedCar.model }}</span>
+      </div>
     </div>
 
     <table v-if="ui.isEditing || hasNonStockSpecs" class="recipe-table">
@@ -459,6 +480,30 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 .kit-body {
   column-width: auto;
   column-count: auto;
+}
+
+/* Car identity row (edit) and badge (view) */
+.rs-car-row {
+  margin-top: 6px;
+}
+.rs-car-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+}
+.rs-game-badge {
+  font: 700 10px/1 'Oswald', sans-serif;
+  letter-spacing: 0.08em;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: var(--steel-light, #444);
+  color: var(--text-muted, #aaa);
+}
+.rs-car-name {
+  font: 12px/1 'Oswald', sans-serif;
+  color: var(--text-muted, #999);
+  letter-spacing: 0.03em;
 }
 
 .kit-body--grid {

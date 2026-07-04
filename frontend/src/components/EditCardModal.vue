@@ -20,6 +20,8 @@ const modal = useModalStore()
 const name       = ref('')
 const subtitle   = ref('')
 const liveryShareCode = ref('')
+const carId      = ref<string | null>(null)
+const carIdSnapshot = ref<string | null>(null)
 const collections = ref<string[]>([])
 const collectionInput = ref('')
 const tags        = ref<string[]>([])
@@ -84,6 +86,8 @@ function populate() {
   name.value            = c.name
   subtitle.value        = c.subtitle
   liveryShareCode.value = c.liveryShareCode ?? ''
+  carId.value = c.carId ?? null
+  carIdSnapshot.value = c.carId ?? null
   collections.value = [...c.collections]
   tags.value        = [...c.tags]
   const insp   = c.sections.find(s => s.key === 'inspiration')
@@ -143,6 +147,7 @@ async function onSave() {
     c.name = name.value.trim()
     c.subtitle = subtitle.value.trim()
     c.liveryShareCode = liveryShareCode.value.trim() || undefined
+    c.carId = carId.value ?? undefined
     c.collections = collections.value
     c.tags = tags.value
     // Text sections and recipe already mutated live by their components
@@ -184,6 +189,7 @@ function onCancel() {
     recipe.upgrades.splice(0, recipe.upgrades.length, ...snap.upgrades)
     recipe.adjustments.splice(0, recipe.adjustments.length, ...snap.adjustments)
   }
+  c.carId = carIdSnapshot.value ?? undefined
   emit('close')
 }
 
@@ -253,7 +259,13 @@ async function onDelete() {
 
       <!-- Tune / Build Parts — full RecipeSection -->
       <CollapsibleSection label="Tune / Build Parts" section-key="modal-recipe" v-model:open="sectionOpen.recipe">
-        <RecipeSection v-if="recipeSection" :recipe="recipeSect" @update:recipe="updated => Object.assign(recipeSect, updated)" />
+        <RecipeSection
+          v-if="recipeSection"
+          :recipe="recipeSect"
+          :car-id="carId"
+          @update:recipe="updated => Object.assign(recipeSect, updated)"
+          @update:car-id="id => { carId = id }"
+        />
       </CollapsibleSection>
 
       <!-- Footer -->

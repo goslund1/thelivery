@@ -15,6 +15,8 @@
 //!   DELETE /api/admin/orphans                -> { deleted }          (auth required)
 //!   POST   /api/admin/export-seed            -> { exported }         (auth required)
 //!   GET    /uploads/*                        -> static files
+//!   GET    /api/theme                        -> ThemeBody (public)
+//!   PUT    /api/theme                        -> ThemeBody (auth required)
 //!   GET    /api/health                       -> "ok"
 
 use std::collections::HashMap;
@@ -302,6 +304,7 @@ async fn main() -> anyhow::Result<()> {
 
     seed_if_empty(&pool, &seed_path).await?;
     seed_users_if_empty(&pool, "seed/users.json").await?;
+    seed_theme_if_empty(&pool).await?;
     normalize_bodies(&pool).await?;
 
     let state = AppState {
@@ -339,6 +342,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/suggestions", post(submit_suggestion))
         .route("/api/admin/suggestions", get(admin_list_suggestions))
         .route("/api/admin/suggestions/:id", delete(admin_dismiss_suggestion))
+        .route("/api/theme", get(get_theme).put(put_theme))
         .route("/api/tuning-presets", get(list_tuning_presets).post(create_tuning_preset))
         .route("/api/tuning-presets/:id", delete(delete_tuning_preset))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
@@ -520,6 +524,78 @@ async fn delete_tuning_preset(
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     Ok(Json(json!({ "ok": true })))
+}
+
+// --- Theme ------------------------------------------------------------------
+
+const THEME_DEFAULT: &str = r##"{
+  "colors": {
+    "asphalt":   "#0b0b0d",
+    "panel":     "#15151a",
+    "panelEdge": "#23232b",
+    "gold":      "#c9a227",
+    "magenta":   "#d6478f",
+    "paper":     "#ece9e4",
+    "steel":     "#7a7e87"
+  },
+  "tuning": {
+    "tires":        "#29C5F6",
+    "gearing":      "#1FD1A5",
+    "alignment":    "#E63DD0",
+    "arb":          "#8A2BE2",
+    "springs":      "#F4831F",
+    "damping":      "#E8650F",
+    "aero":         "#5BDB2E",
+    "brakes":       "#FF3B2F",
+    "differential": "#1E6FE0"
+  },
+  "fonts": {
+    "mono":    "JetBrains Mono",
+    "display": "Archivo Black"
+  },
+  "ambiance": "dark"
+}"##;
+
+async fn seed_theme_if_empty(pool: &SqlitePool) -> anyhow::Result<()> {
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM theme")
+        .fetch_one(pool)
+        .await?;
+    if count == 0 {
+        sqlx::query("INSERT INTO theme (id, body) VALUES (1, ?)")
+            .bind(THEME_DEFAULT)
+            .execute(pool)
+            .await?;
+        tracing::info!("seeded default theme");
+    }
+    Ok(())
+}
+
+async fn get_theme(State(st): State<AppState>) -> Result<Json<Value>, ApiError> {
+    let body: String = sqlx::query_scalar("SELECT body FROM theme WHERE id = 1")
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .unwrap_or_else(|| THEME_DEFAULT.to_string());
+    let v: Value = serde_json::from_str(&body)
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(v))
+}
+
+async fn put_theme(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Json(body): Json<Value>,
+) -> Result<Json<Value>, ApiError> {
+    let body_str = body.to_string();
+    sqlx::query(
+        "INSERT INTO theme (id, body) VALUES (1, ?)
+         ON CONFLICT(id) DO UPDATE SET body = excluded.body"
+    )
+    .bind(&body_str)
+    .execute(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(body))
 }
 
 // --- Seed -------------------------------------------------------------------

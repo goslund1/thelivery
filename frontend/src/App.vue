@@ -4,6 +4,7 @@ import { useCardsStore } from './stores/cards'
 import { useUiStore } from './stores/ui'
 import { useFilterStore } from './stores/filters'
 import { useModalStore } from './stores/modal'
+import { useThemeStore } from './stores/theme'
 import SideBug from './components/SideBug.vue'
 import Filters from './components/Filters.vue'
 import CardView from './components/CardView.vue'
@@ -24,6 +25,7 @@ const store = useCardsStore()
 const ui = useUiStore()
 const filters = useFilterStore()
 const modal = useModalStore()
+const theme = useThemeStore()
 
 function onKey(e: KeyboardEvent) {
   if (e.key !== 'Escape') return
@@ -46,6 +48,7 @@ function checkIgnition() {
 
 onMounted(() => {
   store.load()
+  theme.load()
   document.addEventListener('keydown', onKey)
   window.addEventListener('hashchange', checkIgnition)
   checkIgnition()

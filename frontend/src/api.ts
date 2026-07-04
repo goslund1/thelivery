@@ -139,6 +139,16 @@ export const api = {
       json<{ ok: boolean }>
     ),
 
+  getTheme: () =>
+    fetch('/api/theme').then(json<Record<string, unknown>>),
+
+  putTheme: (body: Record<string, unknown>) =>
+    fetch('/api/theme', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+    }).then(json<Record<string, unknown>>),
+
   // Upload a file with card context for folder naming; returns original + variant paths.
   // fileIndex: when set, the backend uses it for sequential filename (001.jpg, 002.jpg…)
   uploadImage: (

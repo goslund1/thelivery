@@ -28,7 +28,8 @@
     --success:#5d8e40;
     --success-bright:#74b050;
     --success-unlit:#405b30;
-    --glass-bg:color-mix(in srgb, var(--panel) 82%, transparent);
+    --glass-opacity:82%;
+    --glass-bg:color-mix(in srgb, var(--panel) var(--glass-opacity), transparent);
     --glass-border:color-mix(in srgb, var(--panel-edge) 70%, transparent);
     --glass-blur:blur(16px);
     --build-it-border:var(--gold);

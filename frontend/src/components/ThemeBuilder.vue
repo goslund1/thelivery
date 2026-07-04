@@ -110,6 +110,21 @@ function onReset() {
       </div>
     </div>
 
+    <!-- Effects -->
+    <div class="tb-section">
+      <div class="tb-section-label">Effects</div>
+      <div class="tb-effect-row">
+        <span class="tb-effect-label">Panel opacity</span>
+        <input
+          class="tb-slider"
+          type="range" min="20" max="100"
+          :value="theme.current?.effects.glassOpacity ?? 82"
+          @input="theme.setGlassOpacity(+($event.target as HTMLInputElement).value)"
+        />
+        <span class="tb-effect-val">{{ theme.current?.effects.glassOpacity ?? 82 }}%</span>
+      </div>
+    </div>
+
     <!-- Main palette -->
     <div class="tb-section">
       <button class="tb-section-toggle" type="button" @click="paletteOpen = !paletteOpen">
@@ -269,6 +284,28 @@ function onReset() {
 }
 .tb-chevron.open { transform: rotate(90deg); }
 
+.tb-effect-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.tb-effect-label {
+  color: var(--paper);
+  font-size: 11px;
+  flex: 1;
+}
+.tb-slider {
+  flex: 1;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+.tb-effect-val {
+  color: var(--steel);
+  font-size: 10px;
+  min-width: 32px;
+  text-align: right;
+}
 .tb-ambiance-row {
   display: flex;
   gap: 5px;

@@ -553,7 +553,10 @@ const THEME_DEFAULT: &str = r##"{
     "mono":    "JetBrains Mono",
     "display": "Archivo Black"
   },
-  "ambiance": "dark"
+  "ambiance": "dark",
+  "effects": {
+    "glassOpacity": 82
+  }
 }"##;
 
 async fn seed_theme_if_empty(pool: &SqlitePool) -> anyhow::Result<()> {

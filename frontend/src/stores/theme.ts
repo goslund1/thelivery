@@ -30,11 +30,16 @@ export interface ThemeFonts {
   display: string
 }
 
+export interface ThemeEffects {
+  glassOpacity: number  // 0–100
+}
+
 export interface ThemeData {
   colors:   ThemeColors
   tuning:   ThemeTuning
   fonts:    ThemeFonts
   ambiance: Theme
+  effects:  ThemeEffects
 }
 
 // Default colors per ambiance — used when switching base theme to reset the palette.
@@ -72,6 +77,19 @@ function deepClone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v))
 }
 
+const EFFECTS_DEFAULTS: ThemeEffects = { glassOpacity: 82 }
+
+function applyEffects(effects: ThemeEffects) {
+  document.documentElement.style.setProperty('--glass-opacity', `${effects.glassOpacity}%`)
+}
+
+function normalize(data: ThemeData): ThemeData {
+  return {
+    ...data,
+    effects: { ...EFFECTS_DEFAULTS, ...(data.effects ?? {}) },
+  }
+}
+
 function applyColors(colors: ThemeColors) {
   const root = document.documentElement
   for (const [key, cssVar] of Object.entries(COLOR_VAR_MAP)) {
@@ -100,6 +118,7 @@ export const useThemeStore = defineStore('theme', () => {
   function applyAll(data: ThemeData) {
     applyColors(data.colors)
     applyTuning(data.tuning)
+    applyEffects(data.effects)
     // Sync ambiance to the ui store's theme (which sets data-theme on <html>).
     // Import lazily to avoid circular dep at module load time.
     import('./ui').then(({ useUiStore }) => {
@@ -112,7 +131,7 @@ export const useThemeStore = defineStore('theme', () => {
     error.value = ''
     try {
       const raw = await api.getTheme()
-      const data = raw as unknown as ThemeData
+      const data = normalize(raw as unknown as ThemeData)
       current.value = deepClone(data)
       saved.value   = deepClone(data)
       applyAll(data)
@@ -127,6 +146,12 @@ export const useThemeStore = defineStore('theme', () => {
     if (!current.value) return
     current.value.colors[key] = value
     document.documentElement.style.setProperty(COLOR_VAR_MAP[key], value)
+  }
+
+  function setGlassOpacity(value: number) {
+    if (!current.value) return
+    current.value.effects.glassOpacity = value
+    applyEffects(current.value.effects)
   }
 
   function setTuningColor(key: keyof ThemeTuning, value: string) {
@@ -169,6 +194,6 @@ export const useThemeStore = defineStore('theme', () => {
 
   return {
     current, saved, loading, saving, error, isDirty,
-    load, setColor, setTuningColor, setAmbiance, reset, save,
+    load, setColor, setTuningColor, setGlassOpacity, setAmbiance, reset, save,
   }
 })

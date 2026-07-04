@@ -1154,19 +1154,20 @@ async function submitSuggestion() {
   <!-- Floating suggestion panel — view mode only, requires tuning data -->
   <Teleport to="body">
     <div v-if="showSuggestBar" class="ta-suggest-bar" :class="{ collapsed: suggestCollapsed }">
-      <div class="ta-suggest-body">
+      <!-- sub-drawer: message only, collapsible, more transparent + narrower -->
+      <div class="ta-suggest-sub">
         <p class="ta-suggest-message">
           Looks like you've got some ideas on how to tweak this tune — want to submit it for testing?
         </p>
-        <div class="ta-suggest-actions">
-          <button class="ta-suggest-submit" @click="openSuggestModal">Done Tweaking</button>
-          <button class="ta-suggest-later" @click="suggestCollapsed = true">Ask Me Later</button>
-          <button class="ta-suggest-dismiss" @click="suggestDismissed = true; suggestModalOpen = false">Not for me</button>
-        </div>
       </div>
-      <div class="ta-suggest-tab" @click="suggestCollapsed = !suggestCollapsed">
-        <span class="ta-suggest-tab-chevron">{{ suggestCollapsed ? '▲' : '▼' }}</span>
-        <span class="ta-suggest-tab-label">Submit a tune tweak</span>
+      <!-- main strip: always visible, houses toggle + buttons -->
+      <div class="ta-suggest-strip">
+        <button class="ta-suggest-toggle" @click="suggestCollapsed = !suggestCollapsed">
+          {{ suggestCollapsed ? '▲' : '▼' }}
+        </button>
+        <button class="ta-suggest-submit" @click="openSuggestModal">Done Tweaking</button>
+        <button class="ta-suggest-later" @click="suggestCollapsed = true">Ask Me Later</button>
+        <button class="ta-suggest-dismiss" @click="suggestDismissed = true; suggestModalOpen = false">Not for me</button>
       </div>
     </div>
 
@@ -1930,29 +1931,27 @@ async function submitSuggestion() {
   z-index: 120;
   display: flex;
   flex-direction: column;
+  align-items: center;
   max-width: 480px;
   width: calc(100vw - 40px);
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
-  border: 1px solid var(--panel-edge);
-  border-radius: 8px;
-  backdrop-filter: var(--glass-blur, blur(10px));
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
-  overflow: hidden;
 }
 
-/* body — collapses to zero height when collapsed */
-.ta-suggest-body {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px 10px;
-  max-height: 120px;
+/* sub-drawer: message only — narrower, more transparent, sits above main strip */
+.ta-suggest-sub {
+  width: calc(100% - 20px);
+  background: color-mix(in srgb, var(--panel) 55%, transparent);
+  border: 1px solid var(--panel-edge);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  backdrop-filter: var(--glass-blur, blur(10px));
+  max-height: 80px;
   overflow: hidden;
+  padding: 10px 14px;
   transition: max-height 0.22s ease, padding 0.22s ease;
 }
-.ta-suggest-bar.collapsed .ta-suggest-body {
+.ta-suggest-bar.collapsed .ta-suggest-sub {
   max-height: 0;
-  padding: 0 16px;
+  padding: 0 14px;
 }
 
 .ta-suggest-message {
@@ -1963,38 +1962,34 @@ async function submitSuggestion() {
   letter-spacing: 0.02em;
   margin: 0;
 }
-.ta-suggest-actions {
+
+/* main strip: full width, primary glass, always visible */
+.ta-suggest-strip {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  padding: 8px 14px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  backdrop-filter: var(--glass-blur, blur(10px));
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
 }
 
-/* tab strip — always visible */
-.ta-suggest-tab {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 14px;
-  border-top: 1px solid var(--panel-edge);
-  cursor: pointer;
-  transition: background 0.12s;
-}
-.ta-suggest-bar.collapsed .ta-suggest-tab { border-top: none; }
-.ta-suggest-tab:hover { background: color-mix(in srgb, var(--gold) 6%, transparent); }
-.ta-suggest-tab-chevron {
-  font-size: 9px;
+/* toggle chevron */
+.ta-suggest-toggle {
+  background: none;
+  border: none;
   color: var(--steel);
-  opacity: 0.6;
-}
-.ta-suggest-tab-label {
-  font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--steel);
-  opacity: 0.7;
+  cursor: pointer;
+  padding: 2px 4px;
+  opacity: 0.5;
+  transition: opacity 0.12s;
+  flex-shrink: 0;
 }
+.ta-suggest-toggle:hover { opacity: 1; }
 
 /* buttons */
 .ta-suggest-submit {
@@ -2043,6 +2038,7 @@ async function submitSuggestion() {
   cursor: pointer;
   opacity: 0.4;
   transition: opacity 0.12s;
+  margin-left: auto;
 }
 .ta-suggest-dismiss:hover { opacity: 0.9; }
 

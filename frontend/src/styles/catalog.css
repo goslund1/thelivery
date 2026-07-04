@@ -32,7 +32,7 @@
     --glass-bg:color-mix(in srgb, var(--panel) var(--glass-opacity), transparent);
     --glass-border:color-mix(in srgb, var(--panel-edge) 70%, transparent);
     --glass-blur:blur(16px);
-    --picker-glass-bg:color-mix(in srgb, var(--panel) calc(var(--glass-opacity) * 0.38), transparent);
+    --picker-glass-bg:color-mix(in srgb, var(--panel) 28%, transparent);
     --build-it-border:var(--gold);
     --build-it-bg:var(--success-unlit);
     --build-it-bg-hover:var(--success-bright);

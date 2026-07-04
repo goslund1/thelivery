@@ -91,39 +91,37 @@ function onReset() { theme.reset(); activeColor.value = null }
   <div class="tb-wrap">
     <!-- Picker wing — slides in to the left -->
     <div class="tb-picker-wing" :class="{ open: pickerOpen }" v-scroll-contain>
-      <div class="tb-picker-wing-inner">
-        <div class="tb-picker-header">
-          <span class="tb-picker-for">
-            <span
-              v-if="activeColor"
-              class="tb-picker-swatch"
-              :style="{ background: activeValue }"
-            />
-            {{ activeLabel || 'Select a color' }}
-          </span>
-        </div>
-        <div class="tb-picker-body">
-          <ColorPicker
+      <div class="tb-picker-header">
+        <span class="tb-picker-for">
+          <span
             v-if="activeColor"
-            :model-value="activeValue"
-            @update:model-value="onPickerUpdate"
+            class="tb-picker-swatch"
+            :style="{ background: activeValue }"
           />
-          <p v-else class="tb-picker-hint">Select a color from the list →</p>
-        </div>
+          {{ activeLabel || 'Select a color →' }}
+        </span>
+      </div>
+      <div class="tb-picker-body">
+        <ColorPicker
+          v-if="activeColor"
+          :model-value="activeValue"
+          @update:model-value="onPickerUpdate"
+        />
+        <p v-else class="tb-picker-hint">Select a color from the list</p>
       </div>
     </div>
 
+    <!-- Toggle tab — sits between wing and panel, always visible -->
+    <button
+      class="tb-picker-tab"
+      :class="{ open: pickerOpen }"
+      type="button"
+      :title="pickerOpen ? 'Hide color picker' : 'Show color picker'"
+      @click="togglePicker"
+    >‹</button>
+
     <!-- Main list panel -->
     <div class="tb-panel" v-scroll-contain>
-
-      <!-- Toggle tab on left edge -->
-      <button
-        class="tb-picker-tab"
-        :class="{ open: pickerOpen }"
-        type="button"
-        :title="pickerOpen ? 'Hide color picker' : 'Show color picker'"
-        @click="togglePicker"
-      >‹</button>
 
       <div class="tb-header">
         <span class="tb-title">Theme Builder</span>
@@ -247,13 +245,6 @@ function onReset() { theme.reset(); activeColor.value = null }
   overflow: hidden;
   transition: width 0.22s ease;
   flex-shrink: 0;
-}
-.tb-picker-wing.open {
-  width: 272px;
-}
-.tb-picker-wing-inner {
-  width: 272px;
-  height: 100%;
   display: flex;
   flex-direction: column;
   background: var(--glass-bg);
@@ -265,6 +256,9 @@ function onReset() { theme.reset(); activeColor.value = null }
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
 }
+.tb-picker-wing.open {
+  width: 272px;
+}
 .tb-picker-header {
   padding: 12px 14px 10px;
   border-bottom: 1px solid var(--panel-edge);
@@ -272,6 +266,7 @@ function onReset() { theme.reset(); activeColor.value = null }
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
 }
 .tb-picker-for {
   color: var(--paper);
@@ -302,32 +297,30 @@ function onReset() { theme.reset(); activeColor.value = null }
   margin-top: 40px;
 }
 
-/* ── Toggle tab ── */
+/* ── Toggle tab — aligns with header bar ── */
 .tb-picker-tab {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%) translateX(-100%);
-  width: 16px;
-  height: 48px;
+  flex-shrink: 0;
+  width: 14px;
+  align-self: flex-start;
+  height: 36px;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
+  border-left: none;
   border-right: none;
-  border-radius: 6px 0 0 6px;
+  border-bottom-color: var(--panel-edge);
   color: var(--steel);
   font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color .15s;
+  transition: color .15s, transform .22s;
   padding: 0;
-  z-index: 1;
 }
 .tb-picker-tab:hover { color: var(--gold); }
-.tb-picker-tab.open { transform: translateY(-50%) translateX(-100%) scaleX(-1); }
+.tb-picker-tab.open { transform: scaleX(-1); }
 
 /* ── Main panel ── */
 .tb-panel {
@@ -344,7 +337,6 @@ function onReset() { theme.reset(); activeColor.value = null }
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   overflow: hidden;
-  position: relative;
 }
 .tb-header {
   display: flex;

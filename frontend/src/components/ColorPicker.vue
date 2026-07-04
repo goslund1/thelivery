@@ -134,55 +134,52 @@ function isActive(sw: string): boolean {
   <div class="cp-wrap">
     <div class="cp-label" v-if="label">{{ label }}</div>
 
-    <div class="cp-body">
-      <!-- Left: picker + inputs -->
-      <div class="cp-left">
-        <hex-color-picker ref="pickerEl" class="cp-picker" />
+    <!-- Gradient picker -->
+    <hex-color-picker ref="pickerEl" class="cp-picker" />
 
-        <div class="cp-fields">
-          <div class="cp-hex-row">
-            <label class="cp-field-label">Hex</label>
-            <input
-              class="cp-hex-input"
-              :value="hexInput"
-              maxlength="7"
-              spellcheck="false"
-              @input="onHexInput"
-            />
-            <button
-              class="cp-snap"
-              type="button"
-              title="Snap to nearest FH color"
-              @click="snapToNearest"
-            >⌖</button>
-            <span v-if="lowContrast" class="cp-warn" title="Low contrast against panel background">⚠</span>
-          </div>
-          <div class="cp-rgb-row">
-            <label class="cp-field-label">R</label>
-            <input class="cp-rgb-input" type="number" min="0" max="255" :value="rgb.r" @change="onRgbInput('r', $event)" />
-            <label class="cp-field-label">G</label>
-            <input class="cp-rgb-input" type="number" min="0" max="255" :value="rgb.g" @change="onRgbInput('g', $event)" />
-            <label class="cp-field-label">B</label>
-            <input class="cp-rgb-input" type="number" min="0" max="255" :value="rgb.b" @change="onRgbInput('b', $event)" />
-          </div>
-        </div>
-      </div>
-
-      <!-- Right: FH palette swatches -->
-      <div class="cp-swatches">
+    <!-- Inputs -->
+    <div class="cp-fields">
+      <div class="cp-hex-row">
+        <label class="cp-field-label">Hex</label>
+        <input
+          class="cp-hex-input"
+          :value="hexInput"
+          maxlength="7"
+          spellcheck="false"
+          @input="onHexInput"
+        />
         <button
-          v-for="sw in FH_PALETTE"
-          :key="sw.hex"
-          class="cp-swatch"
-          :class="{ 'cp-swatch--active': isActive(sw.hex) }"
+          class="cp-snap"
           type="button"
-          :title="sw.name"
-          :style="{ background: sw.hex }"
-          @click="emit_(sw.hex)"
-        >
-          <span v-if="isActive(sw.hex)" class="cp-swatch-dot" />
-        </button>
+          title="Snap to nearest FH color"
+          @click="snapToNearest"
+        >⌖</button>
+        <span v-if="lowContrast" class="cp-warn" title="Low contrast against panel background">⚠</span>
       </div>
+      <div class="cp-rgb-row">
+        <label class="cp-field-label">R</label>
+        <input class="cp-rgb-input" type="number" min="0" max="255" :value="rgb.r" @change="onRgbInput('r', $event)" />
+        <label class="cp-field-label">G</label>
+        <input class="cp-rgb-input" type="number" min="0" max="255" :value="rgb.g" @change="onRgbInput('g', $event)" />
+        <label class="cp-field-label">B</label>
+        <input class="cp-rgb-input" type="number" min="0" max="255" :value="rgb.b" @change="onRgbInput('b', $event)" />
+      </div>
+    </div>
+
+    <!-- FH palette swatches -->
+    <div class="cp-swatches">
+      <button
+        v-for="sw in FH_PALETTE"
+        :key="sw.hex"
+        class="cp-swatch"
+        :class="{ 'cp-swatch--active': isActive(sw.hex) }"
+        type="button"
+        :title="sw.name"
+        :style="{ background: sw.hex }"
+        @click="emit_(sw.hex)"
+      >
+        <span v-if="isActive(sw.hex)" class="cp-swatch-dot" />
+      </button>
     </div>
   </div>
 </template>
@@ -191,25 +188,17 @@ function isActive(sw: string): boolean {
 .cp-wrap {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 .cp-label {
   color: var(--steel);
   text-transform: uppercase;
   letter-spacing: .08em;
-  margin-bottom: 6px;
-}
-.cp-body {
-  display: flex;
-  gap: 12px;
-}
-.cp-left {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
 }
 .cp-picker {
-  width: 200px;
+  width: 100%;
   height: 160px;
 }
 .cp-fields {
@@ -227,7 +216,7 @@ function isActive(sw: string): boolean {
   min-width: 12px;
 }
 .cp-hex-input {
-  width: 80px;
+  flex: 1;
   background: var(--panel-well);
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
@@ -238,7 +227,7 @@ function isActive(sw: string): boolean {
 }
 .cp-hex-input:focus { outline: none; border-color: var(--gold); }
 .cp-rgb-input {
-  width: 40px;
+  flex: 1;
   background: var(--panel-well);
   border: 1px solid var(--panel-edge);
   border-radius: 3px;
@@ -268,16 +257,14 @@ function isActive(sw: string): boolean {
 }
 .cp-swatches {
   display: grid;
-  grid-template-columns: repeat(4, 20px);
-  grid-auto-rows: 20px;
+  grid-template-columns: repeat(auto-fill, 22px);
   gap: 3px;
-  align-content: start;
-  overflow-y: auto;
-  max-height: 220px;
+  padding-top: 4px;
+  border-top: 1px solid var(--panel-edge);
 }
 .cp-swatch {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 3px;
   border: 1px solid rgba(255,255,255,0.1);
   cursor: pointer;

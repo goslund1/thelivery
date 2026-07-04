@@ -71,7 +71,16 @@ function positionSideBug() {
 
   const catRect = catalog.getBoundingClientRect()
   const bugWidth = bug.offsetWidth
-  bug.style.right = `${Math.max(0, window.innerWidth - catRect.right - bugWidth)}px`
+  const rightVal = Math.max(0, window.innerWidth - catRect.right - bugWidth)
+  bug.style.right = `${rightVal}px`
+
+  // Keep any open flyout or theme builder anchored to the new bug position
+  if (Object.keys(flyoutStyle.value).length > 0) {
+    flyoutStyle.value = {
+      ...flyoutStyle.value,
+      right: `${bugWidth + rightVal + 8}px`,
+    }
+  }
 
   const titleTop = title.getBoundingClientRect().top
   const hamOffset = ham.getBoundingClientRect().top - bug.getBoundingClientRect().top

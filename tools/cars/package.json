@@ -1,0 +1,14 @@
+{
+  "name": "forza-cars-scraper",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "scrape": "node scrape.mjs",
+    "scrape:fh5": "node scrape.mjs --game FH5",
+    "scrape:fh6": "node scrape.mjs --game FH6"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  }
+}

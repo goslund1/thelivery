@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch, watchEffect } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { AdjustmentRow, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
 import { MarkDirtyKey } from '../keys'
 import { api } from '../api'
 import { impliedUpgrades, type ImpliedUpgradesResult } from '../constants/tuning'
-
-// Only one suggest bar visible at a time across all card instances
-const activeSuggestCardId = ref<string | null>(null)
+import { activeSuggestCardId, suggestDismissedGlobal } from './suggestState'
 
 const props = defineProps<{
   adjustments: AdjustmentRow[]
@@ -275,7 +273,6 @@ watch(() => props.adjustments, () => {
   localRows.value = buildLocalRows()
   endDisplay.value = {}
   suggestCollapsed.value = false
-  suggestDismissed.value = false
 }, { deep: false })
 
 watch(gearCount, () => {
@@ -481,7 +478,11 @@ onMounted(() => {
     tweakResizeObserver.observe(taNonstockRef.value)
   }
 })
-onUnmounted(() => tweakResizeObserver?.disconnect())
+
+onUnmounted(() => {
+  tweakResizeObserver?.disconnect()
+  if (activeSuggestCardId.value === props.cardId) activeSuggestCardId.value = null
+})
 
 const changedByTab = computed(() => {
   const tabMap = new Map<string, { tabLabel: string; groups: Map<string, { label: string; rows: typeof changedRows.value }> }>()
@@ -788,7 +789,7 @@ watch(() => ui.isEditing, (editing) => { if (editing && !presets.value.length) l
 // ── Suggestion panel ──────────────────────────────────────────────────────────
 
 const suggestCollapsed = ref(false)
-const suggestDismissed = ref(false)
+const suggestDismissed = suggestDismissedGlobal
 const suggestModalOpen = ref(false)
 const suggestTitle = ref('')
 const suggestCredit = ref('')
@@ -798,18 +799,16 @@ const suggestDone = ref(false)
 
 const hasSuggestionData = computed(() => storedRows.value.length > 0)
 
+watch(hasSuggestionData, (hasData) => {
+  if (hasData && props.cardId && activeSuggestCardId.value === null && !suggestDismissed.value) {
+    activeSuggestCardId.value = props.cardId
+  }
+}, { immediate: true })
+
 const showSuggestBar = computed(() =>
   !ui.isEditing && hasSuggestionData.value && !suggestDismissed.value &&
-  (activeSuggestCardId.value === null || activeSuggestCardId.value === props.cardId)
+  activeSuggestCardId.value === props.cardId
 )
-
-watchEffect(() => {
-  if (showSuggestBar.value && props.cardId) {
-    activeSuggestCardId.value = props.cardId
-  } else if (activeSuggestCardId.value === props.cardId && (!showSuggestBar.value || suggestDismissed.value)) {
-    activeSuggestCardId.value = null
-  }
-})
 
 function openSuggestModal() {
   suggestTitle.value = ''

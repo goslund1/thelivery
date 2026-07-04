@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useThemeStore } from '../stores/theme'
 import type { ThemeColors, ThemeTuning } from '../stores/theme'
 import ColorPicker from './ColorPicker.vue'
+import DrawerPanel from './DrawerPanel.vue'
 import type { Theme } from '../types'
 
 const emit = defineEmits<{ close: [] }>()
@@ -103,46 +104,22 @@ function onAmbianceChange(t: Theme) {
   activeColor.value = null
 }
 
-function togglePicker() {
-  pickerOpen.value = !pickerOpen.value
-}
-
 async function onSave() { await theme.save() }
 function onReset() { theme.reset() }
 </script>
 
 <template>
   <div class="tb-wrap">
-    <!-- Picker pane — single glass surface containing wing + tab -->
-    <div class="tb-picker-pane" :class="{ open: pickerOpen }" :style="{ background: pickerBg }">
-      <div class="tb-picker-wing" v-scroll-contain>
-        <div class="tb-picker-header">
-          <span class="tb-picker-for">
-            <span
-              v-if="activeColor"
-              class="tb-picker-swatch"
-              :style="{ background: activeValue }"
-            />
-            {{ activeLabel || 'Select a color →' }}
-          </span>
-        </div>
-        <div class="tb-picker-body">
-          <ColorPicker
-            :model-value="pickerColor"
-            @update:model-value="onPickerUpdate"
-          />
-        </div>
-      </div>
-
-      <!-- Toggle tab — right edge of the pane, always visible -->
-      <button
-        class="tb-picker-tab"
-        :class="{ open: pickerOpen }"
-        type="button"
-        :title="pickerOpen ? 'Hide color picker' : 'Show color picker'"
-        @click="togglePicker"
-      >‹</button>
-    </div>
+    <!-- Picker drawer -->
+    <DrawerPanel v-model:open="pickerOpen" :background="pickerBg">
+      <template #header>
+        <span class="tb-picker-for">
+          <span v-if="activeColor" class="tb-picker-swatch" :style="{ background: activeValue }" />
+          {{ activeLabel || 'Select a color →' }}
+        </span>
+      </template>
+      <ColorPicker :model-value="pickerColor" @update:model-value="onPickerUpdate" />
+    </DrawerPanel>
 
     <!-- Main list panel -->
     <div class="tb-panel" v-scroll-contain>
@@ -265,47 +242,7 @@ function onReset() { theme.reset() }
   max-height: 85vh;
 }
 
-/* ── Picker pane — single unified glass surface (wing + tab) ── */
-.tb-picker-pane {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  width: 14px;
-  overflow: hidden;
-  transition: width 0.22s ease;
-  flex-shrink: 0;
-  align-self: stretch;
-  margin-top: 4px;
-  margin-bottom: 4px;
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-right: none;
-  border-radius: 6px 0 0 0;
-}
-.tb-picker-pane.open {
-  width: 286px; /* 272px wing + 14px tab */
-}
-
-/* ── Picker wing — transparent child, fills pane ── */
-.tb-picker-wing {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-}
-.tb-picker-header {
-  padding: 12px 14px 10px;
-  border-bottom: 1px solid var(--panel-edge);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
+/* ── Header content slots ── */
 .tb-picker-for {
   color: var(--paper);
   font-size: 11px;
@@ -322,54 +259,6 @@ function onReset() { theme.reset() }
   border: 1px solid rgba(255,255,255,0.15);
   flex-shrink: 0;
 }
-.tb-picker-body {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Toggle tab — right edge of the pane, same plane as wing ── */
-.tb-picker-tab {
-  flex-shrink: 0;
-  width: 14px;
-  align-self: stretch;
-  background: transparent;
-  border: none;
-  border-left: 1px solid rgba(255,255,255,0.06);
-  color: var(--steel);
-  font-size: 13px;
-  cursor: pointer;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 10px 0 0;
-  transition: color .15s, transform .22s;
-}
-.tb-picker-tab:hover { color: var(--gold); }
-.tb-picker-tab {
-  position: relative;
-}
-.tb-picker-tab::after {
-  content: '';
-  position: absolute;
-  left: -1px;
-  right: 0;
-  top: 36px;
-  height: 1px;
-  background: var(--panel-edge);
-  opacity: 0;
-  transition: opacity 0s 0.22s;
-}
-.tb-picker-pane.open .tb-picker-tab::after {
-  opacity: 1;
-  transition: opacity 0s;
-}
-.tb-picker-tab.open { transform: scaleX(-1); }
 
 /* ── Main panel ── */
 .tb-panel {

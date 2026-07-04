@@ -320,6 +320,23 @@ export const useCardsStore = defineStore('cards', () => {
     applyImpliedUpgrades(recipe.upgrades, toAdd)
   }
 
+  // Overwrite a card's mutable fields with a historical version and mark dirty.
+  // Preserves the current card's id/catalogNumber/isLegend; restores everything else.
+  function restoreCardVersion(id: string, historical: Card) {
+    const c = byId(id)
+    if (!c) return
+    const restored = ensureSections(historical)
+    c.name = restored.name
+    c.subtitle = restored.subtitle
+    c.liveryShareCode = restored.liveryShareCode
+    c.isFavorite = restored.isFavorite
+    c.collections = restored.collections
+    c.tags = restored.tags
+    c.images = restored.images
+    c.sections = restored.sections
+    c.colors = restored.colors
+  }
+
   // Distinct sections across the catalog, in first-seen order — drives the
   // generic section filter in the side-bug menu.
   function allSectionKeys() {
@@ -342,5 +359,6 @@ export const useCardsStore = defineStore('cards', () => {
     allTagValues, allCollectionValues, allSectionKeys, allSubtitleSegments,
     allLiveryCodes, allTuningCodes,
     getImpliedUpgrades, applyUpgradesFromTuning,
+    restoreCardVersion,
   }
 })

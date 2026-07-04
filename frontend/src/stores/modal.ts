@@ -81,6 +81,11 @@ export const useModalStore = defineStore('modal', () => {
   function openFactoidPanel() { factoidPanelOpen.value = true }
   function closeFactoidPanel() { factoidPanelOpen.value = false }
 
+  // ── Card history modal ───────────────────────────────────────────────────────
+  const historyCardId = ref<string | null>(null)
+  function openHistory(cardId: string) { historyCardId.value = cardId }
+  function closeHistory() { historyCardId.value = null }
+
   return {
     lightboxSrc, lightboxOriginalSrc, lightboxImages, lightboxIndex,
     openLightbox, closeLightbox, navigateLightbox,
@@ -90,5 +95,6 @@ export const useModalStore = defineStore('modal', () => {
     settingsOpen, openSettings, closeSettings,
     newCardOpen, openNewCard, closeNewCard,
     factoidPanelOpen, openFactoidPanel, closeFactoidPanel,
+    historyCardId, openHistory, closeHistory,
   }
 })

@@ -3,6 +3,7 @@ import { ref, watch, computed, reactive, onMounted, onUnmounted } from 'vue'
 import type { Card, TextSection as TextSectionData, ForzaRecipeSection } from '../types'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
+import { useModalStore } from '../stores/modal'
 import CollapsibleSection from './CollapsibleSection.vue'
 import TextSection from './TextSection.vue'
 import RecipeSection from './RecipeSection.vue'
@@ -13,6 +14,7 @@ const emit = defineEmits<{ close: [] }>()
 
 const store = useCardsStore()
 const ui = useUiStore()
+const modal = useModalStore()
 
 // Buffered local copies for fields that need clean Cancel support
 const name       = ref('')
@@ -194,6 +196,7 @@ async function onDelete() {
 <template>
   <div class="nc-overlay open" @click.self="onCancel">
     <div class="card nc-modal-card">
+      <button class="ec-btn-history" type="button" @click="modal.openHistory(card.id)">History</button>
       <button class="nc-close" @click="onCancel">×</button>
 
       <!-- Card meta -->
@@ -329,6 +332,24 @@ async function onDelete() {
   transition: background .15s, color .15s;
 }
 .ec-btn-delete:hover, .ec-btn-delete--confirm { background: #c0392b; color: #fff; }
+.ec-btn-history {
+  position: absolute;
+  top: 18px;
+  right: 60px;
+  z-index: 10;
+  background: transparent;
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  color: var(--steel);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.ec-btn-history:hover { border-color: var(--gold); color: var(--gold); }
 
 .ec-delete-overlay {
   position: fixed;

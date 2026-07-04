@@ -153,13 +153,14 @@ String template refs (`ref="x"`) aren't counted as "used" by `vue-tsc`'s unused-
 - **Favorites** — per-card star toggle, persisted to DB
 - **Upgrade presets** — save/apply/delete named upgrade configs via localStorage (per-browser, not per-card)
 - **DB sync workflow** — Admin → Export Seed → git push → production Admin → Reload from Seed (no SSH/Geoff required for content pushes)
-- **Card history** — backend records a version row on every save (`/api/cards/:id/history`); API client wired; **no UI yet**
+- **Card history** — per-card version list, structured diff (sliders, upgrades, specs, text), one-click restore; accessed via History button in EditCardModal top-right (`CardHistoryModal.vue`)
+- **Tuning adjustments** (`TuningAdjustments.vue`) — full per-tab slider UI; gear sliders unlock based on transmission tier (Race/Drift); transmissionTier reads from `props.upgrades`/`props.coreSpecs` passed from RecipeSection's local state; gear count dropdown always visible; suggest bar capped to one instance via module-level singleton; dismiss × on suggest overlay
+- **SideBug** — car key button inverts colors (gold bg, panel icon) when edit mode is active
 
 ### Pending / in progress
-- **Tuning adjustments editor** — `recipe.adjustments[]` renders read-only in modal and view mode; no UI to add/remove/reorder adjustment rows yet
 - **Theme builder** — planned as a slide-in panel launched from the Themes flyout in SideBug; waiting for mockup from Jason
 - **Mobile layout** — not yet designed or implemented
-- **Card history UI** — history stored and API exists; viewer UI not built
+- **Submit Tune feature** — suggest bar overlay exists but trigger logic (how many slider moves before soliciting) and spam prevention are undesigned; tabled until production lull
 
 ## Conventions & rules
 

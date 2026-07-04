@@ -87,12 +87,23 @@ function applyEffects(effects: ThemeEffects) {
   document.documentElement.style.setProperty('--glass-opacity', `${effects.glassOpacity}%`)
 }
 
+const LEGACY_COLOR_MAP: Record<string, keyof ThemeColors> = {
+  asphalt: 'base', gold: 'accent', magenta: 'highlight',
+  paper: 'fg', steel: 'muted', steelLight: 'mutedLight',
+}
+
 function normalize(data: ThemeData): ThemeData {
   const ambiance = data.ambiance ?? 'dark'
   const defaults = AMBIANCE_DEFAULTS[ambiance] ?? AMBIANCE_DEFAULTS.dark
+  const raw = data.colors as unknown as Record<string, string>
+  const migrated: Partial<ThemeColors> = {}
+  for (const [k, v] of Object.entries(raw)) {
+    const mapped = LEGACY_COLOR_MAP[k] ?? k as keyof ThemeColors
+    migrated[mapped] = v
+  }
   return {
     ...data,
-    colors:  { ...defaults, ...data.colors },
+    colors:  { ...defaults, ...migrated } as ThemeColors,
     effects: { ...EFFECTS_DEFAULTS, ...(data.effects ?? {}) },
   }
 }

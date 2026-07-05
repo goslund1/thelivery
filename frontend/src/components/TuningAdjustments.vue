@@ -566,6 +566,14 @@ onMounted(() => {
     })
     tweakResizeObserver.observe(taNonstockRef.value)
   }
+  // Reload reminder: if the visitor had clicked Ask Me Later, re-claim the slot
+  // and show the softer "you had ideas" message instead of the normal push.
+  if (askLaterKey.value && sessionStorage.getItem(askLaterKey.value)) {
+    askLaterPending.value = true
+    if (props.cardId && activeSuggestCardId.value === null && !suggestDismissed.value) {
+      activeSuggestCardId.value = props.cardId
+    }
+  }
 })
 
 onUnmounted(() => {
@@ -943,15 +951,13 @@ const suggestBusy = ref(false)
 const suggestError = ref<string | null>(null)
 const suggestDone = ref(false)
 
-const hasSuggestionData = computed(() => storedRows.value.length > 0)
-
 // Track List of Tweaks open/closed so the submit button can hide when collapsed
 const nonstockOpen = ref(true)
 function onNonstockToggle(e: Event) {
   nonstockOpen.value = (e.target as HTMLDetailsElement).open
 }
 
-// "Changed from card" — visitor moved a slider away from Jason's published value.
+// "Changed from card" — visitor moved a slider away from the published saved value.
 // Distinct from changedRows (which compares against hardware stock).
 const publishedValues = computed(() => {
   const map = new Map<string, number>()
@@ -966,15 +972,47 @@ function isChangedFromCard(r: LocalRow): boolean {
 }
 const changedFromCard = computed(() => localRows.value.filter(r => isChangedFromCard(r)))
 
-watch(hasSuggestionData, (hasData) => {
-  if (hasData && props.cardId && activeSuggestCardId.value === null && !suggestDismissed.value) {
-    activeSuggestCardId.value = props.cardId
-  }
-}, { immediate: true })
+// Tier 1: any slider changed → passive share button activates
+const hasTweak = computed(() => changedFromCard.value.length > 0)
 
+// Tier 2: changes span 2+ tab categories → push message fires
+const changedTabIds = computed(() => {
+  const s = new Set<string>()
+  for (const r of changedFromCard.value) s.add(r.tab)
+  return s
+})
+const hasMultiTabTweak = computed(() => changedTabIds.value.size >= 2)
+
+// Reload reminder: ASK ME LATER writes to sessionStorage so a return visit
+// shows a softer "you wanted to share" message instead of the normal push.
+const askLaterKey = computed(() => props.cardId ? 'ta-ask-later-' + props.cardId : null)
+const askLaterPending = ref(false)
+
+const pushMessage = computed(() =>
+  askLaterPending.value
+    ? 'You had some tuning ideas earlier — still want to share them?'
+    : 'Nice work across multiple sections — want to submit this tune for testing?'
+)
+
+// Claim the singleton slot when multi-tab threshold is hit
+watch(hasMultiTabTweak, (isMulti) => {
+  if (isMulti && props.cardId && activeSuggestCardId.value === null && !suggestDismissed.value) {
+    activeSuggestCardId.value = props.cardId
+    suggestCollapsed.value = false
+  }
+})
+
+// Tier 2: full push bar (multi-tab tweaks or reload reminder)
 const showSuggestBar = computed(() =>
-  !props.readOnly && !ui.isEditing && hasSuggestionData.value && !suggestDismissed.value &&
-  activeSuggestCardId.value === props.cardId
+  !props.readOnly && !ui.isEditing && !suggestDismissed.value &&
+  activeSuggestCardId.value === props.cardId &&
+  (hasMultiTabTweak.value || askLaterPending.value)
+)
+
+// Tier 1: passive share button (any tweak, push bar not showing)
+const showShareButton = computed(() =>
+  !props.readOnly && !ui.isEditing && hasTweak.value &&
+  !suggestDismissed.value && !showSuggestBar.value
 )
 
 function openSuggestModal() {
@@ -983,6 +1021,19 @@ function openSuggestModal() {
   suggestError.value = null
   suggestDone.value = false
   suggestModalOpen.value = true
+}
+
+function onAskLater() {
+  suggestCollapsed.value = true
+  if (askLaterKey.value) sessionStorage.setItem(askLaterKey.value, '1')
+}
+
+function onNotForMe() {
+  suggestDismissed.value = true
+  suggestModalOpen.value = false
+  askLaterPending.value = false
+  activeSuggestCardId.value = null
+  if (askLaterKey.value) sessionStorage.removeItem(askLaterKey.value)
 }
 
 async function submitSuggestion() {
@@ -1006,6 +1057,8 @@ async function submitSuggestion() {
       adjustments,
     })
     suggestDone.value = true
+    askLaterPending.value = false
+    if (askLaterKey.value) sessionStorage.removeItem(askLaterKey.value)
   } catch (e: unknown) {
     suggestError.value = e instanceof Error ? e.message : 'Something went wrong.'
   } finally {
@@ -1323,25 +1376,28 @@ async function submitSuggestion() {
     </div>
   </Teleport>
 
-  <!-- Floating suggestion panel — view mode only, requires tuning data -->
+  <!-- Floating suggestion panel — view mode only -->
   <Teleport to="body">
+    <!-- Tier 2: push bar — fires when changes span 2+ tab categories, or reload reminder -->
     <div v-if="showSuggestBar" class="ta-suggest-bar">
-      <!-- secondary surface: wing (message) + tab handle — mirrors dp-pane rotated 90° -->
       <div class="ta-suggest-drawer" :class="{ 'is-open': !suggestCollapsed }">
         <div class="ta-suggest-wing">
-          <p class="ta-suggest-message">
-            Looks like you've got some ideas on how to tweak this tune — want to submit it for testing?
-          </p>
+          <p class="ta-suggest-message">{{ pushMessage }}</p>
         </div>
         <button class="ta-suggest-tab" @click="suggestCollapsed = !suggestCollapsed">
           <span class="ta-suggest-chevron">‹</span>
         </button>
       </div>
-      <!-- primary surface: always-visible button strip, no toggle here -->
       <div class="ta-suggest-strip">
         <button class="ta-suggest-submit" @click="openSuggestModal">Done Tweaking</button>
-        <button class="ta-suggest-later" @click="suggestCollapsed = true">Ask Me Later</button>
-        <button class="ta-suggest-dismiss" @click="suggestDismissed = true; suggestModalOpen = false">Not for me</button>
+        <button class="ta-suggest-later" @click="onAskLater">Ask Me Later</button>
+        <button class="ta-suggest-dismiss" @click="onNotForMe">Not for me</button>
+      </div>
+    </div>
+    <!-- Tier 1: passive share button — any single tweak, no push bar showing -->
+    <div v-else-if="showShareButton" class="ta-suggest-bar ta-suggest-bar--passive">
+      <div class="ta-suggest-strip">
+        <button class="ta-suggest-submit" @click="openSuggestModal">Share This Tweak</button>
       </div>
     </div>
 
@@ -2201,6 +2257,11 @@ async function submitSuggestion() {
   gap: 0;
   max-width: 480px;
   width: calc(100vw - 40px);
+}
+/* Passive tier-1 bar: no drawer, just the strip — slightly narrower and more subdued */
+.ta-suggest-bar--passive {
+  max-width: 220px;
+  opacity: 0.85;
 }
 
 /* secondary surface — clear glass pane, 4px inset each side from the bar */

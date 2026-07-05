@@ -7,31 +7,19 @@ Completed items move to `docs/completed/`.
 
 ## Active — ordered by priority
 
-### 1. ThemeBuilder — picker panel opacity slider
-- Add a second effects slider for the picker panel / tab background opacity (`pickerBg`).
-- Currently `pickerBg` is hardcoded to 0.18 opacity — this slider replaces that static value.
-- Same pattern as the existing `effects.glassOpacity` slider; adds a new field to the theme store (e.g. `effects.pickerOpacity`).
-- Eliminates the "needs visual verification" note on `pickerBg`.
-
-### 2. TuningAdjustments — "Define Stock" confirm + in-session undo
-- Second press on Define Stock silently overwrites stock values with no undo.
-- Needs: confirm dialog (reuse ExitConfirmModal pattern; skip if zero diffs).
-- Needs: in-session snapshot before overwriting — so an accidental double-click or wrong-key can be walked back without hitting card History.
-- Not forever rollback; just one "undo last Define Stock" step.
-
-### 3. TuningAdjustments — gate section on recipe / adjustments existing
+### 1. TuningAdjustments — gate section on recipe / adjustments existing
 - `<TuningAdjustments>` and its "Tune Adjustments" label render unconditionally in RecipeSection.
 - Should be hidden on cards with no relevant data (e.g. photo safari cards, cards with no car IDs, cards with no adjustments in non-edit mode).
 - Gate condition: hide when `local.adjustments` is empty AND not in edit mode.
 
-### 4. Card accent override (per-card color)
+### 2. Card accent override (per-card color)
 - Optional `accentOverride` field on Card: `inherit | gold | magenta | custom`.
 - Edit-only affordance in CardMeta (+ EditCardModal / NewCardModal for parity).
 - No backend work — rides existing card JSON.
 - Drift cards in collections → suggest magenta as default.
 - Note: CSS already uses `--accent`, not `--gold`; the concept is valid, variable names in old spec were stale.
 
-### 5. Battle-test checklist
+### 3. Battle-test checklist
 - Once the main items above are done, a focused pass to verify all dialog interactions, edge cases, and flow completeness. Includes:
   - Gearing dialog round-trip (locked slider → modal → transmission pick → rows unlock → UpgradesPicker reflects → stock restore → upgrade removes)
   - All confirm/cancel dialogs
@@ -74,6 +62,10 @@ Completed items move to `docs/completed/`.
 
 ## Recently completed
 
+- TuningAdjustments — gearing-only lock/unlock, navigation scope fix, tire pressure unlock — 2026-07-05
+- ThemeBuilder effects sliders: picker opacity + color swatches for both glass surfaces — 2026-07-04
+- TuningAdjustments — Define Stock confirm dialog + in-session Cmd+Z undo snapshot — 2026-07-04
+- All 5 ta-prompt-strip dialogs converted to centered glass modal (ta-trans-modal-backdrop) — 2026-07-04
 - CLAUDE.md + docs/plan.md housekeeping, session AARs — 2026-07-04
 - Transmission/gearing system (locked sliders, glass picker modal, auto-add/remove upgrades, view+edit parity, legacy name migration) — 2026-07-04
 - Car identity: `cars` table, CarPicker, PhotoDetail, alt text — 2026-07-04

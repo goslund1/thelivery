@@ -1051,17 +1051,7 @@ async function submitSuggestion() {
           <!-- Dedicated title bar for second+ groups -->
           <div v-if="gi > 0" class="ta-section-title-bar">
             <div class="ta-title-label-zone">
-              <template v-if="section.id === 'gearing' && ui.isEditing">
-                <select
-                  class="ta-gear-select ta-caps-nudge"
-                  :value="transmissionTier === 'drift' ? 4 : gearCount"
-                  :disabled="transmissionTier === 'drift'"
-                  @change="gearCount = parseInt(($event.target as HTMLSelectElement).value)"
-                >
-                  <option v-for="n in GEAR_OPTIONS" :key="n" :value="n">{{ n }}-Speed</option>
-                </select>
-              </template>
-              <template v-else-if="section.id === 'gearing'">
+              <template v-if="section.id === 'gearing'">
                 <select
                   class="ta-gear-select ta-caps-nudge"
                   :value="viewTransmissionId ?? ''"

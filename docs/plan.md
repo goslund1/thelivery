@@ -49,7 +49,8 @@ Completed items move to `docs/completed/`.
 - Card accent override: `accentOverride` field on Card, three preset color dots in CardMeta edit mode — 2026-07-05
 - RecipeSection one-way data flow refactor: replaced loop-prevention flags with resetToken prop — 2026-07-05
 - Recipe section gate: hide Tune / Build Parts bar in view mode when tuneName, shareCode, upgrades, and adjustments are all empty — 2026-07-05
-- Code quality pass: formatShareCode util, collectOrphans helper, watcher consolidation, String() coercion removal — 2026-07-05
+- Code quality pass 2: formatShareCode dedup in EditCardModal, querySelector<HTMLElement> typing, mutateDirty Set helper, closeTopModal() priority-ordered Escape handling (fixed 3 missing modals), installedParts computed cache in RecipeSection — 2026-07-05
+- Code quality pass 1: formatShareCode util, collectOrphans helper, watcher consolidation, String() coercion removal — 2026-07-05
 - TuningAdjustments — gearing-only lock/unlock, navigation scope fix, tire pressure unlock — 2026-07-05
 - ThemeBuilder effects sliders: picker opacity + color swatches for both glass surfaces — 2026-07-04
 - TuningAdjustments — Define Stock confirm dialog + in-session Cmd+Z undo snapshot — 2026-07-04

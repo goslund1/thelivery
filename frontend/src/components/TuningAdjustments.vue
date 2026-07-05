@@ -382,7 +382,7 @@ function onTransChoice(name: string) {
     if (t) gearCount.value = t.gears
     emit('implied-upgrades', { toAdd: [{ category: 'Drivetrain', part: name }], needsSpringsDialog: false })
   }
-  if (key) nextTick(() => (taRef.value?.querySelector(`.ta-row[data-key="${key}"]`) as HTMLElement | null)?.focus({ preventScroll: true }))
+  if (key) nextTick(() => taRef.value?.querySelector<HTMLElement>(`.ta-row[data-key="${key}"]`)?.focus({ preventScroll: true }))
 }
 
 // ── Springs and Dampers dialog ────────────────────────────────────────────────

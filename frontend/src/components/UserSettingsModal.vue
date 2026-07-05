@@ -81,7 +81,7 @@ function logout() {
 }
 
 // Suggestions
-type Suggestion = { id: number; cardId: string; title: string; credit: string | null; adjustments: object[]; submittedAt: string; ip: string; reviewed: boolean }
+type Suggestion = { id: number; cardId: string; title: string; credit: string | null; adjustments: object[]; submittedAt: string; ip: string; status: 'pending' | 'liked' }
 const suggestions = ref<Suggestion[]>([])
 const suggestionsBusy = ref(false)
 const suggestionsError = ref<string | null>(null)

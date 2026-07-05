@@ -86,6 +86,12 @@ export const useModalStore = defineStore('modal', () => {
   function openHistory(cardId: string) { historyCardId.value = cardId }
   function closeHistory() { historyCardId.value = null }
 
+  // ── Suggestion viewer ────────────────────────────────────────────────────────
+  const suggestionViewerOpen = ref(false)
+  const pendingSuggestionCount = ref(0)
+  function openSuggestionViewer() { suggestionViewerOpen.value = true }
+  function closeSuggestionViewer() { suggestionViewerOpen.value = false }
+
   return {
     lightboxSrc, lightboxOriginalSrc, lightboxImages, lightboxIndex,
     openLightbox, closeLightbox, navigateLightbox,
@@ -96,5 +102,6 @@ export const useModalStore = defineStore('modal', () => {
     newCardOpen, openNewCard, closeNewCard,
     factoidPanelOpen, openFactoidPanel, closeFactoidPanel,
     historyCardId, openHistory, closeHistory,
+    suggestionViewerOpen, pendingSuggestionCount, openSuggestionViewer, closeSuggestionViewer,
   }
 })

@@ -177,8 +177,9 @@ function onToggleAll() {
           </g>
         </svg>
       </button>
-      <button ref="hamburgerBtn" class="bug-btn" aria-label="Section menu" v-tip="() => open === 'menu' ? 'Close section filters' : 'Open section filters'" @click="(e) => toggle('menu', e.currentTarget as HTMLElement)">
+      <button ref="hamburgerBtn" class="bug-btn bug-btn--filters" aria-label="Section menu" v-tip="() => open === 'menu' ? 'Close section filters' : 'Open section filters'" @click="(e) => toggle('menu', e.currentTarget as HTMLElement)">
         <span class="bug-lines"><span></span><span></span><span></span></span>
+        <span v-if="auth.isAuthenticated && modal.pendingSuggestionCount" class="bug-sugg-dot">{{ modal.pendingSuggestionCount }}</span>
       </button>
       <button class="bug-btn" aria-label="Theme" v-tip="() => 'Theme: ' + themeLabels[ui.theme]" @click="(e) => toggle('theme', e.currentTarget as HTMLElement)">
         <span class="theme-icon-slot" v-html="themeIcon"></span>
@@ -223,6 +224,24 @@ function onToggleAll() {
 </template>
 
 <style scoped>
+.bug-btn--filters {
+  position: relative;
+}
+.bug-sugg-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: 8px;
+  font-size: 9px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: bold;
+  padding: 0 4px;
+  line-height: 14px;
+  pointer-events: none;
+}
+
 .theme-customize-btn {
   margin-top: 4px;
   border-top: 1px solid var(--panel-edge);

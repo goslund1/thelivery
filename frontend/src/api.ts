@@ -114,11 +114,16 @@ export const api = {
 
   adminListSuggestions: () =>
     fetch('/api/admin/suggestions', { headers: authHeaders() }).then(
-      json<{ id: number; cardId: string; title: string; credit: string | null; adjustments: object[]; submittedAt: string; ip: string; reviewed: boolean }[]>
+      json<{ id: number; cardId: string; title: string; credit: string | null; adjustments: object[]; submittedAt: string; ip: string; status: 'pending' | 'liked' }[]>
     ),
 
   adminDismissSuggestion: (id: number) =>
     fetch(`/api/admin/suggestions/${id}`, { method: 'DELETE', headers: authHeaders() }).then(
+      json<{ ok: boolean }>
+    ),
+
+  adminLikeSuggestion: (id: number) =>
+    fetch(`/api/admin/suggestions/${id}`, { method: 'PATCH', headers: authHeaders() }).then(
       json<{ ok: boolean }>
     ),
 

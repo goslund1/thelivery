@@ -344,7 +344,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/reload-seed", post(admin_reload_seed))
         .route("/api/suggestions", post(submit_suggestion))
         .route("/api/admin/suggestions", get(admin_list_suggestions))
-        .route("/api/admin/suggestions/:id", delete(admin_dismiss_suggestion))
+        .route("/api/admin/suggestions/:id", delete(admin_dismiss_suggestion).patch(admin_like_suggestion))
         .route("/api/cars", get(list_cars).post(create_car))
         .route("/api/theme", get(get_theme).put(put_theme))
         .route("/api/tuning-presets", get(list_tuning_presets).post(create_tuning_preset))
@@ -431,7 +431,7 @@ async fn admin_list_suggestions(
     _auth: AuthUser,
 ) -> Result<Json<Value>, ApiError> {
     let rows = sqlx::query(
-        "SELECT id, card_id, title, credit, adjustments, submitted_at, ip, reviewed FROM suggestions ORDER BY submitted_at DESC"
+        "SELECT id, card_id, title, credit, adjustments, submitted_at, ip, status FROM suggestions ORDER BY submitted_at DESC"
     )
     .fetch_all(&st.pool)
     .await
@@ -445,7 +445,7 @@ async fn admin_list_suggestions(
         "adjustments":  serde_json::from_str::<Value>(&r.get::<String, _>("adjustments")).unwrap_or(Value::Null),
         "submittedAt":  r.get::<String, _>("submitted_at"),
         "ip":           r.get::<String, _>("ip"),
-        "reviewed":     r.get::<i64, _>("reviewed") == 1,
+        "status":       r.get::<String, _>("status"),
     })).collect();
 
     Ok(Json(json!(list)))
@@ -457,6 +457,19 @@ async fn admin_dismiss_suggestion(
     Path(id): Path<i64>,
 ) -> Result<Json<Value>, ApiError> {
     sqlx::query("DELETE FROM suggestions WHERE id = ?")
+        .bind(id)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(json!({ "ok": true })))
+}
+
+async fn admin_like_suggestion(
+    State(st): State<AppState>,
+    _auth: AuthUser,
+    Path(id): Path<i64>,
+) -> Result<Json<Value>, ApiError> {
+    sqlx::query("UPDATE suggestions SET status = CASE WHEN status = 'liked' THEN 'pending' ELSE 'liked' END WHERE id = ?")
         .bind(id)
         .execute(&st.pool)
         .await

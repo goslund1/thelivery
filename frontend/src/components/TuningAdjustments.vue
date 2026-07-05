@@ -13,6 +13,8 @@ const props = defineProps<{
   cardId?: string
   upgrades?: UpgradeCategory[]
   coreSpecs?: Record<string, string>
+  readOnly?: boolean            // disables all editing interactions and flush
+  baselineAdjustments?: AdjustmentRow[] // when set, diff highlights against these instead of stock
 }>()
 const emit = defineEmits<{
   change: []
@@ -272,7 +274,8 @@ function buildLocalRows(): LocalRow[] {
     if (!tab.groups) continue
     for (const group of tab.groups) {
       for (const def of group.rows) {
-        const stored = props.adjustments.find(r => r.key === def.key)
+        const stored   = props.adjustments.find(r => r.key === def.key)
+        const baseline = props.baselineAdjustments?.find(r => r.key === def.key)
         result.push({
           tab:   tab.id,
           group: group.title,
@@ -282,7 +285,9 @@ function buildLocalRows(): LocalRow[] {
           step:  def.step,
           min:   stored?.min   ?? 0,
           max:   stored?.max   ?? 100,
-          stock: stored?.stock ?? 0,
+          // When a baseline is provided (suggestion viewer), diff against the card's
+          // current value rather than the true stock value.
+          stock: baseline?.value ?? stored?.stock ?? 0,
           value: stored?.value ?? 0,
           locked:     def.locked,
           lockReason: def.lockReason,
@@ -422,6 +427,7 @@ function onSpringsReset() {
 }
 
 function flush() {
+  if (props.readOnly) return
   emit('change')
   markDirty()
   checkImplied()
@@ -691,6 +697,7 @@ function onRowFocusOut(r: LocalRow, e: FocusEvent) {
 
 const autoAddedPart = ref<string | null>(null)
 function unlockByUpgrade(r: LocalRow) {
+  if (props.readOnly) return
   r.locked = false
   if (!transDialogOpen.value) {
     transDialogTriggerKey.value = r.key
@@ -966,7 +973,7 @@ watch(hasSuggestionData, (hasData) => {
 }, { immediate: true })
 
 const showSuggestBar = computed(() =>
-  !ui.isEditing && hasSuggestionData.value && !suggestDismissed.value &&
+  !props.readOnly && !ui.isEditing && hasSuggestionData.value && !suggestDismissed.value &&
   activeSuggestCardId.value === props.cardId
 )
 
@@ -1014,7 +1021,7 @@ async function submitSuggestion() {
         <span>List of Tweaks<template v-if="changedRows.length"> ({{ changedRows.length }})</template></span>
         <span class="ta-nonstock-actions">
           <button
-            v-if="nonstockOpen && !ui.isEditing"
+            v-if="nonstockOpen && !ui.isEditing && !props.readOnly"
             class="ta-nonstock-submit"
             :disabled="changedFromCard.length === 0"
             @click.stop="openSuggestModal"
@@ -1215,9 +1222,10 @@ async function submitSuggestion() {
                     :min="r.min" :max="r.max" :step="r.step"
                     :value="r.value"
                     :style="trackStyle(r)"
-                    @mousedown="onSliderMouseDown(r, $event)"
-                    @change="onSliderDragEnd(r)"
-                    @input="onSliderInput(r, $event)"
+                    :disabled="props.readOnly"
+                    @mousedown="!props.readOnly && onSliderMouseDown(r, $event)"
+                    @change="!props.readOnly && onSliderDragEnd(r)"
+                    @input="!props.readOnly && onSliderInput(r, $event)"
                   />
                 </div>
 

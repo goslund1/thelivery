@@ -11,6 +11,7 @@ import TuningAdjustments from './TuningAdjustments.vue'
 import CarPicker from './CarPicker.vue'
 import rawUpgrades from '../data/fh_upgrades.json'
 import { impliedUpgrades, applyImpliedUpgrades, applySpringsChoice, type ImpliedUpgradesResult } from '../constants/tuning'
+import { formatShareCode } from '../utils/shareCode'
 
 const props = defineProps<{
   recipe: ForzaRecipeSection
@@ -206,13 +207,6 @@ function onSpecChange(key: string, e: Event) {
   markDirty()
 }
 
-// Share code — format the raw input as XXX XXX XXX on every keystroke.
-function formatShareCode(raw: string): string {
-  const d = raw.replace(/\D/g, '').slice(0, 9)
-  if (d.length <= 3) return d
-  if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`
-  return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`
-}
 function onShareCodeInput(e: Event) {
   const input = e.target as HTMLInputElement
   const formatted = formatShareCode(input.value)

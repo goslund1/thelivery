@@ -8,6 +8,7 @@ import EditableText from './EditableText.vue'
 import EditCardModal from './EditCardModal.vue'
 import SubtitleEditor from './SubtitleEditor.vue'
 import { refreshTip } from '../composables/tooltip'
+import { formatShareCode } from '../utils/shareCode'
 
 const props = defineProps<{ card: Card }>()
 const store = useCardsStore()
@@ -17,12 +18,6 @@ const modal = useModalStore()
 const catalogNo = computed(() => String(props.card.catalogNumber).padStart(3, '0'))
 const editOpen = ref(false)
 
-function formatShareCode(raw: string): string {
-  const d = raw.replace(/\D/g, '').slice(0, 9)
-  if (d.length <= 3) return d
-  if (d.length <= 6) return `${d.slice(0, 3)} ${d.slice(3)}`
-  return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`
-}
 function onLiveryCodeInput(e: Event) {
   const input = e.target as HTMLInputElement
   const formatted = formatShareCode(input.value)

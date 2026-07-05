@@ -11,6 +11,7 @@ Completed items move to `docs/completed/`.
 - `<TuningAdjustments>` and its "Tune Adjustments" label render unconditionally in RecipeSection.
 - Should be hidden on cards with no relevant data (e.g. photo safari cards, cards with no car IDs, cards with no adjustments in non-edit mode).
 - Gate condition: hide when `local.adjustments` is empty AND not in edit mode.
+- Note: multi-car mashup cards (parked) will eventually need a per-car tuning view; the gate logic here should not assume a single carId — defer that complexity to the mashup plan doc.
 
 ### 2. Card accent override (per-card color)
 - Optional `accentOverride` field on Card: `inherit | gold | magenta | custom`.

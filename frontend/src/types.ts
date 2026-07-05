@@ -42,6 +42,16 @@ export interface AdjustmentRow {
   step: number
 }
 
+// One car's tune data inside a multi-car mashup card.
+export interface CarVariant {
+  carId: string
+  tuneName: string
+  shareCode: string
+  coreSpecs: Record<string, string>
+  upgrades: UpgradeCategory[]
+  adjustments: AdjustmentRow[]
+}
+
 // The Forza tune/build-parts section.
 export interface ForzaRecipeSection {
   type: 'forza_recipe'
@@ -54,6 +64,7 @@ export interface ForzaRecipeSection {
   coreSpecs: Record<string, string>
   upgrades: UpgradeCategory[]
   adjustments: AdjustmentRow[]
+  variants?: CarVariant[]  // present only on multi-car mashup cards (2+ entries)
 }
 
 export type Section = TextSection | ForzaRecipeSection

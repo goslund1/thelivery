@@ -22,7 +22,8 @@ provide(CardIdKey, props.card.id)
 // and become visible in edit mode.
 function isSectionEmpty(s: Section): boolean {
   if (s.type === 'text') return !s.body.trim() && !s.figurePath
-  if (s.type === 'forza_recipe') return !s.tuneName.trim() && !s.shareCode.trim()
+  if (s.type === 'forza_recipe') return !s.variants?.length
+    && !s.tuneName.trim() && !s.shareCode.trim()
     && s.upgrades.every(c => c.parts.length === 0) && s.adjustments.length === 0
   return false
 }
@@ -57,12 +58,16 @@ const recipeKey = computed(
 function onBuildIt() {
   if (recipeKey.value) openState[recipeKey.value] = true
 }
+
+// Active car ID for gallery filtering. Set by RecipeSection when a variant tab is selected.
+// Null = no filter (single-car cards or no tab selection yet).
+const activeCarId = ref<string | null>(null)
 </script>
 
 <template>
   <div class="card" :id="`card-${card.id}`" :class="{ 'legend-card': card.isLegend }" :data-collections="card.collections.join(',')" :style="card.accentOverride ? { '--accent': card.accentOverride } : undefined">
     <CardMeta :card="card" />
-    <Gallery :card="card" />
+    <Gallery :card="card" :active-car-id="activeCarId" />
     <TagCloud :card="card" :recipe-key="recipeKey" @build-it="onBuildIt" />
 
     <!-- Generic, ordered, type-dispatched sections — filtered to non-empty in view mode -->
@@ -83,6 +88,7 @@ function onBuildIt() {
         :reset-token="recipeResetToken"
         @update:recipe="updated => Object.assign(section, updated)"
         @update:car-id="id => { cardsStore.setCarId(card.id, id); ui.markCardDirty(card.id) }"
+        @update:active-car-id="id => { activeCarId = id }"
       />
     </CollapsibleSection>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import type { ForzaRecipeSection, UpgradeCategory } from '../types'
+import type { CarVariant, ForzaRecipeSection, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
 import { useFilterStore } from '../stores/filters'
 import { useCarsStore } from '../stores/cars'
@@ -23,6 +23,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:recipe': [recipe: ForzaRecipeSection]
   'update:carId': [id: string | null]
+  'update:activeCarId': [carId: string | null]
 }>()
 const ui = useUiStore()
 const filters = useFilterStore()
@@ -45,16 +46,64 @@ for (const k of CORE_SPEC_KEYS) {
   if (local.coreSpecs[k] == null) local.coreSpecs[k] = ''
 }
 
+// ── Multi-car variant support ─────────────────────────────────────────────────
+const isMultiCar = computed(() => (props.recipe.variants?.length ?? 0) >= 2)
+const activeVariantIndex = ref(0)
+
+function applyVariant(idx: number) {
+  const v = local.variants?.[idx]
+  if (!v) return
+  local.tuneName = v.tuneName
+  local.shareCode = v.shareCode
+  for (const k of Object.keys(v.coreSpecs)) local.coreSpecs[k] = v.coreSpecs[k]
+  local.upgrades = v.upgrades
+  local.adjustments = v.adjustments
+}
+
+function variantLabel(v: CarVariant): string {
+  const car = carsStore.byId(v.carId)
+  if (!car) return v.carId
+  return `${car.year ? car.year + ' ' : ''}${car.make} ${car.model}`
+}
+
+watch(activeVariantIndex, (idx) => {
+  applyVariant(idx)
+  emit('update:activeCarId', local.variants?.[idx]?.carId ?? null)
+})
+
+onMounted(() => {
+  if (isMultiCar.value) {
+    applyVariant(0)
+    emit('update:activeCarId', local.variants?.[0]?.carId ?? null)
+  }
+})
+
 // resetToken: parent increments this to signal a genuine external reset (history
 // restore, cancel/discard). Watching the token instead of props.recipe directly
 // means our own flush → store update → prop change cycle never triggers a re-sync.
 watch(() => props.resetToken, () => {
   Object.assign(local, cloneRecipe(props.recipe))
+  if (isMultiCar.value) applyVariant(activeVariantIndex.value)
 })
 
 function flush() {
+  // Keep active variant in sync with local fields before cloning
+  if (isMultiCar.value && local.variants?.[activeVariantIndex.value]) {
+    const v = local.variants[activeVariantIndex.value]
+    v.tuneName = local.tuneName
+    v.shareCode = local.shareCode
+    Object.assign(v.coreSpecs, local.coreSpecs)
+    v.upgrades = local.upgrades
+    v.adjustments = local.adjustments
+  }
   const clone = JSON.parse(JSON.stringify(local)) as ForzaRecipeSection
-  if (taRef.value) clone.adjustments = taRef.value.getAdjustments()
+  if (taRef.value) {
+    const liveAdj = taRef.value.getAdjustments()
+    clone.adjustments = liveAdj
+    if (isMultiCar.value && clone.variants?.[activeVariantIndex.value]) {
+      clone.variants[activeVariantIndex.value].adjustments = liveAdj
+    }
+  }
   emit('update:recipe', clone)
 }
 
@@ -281,6 +330,21 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 
 <template>
   <div class="section-body">
+
+    <!-- Multi-car variant tab strip — only renders when 2+ variants present -->
+    <div v-if="isMultiCar" class="rs-variant-tabs">
+      <button
+        v-for="(v, i) in props.recipe.variants"
+        :key="v.carId"
+        class="rs-variant-tab"
+        :class="{ 'rs-variant-tab--active': activeVariantIndex === i }"
+        type="button"
+        @click="activeVariantIndex = i"
+      >
+        {{ variantLabel(v) }}
+      </button>
+    </div>
+
     <div class="tune-header">
       <EditableText tag="p" class="tune-name" :modelValue="local.tuneName" @update:modelValue="v => { local.tuneName = v; flush() }" />
       <div class="plate">
@@ -634,4 +698,35 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 .up-preset-clear:hover { opacity: 0.9; color: #e03030; }
 
 .kit-item--buy { color: var(--accent); }
+
+/* ── Multi-car variant tab strip ──────────────────────────────────────────── */
+.rs-variant-tabs {
+  display: flex;
+  gap: 4px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--panel-edge);
+}
+.rs-variant-tab {
+  background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.rs-variant-tab--active {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.rs-variant-tab:not(.rs-variant-tab--active):hover {
+  border-color: color-mix(in srgb, var(--fg) 60%, transparent);
+  color: var(--fg);
+}
 </style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, toRef } from 'vue'
-import type { Card } from '../types'
+import type { Card, CardImage } from '../types'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 import { useModalStore } from '../stores/modal'
@@ -8,15 +8,21 @@ import { useSlideshow } from '../composables/useSlideshow'
 import { useNetworkQuality } from '../composables/useNetworkQuality'
 import { api } from '../api'
 
-const props = defineProps<{ card: Card }>()
+const props = defineProps<{ card: Card; activeCarId?: string | null }>()
 const store = useCardsStore()
 const ui = useUiStore()
 const modal = useModalStore()
 
 const images = toRef(props.card, 'images')
 
+// When a multi-car tab is active, filter to photos with matching carId (or no carId tagged).
+const filteredImages = computed<CardImage[]>(() => {
+  if (!props.activeCarId) return images.value
+  return images.value.filter(img => !img.carId || img.carId === props.activeCarId)
+})
+
 // Full pool sorted by order — shown in edit mode thumb rail.
-const poolSorted = computed(() => [...images.value].sort((a, b) => a.order - b.order))
+const poolSorted = computed(() => [...filteredImages.value].sort((a, b) => a.order - b.order))
 
 const stageRef = ref<HTMLElement | null>(null)
 const barRef = ref<HTMLElement | null>(null)
@@ -26,7 +32,7 @@ const { srcFor } = useNetworkQuality()
 
 // useSlideshow internally filters to included-only.
 const { ordered, index, toggleIcon, toggleLabel, toggle, onThumb } = useSlideshow(
-  images,
+  filteredImages,
   stageRef,
   barRef,
   toggleRef,

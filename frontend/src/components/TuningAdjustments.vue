@@ -147,7 +147,7 @@ const transmissionTier = computed<TransmissionTier>(() => {
     for (const part of cat.parts) {
       if (part === 'Drift Transmission') return 'drift'
       if (part.includes('Transmission') && (part.includes('Race') || part.includes('Racing'))) return 'race'
-      if (part === 'Sport Transmission' || part === 'Street Transmission') return 'sport'
+      if (part === 'Sport Transmission') return 'sport'
     }
   }
   const spec = props.coreSpecs?.Transmission
@@ -194,7 +194,7 @@ interface LocalRow extends AdjustmentRow {
 }
 
 function buildGearRows(): LocalRow[] {
-  const tier = ui.isEditing ? transmissionTier.value : viewTransmissionTier.value
+  const tier = viewTransmissionTier.value
   const fdLocked    = tier === 'none'
   const gearsLocked = tier !== 'race' && tier !== 'drift'
   const count       = tier === 'drift' ? 4 : gearCount.value

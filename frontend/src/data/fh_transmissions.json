@@ -3,7 +3,7 @@
     { "name": "Stock 4-Speed",               "group": "Stock",  "gears": 4,  "tier": "none"  },
     { "name": "Stock 5-Speed",               "group": "Stock",  "gears": 5,  "tier": "none"  },
     { "name": "Stock 6-Speed",               "group": "Stock",  "gears": 6,  "tier": "none"  },
-    { "name": "Street Transmission",         "group": "Street", "gears": 5,  "tier": "sport" },
+    { "name": "Street Transmission",         "group": "Street", "gears": 5,  "tier": "none"  },
     { "name": "Sport Transmission",          "group": "Sport",  "gears": 6,  "tier": "sport" },
     { "name": "Race 6-Speed Transmission",   "group": "Race",   "gears": 6,  "tier": "race"  },
     { "name": "Race 7-Speed Transmission",   "group": "Race",   "gears": 7,  "tier": "race"  },

@@ -6,6 +6,7 @@ import { MarkDirtyKey } from '../keys'
 import { api } from '../api'
 import { impliedUpgrades, type ImpliedUpgradesResult } from '../constants/tuning'
 import { activeSuggestCardId, suggestDismissedGlobal } from './suggestState'
+import fhTransmissions from '../data/fh_transmissions.json'
 
 const props = defineProps<{
   adjustments: AdjustmentRow[]
@@ -157,6 +158,29 @@ const transmissionTier = computed<TransmissionTier>(() => {
   return 'none'
 })
 
+type FhTransmission = { name: string; group: string; gears: number; tier: TransmissionTier }
+const FH_TRANSMISSIONS = fhTransmissions.transmissions as FhTransmission[]
+const FH_TRANSMISSION_GROUPS = computed(() => {
+  const groups: { label: string; items: FhTransmission[] }[] = []
+  for (const t of FH_TRANSMISSIONS) {
+    let g = groups.find(g => g.label === t.group)
+    if (!g) { g = { label: t.group, items: [] }; groups.push(g) }
+    g.items.push(t)
+  }
+  return groups
+})
+const viewTransmissionId = ref<string | null>(null)
+const viewTransmissionTier = computed<TransmissionTier>(() =>
+  (FH_TRANSMISSIONS.find(t => t.name === viewTransmissionId.value)?.tier) ?? 'none'
+)
+watch(() => props.cardId, () => { viewTransmissionId.value = null })
+function onViewTransmissionChange(e: Event) {
+  const name = (e.target as HTMLSelectElement).value
+  viewTransmissionId.value = name || null
+  const t = FH_TRANSMISSIONS.find(t => t.name === name)
+  if (t) gearCount.value = t.gears
+}
+
 // ── Local row state (edit mode) ───────────────────────────────────────────────
 interface LocalRow extends AdjustmentRow {
   locked?: boolean
@@ -168,7 +192,7 @@ interface LocalRow extends AdjustmentRow {
 }
 
 function buildGearRows(): LocalRow[] {
-  const tier = transmissionTier.value
+  const tier = ui.isEditing ? transmissionTier.value : viewTransmissionTier.value
   const fdLocked    = tier === 'none'
   const gearsLocked = tier !== 'race' && tier !== 'drift'
   const count       = tier === 'drift' ? 4 : gearCount.value
@@ -282,6 +306,10 @@ watch(gearCount, () => {
 })
 
 watch(transmissionTier, () => {
+  const nonGear = localRows.value.filter(r => r.tab !== 'gearing')
+  localRows.value = [...nonGear, ...buildGearRows()]
+})
+watch(viewTransmissionTier, () => {
   const nonGear = localRows.value.filter(r => r.tab !== 'gearing')
   localRows.value = [...nonGear, ...buildGearRows()]
 })
@@ -989,7 +1017,7 @@ async function submitSuggestion() {
         </div>
 
         <!-- Gear count selector (gearing tab only) -->
-        <div v-if="section.id === 'gearing' && ui.isEditing" class="ta-section-title-bar ta-gear-select-row">
+        <div v-if="section.id === 'gearing'" class="ta-section-title-bar ta-gear-select-row">
           <div class="ta-title-label-zone">
             <span class="ta-section-title-text ta-caps-nudge">Transmission</span>
           </div>
@@ -1010,6 +1038,18 @@ async function submitSuggestion() {
                   @change="gearCount = parseInt(($event.target as HTMLSelectElement).value)"
                 >
                   <option v-for="n in GEAR_OPTIONS" :key="n" :value="n">{{ n }}-Speed</option>
+                </select>
+              </template>
+              <template v-else-if="section.id === 'gearing'">
+                <select
+                  class="ta-gear-select ta-caps-nudge"
+                  :value="viewTransmissionId ?? ''"
+                  @change="onViewTransmissionChange"
+                >
+                  <option value="">Your transmission…</option>
+                  <optgroup v-for="grp in FH_TRANSMISSION_GROUPS" :key="grp.label" :label="grp.label">
+                    <option v-for="t in grp.items" :key="t.name" :value="t.name">{{ t.name }}</option>
+                  </optgroup>
                 </select>
               </template>
               <span v-else class="ta-section-title-text ta-caps-nudge">{{ group.title }}</span>
@@ -1033,8 +1073,8 @@ async function submitSuggestion() {
           </div>
 
           <template v-for="r in group.rows" :key="r.key">
-            <!-- Locked row -->
-            <div v-if="r.locked" class="ta-row ta-row--locked">
+            <!-- Locked row: lock treatment in edit mode, dimmed slider in view mode -->
+            <div v-if="r.locked && ui.isEditing" class="ta-row ta-row--locked">
               <div class="ta-left-section">
                 <div class="ta-row-label">{{ r.label }}</div>
               </div>
@@ -1044,11 +1084,11 @@ async function submitSuggestion() {
               </div>
             </div>
 
-            <!-- Normal row -->
+            <!-- Normal row (locked rows render here in view mode, dimmed) -->
             <div
-              v-else
+              v-else-if="!r.locked || !ui.isEditing"
               class="ta-row"
-              :class="{ focused: focusedKey === r.key, changed: isChanged(r) }"
+              :class="{ focused: focusedKey === r.key, changed: isChanged(r), 'ta-row--dimmed': r.locked }"
               :data-key="r.key"
               tabindex="-1"
               @click="onRowClick(r, $event)"
@@ -1613,6 +1653,7 @@ async function submitSuggestion() {
 .ta-row.focused .ta-right-section { background: color-mix(in srgb, var(--panel-well) 80%, #000); box-shadow: inset 0 0 0 1px var(--highlight); }
 .ta-row:focus      { outline: none; }
 .ta-row--locked    { border-radius: 6px; border: 1px dashed var(--panel-edge); }
+.ta-row--dimmed    { opacity: 0.28; pointer-events: none; }
 .ta-group > .ta-row:not(:last-child):not(.ta-row--locked) { border-bottom: 2px solid var(--panel); }
 
 .ta-row-label {

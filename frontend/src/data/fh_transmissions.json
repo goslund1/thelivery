@@ -1,0 +1,17 @@
+{
+  "transmissions": [
+    { "name": "Stock 4-Speed",           "group": "Stock",  "gears": 4,  "tier": "none"  },
+    { "name": "Stock 5-Speed",           "group": "Stock",  "gears": 5,  "tier": "none"  },
+    { "name": "Stock 6-Speed",           "group": "Stock",  "gears": 6,  "tier": "none"  },
+    { "name": "Street Transmission",     "group": "Street", "gears": 4,  "tier": "sport" },
+    { "name": "Street 5-Speed",          "group": "Street", "gears": 5,  "tier": "sport" },
+    { "name": "Sport Transmission",      "group": "Sport",  "gears": 6,  "tier": "sport" },
+    { "name": "Sport 7-Speed",           "group": "Sport",  "gears": 7,  "tier": "sport" },
+    { "name": "Race Transmission",       "group": "Race",   "gears": 6,  "tier": "race"  },
+    { "name": "Race 7-Speed",            "group": "Race",   "gears": 7,  "tier": "race"  },
+    { "name": "Race 8-Speed",            "group": "Race",   "gears": 8,  "tier": "race"  },
+    { "name": "Race 9-Speed",            "group": "Race",   "gears": 9,  "tier": "race"  },
+    { "name": "Race 10-Speed",           "group": "Race",   "gears": 10, "tier": "race"  },
+    { "name": "Drift Transmission",      "group": "Drift",  "gears": 4,  "tier": "drift" }
+  ]
+}

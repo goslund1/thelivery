@@ -172,10 +172,9 @@ String template refs (`ref="x"`) aren't counted as "used" by `vue-tsc`'s unused-
 ### Pending / in progress
 
 See `docs/plan.md` for the current work list. High-level categories:
-- **Backfill car IDs** — existing cards need car IDs assigned manually via CarPicker in EditCardModal.
-- **Submit Tune feature** — open questions at `docs/plan-submit-tune.md`.
-- **Mobile layout** — theme builder flyout + general narrow-screen pass; deferred until browser tuning is complete.
-- **Add-photos SVG icon** — still needs final design approval (see `docs/plan.md` for context).
+- **Battle-test shakedown** — full dialog/flow verification pass; see checklist in `docs/plan.md`.
+- **Mobile layout** — theme builder flyout + general narrow-screen pass; deferred until shakedown is complete.
+- **Multi-car mashup card** — plan doc at `docs/plan-multi-car-mashup.md`. Foundation: `images` DB table + CarPicker at upload time; then `variants` array on `ForzaRecipeSection` + tab strip UI in RecipeSection + gallery carId filtering.
 
 ## Conventions & rules
 

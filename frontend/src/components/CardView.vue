@@ -23,6 +23,7 @@ provide(CardIdKey, props.card.id)
 function isSectionEmpty(s: Section): boolean {
   if (s.type === 'text') return !s.body.trim() && !s.figurePath
   if (s.type === 'forza_recipe') return !s.tuneName.trim() && !s.shareCode.trim()
+    && s.upgrades.every(c => c.parts.length === 0) && s.adjustments.length === 0
   return false
 }
 const visibleSections = computed(() =>

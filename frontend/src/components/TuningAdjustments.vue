@@ -315,11 +315,7 @@ watch(gearCount, () => {
   flush()
 })
 
-watch(transmissionTier, () => {
-  const nonGear = localRows.value.filter(r => r.tab !== 'gearing')
-  localRows.value = [...nonGear, ...buildGearRows()]
-})
-watch(viewTransmissionTier, () => {
+watch([transmissionTier, viewTransmissionTier], () => {
   const nonGear = localRows.value.filter(r => r.tab !== 'gearing')
   localRows.value = [...nonGear, ...buildGearRows()]
 })

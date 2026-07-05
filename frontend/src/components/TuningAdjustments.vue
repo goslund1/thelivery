@@ -381,7 +381,7 @@ function onTransChoice(name: string) {
     if (t) gearCount.value = t.gears
     emit('implied-upgrades', { toAdd: [{ category: 'Drivetrain', part: name }], needsSpringsDialog: false })
   }
-  if (key) nextTick(() => (document.querySelector(`.ta-row[data-key="${key}"]`) as HTMLElement | null)?.focus({ preventScroll: true }))
+  if (key) nextTick(() => (taRef.value?.querySelector(`.ta-row[data-key="${key}"]`) as HTMLElement | null)?.focus({ preventScroll: true }))
 }
 
 // ── Springs and Dampers dialog ────────────────────────────────────────────────
@@ -731,30 +731,39 @@ function onRowKeydown(r: LocalRow, e: KeyboardEvent) {
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
     e.preventDefault()
     const rows = localRows.value
+    const root = taRef.value ?? document
     const idx = rows.findIndex(row => row.key === r.key)
-    const nextIdx = e.key === 'ArrowUp' ? idx - 1 : idx + 1
-    if (nextIdx >= 0 && nextIdx < rows.length) {
-      const el = document.querySelector<HTMLInputElement>(`.ta-slider[data-key="${rows[nextIdx].key}"]`)
-      el?.focus()
+    const dir = e.key === 'ArrowUp' ? -1 : 1
+    let next = idx + dir
+    while (next >= 0 && next < rows.length) {
+      const el = root.querySelector<HTMLInputElement>(`.ta-slider[data-key="${rows[next].key}"]`)
+      if (el) { el.focus(); break }
+      next += dir
     }
     return
   }
 
   // Left/Right: adjust slider value (all modes; flush only in edit mode)
-  if (r.locked) unlockByUpgrade(r)
+  if (r.locked) {
+    if (r.tab === 'gearing') unlockByUpgrade(r)
+    else r.locked = false
+  }
   const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
   if (!dir) return
   e.preventDefault()
   if (ui.isEditing) pushUndo(r.key, r.value)
   r.value = parseFloat(Math.max(r.min, Math.min(r.max, r.value + dir * r.step)).toFixed(decimals(r)))
-  if (!autoAddedPart.value && Math.abs(r.value - r.stock) <= r.step / 2) r.locked = true
+  if (r.tab === 'gearing' && !autoAddedPart.value && Math.abs(r.value - r.stock) <= r.step / 2) r.locked = true
   if (ui.isEditing) flush(); else checkImplied()
 }
 
 function onSliderInput(r: LocalRow, e: Event) {
-  if (r.locked) unlockByUpgrade(r)
+  if (r.locked) {
+    if (r.tab === 'gearing') unlockByUpgrade(r)
+    else r.locked = false
+  }
   r.value = parseFloat((e.target as HTMLInputElement).value)
-  if (!autoAddedPart.value && Math.abs(r.value - r.stock) <= r.step / 2) r.locked = true
+  if (r.tab === 'gearing' && !autoAddedPart.value && Math.abs(r.value - r.stock) <= r.step / 2) r.locked = true
   if (ui.isEditing) flush(); else checkImplied()
 }
 function onMinChange(r: LocalRow, e: Event) {
@@ -788,8 +797,10 @@ function onBadgeChange(r: LocalRow, e: Event) {
 // ── Stock snapshot ────────────────────────────────────────────────────────────
 // One-shot: copies all current values to stock. Use once when creating a card.
 
-const stockConfirmOpen = ref(false)
+const stockConfirmOpen  = ref(false)
+const stockUndoOpen     = ref(false)
 const stockTargetSection = ref<string | null>(null)
+const stockUndoSnapshot  = ref<Record<string, number> | null>(null)
 
 function onSetStockParameters(sectionId: string) {
   stockTargetSection.value = sectionId
@@ -798,9 +809,34 @@ function onSetStockParameters(sectionId: string) {
 
 function confirmSetStock(sectionId: string | null) {
   const rows = sectionId ? localRows.value.filter(r => r.tab === sectionId) : localRows.value
+  const snapshot: Record<string, number> = {}
+  for (const r of rows) snapshot[r.key] = r.stock
+  stockUndoSnapshot.value = snapshot
   for (const r of rows) r.stock = r.value
   flush()
   stockConfirmOpen.value = false
+}
+
+function onUndoSetStock() {
+  stockUndoOpen.value = true
+}
+
+function confirmUndoSetStock() {
+  if (!stockUndoSnapshot.value) return
+  const snap = stockUndoSnapshot.value
+  for (const r of localRows.value) {
+    if (r.key in snap) r.stock = snap[r.key]
+  }
+  flush()
+  stockUndoSnapshot.value = null
+  stockUndoOpen.value = false
+}
+
+function onTaKeydown(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'z' && stockUndoSnapshot.value) {
+    e.preventDefault()
+    stockUndoOpen.value = true
+  }
 }
 
 // ── Tuning presets ────────────────────────────────────────────────────────────
@@ -1006,7 +1042,7 @@ async function submitSuggestion() {
       </div>
     </details>
 
-  <div class="ta" ref="taRef">
+  <div class="ta" ref="taRef" @keydown="onTaKeydown">
 
     <!-- Preset bar (edit mode only) -->
     <div v-if="ui.isEditing" class="ta-preset-bar">
@@ -1068,6 +1104,7 @@ async function submitSuggestion() {
           <div class="ta-stack-header-left">
             <span class="ta-caps-nudge">{{ section.label }}<span v-if="hasChangedInTab(section.id)" class="ta-tab-dot ta-tab-dot--inline"></span></span>
             <button v-if="ui.isEditing" class="ta-btn-lwb ta-stack-stock-btn" @click="onSetStockParameters(section.id)">Set As Stock</button>
+            <button v-if="ui.isEditing && stockUndoSnapshot" class="ta-btn-lwb ta-stack-undo-btn" @click="onUndoSetStock">↩ Undo</button>
           </div>
           <button class="ta-btn-lwb ta-stack-collapse-btn" @click="switchToTabView(section.id)">Tab View</button>
         </div>
@@ -1220,35 +1257,62 @@ async function submitSuggestion() {
     </div>
 
     <!-- Springs and Dampers tier prompt -->
-    <div v-if="springsDialogOpen" class="ta-prompt-strip">
-      <span class="ta-prompt-label">Springs &amp; Dampers — which tier?</span>
-      <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Race')">Race</button>
-      <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Rally')">Rally</button>
-      <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Drift')">Drift</button>
-      <button class="ta-prompt-btn ta-prompt-btn--muted" @click="onSpringsReset">Reset Stock</button>
-      <button class="ta-prompt-dismiss" @click="springsDialogOpen = false">×</button>
+    <div v-if="springsDialogOpen" class="ta-trans-modal-backdrop" @click.self="springsDialogOpen = false">
+      <div class="ta-trans-modal">
+        <span class="ta-prompt-label">Springs &amp; Dampers — which tier?</span>
+        <div class="ta-trans-modal-actions ta-trans-modal-actions--wrap">
+          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Race')">Race</button>
+          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Rally')">Rally</button>
+          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Drift')">Drift</button>
+          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="onSpringsReset">Reset Stock</button>
+          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="springsDialogOpen = false">Cancel</button>
+        </div>
+      </div>
     </div>
 
     <!-- Apply preset confirm prompt -->
-    <div v-if="applyConfirmOpen" class="ta-prompt-strip">
-      <span class="ta-prompt-label">{{ changedRows.length }} unsaved change{{ changedRows.length === 1 ? '' : 's' }} — apply preset anyway?</span>
-      <button class="ta-prompt-btn ta-prompt-btn--danger" @click="executeApplyPreset">Apply</button>
-      <button class="ta-prompt-btn ta-prompt-btn--muted" @click="applyConfirmOpen = false">Cancel</button>
+    <div v-if="applyConfirmOpen" class="ta-trans-modal-backdrop" @click.self="applyConfirmOpen = false">
+      <div class="ta-trans-modal">
+        <span class="ta-prompt-label">{{ changedRows.length }} unsaved change{{ changedRows.length === 1 ? '' : 's' }} — apply preset anyway?</span>
+        <div class="ta-trans-modal-actions">
+          <button class="ta-prompt-btn ta-prompt-btn--danger" @click="executeApplyPreset">Apply</button>
+          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="applyConfirmOpen = false">Cancel</button>
+        </div>
+      </div>
     </div>
 
     <!-- Delete preset confirm prompt -->
-    <div v-if="deleteConfirmOpen" class="ta-prompt-strip">
-      <span class="ta-prompt-label">Delete "{{ presets.find(p => p.id === selectedPresetId)?.name }}"?</span>
-      <button class="ta-prompt-btn ta-prompt-btn--danger" :disabled="presetBusy" @click="confirmDeletePreset">{{ presetBusy ? '…' : 'Delete' }}</button>
-      <button class="ta-prompt-btn ta-prompt-btn--muted" @click="deleteConfirmOpen = false">Cancel</button>
+    <div v-if="deleteConfirmOpen" class="ta-trans-modal-backdrop" @click.self="deleteConfirmOpen = false">
+      <div class="ta-trans-modal">
+        <span class="ta-prompt-label">Delete "{{ presets.find(p => p.id === selectedPresetId)?.name }}"?</span>
+        <div class="ta-trans-modal-actions">
+          <button class="ta-prompt-btn ta-prompt-btn--danger" :disabled="presetBusy" @click="confirmDeletePreset">{{ presetBusy ? '…' : 'Delete' }}</button>
+          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="deleteConfirmOpen = false">Cancel</button>
+        </div>
+      </div>
     </div>
 
     <!-- Set Stock Values confirm prompt -->
-    <div v-if="stockConfirmOpen" class="ta-prompt-strip">
-      <span class="ta-prompt-label">Snapshot current positions as stock?</span>
-      <button class="ta-prompt-btn ta-prompt-btn--choice" @click="confirmSetStock(stockTargetSection)">This Section</button>
-      <button class="ta-prompt-btn ta-prompt-btn--choice" @click="confirmSetStock(null)">All Sections</button>
-      <button class="ta-prompt-btn ta-prompt-btn--muted" @click="stockConfirmOpen = false">Cancel</button>
+    <div v-if="stockConfirmOpen" class="ta-trans-modal-backdrop" @click.self="stockConfirmOpen = false">
+      <div class="ta-trans-modal">
+        <span class="ta-prompt-label">Snapshot current positions as stock?</span>
+        <div class="ta-trans-modal-actions">
+          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="confirmSetStock(stockTargetSection)">This Section</button>
+          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="confirmSetStock(null)">All Sections</button>
+          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="stockConfirmOpen = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Undo Set Stock confirm prompt -->
+    <div v-if="stockUndoOpen" class="ta-trans-modal-backdrop" @click.self="stockUndoOpen = false">
+      <div class="ta-trans-modal">
+        <span class="ta-prompt-label">Restore previous stock values?</span>
+        <div class="ta-trans-modal-actions">
+          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="confirmUndoSetStock">Restore</button>
+          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="stockUndoOpen = false">Cancel</button>
+        </div>
+      </div>
     </div>
   </Teleport>
 
@@ -2007,6 +2071,9 @@ async function submitSuggestion() {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+.ta-trans-modal-actions--wrap {
+  flex-wrap: wrap;
 }
 
 .ta-prompt-strip {

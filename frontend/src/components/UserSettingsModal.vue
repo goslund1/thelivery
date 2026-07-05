@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/auth'
 import { useCardsStore } from '../stores/cards'
 import { api } from '../api'
 import type { Card, ForzaRecipeSection, AdjustmentRow } from '../types'
+import { cardToYaml, yamlToCard } from '../utils/cardYaml'
 
 const ui = useUiStore()
 const modal = useModalStore()
@@ -375,6 +376,71 @@ function onTabMigrate() {
   catResult.value = null
   adjResult.value = null
 }
+
+// ── YAML Export / Import ──────────────────────────────────────────────────────
+
+function downloadCardYaml(card: Card) {
+  const text = cardToYaml(card)
+  const blob = new Blob([text], { type: 'text/yaml' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  const slug = card.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+  a.href = url
+  a.download = `${slug || 'card'}.yaml`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+const importError = ref<string | null>(null)
+const importPreview = ref<Omit<Card, 'id' | 'catalogNumber'> | null>(null)
+const importBusy = ref(false)
+const importResult = ref<string | null>(null)
+const importFileRef = ref<HTMLInputElement | null>(null)
+
+function onImportFile(e: Event) {
+  importError.value = null
+  importPreview.value = null
+  importResult.value = null
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  file.text().then(text => {
+    const result = yamlToCard(text)
+    if (!result.ok) {
+      importError.value = result.error
+    } else {
+      importPreview.value = result.card
+    }
+  })
+}
+
+async function confirmImport() {
+  if (!importPreview.value) return
+  importBusy.value = true
+  importResult.value = null
+  try {
+    const maxNum = Math.max(0, ...cards.cards.map(c => c.catalogNumber))
+    const newCard: Card = {
+      ...importPreview.value,
+      id: crypto.randomUUID(),
+      catalogNumber: maxNum + 1,
+    }
+    await api.createCard(newCard)
+    await cards.load()
+    importResult.value = `Imported "${newCard.name}" as card #${newCard.catalogNumber}.`
+    importPreview.value = null
+    if (importFileRef.value) importFileRef.value.value = ''
+  } catch (e: any) {
+    importResult.value = `Error: ${e.message}`
+  } finally {
+    importBusy.value = false
+  }
+}
+
+function cancelImport() {
+  importPreview.value = null
+  importError.value = null
+  if (importFileRef.value) importFileRef.value.value = ''
+}
 </script>
 
 <template>
@@ -620,6 +686,46 @@ function onTabMigrate() {
               <p v-if="adjResult" class="admin-ok">{{ adjResult }}</p>
             </div>
           </template>
+        </div>
+
+        <!-- YAML Export -->
+        <div class="admin-section">
+          <div class="admin-section-head">Export Card as YAML</div>
+          <p class="admin-muted">Download a human-readable YAML file for any card. Images are not included.</p>
+          <div class="mig-card-list">
+            <div v-for="s in migrateStatus" :key="s.card.id" class="mig-card-row">
+              <span class="mig-card-name">{{ s.card.name }}</span>
+              <button class="admin-btn mig-btn-sm" @click="downloadCardYaml(s.card)">Download ↓</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- YAML Import -->
+        <div class="admin-section">
+          <div class="admin-section-head">Import Card from YAML</div>
+          <p class="admin-muted">Create a new card from a YAML export. Images must be added manually after import.</p>
+          <div class="admin-row">
+            <label class="admin-btn mig-file-label">
+              Choose File
+              <input ref="importFileRef" type="file" accept=".yaml,.yml" class="mig-file-input" @change="onImportFile" />
+            </label>
+          </div>
+          <p v-if="importError" class="admin-err">{{ importError }}</p>
+          <div v-if="importPreview" class="mig-preview">
+            <div class="mig-preview-name">{{ importPreview.name }}</div>
+            <div v-if="importPreview.subtitle" class="mig-preview-sub">{{ importPreview.subtitle }}</div>
+            <div class="mig-preview-meta">
+              {{ importPreview.sections.length }} section{{ importPreview.sections.length !== 1 ? 's' : '' }}
+              <template v-if="importPreview.collections.length"> · {{ importPreview.collections.join(', ') }}</template>
+            </div>
+            <div class="admin-row" style="margin-top: 10px;">
+              <button class="admin-btn" :disabled="importBusy" @click="confirmImport">
+                {{ importBusy ? 'Importing…' : 'Import as New Card' }}
+              </button>
+              <button class="admin-btn" @click="cancelImport">Cancel</button>
+            </div>
+          </div>
+          <p v-if="importResult" class="admin-ok">{{ importResult }}</p>
         </div>
 
       </div>
@@ -954,4 +1060,48 @@ function onTabMigrate() {
 .mig-num .mig-label { width: auto; }
 
 .mig-commit { display: flex; flex-direction: column; gap: 8px; }
+
+.admin-err {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--danger-bright, #e05050);
+  margin-top: 6px;
+}
+
+.mig-file-label {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  display: inline-block;
+}
+.mig-file-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.mig-preview {
+  margin-top: 8px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 5px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+}
+.mig-preview-name {
+  font: 700 13px/1.3 'Oswald', sans-serif;
+  letter-spacing: 0.04em;
+  color: var(--fg);
+}
+.mig-preview-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.mig-preview-meta {
+  font: 11px/1.3 'JetBrains Mono', monospace;
+  color: var(--muted);
+  opacity: 0.6;
+  margin-top: 6px;
+}
 </style>

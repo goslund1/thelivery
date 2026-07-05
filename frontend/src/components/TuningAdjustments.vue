@@ -18,6 +18,7 @@ const emit = defineEmits<{
   change: []
   'implied-upgrades': [result: ImpliedUpgradesResult]
   'springs-choice': [tier: 'Race' | 'Rally' | 'Drift']
+  'remove-upgrade': [part: string]
 }>()
 const ui = useUiStore()
 const markDirty = inject(MarkDirtyKey, () => {})
@@ -146,7 +147,7 @@ const transmissionTier = computed<TransmissionTier>(() => {
     for (const part of cat.parts) {
       if (part === 'Drift Transmission') return 'drift'
       if (part.includes('Transmission') && (part.includes('Race') || part.includes('Racing'))) return 'race'
-      if (part === 'Sport Transmission') return 'sport'
+      if (part === 'Sport Transmission' || part === 'Street Transmission') return 'sport'
     }
   }
   const spec = props.coreSpecs?.Transmission
@@ -373,6 +374,7 @@ function flush() {
   emit('change')
   markDirty()
   checkImplied()
+  checkGearingStock()
 }
 
 // ── View-mode rows ────────────────────────────────────────────────────────────
@@ -636,6 +638,21 @@ function onRowFocusOut(r: LocalRow, e: FocusEvent) {
   }
 }
 
+const autoAddedPart = ref<string | null>(null)
+function unlockByUpgrade(r: LocalRow) {
+  const part = r.key === 'finalDrive' ? 'Sport Transmission' : 'Race Transmission'
+  autoAddedPart.value = part
+  emit('implied-upgrades', { toAdd: [{ category: 'Drivetrain', part }], needsSpringsDialog: false })
+}
+function checkGearingStock() {
+  if (!ui.isEditing || !autoAddedPart.value) return
+  const gearRows = localRows.value.filter(r => r.tab === 'gearing')
+  if (gearRows.every(r => r.value === r.stock)) {
+    emit('remove-upgrade', autoAddedPart.value)
+    autoAddedPart.value = null
+  }
+}
+
 function onRowClick(r: LocalRow, e: MouseEvent) {
   focusedKey.value = r.key
   if (!(e.target instanceof HTMLInputElement)) {
@@ -670,6 +687,7 @@ function onRowKeydown(r: LocalRow, e: KeyboardEvent) {
   }
 
   // Left/Right: adjust slider value (all modes; flush only in edit mode)
+  if (r.locked && ui.isEditing) { unlockByUpgrade(r); return }
   if (r.locked) return
   const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
   if (!dir) return
@@ -680,6 +698,7 @@ function onRowKeydown(r: LocalRow, e: KeyboardEvent) {
 }
 
 function onSliderInput(r: LocalRow, e: Event) {
+  if (r.locked && ui.isEditing) unlockByUpgrade(r)
   r.value = parseFloat((e.target as HTMLInputElement).value)
   if (ui.isEditing) flush()
 }
@@ -1075,7 +1094,7 @@ async function submitSuggestion() {
             <!-- All rows render as sliders; locked rows are dimmed -->
             <div
               class="ta-row"
-              :class="{ focused: focusedKey === r.key, changed: isChanged(r), 'ta-row--dimmed': r.locked }"
+              :class="{ focused: focusedKey === r.key, changed: isChanged(r), 'ta-row--dimmed': r.locked && !ui.isEditing, 'ta-row--locked-edit': r.locked && ui.isEditing }"
               :data-key="r.key"
               tabindex="-1"
               @click="onRowClick(r, $event)"
@@ -1138,74 +1157,41 @@ async function submitSuggestion() {
 
     <p v-else-if="!ui.isEditing" class="ta-empty">No adjustments recorded.</p>
 
-    <!-- Springs and Dampers tier dialog -->
-    <div v-if="springsDialogOpen" class="ta-overlay" @click.self="springsDialogOpen = false">
-      <div class="ta-dialog">
-        <div class="ta-dialog-head">
-          <span>Springs &amp; Dampers</span>
-          <button class="ta-dialog-close" @click="springsDialogOpen = false">×</button>
-        </div>
-        <p class="ta-dialog-body">A slider is off-stock. Which tier of Springs and Dampers is installed?</p>
-        <div class="ta-dialog-btns">
-          <button class="ta-dlg-keep" @click="onSpringsChoice('Race')">Race</button>
-          <button class="ta-dlg-keep" @click="onSpringsChoice('Rally')">Rally</button>
-          <button class="ta-dlg-keep" @click="onSpringsChoice('Drift')">Drift</button>
-          <button class="ta-dlg-cancel" @click="onSpringsReset">Reset to Stock</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Apply preset confirm dialog (has unsaved slider changes) -->
-    <div v-if="applyConfirmOpen" class="ta-overlay" @click.self="applyConfirmOpen = false">
-      <div class="ta-dialog">
-        <div class="ta-dialog-head">
-          <span>Discard Changes?</span>
-          <button class="ta-dialog-close" @click="applyConfirmOpen = false">×</button>
-        </div>
-        <p class="ta-dialog-body">You have {{ changedRows.length }} modified slider{{ changedRows.length === 1 ? '' : 's' }}. Applying the preset will reset them to the preset defaults.</p>
-        <div class="ta-dialog-btns">
-          <button class="ta-dlg-discard" @click="executeApplyPreset">Apply Anyway</button>
-          <button class="ta-dlg-cancel" @click="applyConfirmOpen = false">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Delete preset confirm dialog -->
-    <div v-if="deleteConfirmOpen" class="ta-overlay" @click.self="deleteConfirmOpen = false">
-      <div class="ta-dialog">
-        <div class="ta-dialog-head">
-          <span>Delete Preset</span>
-          <button class="ta-dialog-close" @click="deleteConfirmOpen = false">×</button>
-        </div>
-        <p class="ta-dialog-body">
-          Delete "{{ presets.find(p => p.id === selectedPresetId)?.name }}"? This cannot be undone.
-          <template v-if="changedRows.length > 0"> Your {{ changedRows.length }} unsaved slider change{{ changedRows.length === 1 ? '' : 's' }} will also be lost.</template>
-        </p>
-        <div class="ta-dialog-btns">
-          <button class="ta-dlg-discard" :disabled="presetBusy" @click="confirmDeletePreset">{{ presetBusy ? '…' : 'Delete' }}</button>
-          <button class="ta-dlg-cancel" @click="deleteConfirmOpen = false">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Set Stock Values confirm dialog -->
-    <div v-if="stockConfirmOpen" class="ta-overlay" @click.self="stockConfirmOpen = false">
-      <div class="ta-dialog">
-        <div class="ta-dialog-head">
-          <span>Set Stock Values</span>
-          <button class="ta-dialog-close" @click="stockConfirmOpen = false">×</button>
-        </div>
-        <p class="ta-dialog-body">Snapshot current slider positions as stock values. The grey markers will move to match. This cannot be undone.</p>
-        <div class="ta-dialog-btns">
-          <button class="ta-dlg-keep" @click="confirmSetStock(stockTargetSection)">This Section</button>
-          <button class="ta-dlg-keep ta-dlg-keep--all" @click="confirmSetStock(null)">All Sections</button>
-          <button class="ta-dlg-cancel" @click="stockConfirmOpen = false">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-
   </div>
+
+  <Teleport to="body">
+    <!-- Springs and Dampers tier prompt -->
+    <div v-if="springsDialogOpen" class="ta-prompt-strip">
+      <span class="ta-prompt-label">Springs &amp; Dampers — which tier?</span>
+      <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Race')">Race</button>
+      <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Rally')">Rally</button>
+      <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Drift')">Drift</button>
+      <button class="ta-prompt-btn ta-prompt-btn--muted" @click="onSpringsReset">Reset Stock</button>
+      <button class="ta-prompt-dismiss" @click="springsDialogOpen = false">×</button>
+    </div>
+
+    <!-- Apply preset confirm prompt -->
+    <div v-if="applyConfirmOpen" class="ta-prompt-strip">
+      <span class="ta-prompt-label">{{ changedRows.length }} unsaved change{{ changedRows.length === 1 ? '' : 's' }} — apply preset anyway?</span>
+      <button class="ta-prompt-btn ta-prompt-btn--danger" @click="executeApplyPreset">Apply</button>
+      <button class="ta-prompt-btn ta-prompt-btn--muted" @click="applyConfirmOpen = false">Cancel</button>
+    </div>
+
+    <!-- Delete preset confirm prompt -->
+    <div v-if="deleteConfirmOpen" class="ta-prompt-strip">
+      <span class="ta-prompt-label">Delete "{{ presets.find(p => p.id === selectedPresetId)?.name }}"?</span>
+      <button class="ta-prompt-btn ta-prompt-btn--danger" :disabled="presetBusy" @click="confirmDeletePreset">{{ presetBusy ? '…' : 'Delete' }}</button>
+      <button class="ta-prompt-btn ta-prompt-btn--muted" @click="deleteConfirmOpen = false">Cancel</button>
+    </div>
+
+    <!-- Set Stock Values confirm prompt -->
+    <div v-if="stockConfirmOpen" class="ta-prompt-strip">
+      <span class="ta-prompt-label">Snapshot current positions as stock?</span>
+      <button class="ta-prompt-btn ta-prompt-btn--choice" @click="confirmSetStock(stockTargetSection)">This Section</button>
+      <button class="ta-prompt-btn ta-prompt-btn--choice" @click="confirmSetStock(null)">All Sections</button>
+      <button class="ta-prompt-btn ta-prompt-btn--muted" @click="stockConfirmOpen = false">Cancel</button>
+    </div>
+  </Teleport>
 
   <!-- Floating suggestion panel — view mode only, requires tuning data -->
   <Teleport to="body">
@@ -1643,7 +1629,8 @@ async function submitSuggestion() {
 .ta-row--locked-upgrade { cursor: pointer; }
 .ta-row--locked-upgrade:hover { border-color: var(--highlight); background: color-mix(in srgb, var(--highlight) 8%, transparent); }
 .ta-row--locked-upgrade .ta-lock-line { color: var(--highlight); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
-.ta-row--dimmed    { opacity: 0.28; pointer-events: none; }
+.ta-row--dimmed      { opacity: 0.28; pointer-events: none; }
+.ta-row--locked-edit { opacity: 0.28; cursor: pointer; }
 .ta-group > .ta-row:not(:last-child):not(.ta-row--locked) { border-bottom: 2px solid var(--panel); }
 
 .ta-row-label {
@@ -1922,37 +1909,80 @@ async function submitSuggestion() {
   margin: 4px 0 0; text-align: center; padding: 8px 0;
 }
 
-.ta-overlay {
-  position: absolute; inset: 0;
-  border-radius: 10px;
-  background: rgba(0,0,0,0.65);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 130;
-}
-.ta-overlay--fixed { position: fixed; border-radius: 0; }
-.ta-dialog {
-  background: var(--panel);
-  border: 1px solid var(--panel-edge);
-  border-radius: 8px;
-  padding: 20px;
-  max-width: 320px; width: 90%;
-}
-.ta-dialog-head {
+.ta-prompt-strip {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  max-width: 560px;
+  width: calc(100vw - 40px);
+}
+.ta-prompt-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  color: var(--fg);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 14px;
+  color: var(--muted);
+  flex: 1;
+  min-width: 0;
 }
-.ta-dialog-close {
-  background: transparent; border: none;
-  color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer;
+.ta-prompt-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
-.ta-dialog-body {
+.ta-prompt-btn--choice {
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--highlight) 50%, transparent);
+  color: var(--highlight);
+}
+.ta-prompt-btn--choice:hover {
+  background: color-mix(in srgb, var(--highlight) 12%, transparent);
+  border-color: var(--highlight);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--highlight) 28%, transparent);
+}
+.ta-prompt-btn--danger {
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--danger) 60%, transparent);
+  color: var(--danger-bright);
+}
+.ta-prompt-btn--danger:hover {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  border-color: var(--danger-bright);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--danger) 30%, transparent);
+}
+.ta-prompt-btn--muted {
+  background: none;
+  border: 1px solid var(--panel-edge);
+  color: var(--muted);
+}
+.ta-prompt-btn--muted:hover { border-color: var(--muted); color: var(--fg); }
+.ta-prompt-dismiss {
+  background: none; border: none;
+  color: var(--muted); font-size: 18px; line-height: 1;
+  cursor: pointer; padding: 0 2px; flex-shrink: 0;
+}
+.ta-prompt-dismiss:hover { color: var(--fg); }
+.ta-dialog-body-unused {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.5;

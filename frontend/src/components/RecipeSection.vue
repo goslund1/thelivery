@@ -67,6 +67,13 @@ function onImpliedUpgrades(result: ImpliedUpgradesResult) {
   if (result.toAdd.length) applyImpliedUpgrades(local.upgrades, result.toAdd)
 }
 
+function onRemoveUpgrade(part: string) {
+  for (const cat of local.upgrades) {
+    const idx = cat.parts.indexOf(part)
+    if (idx !== -1) { cat.parts.splice(idx, 1); break }
+  }
+}
+
 function onSpringsChoice(tier: 'Race' | 'Rally' | 'Drift') {
   applySpringsChoice(local.upgrades, tier)
 }
@@ -427,6 +434,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
       :core-specs="local.coreSpecs"
       @change="flush()"
       @implied-upgrades="onImpliedUpgrades"
+      @remove-upgrade="onRemoveUpgrade"
       @springs-choice="onSpringsChoice"
     />
   </div>

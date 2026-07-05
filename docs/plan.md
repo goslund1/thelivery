@@ -7,13 +7,7 @@ Completed items move to `docs/completed/`.
 
 ## Active — ordered by priority
 
-### 1. Per-section default collapsed/expanded state
-- Each section on a card should have a storable default open/closed state.
-- Settable only in NewCardModal or EditCardModal — NOT in inline edit mode, to avoid accidentally saving a bunch of randomly toggled states.
-- Stored on the section (or card), persisted to the backend with the card JSON.
-- Design note: the global expand/collapse toggle overrides this at runtime but doesn't change the stored default.
-
-### 2. Battle-test checklist
+### 1. Battle-test checklist
 - Once the main items above are done, a focused pass to verify all dialog interactions, edge cases, and flow completeness. Includes:
   - Gearing dialog round-trip (locked slider → modal → transmission pick → rows unlock → UpgradesPicker reflects → stock restore → upgrade removes)
   - All confirm/cancel dialogs
@@ -48,6 +42,7 @@ Completed items move to `docs/completed/`.
 
 ## Recently completed
 
+- Per-section default collapsed/expanded: `defaultOpen` on section types, set at modal save time, seeds CardView openState — 2026-07-05
 - Card accent override: `accentOverride` field on Card, three preset color dots in CardMeta edit mode — 2026-07-05
 - RecipeSection one-way data flow refactor: replaced loop-prevention flags with resetToken prop — 2026-07-05
 - Recipe section gate: hide Tune / Build Parts bar in view mode when tuneName, shareCode, upgrades, and adjustments are all empty — 2026-07-05

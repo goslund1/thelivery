@@ -405,7 +405,7 @@ function checkImplied() {
 
   if (result.toAdd.length > 0) emit('implied-upgrades', result)
 
-  if (result.needsSpringsDialog && !springsDialogFiredThisSession) {
+  if (result.needsSpringsDialog && !springsDialogFiredThisSession && ui.isEditing) {
     springsDialogFiredThisSession = true
     springsDialogOpen.value = true
   }

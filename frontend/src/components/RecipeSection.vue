@@ -64,13 +64,13 @@ function flush() {
 }
 
 function onImpliedUpgrades(result: ImpliedUpgradesResult) {
-  if (result.toAdd.length) applyImpliedUpgrades(local.upgrades, result.toAdd)
+  if (result.toAdd.length) { applyImpliedUpgrades(local.upgrades, result.toAdd); flush() }
 }
 
 function onRemoveUpgrade(part: string) {
   for (const cat of local.upgrades) {
     const idx = cat.parts.indexOf(part)
-    if (idx !== -1) { cat.parts.splice(idx, 1); break }
+    if (idx !== -1) { cat.parts.splice(idx, 1); flush(); break }
   }
 }
 

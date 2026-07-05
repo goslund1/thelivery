@@ -333,15 +333,33 @@ defineExpose({ getAdjustments })
 
 // ── Transmission picker dialog ────────────────────────────────────────────────
 const transDialogOpen = ref(false)
+const transSelectRef = ref<HTMLSelectElement | null>(null)
+const transDialogTriggerKey = ref<string | null>(null)
 const RACE_TRANS_OPTIONS = [
+  ...FH_TRANSMISSIONS.filter(t => t.tier === 'none'),
   ...FH_TRANSMISSIONS.filter(t => t.tier === 'drift'),
   ...FH_TRANSMISSIONS.filter(t => t.tier === 'race'),
 ]
 const transDialogSelection = ref(FH_TRANSMISSIONS.find(t => t.tier === 'race')?.name ?? '')
+watch(transDialogOpen, open => {
+  if (open) nextTick(() => transSelectRef.value?.focus())
+})
 function onTransChoice(name: string) {
-  autoAddedPart.value = name
-  emit('implied-upgrades', { toAdd: [{ category: 'Drivetrain', part: name }], needsSpringsDialog: false })
+  const t = FH_TRANSMISSIONS.find(t => t.name === name)
   transDialogOpen.value = false
+  const key = transDialogTriggerKey.value
+  if (t?.tier === 'none') {
+    // Return to stock: reset all gear rows and re-lock
+    localRows.value.filter(r => r.tab === 'gearing').forEach(r => { r.value = r.stock; r.locked = true })
+    viewTransmissionId.value = name
+    if (t) gearCount.value = t.gears
+  } else {
+    autoAddedPart.value = name
+    viewTransmissionId.value = name
+    if (t) gearCount.value = t.gears
+    emit('implied-upgrades', { toAdd: [{ category: 'Drivetrain', part: name }], needsSpringsDialog: false })
+  }
+  if (key) nextTick(() => (document.querySelector(`.ta-row[data-key="${key}"]`) as HTMLElement | null)?.focus({ preventScroll: true }))
 }
 
 // ── Springs and Dampers dialog ────────────────────────────────────────────────
@@ -657,6 +675,7 @@ function unlockByUpgrade(r: LocalRow) {
     autoAddedPart.value = 'Sport Transmission'
     emit('implied-upgrades', { toAdd: [{ category: 'Drivetrain', part: 'Sport Transmission' }], needsSpringsDialog: false })
   } else if (!transDialogOpen.value) {
+    transDialogTriggerKey.value = r.key
     transDialogOpen.value = true
   }
 }
@@ -1171,7 +1190,7 @@ async function submitSuggestion() {
     <div v-if="transDialogOpen" class="ta-trans-modal-backdrop" @click.self="transDialogOpen = false">
       <div class="ta-trans-modal">
         <span class="ta-prompt-label">Select Race Transmission</span>
-        <select class="ta-trans-select" v-model="transDialogSelection">
+        <select ref="transSelectRef" class="ta-trans-select" v-model="transDialogSelection" @keydown.enter.prevent="onTransChoice(transDialogSelection)">
           <option v-for="t in RACE_TRANS_OPTIONS" :key="t.name" :value="t.name">{{ t.name }}</option>
         </select>
         <div class="ta-trans-modal-actions">

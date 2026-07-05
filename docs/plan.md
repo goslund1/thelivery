@@ -7,15 +7,10 @@ Completed items move to `docs/completed/`.
 
 ## Active — ordered by priority
 
-### 1. Battle-test checklist
-- Once the main items above are done, a focused pass to verify all dialog interactions, edge cases, and flow completeness. Includes:
-  - Gearing dialog round-trip (locked slider → modal → transmission pick → rows unlock → UpgradesPicker reflects → stock restore → upgrade removes)
-  - All confirm/cancel dialogs
-  - Edit mode enter/exit with dirty cards
-  - New card modal full flow
-  - History restore
-  - Theme switching with ThemeBuilder open
-  - Add more as we think of them
+### 1. Battle-test shakedown
+- Full checklist at `docs/shakedown.md` — 17 sections covering every feature area.
+- Also serves as the mobile test checklist (section 17 specific to device).
+- Run: `cargo run` + `npm run dev` (or `npm run dev:mobile` for device).
 
 ---
 

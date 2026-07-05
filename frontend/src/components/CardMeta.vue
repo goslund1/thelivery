@@ -35,6 +35,17 @@ function removeCollection(c: string) {
   store.removeCollection(props.card.id, c)
   ui.markCardDirty(props.card.id)
 }
+
+const ACCENT_PRESETS = [
+  { label: 'Gold',    color: '#c9a227' },
+  { label: 'Magenta', color: '#e83d9c' },
+  { label: 'Blue',    color: '#5b8fb0' },
+]
+
+function setAccent(color: string | undefined) {
+  store.setAccentOverride(props.card.id, color)
+  ui.markCardDirty(props.card.id)
+}
 </script>
 
 <template>
@@ -66,6 +77,18 @@ function removeCollection(c: string) {
         <b v-else>{{ card.liveryShareCode || '—' }}</b>
       </div>
       <SubtitleEditor v-model="card.subtitle" />
+      <div v-if="ui.isEditing" class="accent-picker">
+        <button
+          v-for="p in ACCENT_PRESETS"
+          :key="p.color"
+          class="accent-chip"
+          :class="{ active: card.accentOverride === p.color }"
+          :style="{ '--chip-color': p.color }"
+          :title="p.label"
+          @click="setAccent(card.accentOverride === p.color ? undefined : p.color)"
+        ></button>
+        <button v-if="card.accentOverride" class="accent-clear" title="Reset to theme accent" @click="setAccent(undefined)">×</button>
+      </div>
     </div>
     <div class="card-meta-actions">
       <button v-if="ui.isEditing" class="edit-card-btn" @click="editOpen = true">Edit Card</button>
@@ -131,4 +154,35 @@ function removeCollection(c: string) {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+.accent-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 2px;
+}
+.accent-chip {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--chip-color);
+  cursor: pointer;
+  padding: 0;
+  transition: transform .12s, border-color .12s, box-shadow .12s;
+}
+.accent-chip:hover { transform: scale(1.2); }
+.accent-chip.active { border-color: var(--fg); box-shadow: 0 0 0 1px var(--chip-color); }
+
+.accent-clear {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  transition: color .12s;
+}
+.accent-clear:hover { color: var(--fg); }
 </style>

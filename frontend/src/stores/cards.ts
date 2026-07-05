@@ -246,6 +246,11 @@ export const useCardsStore = defineStore('cards', () => {
     if (c) c.carId = carId ?? undefined
   }
 
+  function setAccentOverride(id: string, color: string | undefined) {
+    const c = byId(id)
+    if (c) c.accentOverride = color
+  }
+
   function addTag(id: string, value: string) {
     const c = byId(id)
     if (c && value && !c.tags.includes(value)) c.tags.push(value)
@@ -366,7 +371,7 @@ export const useCardsStore = defineStore('cards', () => {
     removeImage, toggleImageIncluded, addImageToPool, setImageMeta,
     setColor,
     addTag, removeTag, addCollection, removeCollection,
-    setLiveryShareCode, setCarId,
+    setLiveryShareCode, setCarId, setAccentOverride,
     allTagValues, allCollectionValues, allSectionKeys, allSubtitleSegments,
     allLiveryCodes, allTuningCodes,
     getImpliedUpgrades, applyUpgradesFromTuning,

@@ -69,6 +69,7 @@ export interface Card {
   images: CardImage[]
   sections: Section[]
   colors?: Record<string, string>
+  accentOverride?: string  // CSS color; overrides --accent on this card only
   carId?: string  // FK into the cars registry; null for multi-car/showcase cards
 }
 

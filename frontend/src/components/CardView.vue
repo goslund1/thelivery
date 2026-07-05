@@ -47,7 +47,7 @@ function onBuildIt() {
 </script>
 
 <template>
-  <div class="card" :id="`card-${card.id}`" :class="{ 'legend-card': card.isLegend }" :data-collections="card.collections.join(',')">
+  <div class="card" :id="`card-${card.id}`" :class="{ 'legend-card': card.isLegend }" :data-collections="card.collections.join(',')" :style="card.accentOverride ? { '--accent': card.accentOverride } : undefined">
     <CardMeta :card="card" />
     <Gallery :card="card" />
     <TagCloud :card="card" :recipe-key="recipeKey" @build-it="onBuildIt" />

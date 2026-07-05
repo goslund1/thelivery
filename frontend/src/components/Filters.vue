@@ -21,7 +21,15 @@ onMounted(async () => {
 </script>
 
 <template>
-  <p class="bug-flyout-label">Show sections</p>
+  <template v-if="auth.isAuthenticated">
+    <button class="sugg-row" @click="modal.openSuggestionViewer()">
+      Tune Suggestions
+      <span v-if="modal.pendingSuggestionCount" class="sugg-badge">{{ modal.pendingSuggestionCount }}</span>
+    </button>
+    <p class="bug-flyout-label" style="margin-top: 8px;">Show sections</p>
+  </template>
+  <p v-else class="bug-flyout-label">Show sections</p>
+
   <label v-for="s in store.allSectionKeys()" :key="s.key" class="bug-check">
     <input
       type="checkbox"
@@ -46,38 +54,30 @@ onMounted(async () => {
   <label class="bug-check">
     <input type="checkbox" v-model="filters.favoritesOnly" /> ★ Favorites only
   </label>
-
-  <template v-if="auth.isAuthenticated">
-    <p class="bug-flyout-label bug-flyout-label-2">Admin</p>
-    <button class="bug-check bug-check--action" @click="modal.openSuggestionViewer()">
-      Tune Suggestions
-      <span v-if="modal.pendingSuggestionCount" class="bug-sugg-badge">{{ modal.pendingSuggestionCount }}</span>
-    </button>
-  </template>
 </template>
 
 <style scoped>
-.bug-check--action {
+.sugg-row {
   display: flex;
   align-items: center;
   gap: 6px;
   background: none;
   border: none;
   color: var(--fg);
-  font-family: inherit;
-  font-size: inherit;
-  padding: 2px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 6px 0;
   cursor: pointer;
   width: 100%;
   text-align: left;
+  transition: color .12s;
 }
-.bug-check--action:hover { color: var(--accent); }
-.bug-sugg-badge {
+.sugg-row:hover { color: var(--accent); }
+.sugg-badge {
   background: var(--accent);
   color: var(--bg);
   border-radius: 8px;
   font-size: 10px;
-  font-family: 'JetBrains Mono', monospace;
   font-weight: bold;
   padding: 0 5px;
   line-height: 16px;

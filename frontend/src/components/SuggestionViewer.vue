@@ -4,12 +4,14 @@ import type { AdjustmentRow } from '../types'
 import { api } from '../api'
 import { useCardsStore } from '../stores/cards'
 import { useCarsStore } from '../stores/cars'
+import { useModalStore } from '../stores/modal'
 import TuningAdjustments from './TuningAdjustments.vue'
 
 const emit = defineEmits<{ close: [] }>()
 
 const cardsStore = useCardsStore()
 const carsStore  = useCarsStore()
+const modal      = useModalStore()
 
 type Suggestion = {
   id: number
@@ -104,11 +106,13 @@ function advanceAfter(id: number) {
 async function onDismiss() {
   if (!current.value || actionBusy.value) return
   const id = current.value.id
+  const wasPending = current.value.status === 'pending'
   actionBusy.value = true
   try {
     await api.adminDismissSuggestion(id)
     advanceAfter(id)
     suggestions.value = suggestions.value.filter(s => s.id !== id)
+    if (wasPending) modal.pendingSuggestionCount = Math.max(0, modal.pendingSuggestionCount - 1)
   } finally {
     actionBusy.value = false
   }
@@ -117,13 +121,18 @@ async function onDismiss() {
 async function onLike() {
   if (!current.value || actionBusy.value) return
   const id = current.value.id
+  const wasLiked = current.value.status === 'liked'
   actionBusy.value = true
   try {
     await api.adminLikeSuggestion(id)
     const s = suggestions.value.find(s => s.id === id)
     if (s) {
-      const wasLiked = s.status === 'liked'
-      if (!wasLiked) advanceAfter(id)
+      if (!wasLiked) {
+        advanceAfter(id)
+        modal.pendingSuggestionCount = Math.max(0, modal.pendingSuggestionCount - 1)
+      } else {
+        modal.pendingSuggestionCount++
+      }
       s.status = wasLiked ? 'pending' : 'liked'
     }
   } finally {

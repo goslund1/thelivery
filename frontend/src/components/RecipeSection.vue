@@ -18,6 +18,7 @@ const props = defineProps<{
   cardId?: string
   carId?: string | null
   initialKitOpen?: boolean
+  resetToken?: number
 }>()
 const emit = defineEmits<{
   'update:recipe': [recipe: ForzaRecipeSection]
@@ -44,23 +45,16 @@ for (const k of CORE_SPEC_KEYS) {
   if (local.coreSpecs[k] == null) local.coreSpecs[k] = ''
 }
 
-// Loop-prevention flags: skipNextPropsSync prevents the deep props watcher from re-syncing
-// after our own flush triggers a Pinia update; inPropsSync prevents the upgrades watcher
-// from flushing back during an inbound sync from the parent.
-let skipNextPropsSync = false
-let inPropsSync = false
-
-watch(() => props.recipe, (r) => {
-  if (skipNextPropsSync) { skipNextPropsSync = false; return }
-  inPropsSync = true
-  Object.assign(local, cloneRecipe(r))
-  inPropsSync = false
-}, { deep: true })
+// resetToken: parent increments this to signal a genuine external reset (history
+// restore, cancel/discard). Watching the token instead of props.recipe directly
+// means our own flush → store update → prop change cycle never triggers a re-sync.
+watch(() => props.resetToken, () => {
+  Object.assign(local, cloneRecipe(props.recipe))
+})
 
 function flush() {
   const clone = JSON.parse(JSON.stringify(local)) as ForzaRecipeSection
   if (taRef.value) clone.adjustments = taRef.value.getAdjustments()
-  skipNextPropsSync = true
   emit('update:recipe', clone)
 }
 
@@ -98,7 +92,6 @@ const impliedPartNames = computed<Set<string>>(() => {
 
 // UpgradesPicker mutates local.upgrades in-place; detect those mutations and flush.
 watch(() => local.upgrades, () => {
-  if (inPropsSync) return
   flush()
   markDirty()
 }, { deep: true, flush: 'sync' })

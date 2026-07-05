@@ -92,6 +92,7 @@ function blankRecipe(): ForzaRecipeSection {
   }
 }
 const recipe = ref<ForzaRecipeSection>(blankRecipe())
+const recipeResetToken = ref(0)
 const newCarId = ref<string | null>(null)
 
 const sectionOpen = reactive({ insp: true, notes: true, recipe: true })
@@ -144,6 +145,7 @@ watch(() => modal.newCardOpen, async (open) => {
   figureSaving.value = false
   figureError.value = ''
   recipe.value = blankRecipe()
+  recipeResetToken.value++
   newCarId.value = null
   staged.value.forEach(s => URL.revokeObjectURL(s.url))
   staged.value = []
@@ -434,6 +436,7 @@ onUnmounted(() => { document.body.style.overflow = '' })
           :recipe="recipe"
           :initial-kit-open="true"
           :car-id="newCarId"
+          :reset-token="recipeResetToken"
           @update:recipe="updated => Object.assign(recipe, updated)"
           @update:car-id="id => { newCarId = id }"
         />

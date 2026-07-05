@@ -50,6 +50,8 @@ const inspSect   = computed(() => inspirationSection.value!)
 const notesSect  = computed(() => notesSection.value!)
 const recipeSect = computed(() => recipeSection.value!)
 
+const recipeResetToken = ref(0)
+
 const inspSnapshot   = ref('')
 const notesSnapshot  = ref('')
 const recipeSnapshot = ref('')
@@ -188,6 +190,7 @@ function onCancel() {
     }
     recipe.upgrades.splice(0, recipe.upgrades.length, ...snap.upgrades)
     recipe.adjustments.splice(0, recipe.adjustments.length, ...snap.adjustments)
+    recipeResetToken.value++
   }
   c.carId = carIdSnapshot.value ?? undefined
   emit('close')
@@ -263,6 +266,7 @@ async function onDelete() {
           v-if="recipeSection"
           :recipe="recipeSect"
           :car-id="carId"
+          :reset-token="recipeResetToken"
           @update:recipe="updated => Object.assign(recipeSect, updated)"
           @update:car-id="id => { carId = id }"
         />

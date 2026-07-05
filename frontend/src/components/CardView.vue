@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, computed, provide } from 'vue'
+import { reactive, computed, provide, ref, watch } from 'vue'
 import type { Card, Section } from '../types'
 import { useUiStore } from '../stores/ui'
 import { useCardsStore } from '../stores/cards'
@@ -29,6 +29,11 @@ function isSectionEmpty(s: Section): boolean {
 const visibleSections = computed(() =>
   ui.isEditing ? props.card.sections : props.card.sections.filter(s => !isSectionEmpty(s))
 )
+
+// Bumped when the card object reference changes (e.g. history restore) to signal
+// RecipeSection to re-read from props rather than treating it as its own round-trip.
+const recipeResetToken = ref(0)
+watch(() => props.card, () => { recipeResetToken.value++ }, { deep: false })
 
 // Per-section open state, so a parent action (Build It) can force one open and
 // the collapsibles still follow the per-type expand filters.
@@ -62,6 +67,7 @@ function onBuildIt() {
         :recipe="section"
         :card-id="card.id"
         :car-id="card.carId"
+        :reset-token="recipeResetToken"
         @update:recipe="updated => Object.assign(section, updated)"
         @update:car-id="id => { cardsStore.setCarId(card.id, id); ui.markCardDirty(card.id) }"
       />

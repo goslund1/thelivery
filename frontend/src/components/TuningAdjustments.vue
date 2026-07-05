@@ -336,6 +336,7 @@ const springsDialogOpen = ref(false)
 let springsDialogFiredThisSession = false
 watch(() => props.cardId, () => { springsDialogFiredThisSession = false })
 
+
 function checkImplied() {
   if (!ui.isEditing || !props.upgrades) return
 
@@ -658,7 +659,7 @@ function onRowKeydown(r: LocalRow, e: KeyboardEvent) {
   // Up/Down: move focus to adjacent row (all modes)
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
     e.preventDefault()
-    const rows = localRows.value.filter(row => !row.locked)
+    const rows = localRows.value
     const idx = rows.findIndex(row => row.key === r.key)
     const nextIdx = e.key === 'ArrowUp' ? idx - 1 : idx + 1
     if (nextIdx >= 0 && nextIdx < rows.length) {
@@ -1071,20 +1072,8 @@ async function submitSuggestion() {
           </div>
 
           <template v-for="r in group.rows" :key="r.key">
-            <!-- Locked row: lock treatment in edit mode, dimmed slider in view mode -->
-            <div v-if="r.locked && ui.isEditing" class="ta-row ta-row--locked">
-              <div class="ta-left-section">
-                <div class="ta-row-label">{{ r.label }}</div>
-              </div>
-              <div class="ta-right-section">
-                <div class="ta-lock-line">🔒 Locked</div>
-                <div class="ta-lock-reason">{{ r.lockReason }}</div>
-              </div>
-            </div>
-
-            <!-- Normal row (locked rows render here in view mode, dimmed) -->
+            <!-- All rows render as sliders; locked rows are dimmed -->
             <div
-              v-else-if="!r.locked || !ui.isEditing"
               class="ta-row"
               :class="{ focused: focusedKey === r.key, changed: isChanged(r), 'ta-row--dimmed': r.locked }"
               :data-key="r.key"
@@ -1651,6 +1640,9 @@ async function submitSuggestion() {
 .ta-row.focused .ta-right-section { background: color-mix(in srgb, var(--panel-well) 80%, #000); box-shadow: inset 0 0 0 1px var(--highlight); }
 .ta-row:focus      { outline: none; }
 .ta-row--locked    { border-radius: 6px; border: 1px dashed var(--panel-edge); }
+.ta-row--locked-upgrade { cursor: pointer; }
+.ta-row--locked-upgrade:hover { border-color: var(--highlight); background: color-mix(in srgb, var(--highlight) 8%, transparent); }
+.ta-row--locked-upgrade .ta-lock-line { color: var(--highlight); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
 .ta-row--dimmed    { opacity: 0.28; pointer-events: none; }
 .ta-group > .ta-row:not(:last-child):not(.ta-row--locked) { border-bottom: 2px solid var(--panel); }
 

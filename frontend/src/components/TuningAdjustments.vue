@@ -160,23 +160,15 @@ const transmissionTier = computed<TransmissionTier>(() => {
 
 type FhTransmission = { name: string; group: string; gears: number; tier: TransmissionTier }
 const FH_TRANSMISSIONS = fhTransmissions.transmissions as FhTransmission[]
-const FH_TRANSMISSION_GROUPS = computed(() => {
-  const groups: { label: string; items: FhTransmission[] }[] = []
-  for (const t of FH_TRANSMISSIONS) {
-    let g = groups.find(g => g.label === t.group)
-    if (!g) { g = { label: t.group, items: [] }; groups.push(g) }
-    g.items.push(t)
-  }
-  return groups
-})
-const viewTransmissionId = ref<string | null>(null)
+
+const viewTransmissionId = ref<string>('Stock 5-Speed')
 const viewTransmissionTier = computed<TransmissionTier>(() =>
   (FH_TRANSMISSIONS.find(t => t.name === viewTransmissionId.value)?.tier) ?? 'none'
 )
-watch(() => props.cardId, () => { viewTransmissionId.value = null })
+watch(() => props.cardId, () => { viewTransmissionId.value = 'Stock 5-Speed' })
 function onViewTransmissionChange(e: Event) {
   const name = (e.target as HTMLSelectElement).value
-  viewTransmissionId.value = name || null
+  viewTransmissionId.value = name
   const t = FH_TRANSMISSIONS.find(t => t.name === name)
   if (t) gearCount.value = t.gears
 }
@@ -1017,7 +1009,7 @@ async function submitSuggestion() {
         </div>
 
         <!-- Gear count selector (gearing tab only) -->
-        <div v-if="section.id === 'gearing'" class="ta-section-title-bar ta-gear-select-row">
+        <div v-if="section.id === 'gearing'" class="ta-section-title-bar" :class="{ 'ta-gear-select-row': ui.isEditing }">
           <div class="ta-title-label-zone">
             <span class="ta-section-title-text ta-caps-nudge">Transmission</span>
           </div>
@@ -1046,22 +1038,19 @@ async function submitSuggestion() {
                   :value="viewTransmissionId ?? ''"
                   @change="onViewTransmissionChange"
                 >
-                  <option value="">Your transmission…</option>
-                  <optgroup v-for="grp in FH_TRANSMISSION_GROUPS" :key="grp.label" :label="grp.label">
-                    <option v-for="t in grp.items" :key="t.name" :value="t.name">{{ t.name }}</option>
-                  </optgroup>
+                  <option v-for="t in FH_TRANSMISSIONS" :key="t.name" :value="t.name">{{ t.name }}</option>
                 </select>
               </template>
               <span v-else class="ta-section-title-text ta-caps-nudge">{{ group.title }}</span>
             </div>
             <div class="ta-title-slider-zone">
-              <span class="ta-slider-zone-title ta-caps-nudge">{{ group.title }}</span>
+              <span v-if="!(section.id === 'gearing' && !ui.isEditing)" class="ta-slider-zone-title ta-caps-nudge">{{ group.title }}</span>
             </div>
           </div>
 
           <div class="ta-group-header">
             <div class="ta-left-section">
-              <span class="ta-group-title ta-caps-nudge" :style="gi > 0 || ui.isEditing ? { visibility: 'hidden' } : {}">{{ group.title }}</span>
+              <span class="ta-group-title ta-caps-nudge" :style="gi > 0 || ui.isEditing || section.id === 'gearing' ? { visibility: 'hidden' } : {}">{{ group.title }}</span>
             </div>
             <div class="ta-right-section">
               <template v-if="group.axis">

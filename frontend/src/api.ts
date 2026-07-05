@@ -158,17 +158,20 @@ export const api = {
   // fileIndex: when set, the backend uses it for sequential filename (001.jpg, 002.jpg…)
   uploadImage: (
     file: File,
-    card: { name: string; subtitle: string; collections: string[] },
+    card: { name: string; subtitle: string; collections: string[]; id?: string },
     fileIndex?: number,
+    carId?: string,
   ) => {
     const fd = new FormData()
     fd.append('cardName', card.name)
     fd.append('cardSubtitle', card.subtitle)
     fd.append('cardCollections', card.collections.join(','))
+    if (card.id) fd.append('cardId', card.id)
+    if (carId) fd.append('carId', carId)
     if (fileIndex !== undefined) fd.append('fileIndex', String(fileIndex))
     fd.append('file', file)
     return fetch('/api/images', { method: 'POST', headers: authHeaders(), body: fd }).then(
-      json<{ path: string; thumbPath?: string; stagePath?: string }>,
+      json<{ id?: number; path: string; thumbPath?: string; stagePath?: string; carId?: string | null }>,
     )
   },
 }

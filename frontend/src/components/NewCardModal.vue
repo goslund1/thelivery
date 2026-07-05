@@ -251,8 +251,8 @@ async function onCreate() {
     }
     await store.save(card.id)
     for (let i = 0; i < staged.value.length; i++) {
-      const result = await api.uploadImage(staged.value[i].file, card, i)
-      store.addImageToPool(card.id, result.path, result.thumbPath, result.stagePath)
+      const result = await api.uploadImage(staged.value[i].file, { ...card, id: card.id }, i)
+      store.addImageToPool(card.id, result.path, result.thumbPath, result.stagePath, true, result.id)
     }
     if (staged.value.length > 0) await store.save(card.id)
     staged.value.forEach(s => URL.revokeObjectURL(s.url))

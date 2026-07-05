@@ -208,13 +208,13 @@ async function onManageUpload(e: Event) {
   if (manageUploadRef.value) manageUploadRef.value.value = ''
   const files = all.filter(f => SUPPORTED.has(f.type) || (!f.name.match(/\.(heic|heif|avif)$/i) && f.type.startsWith('image/')))
   if (!files.length) return
-  const cardCtx = { name: cv.name, subtitle: cv.subtitle, collections: cv.collections }
+  const cardCtx = { name: cv.name, subtitle: cv.subtitle, collections: cv.collections, id: c.cardId }
   const startIndex = cv.images.length
   uploadProgress.value = { done: 0, total: files.length }
   for (let i = 0; i < files.length; i++) {
     try {
-      const { path, thumbPath, stagePath } = await api.uploadImage(files[i], cardCtx, startIndex + i)
-      store.addImageToPool(c.cardId, path, thumbPath, stagePath, true)
+      const { id: dbId, path, thumbPath, stagePath } = await api.uploadImage(files[i], cardCtx, startIndex + i)
+      store.addImageToPool(c.cardId, path, thumbPath, stagePath, true, dbId)
       ui.markCardDirty(c.cardId)
     } catch (err) {
       console.warn('[image-manager] upload failed:', err)

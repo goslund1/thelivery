@@ -235,11 +235,13 @@ export const useCardsStore = defineStore('cards', () => {
     thumbPath?: string,
     stagePath?: string,
     included = true,
+    dbId?: number,
   ) {
     const c = byId(cardId)
     if (!c) return
     const maxOrder = c.images.reduce((m, i) => Math.max(m, i.order), -1)
-    c.images.push({ id: `${cardId}-${++_imageIdCounter}`, path, thumbPath, stagePath, order: maxOrder + 1, included })
+    const id = dbId !== undefined ? String(dbId) : `${cardId}-${++_imageIdCounter}`
+    c.images.push({ id, path, thumbPath, stagePath, order: maxOrder + 1, included })
   }
 
   function setImageMeta(cardId: string, imageId: string, meta: { carId?: string | null; alt?: string }) {

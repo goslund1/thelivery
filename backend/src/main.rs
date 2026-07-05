@@ -1341,6 +1341,8 @@ async fn upload_image(
     let mut card_name = String::new();
     let mut card_subtitle = String::new();
     let mut card_collections = String::new();
+    let mut card_id = String::new();
+    let mut car_id: Option<String> = None;
     let mut file_index: Option<u32> = None;
 
     while let Some(field) = multipart
@@ -1359,6 +1361,15 @@ async fn upload_image(
             }
             Some("cardCollections") => {
                 card_collections = field.text().await.unwrap_or_default();
+                continue;
+            }
+            Some("cardId") => {
+                card_id = field.text().await.unwrap_or_default();
+                continue;
+            }
+            Some("carId") => {
+                let v = field.text().await.unwrap_or_default();
+                car_id = if v.is_empty() { None } else { Some(v) };
                 continue;
             }
             Some("fileIndex") => {
@@ -1416,10 +1427,33 @@ async fn upload_image(
             .thumbnail(1000, u32::MAX)
             .save_with_format(lowres_dir.join(&stage_name), image::ImageFormat::Jpeg);
 
+        let path       = format!("/uploads/{folder}/{orig_name}");
+        let thumb_path = format!("/uploads/{folder}/Lowres_Assets/{thumb_name}");
+        let stage_path = format!("/uploads/{folder}/Lowres_Assets/{stage_name}");
+
+        // Insert a row into the images table when the card_id is known.
+        let db_id: Option<i64> = if !card_id.is_empty() {
+            let result = sqlx::query(
+                "INSERT INTO images (card_id, path, thumb_path, stage_path, car_id) VALUES (?, ?, ?, ?, ?)",
+            )
+            .bind(&card_id)
+            .bind(&path)
+            .bind(&thumb_path)
+            .bind(&stage_path)
+            .bind(&car_id)
+            .execute(&st.pool)
+            .await;
+            result.ok().map(|r| r.last_insert_rowid())
+        } else {
+            None
+        };
+
         return Ok(Json(json!({
-            "path":      format!("/uploads/{folder}/{orig_name}"),
-            "thumbPath": format!("/uploads/{folder}/Lowres_Assets/{thumb_name}"),
-            "stagePath": format!("/uploads/{folder}/Lowres_Assets/{stage_name}"),
+            "id":        db_id,
+            "path":      path,
+            "thumbPath": thumb_path,
+            "stagePath": stage_path,
+            "carId":     car_id,
         })));
     }
     Err(err(StatusCode::BAD_REQUEST, "no file field in upload"))

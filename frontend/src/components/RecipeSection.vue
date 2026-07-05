@@ -64,7 +64,10 @@ function flush() {
 }
 
 function onImpliedUpgrades(result: ImpliedUpgradesResult) {
-  if (result.toAdd.length) { applyImpliedUpgrades(local.upgrades, result.toAdd); flush() }
+  if (result.toAdd.length) {
+    applyImpliedUpgrades(local.upgrades, result.toAdd)
+    if (ui.isEditing) flush()
+  }
 }
 
 function onRemoveUpgrade(part: string) {

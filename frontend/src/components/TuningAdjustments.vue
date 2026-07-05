@@ -382,7 +382,7 @@ watch(() => props.cardId, () => { springsDialogFiredThisSession = false })
 
 
 function checkImplied() {
-  if (!ui.isEditing || !props.upgrades) return
+  if (!props.upgrades) return
 
   const adjustments = localRows.value
     .filter(r => !r.locked)
@@ -739,14 +739,14 @@ function onRowKeydown(r: LocalRow, e: KeyboardEvent) {
   if (ui.isEditing) pushUndo(r.key, r.value)
   r.value = parseFloat(Math.max(r.min, Math.min(r.max, r.value + dir * r.step)).toFixed(decimals(r)))
   if (!autoAddedPart.value && Math.abs(r.value - r.stock) <= r.step / 2) r.locked = true
-  if (ui.isEditing) flush()
+  if (ui.isEditing) flush(); else checkImplied()
 }
 
 function onSliderInput(r: LocalRow, e: Event) {
   if (r.locked) unlockByUpgrade(r)
   r.value = parseFloat((e.target as HTMLInputElement).value)
   if (!autoAddedPart.value && Math.abs(r.value - r.stock) <= r.step / 2) r.locked = true
-  if (ui.isEditing) flush()
+  if (ui.isEditing) flush(); else checkImplied()
 }
 function onMinChange(r: LocalRow, e: Event) {
   const raw = (e.target as HTMLInputElement).value

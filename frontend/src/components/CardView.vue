@@ -33,11 +33,24 @@ const visibleSections = computed(() =>
 // Bumped when the card object reference changes (e.g. history restore) to signal
 // RecipeSection to re-read from props rather than treating it as its own round-trip.
 const recipeResetToken = ref(0)
-watch(() => props.card, () => { recipeResetToken.value++ }, { deep: false })
+watch(() => props.card, (card) => {
+  recipeResetToken.value++
+  // Re-seed section open state from the restored card's defaultOpen values.
+  for (const s of card.sections) {
+    if (s.defaultOpen === false) openState[s.key] = false
+    else delete openState[s.key]
+  }
+}, { deep: false })
 
-// Per-section open state, so a parent action (Build It) can force one open and
-// the collapsibles still follow the per-type expand filters.
-const openState = reactive<Record<string, boolean>>({})
+// Per-section open state. Seeded from section.defaultOpen when set by the author
+// (via EditCardModal/NewCardModal save); undefined means the global toggle controls it.
+const openState = reactive<Record<string, boolean>>(
+  Object.fromEntries(
+    props.card.sections
+      .filter(s => s.defaultOpen === false)
+      .map(s => [s.key, false])
+  )
+)
 const recipeKey = computed(
   () => props.card.sections.find((s) => s.type === 'forza_recipe')?.key,
 )

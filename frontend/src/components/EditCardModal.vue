@@ -152,7 +152,13 @@ async function onSave() {
     c.carId = carId.value ?? undefined
     c.collections = collections.value
     c.tags = tags.value
-    // Text sections and recipe already mutated live by their components
+    // Text sections and recipe already mutated live by their components.
+    // Write modal section open state back as the card's display default.
+    for (const s of c.sections) {
+      if (s.key === 'inspiration') s.defaultOpen = sectionOpen.insp ? undefined : false
+      else if (s.key === 'notes') s.defaultOpen = sectionOpen.notes ? undefined : false
+      else if (s.type === 'forza_recipe') s.defaultOpen = sectionOpen.recipe ? undefined : false
+    }
     await store.save(c.id)
     ui.clearCardDirty(c.id)
     emit('close')

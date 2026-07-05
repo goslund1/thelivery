@@ -243,6 +243,13 @@ async function onCreate() {
       adjustments: JSON.parse(JSON.stringify(recipe.value.adjustments)),
       carId: newCarId.value ?? undefined,
     })
+    // Write modal section open state as the card's display default.
+    for (const s of card.sections) {
+      if (s.key === 'inspiration') s.defaultOpen = sectionOpen.insp ? undefined : false
+      else if (s.key === 'notes') s.defaultOpen = sectionOpen.notes ? undefined : false
+      else if (s.type === 'forza_recipe') s.defaultOpen = sectionOpen.recipe ? undefined : false
+    }
+    await store.save(card.id)
     for (let i = 0; i < staged.value.length; i++) {
       const result = await api.uploadImage(staged.value[i].file, card, i)
       store.addImageToPool(card.id, result.path, result.thumbPath, result.stagePath)

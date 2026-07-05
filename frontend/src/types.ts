@@ -21,6 +21,7 @@ export interface TextSection {
   label: string
   body: string
   figurePath?: string
+  defaultOpen?: boolean // undefined = follow global toggle; false = start collapsed
 }
 
 export interface UpgradeCategory {
@@ -49,6 +50,7 @@ export interface ForzaRecipeSection {
   tuneName: string
   shareCode: string
   showStock?: boolean
+  defaultOpen?: boolean // undefined = follow global toggle; false = start collapsed
   coreSpecs: Record<string, string>
   upgrades: UpgradeCategory[]
   adjustments: AdjustmentRow[]

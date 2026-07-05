@@ -7,14 +7,7 @@ Completed items move to `docs/completed/`.
 
 ## Active — ordered by priority
 
-### 1. Card accent override (per-card color)
-- Optional `accentOverride` field on Card: `inherit | gold | magenta | custom`.
-- Edit-only affordance in CardMeta (+ EditCardModal / NewCardModal for parity).
-- No backend work — rides existing card JSON.
-- Drift cards in collections → suggest magenta as default.
-- Note: CSS already uses `--accent`, not `--gold`; the concept is valid, variable names in old spec were stale.
-
-### 3. Battle-test checklist
+### 1. Battle-test checklist
 - Once the main items above are done, a focused pass to verify all dialog interactions, edge cases, and flow completeness. Includes:
   - Gearing dialog round-trip (locked slider → modal → transmission pick → rows unlock → UpgradesPicker reflects → stock restore → upgrade removes)
   - All confirm/cancel dialogs
@@ -58,6 +51,7 @@ Completed items move to `docs/completed/`.
 
 ## Recently completed
 
+- Card accent override: `accentOverride` field on Card, three preset color dots in CardMeta edit mode — 2026-07-05
 - RecipeSection one-way data flow refactor: replaced loop-prevention flags with resetToken prop — 2026-07-05
 - Recipe section gate: hide Tune / Build Parts bar in view mode when tuneName, shareCode, upgrades, and adjustments are all empty — 2026-07-05
 - Code quality pass: formatShareCode util, collectOrphans helper, watcher consolidation, String() coercion removal — 2026-07-05

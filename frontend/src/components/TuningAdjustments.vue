@@ -161,11 +161,20 @@ const transmissionTier = computed<TransmissionTier>(() => {
 type FhTransmission = { name: string; group: string; gears: number; tier: TransmissionTier }
 const FH_TRANSMISSIONS = fhTransmissions.transmissions as FhTransmission[]
 
-const viewTransmissionId = ref<string>('Stock 5-Speed')
+function defaultViewTransmission(): string {
+  for (const cat of (props.upgrades ?? [])) {
+    for (const part of cat.parts) {
+      if (FH_TRANSMISSIONS.find(t => t.name === part)) return part
+    }
+  }
+  return 'Stock 5-Speed'
+}
+const viewTransmissionId = ref<string>(defaultViewTransmission())
 const viewTransmissionTier = computed<TransmissionTier>(() =>
   (FH_TRANSMISSIONS.find(t => t.name === viewTransmissionId.value)?.tier) ?? 'none'
 )
-watch(() => props.cardId, () => { viewTransmissionId.value = 'Stock 5-Speed' })
+watch(() => props.cardId, () => { viewTransmissionId.value = defaultViewTransmission() })
+watch(transmissionTier, () => { viewTransmissionId.value = defaultViewTransmission() })
 function onViewTransmissionChange(e: Event) {
   const name = (e.target as HTMLSelectElement).value
   viewTransmissionId.value = name

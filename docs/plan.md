@@ -7,7 +7,11 @@ Completed items move to `docs/completed/`.
 
 ## Active — ordered by priority
 
-_(nothing active — see Parked below)_
+### 1. Multi-car mashup card (plan doc: `docs/plan-multi-car-mashup.md`)
+- Single card with multiple car variants, each with its own photos, tune, upgrades, and adjustments.
+- Tab strip inside RecipeSection switches between cars; gallery filters to match.
+- Foundation: `images` table migration + CarPicker at upload time; variants array on ForzaRecipeSection.
+- Single-car cards untouched — additive change.
 
 ---
 
@@ -15,13 +19,7 @@ _(nothing active — see Parked below)_
 
 ### Mobile layout
 - Theme builder flyout + general catalog narrow-screen pass.
-- Deferred until active list is cleared.
-
-### Multi-car mashup card (plan doc: `docs/plan-multi-car-mashup.md`)
-- Single card with multiple car variants, each with its own photos, tune, upgrades, and adjustments.
-- Tab strip inside RecipeSection switches between cars; gallery filters to match.
-- Foundation: `images` table migration + CarPicker at upload time; variants array on ForzaRecipeSection.
-- Single-car cards untouched — additive change.
+- Deferred until layout features (mashup) land — getting close.
 
 ---
 
@@ -36,6 +34,7 @@ _(nothing active — see Parked below)_
 
 ## Recently completed
 
+- Suggest bar two-tier trigger: inline Share tweaks button activates on any slider change; floating push bar fires on 2+ tab categories; ASK ME LATER uses sessionStorage reload reminder; NOT FOR ME = session dismiss; S&D tier dialog gated to edit mode only — 2026-07-05
 - Shakedown pass (desktop): 2 bugs found + fixed (CardHistoryModal z-index, EditCardModal Escape handler); sections 1-3, 5-7, 9 suggest bar, 11-13 verified; sections 4, 8, 14-15, 17 (mobile) still need manual/device run — 2026-07-05
 - Suggestion Viewer + Promote: SuggestionViewer.vue shadowbox, Pending/Liked tabs, read-only TuningAdjustments with diff highlighting, Like/Dismiss/Promote actions, SideBug badge + Filters row entry; Promote clones source card with suggestion adjustments (share code cleared, "(Updated)" name), opens in EditCardModal immediately — 2026-07-05
 - Per-section default collapsed/expanded: `defaultOpen` on section types, set at modal save time, seeds CardView openState — 2026-07-05

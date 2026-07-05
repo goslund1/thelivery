@@ -382,6 +382,9 @@ function onTransChoice(name: string) {
 
 // ── Springs and Dampers dialog ────────────────────────────────────────────────
 const springsDialogOpen = ref(false)
+// Plain let, not a ref or singleton: the dialog is per-instance (each card's component
+// asks independently). It fires once per card because springs/dampers come in front+rear
+// pairs that may be different tiers — the user has to declare intent, but only once.
 let springsDialogFiredThisSession = false
 watch(() => props.cardId, () => { springsDialogFiredThisSession = false })
 

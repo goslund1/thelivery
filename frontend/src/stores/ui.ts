@@ -18,20 +18,23 @@ export const useUiStore = defineStore('ui', () => {
   // --- Per-card unsaved-changes tracking --------------------------------------
   const dirtyIds = ref<Set<string>>(new Set())
   const hasUnsavedChanges = computed(() => dirtyIds.value.size > 0)
-  function markCardDirty(id: string) {
-    if (dirtyIds.value.has(id)) return
+
+  // Pinia requires a new Set reference to trigger reactivity on Set mutations.
+  function mutateDirty(fn: (s: Set<string>) => void) {
     const s = new Set(dirtyIds.value)
-    s.add(id)
+    fn(s)
     dirtyIds.value = s
+  }
+
+  function markCardDirty(id: string) {
+    if (!dirtyIds.value.has(id)) mutateDirty(s => s.add(id))
   }
   function isCardDirty(id: string) {
     return dirtyIds.value.has(id)
   }
   function clearCardDirty(id: string) {
     if (!dirtyIds.value.has(id)) return
-    const s = new Set(dirtyIds.value)
-    s.delete(id)
-    dirtyIds.value = s
+    mutateDirty(s => s.delete(id))
     const filtered = _editList.filter(e => e.cardId !== id)
     if (filtered.length !== _editList.length) {
       _setEditList(filtered)

@@ -23,7 +23,7 @@ onMounted(async () => {
 <template>
   <template v-if="auth.isAuthenticated">
     <button class="bug-check sugg-row" @click="modal.openSuggestionViewer()">
-      <span class="sugg-badge">{{ modal.pendingSuggestionCount || '' }}</span>
+      <span class="sugg-badge">{{ modal.pendingSuggestionCount }}</span>
       Suggestions
     </button>
     <p class="bug-flyout-label" style="margin-top: 8px;">Show sections</p>
@@ -69,13 +69,15 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 14px;
+  min-width: 14px;
   height: 14px;
-  background: var(--accent);
-  color: var(--bg);
-  border-radius: 50%;
+  padding: 0 3px;
+  background: #111;
+  color: #ccc;
+  border-radius: 3px;
   font-size: 9px;
   font-weight: bold;
   flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
 }
 </style>

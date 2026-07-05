@@ -25,6 +25,12 @@ Completed items move to `docs/completed/`.
 - Theme builder flyout + general catalog narrow-screen pass.
 - Deferred until active list is cleared.
 
+### Suggestion Viewer (plan doc ready: `docs/plan-suggestion-viewer.md`)
+- Full-screen shadowbox modal for reviewing incoming tune suggestions.
+- SideBug: count badge on filters toggle + "Tune Suggestions (N)" row inside panel (admin-only).
+- Dropdown selector (Pending / Liked), read-only TuningAdjustments with diff highlighting vs. card's current values, Like / Dismiss / Apply actions.
+- Needs: DB migration (status column), PATCH endpoint, TuningAdjustments readOnly + baselineAdjustments props, SuggestionViewer.vue.
+
 ### Multi-car mashup card (plan doc needed first)
 - Discussed: single card with multiple carIds, each tied to specific photos; user clicks photo or make/model group to surface that car's tune + parts.
 - Low priority. Write a plan doc before touching any code — the data model changes are non-trivial.

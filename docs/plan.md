@@ -7,10 +7,7 @@ Completed items move to `docs/completed/`.
 
 ## Active — ordered by priority
 
-### 1. Battle-test shakedown
-- Full checklist at `docs/shakedown.md` — 17 sections covering every feature area.
-- Also serves as the mobile test checklist (section 17 specific to device).
-- Run: `cargo run` + `npm run dev` (or `npm run dev:mobile` for device).
+_(nothing active — see Parked below)_
 
 ---
 
@@ -39,6 +36,7 @@ Completed items move to `docs/completed/`.
 
 ## Recently completed
 
+- Shakedown pass (desktop): 2 bugs found + fixed (CardHistoryModal z-index, EditCardModal Escape handler); sections 1-3, 5-7, 9 suggest bar, 11-13 verified; sections 4, 8, 14-15, 17 (mobile) still need manual/device run — 2026-07-05
 - Suggestion Viewer + Promote: SuggestionViewer.vue shadowbox, Pending/Liked tabs, read-only TuningAdjustments with diff highlighting, Like/Dismiss/Promote actions, SideBug badge + Filters row entry; Promote clones source card with suggestion adjustments (share code cleared, "(Updated)" name), opens in EditCardModal immediately — 2026-07-05
 - Per-section default collapsed/expanded: `defaultOpen` on section types, set at modal save time, seeds CardView openState — 2026-07-05
 - Card accent override: `accentOverride` field on Card, three preset color dots in CardMeta edit mode — 2026-07-05

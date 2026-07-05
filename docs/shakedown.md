@@ -229,5 +229,29 @@ Mobile: `npm run dev:mobile` — use Network URL in iPhone Safari.
 
 ## Notes
 
-_Space for failures, oddities, follow-up items discovered during the pass._
+**Shakedown run: 2026-07-05** (browser automation pass, desktop Chrome)
+
+**Bugs found and fixed:**
+1. `CardHistoryModal` z-index was 200 — sat under `EditCardModal` (1100). History button appeared to do nothing. Fixed: raised to 1150.
+2. `EditCardModal` had no Escape handler when opened from `CardMeta` (inline Edit Card). Fixed: added `onKey` that calls `onCancel()` unless `historyCardId` is set (guards against closing both stacked modals at once).
+
+**Verified working:**
+- Auth: login/logout, invalid password error, edit controls appear on login
+- Edit mode: enter/exit, ExitConfirmModal (Save All / Discard / Cancel), dirty tracking
+- Inline edit: contenteditable, dirty badge, discard reverts
+- EditCardModal: opens, HISTORY button, name/tags/collections editable, Cancel reverts, Escape closes
+- CardHistoryModal: version list, Escape closes history only, second Escape closes EditCardModal
+- Gallery/slideshow: autoplay, thumbnail rail, stage click → lightbox, Escape closes lightbox only
+- SuggestionViewer: PENDING/LIKED tabs, diff display, read-only sliders, PROMOTE/DISMISS, Escape closes
+- Filters: collection checkboxes, Favorites only, Show Sections, Suggestions row with badge
+- ThemeBuilder: opens from SideBug → Customize, base ambiance presets, Effects sliders, Main Palette
+- Suggest bar: visible in view mode with correct messaging
+
+**Not run (requires device or manual interaction):**
+- Section 4: New card full flow (photo upload, CarPicker, full RecipeSection)
+- Section 8: ImagePicker drag/reorder, PhotoDetail alt text + CarPicker
+- Section 9: Define Stock confirm dialog, gearing picker modal (locked slider)
+- Section 14: Card accent — need edit mode + EditCardModal color dot clicks
+- Section 15: Per-section defaultOpen toggle flow
+- Section 17: Mobile (on-device only)
 

@@ -7,13 +7,7 @@ Completed items move to `docs/completed/`.
 
 ## Active — ordered by priority
 
-### 1. TuningAdjustments — gate section on recipe / adjustments existing
-- `<TuningAdjustments>` and its "Tune Adjustments" label render unconditionally in RecipeSection.
-- Should be hidden on cards with no relevant data (e.g. photo safari cards, cards with no car IDs, cards with no adjustments in non-edit mode).
-- Gate condition: hide when `local.adjustments` is empty AND not in edit mode.
-- Note: multi-car mashup cards (parked) will eventually need a per-car tuning view; the gate logic here should not assume a single carId — defer that complexity to the mashup plan doc.
-
-### 2. Card accent override (per-card color)
+### 1. Card accent override (per-card color)
 - Optional `accentOverride` field on Card: `inherit | gold | magenta | custom`.
 - Edit-only affordance in CardMeta (+ EditCardModal / NewCardModal for parity).
 - No backend work — rides existing card JSON.
@@ -55,6 +49,11 @@ Completed items move to `docs/completed/`.
 
 ## Maintenance
 
+### RecipeSection loop-prevention flags
+- `skipNextPropsSync` and `inPropsSync` in `RecipeSection.vue` are manual circuit breakers for a watch/emit cycle. They work, but signal that the reactive graph has a structural issue.
+- The cleaner fix would be for RecipeSection to treat `recipe` as an initial value only (not a live-synced prop), owning its local state entirely — but that requires changing how the parent coordinates saves.
+- Not urgent. Touch only when there's a clear goal (e.g. a bug traced to this code).
+
 ### Backfill pass (another round coming)
 - Card data was brought in line once. Expect another round after card accent, tuning gate, and other structural changes land.
 - Done in-app via EditCardModal; revisit when the dust settles.
@@ -63,6 +62,8 @@ Completed items move to `docs/completed/`.
 
 ## Recently completed
 
+- Recipe section gate: hide Tune / Build Parts bar in view mode when tuneName, shareCode, upgrades, and adjustments are all empty — 2026-07-05
+- Code quality pass: formatShareCode util, collectOrphans helper, watcher consolidation, String() coercion removal — 2026-07-05
 - TuningAdjustments — gearing-only lock/unlock, navigation scope fix, tire pressure unlock — 2026-07-05
 - ThemeBuilder effects sliders: picker opacity + color swatches for both glass surfaces — 2026-07-04
 - TuningAdjustments — Define Stock confirm dialog + in-session Cmd+Z undo snapshot — 2026-07-04

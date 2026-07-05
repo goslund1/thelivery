@@ -7,7 +7,13 @@ Completed items move to `docs/completed/`.
 
 ## Active — ordered by priority
 
-### 1. Battle-test checklist
+### 1. Per-section default collapsed/expanded state
+- Each section on a card should have a storable default open/closed state.
+- Settable only in NewCardModal or EditCardModal — NOT in inline edit mode, to avoid accidentally saving a bunch of randomly toggled states.
+- Stored on the section (or card), persisted to the backend with the card JSON.
+- Design note: the global expand/collapse toggle overrides this at runtime but doesn't change the stored default.
+
+### 2. Battle-test checklist
 - Once the main items above are done, a focused pass to verify all dialog interactions, edge cases, and flow completeness. Includes:
   - Gearing dialog round-trip (locked slider → modal → transmission pick → rows unlock → UpgradesPicker reflects → stock restore → upgrade removes)
   - All confirm/cancel dialogs
@@ -21,11 +27,6 @@ Completed items move to `docs/completed/`.
 
 ## Parked
 
-### Submit Tune feature
-- Full background at `docs/plan-submit-tune.md`.
-- Trigger redesign is the first problem: current logic fires on first non-stock move but cards ship with non-stock values.
-- Before building: write a finishing-moves plan doc covering trigger logic, contact/credit form (Gamertag, PSN, Discord, Reddit, etc.), "Ask Me Later" state, backend submissions table + API, admin queue ("the pile").
-
 ### Mobile layout
 - Theme builder flyout + general catalog narrow-screen pass.
 - Deferred until active list is cleared.
@@ -33,10 +34,6 @@ Completed items move to `docs/completed/`.
 ### Multi-car mashup card (plan doc needed first)
 - Discussed: single card with multiple carIds, each tied to specific photos; user clicks photo or make/model group to surface that car's tune + parts.
 - Low priority. Write a plan doc before touching any code — the data model changes are non-trivial.
-
-### Design decisions (need a conversation)
-- Badge indicators: Abide/Victory/Smokin' as known tag values (reuse ChipPicker/TagCloud) vs dedicated field with icon rendering.
-- Per-section default-expanded: does the global toggle cover it, or do we need per-section "open by default"?
 
 ---
 
@@ -62,6 +59,7 @@ Completed items move to `docs/completed/`.
 - CLAUDE.md + docs/plan.md housekeeping, session AARs — 2026-07-04
 - Transmission/gearing system (locked sliders, glass picker modal, auto-add/remove upgrades, view+edit parity, legacy name migration) — 2026-07-04
 - Car identity: `cars` table, CarPicker, PhotoDetail, alt text — 2026-07-04
+- Submit Tune feature: suggest bar, submit modal, backend submissions table + admin queue — shipped earlier, plan entry was stale
 - Suggest bar two-surface redesign — 2026-07-04
 - Theme builder + ColorPicker (palette drag-reorder, title bar, HSL namer, DrawerPanel) — ~2026-06-30
 - Card history UI (CardHistoryModal) — earlier session

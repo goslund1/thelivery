@@ -33,7 +33,10 @@ export interface ThemeFonts {
 }
 
 export interface ThemeEffects {
-  glassOpacity: number  // 0–100
+  glassOpacity:  number   // 0–100
+  glassColor?:   string   // base color for glass panels; defaults to --panel
+  pickerOpacity: number   // 0–100
+  pickerColor?:  string   // base color for picker panel; defaults to --panel
 }
 
 export interface ThemeData {
@@ -81,10 +84,16 @@ function deepClone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v))
 }
 
-const EFFECTS_DEFAULTS: ThemeEffects = { glassOpacity: 82 }
+const EFFECTS_DEFAULTS: ThemeEffects = { glassOpacity: 82, pickerOpacity: 18 }
 
 function applyEffects(effects: ThemeEffects) {
-  document.documentElement.style.setProperty('--glass-opacity', `${effects.glassOpacity}%`)
+  const root = document.documentElement
+  root.style.setProperty('--glass-opacity', `${effects.glassOpacity}%`)
+  if (effects.glassColor) {
+    root.style.setProperty('--glass-bg', `color-mix(in srgb, ${effects.glassColor} ${effects.glassOpacity}%, transparent)`)
+  } else {
+    root.style.removeProperty('--glass-bg')
+  }
 }
 
 const LEGACY_COLOR_MAP: Record<string, keyof ThemeColors> = {
@@ -172,6 +181,17 @@ export const useThemeStore = defineStore('theme', () => {
     applyEffects(current.value.effects)
   }
 
+  function setPickerOpacity(value: number) {
+    if (!current.value) return
+    current.value.effects.pickerOpacity = value
+  }
+
+  function setEffectColor(key: 'glassColor' | 'pickerColor', value: string) {
+    if (!current.value) return
+    current.value.effects[key] = value
+    applyEffects(current.value.effects)
+  }
+
   function setTuningColor(key: keyof ThemeTuning, value: string) {
     if (!current.value) return
     current.value.tuning[key] = value
@@ -212,6 +232,6 @@ export const useThemeStore = defineStore('theme', () => {
 
   return {
     current, saved, loading, saving, error, isDirty,
-    load, setColor, setTuningColor, setGlassOpacity, setAmbiance, reset, save,
+    load, setColor, setTuningColor, setGlassOpacity, setPickerOpacity, setEffectColor, setAmbiance, reset, save,
   }
 })

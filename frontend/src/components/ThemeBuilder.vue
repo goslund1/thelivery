@@ -11,9 +11,11 @@ const emit = defineEmits<{ close: [] }>()
 const theme = useThemeStore()
 
 const pickerBg = computed(() => {
-  const hex = (theme.current?.colors.panel ?? '#15151a').replace('#', '')
+  const base = theme.current?.effects.pickerColor ?? theme.current?.colors.panel ?? '#15151a'
+  const hex = base.replace('#', '')
   const n = parseInt(hex.length === 3 ? hex.split('').map(c => c+c).join('') : hex, 16)
-  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},0.18)`
+  const opacity = (theme.current?.effects.pickerOpacity ?? 18) / 100
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${opacity})`
 })
 
 const paletteOpen  = ref(true)
@@ -47,7 +49,15 @@ const THEME_LABELS: Record<Theme, string> = {
   dark: 'Dark', light: 'Light', rainbow: 'Rainbow', clouds: 'Clouds', stormy: 'Stormy',
 }
 
-const activeColor = ref<{ group: 'colors' | 'tuning'; key: string } | null>(null)
+const activeColor = ref<{ group: 'colors' | 'tuning' | 'effects'; key: string } | null>(null)
+
+const EFFECT_COLOR_LABELS: Record<string, string> = {
+  glassColor:  'Panel glass color',
+  pickerColor: 'Picker panel color',
+}
+
+const glassSwatchColor  = computed(() => theme.current?.effects.glassColor  ?? theme.current?.colors.panel ?? '#15151a')
+const pickerSwatchColor = computed(() => theme.current?.effects.pickerColor ?? theme.current?.colors.panel ?? '#15151a')
 
 // pickerColor is the picker's own state — independent of what's selected in the list
 const pickerColor = ref(theme.current?.colors.accent ?? '#d4a017')
@@ -56,46 +66,47 @@ const pickerColor = ref(theme.current?.colors.accent ?? '#d4a017')
 const activeValue = computed<string>(() => {
   if (!activeColor.value || !theme.current) return pickerColor.value
   const { group, key } = activeColor.value
-  return group === 'colors'
-    ? theme.current.colors[key as keyof ThemeColors]
-    : theme.current.tuning[key as keyof ThemeTuning]
+  if (group === 'colors') return theme.current.colors[key as keyof ThemeColors]
+  if (group === 'tuning') return theme.current.tuning[key as keyof ThemeTuning]
+  return theme.current.effects[key as 'glassColor' | 'pickerColor'] ?? theme.current.colors.panel
 })
 
 const activeLabel = computed<string>(() => {
   if (!activeColor.value) return ''
   const { group, key } = activeColor.value
-  return group === 'colors'
-    ? COLOR_LABELS[key as keyof ThemeColors]
-    : TUNING_LABELS[key as keyof ThemeTuning]
+  if (group === 'colors') return COLOR_LABELS[key as keyof ThemeColors]
+  if (group === 'tuning') return TUNING_LABELS[key as keyof ThemeTuning]
+  return EFFECT_COLOR_LABELS[key] ?? key
 })
 
 function onPickerUpdate(val: string) {
   pickerColor.value = val
-  // Live-update the active item while dragging
   if (!activeColor.value) return
   const { group, key } = activeColor.value
   if (group === 'colors') theme.setColor(key as keyof ThemeColors, val)
-  else theme.setTuningColor(key as keyof ThemeTuning, val)
+  else if (group === 'tuning') theme.setTuningColor(key as keyof ThemeTuning, val)
+  else theme.setEffectColor(key as 'glassColor' | 'pickerColor', val)
 }
 
-function selectColor(group: 'colors' | 'tuning', key: string) {
+function selectColor(group: 'colors' | 'tuning' | 'effects', key: string) {
   if (pickerOpen.value) {
-    // Picker is open: stamp current pickerColor onto the clicked item
     if (group === 'colors') theme.setColor(key as keyof ThemeColors, pickerColor.value)
-    else theme.setTuningColor(key as keyof ThemeTuning, pickerColor.value)
+    else if (group === 'tuning') theme.setTuningColor(key as keyof ThemeTuning, pickerColor.value)
+    else theme.setEffectColor(key as 'glassColor' | 'pickerColor', pickerColor.value)
     activeColor.value = { group, key }
   } else {
-    // Picker is closed: load the item's color and open
     const val = group === 'colors'
       ? (theme.current?.colors[key as keyof ThemeColors] ?? pickerColor.value)
-      : (theme.current?.tuning[key as keyof ThemeTuning] ?? pickerColor.value)
+      : group === 'tuning'
+      ? (theme.current?.tuning[key as keyof ThemeTuning] ?? pickerColor.value)
+      : (theme.current?.effects[key as 'glassColor' | 'pickerColor'] ?? theme.current?.colors.panel ?? pickerColor.value)
     pickerColor.value = val
     activeColor.value = { group, key }
     pickerOpen.value = true
   }
 }
 
-function isActive(group: 'colors' | 'tuning', key: string) {
+function isActive(group: 'colors' | 'tuning' | 'effects', key: string) {
   return activeColor.value?.group === group && activeColor.value?.key === key
 }
 
@@ -149,6 +160,12 @@ function onReset() { theme.reset() }
         <div class="tb-section">
           <div class="tb-section-label">Effects</div>
           <div class="tb-effect-row">
+            <button
+              class="tb-swatch tb-effect-swatch" type="button"
+              :class="{ active: isActive('effects', 'glassColor') }"
+              :style="{ background: glassSwatchColor }"
+              @click="selectColor('effects', 'glassColor')"
+            />
             <span class="tb-effect-label">Panel opacity</span>
             <input
               class="tb-slider" type="range" min="20" max="100"
@@ -156,6 +173,21 @@ function onReset() { theme.reset() }
               @input="theme.setGlassOpacity(+($event.target as HTMLInputElement).value)"
             />
             <span class="tb-effect-val">{{ theme.current?.effects.glassOpacity ?? 82 }}%</span>
+          </div>
+          <div class="tb-effect-row">
+            <button
+              class="tb-swatch tb-effect-swatch" type="button"
+              :class="{ active: isActive('effects', 'pickerColor') }"
+              :style="{ background: pickerSwatchColor }"
+              @click="selectColor('effects', 'pickerColor')"
+            />
+            <span class="tb-effect-label">Picker opacity</span>
+            <input
+              class="tb-slider" type="range" min="5" max="80"
+              :value="theme.current?.effects.pickerOpacity ?? 18"
+              @input="theme.setPickerOpacity(+($event.target as HTMLInputElement).value)"
+            />
+            <span class="tb-effect-val">{{ theme.current?.effects.pickerOpacity ?? 18 }}%</span>
           </div>
         </div>
 
@@ -346,6 +378,18 @@ function onReset() { theme.reset() }
   align-items: center;
   gap: 8px;
   margin-top: 8px;
+}
+.tb-effect-swatch {
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color .12s, outline-color .12s;
+}
+.tb-effect-swatch:hover { border-color: rgba(255,255,255,0.4); }
+.tb-effect-swatch.active {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
 }
 .tb-effect-label {
   color: var(--fg);

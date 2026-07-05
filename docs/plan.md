@@ -42,7 +42,7 @@ Completed items move to `docs/completed/`.
 
 ## Recently completed
 
-- Suggestion Viewer: SuggestionViewer.vue shadowbox, Pending/Liked tabs, read-only TuningAdjustments with diff highlighting, Like/Dismiss, SideBug badge + Filters row entry — 2026-07-05
+- Suggestion Viewer + Promote: SuggestionViewer.vue shadowbox, Pending/Liked tabs, read-only TuningAdjustments with diff highlighting, Like/Dismiss/Promote actions, SideBug badge + Filters row entry; Promote clones source card with suggestion adjustments (share code cleared, "(Updated)" name), opens in EditCardModal immediately — 2026-07-05
 - Per-section default collapsed/expanded: `defaultOpen` on section types, set at modal save time, seeds CardView openState — 2026-07-05
 - Card accent override: `accentOverride` field on Card, three preset color dots in CardMeta edit mode — 2026-07-05
 - RecipeSection one-way data flow refactor: replaced loop-prevention flags with resetToken prop — 2026-07-05

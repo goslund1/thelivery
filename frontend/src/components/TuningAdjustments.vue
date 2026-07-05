@@ -1073,12 +1073,6 @@ async function submitSuggestion() {
       <summary class="ta-nonstock-summary">
         <span>List of Tweaks<template v-if="changedRows.length"> ({{ changedRows.length }})</template></span>
         <span class="ta-nonstock-actions">
-          <button
-            v-if="nonstockOpen && !ui.isEditing && !props.readOnly"
-            class="ta-nonstock-submit"
-            :disabled="changedFromCard.length === 0"
-            @click.stop="openSuggestModal"
-          >Share these tweaks</button>
           <span class="ta-nonstock-chev"></span>
         </span>
       </summary>
@@ -2439,26 +2433,5 @@ async function submitSuggestion() {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-.ta-nonstock-submit {
-  font: 11px/1 'JetBrains Mono', monospace;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  background: none;
-  border: 1px solid var(--accent);
-  border-radius: 3px;
-  color: var(--accent);
-  padding: 3px 10px;
-  cursor: pointer;
-  opacity: 0.75;
-  transition: opacity 0.12s, border-color 0.12s, color 0.12s;
-  flex-shrink: 0;
-}
-.ta-nonstock-submit:hover:not(:disabled) { opacity: 1; }
-.ta-nonstock-submit:disabled {
-  border-color: var(--muted);
-  color: var(--muted);
-  opacity: 0.3;
-  cursor: default;
 }
 </style>

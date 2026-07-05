@@ -690,7 +690,7 @@ function unlockByUpgrade(r: LocalRow) {
   }
 }
 function checkGearingStock() {
-  if (!ui.isEditing || !autoAddedPart.value) return
+  if (!autoAddedPart.value) return
   const gearRows = localRows.value.filter(r => r.tab === 'gearing')
   if (gearRows.every(r => r.value === r.stock)) {
     emit('remove-upgrade', autoAddedPart.value)

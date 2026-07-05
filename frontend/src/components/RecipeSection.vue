@@ -73,7 +73,7 @@ function onImpliedUpgrades(result: ImpliedUpgradesResult) {
 function onRemoveUpgrade(part: string) {
   for (const cat of local.upgrades) {
     const idx = cat.parts.indexOf(part)
-    if (idx !== -1) { cat.parts.splice(idx, 1); flush(); break }
+    if (idx !== -1) { cat.parts.splice(idx, 1); if (ui.isEditing) flush(); break }
   }
 }
 

@@ -161,10 +161,19 @@ const transmissionTier = computed<TransmissionTier>(() => {
 type FhTransmission = { name: string; group: string; gears: number; tier: TransmissionTier }
 const FH_TRANSMISSIONS = fhTransmissions.transmissions as FhTransmission[]
 
+const LEGACY_TRANS_NAMES: Record<string, string> = {
+  'Race Transmission':  'Race 6-Speed Transmission',
+  'Race 7-Speed':       'Race 7-Speed Transmission',
+  'Race 8-Speed':       'Race 8-Speed Transmission',
+  'Race 9-Speed':       'Race 9-Speed Transmission',
+  'Race 10-Speed':      'Race 10-Speed Transmission',
+  'Drift Transmission': 'Drift 4-Speed Transmission',
+}
 function defaultViewTransmission(): string {
   for (const cat of (props.upgrades ?? [])) {
     for (const part of cat.parts) {
-      if (FH_TRANSMISSIONS.find(t => t.name === part)) return part
+      const name = LEGACY_TRANS_NAMES[part] ?? part
+      if (FH_TRANSMISSIONS.find(t => t.name === name)) return name
     }
   }
   return 'Stock 5-Speed'

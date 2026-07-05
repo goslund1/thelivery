@@ -165,9 +165,13 @@ String template refs (`ref="x"`) aren't counted as "used" by `vue-tsc`'s unused-
 
 - **Car identity** — `cars` table (FH5 + FH6 models, seeded from `backend/seed/cars.json`), backend migration `0008_cars.sql`, `/api/cars` endpoint (search by game+query, up to 50 results), `stores/cars.ts` singleton. `CarPicker.vue`: [+ FH5]/[+ FH6] game-gated buttons → search input → results dropdown → chip display; emits `update:carId`. Wired into `RecipeSection` (view badge + edit picker), `CardView` (threads carId, handles update via `cardsStore.setCarId()`), `EditCardModal` (snapshot/restore on Cancel), `NewCardModal`. `PhotoDetail.vue`: full-size photo shadowbox (Teleport to body), prev/next nav, per-photo CarPicker + alt text input; launched via ⤢ button on `ImagePicker` thumbs. Alt text flows through `setImageMeta()` in cards store → `img.alt` on Gallery stage images.
 
+- **RecipeSection** (`RecipeSection.vue`) — fully refactored to emit `update:recipe` instead of mutating props directly. Local reactive copy + `flush()` pattern; loop-prevention flags (`skipNextPropsSync`, `inPropsSync`) prevent watch cycles. All four callers (CardView, EditCardModal, NewCardModal, and the component itself) handle the emit correctly.
+- **Card migration tool** (Migrate tab in UserSettingsModal) — upgrade category normalization (auto), free-text adjustment row migration (manual per-card form with tab defaults), YAML export/import. Export downloads a human-readable `.yaml` file; import parses, previews, and POSTs as a new card via `crypto.randomUUID()` + `max(catalogNumber) + 1`. Images excluded from YAML; header comment notes original count. Uses `js-yaml` (v5).
+- **Upgrades ↔ Tuning Link** — `impliedUpgrades()` and `applyImpliedUpgrades()` wired into RecipeSection; auto-populate indicator in UpgradesPicker (`impliedPartNames` computed). Springs and Dampers dialog fires once per session when alignment/springs/damping slider moves off-stock with no S&D entry. `SLIDER_UPGRADE_MAP` defined in `src/constants/tuning.ts`.
+
 ### Pending / in progress
 - **Backfill car IDs** — existing cards need car IDs assigned manually in-app via CarPicker in EditCardModal.
-- **Submit Tune feature** — open questions at `docs/plan-submit-tune.md`. Trigger redesign (N=3 slider changes from published), contact/credit form (Gamertag, PSN, Discord, Reddit, etc.), "Ask Me Later" deferred state, backend submissions table + API.
+- **Submit Tune feature** — open questions at `docs/plan-submit-tune.md`. Trigger redesign needed (current logic fires on first non-stock move but cards already ship with non-stock values). Contact/credit form (Gamertag, PSN, Discord, Reddit, etc.), "Ask Me Later" deferred state, backend submissions table + API, admin queue ("the pile").
 - **Mobile layout of theme builder flyout** — deferred until browser tuning is complete.
 
 ## Conventions & rules

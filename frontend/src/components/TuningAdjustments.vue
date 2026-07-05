@@ -972,9 +972,6 @@ function isChangedFromCard(r: LocalRow): boolean {
 }
 const changedFromCard = computed(() => localRows.value.filter(r => isChangedFromCard(r)))
 
-// Tier 1: any slider changed → passive share button activates
-const hasTweak = computed(() => changedFromCard.value.length > 0)
-
 // Tier 2: changes span 2+ tab categories → push message fires
 const changedTabIds = computed(() => {
   const s = new Set<string>()
@@ -1009,11 +1006,6 @@ const showSuggestBar = computed(() =>
   (hasMultiTabTweak.value || askLaterPending.value)
 )
 
-// Tier 1: passive share button (any tweak, push bar not showing)
-const showShareButton = computed(() =>
-  !props.readOnly && !ui.isEditing && hasTweak.value &&
-  !suggestDismissed.value && !showSuggestBar.value
-)
 
 function openSuggestModal() {
   suggestTitle.value = ''
@@ -1073,6 +1065,12 @@ async function submitSuggestion() {
       <summary class="ta-nonstock-summary">
         <span>List of Tweaks<template v-if="changedRows.length"> ({{ changedRows.length }})</template></span>
         <span class="ta-nonstock-actions">
+          <button
+            v-if="nonstockOpen && !ui.isEditing && !props.readOnly"
+            class="ta-nonstock-submit"
+            :disabled="changedFromCard.length === 0"
+            @click.stop="openSuggestModal"
+          >Share these tweaks</button>
           <span class="ta-nonstock-chev"></span>
         </span>
       </summary>
@@ -1386,12 +1384,6 @@ async function submitSuggestion() {
         <button class="ta-suggest-submit" @click="openSuggestModal">Done Tweaking</button>
         <button class="ta-suggest-later" @click="onAskLater">Ask Me Later</button>
         <button class="ta-suggest-dismiss" @click="onNotForMe">Not for me</button>
-      </div>
-    </div>
-    <!-- Tier 1: passive share button — any single tweak, no push bar showing -->
-    <div v-else-if="showShareButton" class="ta-suggest-bar ta-suggest-bar--passive">
-      <div class="ta-suggest-strip">
-        <button class="ta-suggest-submit" @click="openSuggestModal">Share This Tweak</button>
       </div>
     </div>
 
@@ -2252,11 +2244,6 @@ async function submitSuggestion() {
   max-width: 480px;
   width: calc(100vw - 40px);
 }
-/* Passive tier-1 bar: no drawer, just the strip — slightly narrower and more subdued */
-.ta-suggest-bar--passive {
-  max-width: 220px;
-  opacity: 0.85;
-}
 
 /* secondary surface — clear glass pane, 4px inset each side from the bar */
 .ta-suggest-drawer {
@@ -2427,6 +2414,28 @@ async function submitSuggestion() {
   color: #ff6b6b;
   margin: 0;
   padding: 0 2px;
+}
+
+.ta-nonstock-submit {
+  font: 11px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  color: var(--accent);
+  padding: 3px 10px;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.12s, border-color 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.ta-nonstock-submit:hover:not(:disabled) { opacity: 1; }
+.ta-nonstock-submit:disabled {
+  border-color: var(--muted);
+  color: var(--muted);
+  opacity: 0.3;
+  cursor: default;
 }
 
 .ta-nonstock-actions {

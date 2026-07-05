@@ -286,7 +286,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 <template>
   <div class="section-body">
     <div class="tune-header">
-      <EditableText tag="p" class="tune-name" :modelValue="local.tuneName" @update:modelValue="v => { local.tuneName = String(v); flush() }" />
+      <EditableText tag="p" class="tune-name" :modelValue="local.tuneName" @update:modelValue="v => { local.tuneName = v; flush() }" />
       <div class="plate">
         SHARE CODE:
         <input
@@ -326,7 +326,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
                 <option value="" :selected="!local.coreSpecs[k]">Stock</option>
                 <option v-for="opt in SPEC_OPTIONS[k]" :key="opt" :value="opt" :selected="local.coreSpecs[k] === opt">{{ opt }}</option>
               </select>
-              <EditableText v-else :modelValue="local.coreSpecs[k]" @update:modelValue="v => { local.coreSpecs[k] = String(v); flush() }" />
+              <EditableText v-else :modelValue="local.coreSpecs[k]" @update:modelValue="v => { local.coreSpecs[k] = v; flush() }" />
             </template>
             <span v-else>{{ local.coreSpecs[k] || 'Stock' }}</span>
           </td>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import { useFilterStore } from '../stores/filters'
 import { useCardsStore } from '../stores/cards'
 import { useAuthStore } from '../stores/auth'
@@ -11,13 +11,16 @@ const store = useCardsStore()
 const auth = useAuthStore()
 const modal = useModalStore()
 
-onMounted(async () => {
+async function fetchCount() {
   if (!auth.isAuthenticated) return
   try {
     const all = await api.adminListSuggestions()
     modal.pendingSuggestionCount = all.filter(s => s.status === 'pending').length
   } catch {}
-})
+}
+
+onMounted(fetchCount)
+watch(() => auth.isAuthenticated, fetchCount)
 </script>
 
 <template>

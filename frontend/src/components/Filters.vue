@@ -72,8 +72,8 @@ onMounted(async () => {
   min-width: 14px;
   height: 14px;
   padding: 0 3px;
-  background: #111;
-  color: #ccc;
+  background: var(--danger);
+  color: #fff;
   border-radius: 3px;
   font-size: 9px;
   font-weight: bold;

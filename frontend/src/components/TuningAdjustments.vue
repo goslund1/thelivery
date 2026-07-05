@@ -799,6 +799,27 @@ const suggestDone = ref(false)
 
 const hasSuggestionData = computed(() => storedRows.value.length > 0)
 
+// Track List of Tweaks open/closed so the submit button can hide when collapsed
+const nonstockOpen = ref(true)
+function onNonstockToggle(e: Event) {
+  nonstockOpen.value = (e.target as HTMLDetailsElement).open
+}
+
+// "Changed from card" — visitor moved a slider away from Jason's published value.
+// Distinct from changedRows (which compares against hardware stock).
+const publishedValues = computed(() => {
+  const map = new Map<string, number>()
+  for (const r of storedRows.value) map.set(r.key, r.value)
+  return map
+})
+function isChangedFromCard(r: LocalRow): boolean {
+  if (r.locked) return false
+  const cardVal = publishedValues.value.get(r.key)
+  if (cardVal === undefined) return false
+  return Math.abs(r.value - cardVal) > r.step / 2
+}
+const changedFromCard = computed(() => localRows.value.filter(r => isChangedFromCard(r)))
+
 watch(hasSuggestionData, (hasData) => {
   if (hasData && props.cardId && activeSuggestCardId.value === null && !suggestDismissed.value) {
     activeSuggestCardId.value = props.cardId
@@ -849,10 +870,18 @@ async function submitSuggestion() {
 
 <template>
   <!-- List of Tweaks — lives above the widget panel -->
-  <details class="ta-nonstock" open ref="taNonstockRef">
+  <details class="ta-nonstock" open ref="taNonstockRef" @toggle="onNonstockToggle">
       <summary class="ta-nonstock-summary">
         <span>List of Tweaks<template v-if="changedRows.length"> ({{ changedRows.length }})</template></span>
-        <span class="ta-nonstock-chev"></span>
+        <span class="ta-nonstock-actions">
+          <button
+            v-if="nonstockOpen && !ui.isEditing"
+            class="ta-nonstock-submit"
+            :disabled="changedFromCard.length === 0"
+            @click.stop="openSuggestModal"
+          >Share these tweaks</button>
+          <span class="ta-nonstock-chev"></span>
+        </span>
       </summary>
       <div class="ta-nonstock-body">
         <template v-if="changedRows.length">
@@ -2108,5 +2137,32 @@ async function submitSuggestion() {
   color: #ff6b6b;
   margin: 0;
   padding: 0 2px;
+}
+
+.ta-nonstock-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ta-nonstock-submit {
+  font: 11px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  color: var(--accent);
+  padding: 3px 10px;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.12s, border-color 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.ta-nonstock-submit:hover:not(:disabled) { opacity: 1; }
+.ta-nonstock-submit:disabled {
+  border-color: var(--muted);
+  color: var(--muted);
+  opacity: 0.3;
+  cursor: default;
 }
 </style>

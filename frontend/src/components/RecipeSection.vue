@@ -62,8 +62,84 @@ function applyVariant(idx: number) {
 
 function variantLabel(v: CarVariant): string {
   const car = carsStore.byId(v.carId)
-  if (!car) return v.carId
+  if (!car) return v.carId || '(no car)'
   return `${car.year ? car.year + ' ' : ''}${car.make} ${car.model}`
+}
+
+// ── Edit-mode variant management ──────────────────────────────────────────────
+const showAddVariantPicker = ref(false)
+const pendingRemoveIdx = ref<number | null>(null)
+
+function variantIsEmpty(v: CarVariant): boolean {
+  return !v.tuneName.trim() && !v.shareCode.trim()
+    && v.upgrades.every(c => c.parts.length === 0)
+    && v.adjustments.length === 0
+}
+
+function makeEmptyVariant(carId: string): CarVariant {
+  return {
+    carId,
+    tuneName: '',
+    shareCode: '',
+    coreSpecs: Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, ''])),
+    upgrades: [],
+    adjustments: [],
+  }
+}
+
+function addVariant(carId: string | null) {
+  if (!carId) { showAddVariantPicker.value = false; return }
+  showAddVariantPicker.value = false
+  if (!isMultiCar.value) {
+    // Promote: current recipe → variant[0], new car → variant[1]
+    local.variants = [
+      {
+        carId: props.carId ?? '',
+        tuneName: local.tuneName,
+        shareCode: local.shareCode,
+        coreSpecs: { ...local.coreSpecs },
+        upgrades: [...local.upgrades],
+        adjustments: [...local.adjustments],
+      },
+      makeEmptyVariant(carId),
+    ]
+    activeVariantIndex.value = 1
+    applyVariant(1)
+  } else {
+    local.variants = [...(local.variants ?? []), makeEmptyVariant(carId)]
+    const newIdx = local.variants.length - 1
+    activeVariantIndex.value = newIdx
+    applyVariant(newIdx)
+  }
+  markDirty()
+  flush()
+}
+
+function removeVariant(idx: number) {
+  pendingRemoveIdx.value = null
+  if (!local.variants) return
+  if (local.variants.length <= 2) {
+    // Demote back to single-car: keep the surviving variant's data
+    const keepIdx = idx === 0 ? 1 : 0
+    const keep = local.variants[keepIdx]
+    local.tuneName = keep.tuneName
+    local.shareCode = keep.shareCode
+    Object.assign(local.coreSpecs, keep.coreSpecs)
+    local.upgrades = keep.upgrades
+    local.adjustments = keep.adjustments
+    local.variants = undefined
+    activeVariantIndex.value = 0
+    emit('update:activeCarId', null)
+  } else {
+    local.variants.splice(idx, 1)
+    if (activeVariantIndex.value >= local.variants.length) {
+      activeVariantIndex.value = local.variants.length - 1
+    }
+    applyVariant(activeVariantIndex.value)
+    emit('update:activeCarId', local.variants[activeVariantIndex.value]?.carId ?? null)
+  }
+  markDirty()
+  flush()
 }
 
 watch(activeVariantIndex, (idx) => {
@@ -331,18 +407,53 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 <template>
   <div class="section-body">
 
-    <!-- Multi-car variant tab strip — only renders when 2+ variants present -->
-    <div v-if="isMultiCar" class="rs-variant-tabs">
-      <button
-        v-for="(v, i) in props.recipe.variants"
-        :key="v.carId"
-        class="rs-variant-tab"
-        :class="{ 'rs-variant-tab--active': activeVariantIndex === i }"
-        type="button"
-        @click="activeVariantIndex = i"
-      >
-        {{ variantLabel(v) }}
-      </button>
+    <!-- Multi-car variant tab strip — renders when 2+ variants, or in edit mode for add button -->
+    <div v-if="isMultiCar || ui.isEditing" class="rs-variant-tabs">
+      <template v-if="isMultiCar">
+        <div
+          v-for="(v, i) in local.variants"
+          :key="v.carId + i"
+          class="rs-variant-tab-wrap"
+          :class="{ 'rs-variant-tab-wrap--active': activeVariantIndex === i }"
+        >
+          <button
+            class="rs-variant-tab"
+            :class="{ 'rs-variant-tab--active': activeVariantIndex === i }"
+            type="button"
+            @click="activeVariantIndex = i"
+          >
+            {{ variantLabel(v) }}
+          </button>
+          <button
+            v-if="ui.isEditing"
+            class="rs-variant-remove"
+            type="button"
+            :title="`Remove ${variantLabel(v)}`"
+            @click.stop="variantIsEmpty(v) ? removeVariant(i) : (pendingRemoveIdx = i)"
+          >×</button>
+        </div>
+      </template>
+
+      <!-- + Add car (edit mode only) -->
+      <div v-if="ui.isEditing" class="rs-add-variant-wrap">
+        <button
+          v-if="!showAddVariantPicker"
+          class="rs-variant-tab rs-variant-tab--add"
+          type="button"
+          @click="showAddVariantPicker = true"
+        >+ Add car</button>
+        <div v-else class="rs-add-picker-inline">
+          <CarPicker :car-id="null" @update:car-id="addVariant" />
+          <button class="rs-add-picker-cancel" type="button" @click="showAddVariantPicker = false">×</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Remove variant confirm -->
+    <div v-if="pendingRemoveIdx !== null" class="rs-remove-confirm">
+      <span>Remove <strong>{{ variantLabel(local.variants![pendingRemoveIdx]) }}</strong> and its data?</span>
+      <button type="button" class="rs-remove-yes" @click="removeVariant(pendingRemoveIdx!)">Remove</button>
+      <button type="button" class="rs-remove-no" @click="pendingRemoveIdx = null">Cancel</button>
     </div>
 
     <div class="tune-header">
@@ -702,10 +813,16 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 /* ── Multi-car variant tab strip ──────────────────────────────────────────── */
 .rs-variant-tabs {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 4px;
   padding-bottom: 10px;
   margin-bottom: 10px;
   border-bottom: 1px solid var(--panel-edge);
+}
+.rs-variant-tab-wrap {
+  display: flex;
+  align-items: center;
 }
 .rs-variant-tab {
   background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
@@ -729,4 +846,56 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   border-color: color-mix(in srgb, var(--fg) 60%, transparent);
   color: var(--fg);
 }
+.rs-variant-tab--add {
+  color: var(--accent);
+  border-style: dashed;
+  opacity: 0.65;
+}
+.rs-variant-tab--add:hover { opacity: 1; }
+.rs-variant-remove {
+  background: none;
+  border: none;
+  color: var(--muted);
+  opacity: 0.35;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 3px;
+  line-height: 1;
+  transition: opacity .12s, color .12s;
+}
+.rs-variant-remove:hover { opacity: 1; color: #e03030; }
+
+.rs-add-variant-wrap { display: flex; align-items: center; }
+.rs-add-picker-inline { display: flex; align-items: center; gap: 6px; }
+.rs-add-picker-cancel {
+  background: none; border: none; color: var(--muted); opacity: 0.5;
+  font-size: 16px; cursor: pointer; padding: 0 4px; line-height: 1;
+}
+.rs-add-picker-cancel:hover { opacity: 1; }
+
+.rs-remove-confirm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  margin-bottom: 10px;
+  background: color-mix(in srgb, var(--danger, #e03030) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger, #e03030) 30%, transparent);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.rs-remove-confirm strong { color: var(--fg); }
+.rs-remove-yes {
+  background: none; border: 1px solid var(--danger, #e03030);
+  border-radius: 3px; color: var(--danger, #e03030); font-size: 11px;
+  padding: 3px 10px; cursor: pointer; white-space: nowrap;
+}
+.rs-remove-yes:hover { background: color-mix(in srgb, var(--danger, #e03030) 15%, transparent); }
+.rs-remove-no {
+  background: none; border: 1px solid var(--panel-edge);
+  border-radius: 3px; color: var(--muted); font-size: 11px;
+  padding: 3px 10px; cursor: pointer;
+}
+.rs-remove-no:hover { border-color: var(--fg); color: var(--fg); }
 </style>

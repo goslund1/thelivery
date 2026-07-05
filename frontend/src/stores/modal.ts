@@ -98,6 +98,22 @@ export const useModalStore = defineStore('modal', () => {
   function openPromotedCard(card: Card) { promotedCard.value = card }
   function closePromotedCard() { promotedCard.value = null }
 
+  // Close whichever modal is frontmost. Returns true if anything was closed.
+  // Priority order mirrors visual z-order: innermost/topmost first.
+  function closeTopModal(): boolean {
+    if (promotedCard.value)          { closePromotedCard();     return true }
+    if (lightboxSrc.value)           { closeLightbox();         return true }
+    if (chipPicker.value)            { closeChipPicker();       return true }
+    if (imagePicker.value)           { closeImagePicker();      return true }
+    if (historyCardId.value)         { closeHistory();          return true }
+    if (suggestionViewerOpen.value)  { closeSuggestionViewer(); return true }
+    if (loginOpen.value)             { closeLogin();            return true }
+    if (settingsOpen.value)          { closeSettings();         return true }
+    if (newCardOpen.value)           { closeNewCard();          return true }
+    if (factoidPanelOpen.value)      { closeFactoidPanel();     return true }
+    return false
+  }
+
   return {
     lightboxSrc, lightboxOriginalSrc, lightboxImages, lightboxIndex,
     openLightbox, closeLightbox, navigateLightbox,
@@ -110,5 +126,6 @@ export const useModalStore = defineStore('modal', () => {
     historyCardId, openHistory, closeHistory,
     suggestionViewerOpen, pendingSuggestionCount, openSuggestionViewer, closeSuggestionViewer,
     promotedCard, openPromotedCard, closePromotedCard,
+    closeTopModal,
   }
 })

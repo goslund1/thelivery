@@ -31,14 +31,7 @@ const theme = useThemeStore()
 
 function onKey(e: KeyboardEvent) {
   if (e.key !== 'Escape') return
-  modal.closeLightbox()
-  modal.closeChipPicker()
-  modal.closeImagePicker()
-  if (modal.loginOpen) modal.closeLogin()
-  if (modal.settingsOpen) modal.closeSettings()
-  modal.closeNewCard()
-  if (ui.exitConfirmOpen) ui.cancelExit()
-  if (modal.factoidPanelOpen) modal.closeFactoidPanel()
+  if (!modal.closeTopModal() && ui.exitConfirmOpen) ui.cancelExit()
 }
 
 function checkIgnition() {

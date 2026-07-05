@@ -21,6 +21,7 @@ import LegendConfirmModal from './components/LegendConfirmModal.vue'
 import FactoidPanel from './components/FactoidPanel.vue'
 import CardHistoryModal from './components/CardHistoryModal.vue'
 import SuggestionViewer from './components/SuggestionViewer.vue'
+import EditCardModal from './components/EditCardModal.vue'
 
 const store = useCardsStore()
 const ui = useUiStore()
@@ -97,5 +98,6 @@ onBeforeUnmount(() => {
   <FactoidPanel />
   <CardHistoryModal v-if="modal.historyCardId" :card-id="modal.historyCardId" />
   <SuggestionViewer v-if="modal.suggestionViewerOpen" @close="modal.closeSuggestionViewer()" />
+  <EditCardModal v-if="modal.promotedCard" :card="modal.promotedCard" @close="modal.closePromotedCard()" />
   <CustomTip />
 </template>

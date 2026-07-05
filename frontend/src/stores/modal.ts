@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import type { Card } from '../types'
 
 export const useModalStore = defineStore('modal', () => {
   // ── Lightbox ────────────────────────────────────────────────────────────────
@@ -92,6 +93,11 @@ export const useModalStore = defineStore('modal', () => {
   function openSuggestionViewer() { suggestionViewerOpen.value = true }
   function closeSuggestionViewer() { suggestionViewerOpen.value = false }
 
+  // ── Promoted card editor ─────────────────────────────────────────────────────
+  const promotedCard = ref<Card | null>(null)
+  function openPromotedCard(card: Card) { promotedCard.value = card }
+  function closePromotedCard() { promotedCard.value = null }
+
   return {
     lightboxSrc, lightboxOriginalSrc, lightboxImages, lightboxIndex,
     openLightbox, closeLightbox, navigateLightbox,
@@ -103,5 +109,6 @@ export const useModalStore = defineStore('modal', () => {
     factoidPanelOpen, openFactoidPanel, closeFactoidPanel,
     historyCardId, openHistory, closeHistory,
     suggestionViewerOpen, pendingSuggestionCount, openSuggestionViewer, closeSuggestionViewer,
+    promotedCard, openPromotedCard, closePromotedCard,
   }
 })

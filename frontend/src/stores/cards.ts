@@ -87,6 +87,29 @@ export const useCardsStore = defineStore('cards', () => {
     return created
   }
 
+  // Clone an existing card as a new catalog entry, applying overrides to the recipe.
+  // Used by the Suggestion Viewer's Promote action.
+  async function promoteCard(sourceId: string, overrides: { adjustments: AdjustmentRow[] }): Promise<Card> {
+    const source = byId(sourceId)
+    if (!source) throw new Error(`Card ${sourceId} not found`)
+    const maxCatalog = cards.value.reduce((m, c) => Math.max(m, c.catalogNumber), 0)
+    const nextNum = maxCatalog + 1
+    const cloned: Card = {
+      ...JSON.parse(JSON.stringify(source)),
+      id: String(nextNum),
+      catalogNumber: nextNum,
+      isFavorite: false,
+      name: source.name.replace(/\s*\(Updated\)\s*$/, '') + ' (Updated)',
+      sections: source.sections.map(s => {
+        if (s.type !== 'forza_recipe') return { ...s }
+        return { ...s, shareCode: '', adjustments: overrides.adjustments }
+      }),
+    }
+    const created = await api.createCard(cloned)
+    cards.value.push(created)
+    return created
+  }
+
   async function deleteCard(id: string) {
     await api.deleteCard(id)
     const idx = cards.value.findIndex(c => c.id === id)
@@ -365,7 +388,7 @@ export const useCardsStore = defineStore('cards', () => {
 
   return {
     cards, loading, error,
-    byId, load, save, deleteCard, createNewCard,
+    byId, load, save, deleteCard, createNewCard, promoteCard,
     takeSnapshot, restoreSnapshot, setFigure,
     toggleFavorite, setLeadImage, reorderImages, restoreImageOrders,
     removeImage, toggleImageIncluded, addImageToPool, setImageMeta,

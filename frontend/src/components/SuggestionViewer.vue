@@ -12,6 +12,8 @@ const emit = defineEmits<{ close: [] }>()
 const cardsStore = useCardsStore()
 const carsStore  = useCarsStore()
 const modal      = useModalStore()
+const promoBusy  = ref(false)
+const promoError = ref<string | null>(null)
 
 type Suggestion = {
   id: number
@@ -140,6 +142,22 @@ async function onLike() {
   }
 }
 
+async function onPromote() {
+  if (!current.value || promoBusy.value) return
+  promoBusy.value = true
+  promoError.value = null
+  try {
+    const promoted = await cardsStore.promoteCard(current.value.cardId, {
+      adjustments: current.value.adjustments,
+    })
+    modal.openPromotedCard(promoted)
+  } catch (e) {
+    promoError.value = (e as Error).message
+  } finally {
+    promoBusy.value = false
+  }
+}
+
 function onOverlay(e: MouseEvent) {
   if (e.target === e.currentTarget) emit('close')
 }
@@ -205,15 +223,21 @@ function onOverlay(e: MouseEvent) {
               <button
                 class="sv-btn sv-btn--like"
                 :class="{ active: current.status === 'liked' }"
-                :disabled="actionBusy"
+                :disabled="actionBusy || promoBusy"
                 @click="onLike"
               >{{ current.status === 'liked' ? '★ Liked' : '☆ Like' }}</button>
               <button
+                class="sv-btn sv-btn--promote"
+                :disabled="actionBusy || promoBusy"
+                @click="onPromote"
+              >{{ promoBusy ? '…' : 'Promote' }}</button>
+              <button
                 class="sv-btn sv-btn--dismiss"
-                :disabled="actionBusy"
+                :disabled="actionBusy || promoBusy"
                 @click="onDismiss"
               >Dismiss</button>
             </div>
+            <p v-if="promoError" class="sv-promo-error">{{ promoError }}</p>
 
             <!-- Tuning widget — read-only, diffed against card's current values -->
             <TuningAdjustments
@@ -426,5 +450,13 @@ function onOverlay(e: MouseEvent) {
 }
 .sv-btn:disabled { opacity: .4; cursor: default; }
 .sv-btn--like:hover, .sv-btn--like.active { border-color: var(--accent); color: var(--accent); }
+.sv-btn--promote { margin-left: auto; }
+.sv-btn--promote:hover { border-color: #2d6a3f; color: #a8d8b0; background: rgba(45,106,63,.12); }
 .sv-btn--dismiss:hover { border-color: #e05c5c; color: #e05c5c; }
+.sv-promo-error {
+  font-size: 11px;
+  color: #e05c5c;
+  margin: -12px 0 16px;
+  font-family: 'JetBrains Mono', monospace;
+}
 </style>

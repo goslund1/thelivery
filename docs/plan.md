@@ -25,9 +25,11 @@ Completed items move to `docs/completed/`.
 - Theme builder flyout + general catalog narrow-screen pass.
 - Deferred until active list is cleared.
 
-### Multi-car mashup card (plan doc needed first)
-- Discussed: single card with multiple carIds, each tied to specific photos; user clicks photo or make/model group to surface that car's tune + parts.
-- Low priority. Write a plan doc before touching any code — the data model changes are non-trivial.
+### Multi-car mashup card (plan doc: `docs/plan-multi-car-mashup.md`)
+- Single card with multiple car variants, each with its own photos, tune, upgrades, and adjustments.
+- Tab strip inside RecipeSection switches between cars; gallery filters to match.
+- Foundation: `images` table migration + CarPicker at upload time; variants array on ForzaRecipeSection.
+- Single-car cards untouched — additive change.
 
 ---
 

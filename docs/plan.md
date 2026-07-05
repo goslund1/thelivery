@@ -49,10 +49,6 @@ Completed items move to `docs/completed/`.
 
 ## Maintenance
 
-### RecipeSection loop-prevention flags
-- `skipNextPropsSync` and `inPropsSync` in `RecipeSection.vue` are manual circuit breakers for a watch/emit cycle. They work, but signal that the reactive graph has a structural issue.
-- The cleaner fix would be for RecipeSection to treat `recipe` as an initial value only (not a live-synced prop), owning its local state entirely — but that requires changing how the parent coordinates saves.
-- Not urgent. Touch only when there's a clear goal (e.g. a bug traced to this code).
 
 ### Backfill pass (another round coming)
 - Card data was brought in line once. Expect another round after card accent, tuning gate, and other structural changes land.
@@ -62,6 +58,7 @@ Completed items move to `docs/completed/`.
 
 ## Recently completed
 
+- RecipeSection one-way data flow refactor: replaced loop-prevention flags with resetToken prop — 2026-07-05
 - Recipe section gate: hide Tune / Build Parts bar in view mode when tuneName, shareCode, upgrades, and adjustments are all empty — 2026-07-05
 - Code quality pass: formatShareCode util, collectOrphans helper, watcher consolidation, String() coercion removal — 2026-07-05
 - TuningAdjustments — gearing-only lock/unlock, navigation scope fix, tire pressure unlock — 2026-07-05

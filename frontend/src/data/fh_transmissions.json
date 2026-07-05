@@ -10,6 +10,6 @@
     { "name": "Race 8-Speed Transmission",   "group": "Race",   "gears": 8,  "tier": "race"  },
     { "name": "Race 9-Speed Transmission",   "group": "Race",   "gears": 9,  "tier": "race"  },
     { "name": "Race 10-Speed Transmission",  "group": "Race",   "gears": 10, "tier": "race"  },
-    { "name": "Drift Transmission",          "group": "Drift",  "gears": 4,  "tier": "drift" }
+    { "name": "Drift 4-Speed Transmission",   "group": "Drift",  "gears": 4,  "tier": "drift" }
   ]
 }

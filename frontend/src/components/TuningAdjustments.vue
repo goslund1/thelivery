@@ -138,14 +138,13 @@ function storedGearCount(): number {
 }
 
 const gearCount = ref(storedGearCount())
-const GEAR_OPTIONS = [4, 5, 6, 7, 8, 9, 10]
 
 // Derived from installed transmission upgrade — drives gearing slider lock state.
 type TransmissionTier = 'none' | 'sport' | 'race' | 'drift'
 const transmissionTier = computed<TransmissionTier>(() => {
   for (const cat of (props.upgrades ?? [])) {
     for (const part of cat.parts) {
-      if (part === 'Drift Transmission') return 'drift'
+      if (part.includes('Drift')) return 'drift'
       if (part.includes('Transmission') && (part.includes('Race') || part.includes('Racing'))) return 'race'
       if (part === 'Sport Transmission') return 'sport'
     }
@@ -331,6 +330,19 @@ function getAdjustments(): AdjustmentRow[] {
 }
 
 defineExpose({ getAdjustments })
+
+// ── Transmission picker dialog ────────────────────────────────────────────────
+const transDialogOpen = ref(false)
+const RACE_TRANS_OPTIONS = [
+  ...FH_TRANSMISSIONS.filter(t => t.tier === 'drift'),
+  ...FH_TRANSMISSIONS.filter(t => t.tier === 'race'),
+]
+const transDialogSelection = ref(FH_TRANSMISSIONS.find(t => t.tier === 'race')?.name ?? '')
+function onTransChoice(name: string) {
+  autoAddedPart.value = name
+  emit('implied-upgrades', { toAdd: [{ category: 'Drivetrain', part: name }], needsSpringsDialog: false })
+  transDialogOpen.value = false
+}
 
 // ── Springs and Dampers dialog ────────────────────────────────────────────────
 const springsDialogOpen = ref(false)
@@ -640,9 +652,13 @@ function onRowFocusOut(r: LocalRow, e: FocusEvent) {
 
 const autoAddedPart = ref<string | null>(null)
 function unlockByUpgrade(r: LocalRow) {
-  const part = r.key === 'finalDrive' ? 'Sport Transmission' : 'Race Transmission'
-  autoAddedPart.value = part
-  emit('implied-upgrades', { toAdd: [{ category: 'Drivetrain', part }], needsSpringsDialog: false })
+  r.locked = false
+  if (r.key === 'finalDrive') {
+    autoAddedPart.value = 'Sport Transmission'
+    emit('implied-upgrades', { toAdd: [{ category: 'Drivetrain', part: 'Sport Transmission' }], needsSpringsDialog: false })
+  } else if (!transDialogOpen.value) {
+    transDialogOpen.value = true
+  }
 }
 function checkGearingStock() {
   if (!ui.isEditing || !autoAddedPart.value) return
@@ -687,19 +703,20 @@ function onRowKeydown(r: LocalRow, e: KeyboardEvent) {
   }
 
   // Left/Right: adjust slider value (all modes; flush only in edit mode)
-  if (r.locked && ui.isEditing) { unlockByUpgrade(r); return }
-  if (r.locked) return
+  if (r.locked) unlockByUpgrade(r)
   const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
   if (!dir) return
   e.preventDefault()
   if (ui.isEditing) pushUndo(r.key, r.value)
   r.value = parseFloat(Math.max(r.min, Math.min(r.max, r.value + dir * r.step)).toFixed(decimals(r)))
+  if (!autoAddedPart.value && Math.abs(r.value - r.stock) <= r.step / 2) r.locked = true
   if (ui.isEditing) flush()
 }
 
 function onSliderInput(r: LocalRow, e: Event) {
-  if (r.locked && ui.isEditing) unlockByUpgrade(r)
+  if (r.locked) unlockByUpgrade(r)
   r.value = parseFloat((e.target as HTMLInputElement).value)
+  if (!autoAddedPart.value && Math.abs(r.value - r.stock) <= r.step / 2) r.locked = true
   if (ui.isEditing) flush()
 }
 function onMinChange(r: LocalRow, e: Event) {
@@ -1150,6 +1167,20 @@ async function submitSuggestion() {
   </div>
 
   <Teleport to="body">
+    <!-- Transmission picker modal -->
+    <div v-if="transDialogOpen" class="ta-trans-modal-backdrop" @click.self="transDialogOpen = false">
+      <div class="ta-trans-modal">
+        <span class="ta-prompt-label">Select Race Transmission</span>
+        <select class="ta-trans-select" v-model="transDialogSelection">
+          <option v-for="t in RACE_TRANS_OPTIONS" :key="t.name" :value="t.name">{{ t.name }}</option>
+        </select>
+        <div class="ta-trans-modal-actions">
+          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onTransChoice(transDialogSelection)">Confirm</button>
+          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="transDialogOpen = false">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Springs and Dampers tier prompt -->
     <div v-if="springsDialogOpen" class="ta-prompt-strip">
       <span class="ta-prompt-label">Springs &amp; Dampers — which tier?</span>
@@ -1619,7 +1650,7 @@ async function submitSuggestion() {
 .ta-row--locked-upgrade { cursor: pointer; }
 .ta-row--locked-upgrade:hover { border-color: var(--highlight); background: color-mix(in srgb, var(--highlight) 8%, transparent); }
 .ta-row--locked-upgrade .ta-lock-line { color: var(--highlight); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
-.ta-row--dimmed      { opacity: 0.28; pointer-events: none; }
+.ta-row--dimmed      { opacity: 0.28; }
 .ta-row--locked-edit { opacity: 0.28; cursor: pointer; }
 .ta-group > .ta-row:not(:last-child):not(.ta-row--locked) { border-bottom: 2px solid var(--panel); }
 
@@ -1897,6 +1928,47 @@ async function submitSuggestion() {
 .ta-empty {
   font-size: 12px; color: var(--muted); opacity: 0.5;
   margin: 4px 0 0; text-align: center; padding: 8px 0;
+}
+
+.ta-trans-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(2px);
+}
+.ta-trans-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 24px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.55);
+  min-width: 260px;
+}
+.ta-trans-select {
+  width: 100%;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  border: 1px solid var(--glass-border);
+  color: var(--fg);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  border-radius: 6px;
+  padding: 6px 8px;
+  outline: none;
+}
+.ta-trans-select option { background: var(--panel); color: var(--fg); }
+.ta-trans-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .ta-prompt-strip {

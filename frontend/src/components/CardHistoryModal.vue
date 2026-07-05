@@ -291,7 +291,7 @@ function fmtVal(v: number | null) {
 
 <style scoped>
 .ch-backdrop {
-  position: fixed; inset: 0; z-index: 200;
+  position: fixed; inset: 0; z-index: 1150;
   background: rgba(0,0,0,.6);
   display: flex; align-items: center; justify-content: center;
 }

@@ -99,8 +99,11 @@ function populate() {
 
 watch(() => props.card, populate, { immediate: true })
 
-onMounted(() => { document.body.style.overflow = 'hidden' })
-onUnmounted(() => { document.body.style.overflow = '' })
+function onKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && !modal.historyCardId) onCancel()
+}
+onMounted(() => { document.body.style.overflow = 'hidden'; document.addEventListener('keydown', onKey) })
+onUnmounted(() => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey) })
 
 // Collections
 function toggleCollection(c: string) {

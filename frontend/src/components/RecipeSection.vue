@@ -126,13 +126,16 @@ const STEPPED_SET = new Set([
   'Front Rim Size', 'Rear Rim Size',
   'Front Track Width', 'Rear Track Width',
 ])
+// Flat set of all installed part strings, rebuilt only when upgrades change.
+// Turns viewInstalledTier from O(categories × tiers) into O(tiers).
+const installedParts = computed(() => {
+  const s = new Set<string>()
+  for (const cat of local.upgrades) for (const p of cat.parts) s.add(p)
+  return s
+})
 function viewInstalledTier(tiers: string[], specialTiers?: string[]): string | null {
   const all = specialTiers ? [...tiers, ...specialTiers] : tiers
-  for (const cat of local.upgrades) {
-    const hit = all.find(t => cat.parts.includes(t))
-    if (hit) return hit
-  }
-  return null
+  return all.find(t => installedParts.value.has(t)) ?? null
 }
 function viewPartLabel(part: string, tiers: string[], specialTiers?: string[]): string {
   const tier = viewInstalledTier(tiers, specialTiers)

@@ -30,7 +30,23 @@ const filters = useFilterStore()
 const carsStore = useCarsStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
-const linkedCar = computed(() => props.carId ? carsStore.byId(props.carId) : undefined)
+// For multi-car cards the active variant owns the car identity; single-car uses the card-level carId.
+const effectiveCarId = computed(() =>
+  isMultiCar.value ? (local.variants?.[activeVariantIndex.value]?.carId ?? null) : (props.carId ?? null)
+)
+const linkedCar = computed(() => effectiveCarId.value ? carsStore.byId(effectiveCarId.value) : undefined)
+
+function onVariantCarIdUpdate(id: string | null) {
+  if (isMultiCar.value && local.variants?.[activeVariantIndex.value]) {
+    local.variants[activeVariantIndex.value].carId = id ?? ''
+    emit('update:activeCarId', id)
+    markDirty()
+    flush()
+  } else {
+    markDirty()
+    emit('update:carId', id)
+  }
+}
 const taRef = ref<InstanceType<typeof TuningAdjustments> | null>(null)
 
 const CORE_SPEC_KEYS = ['Drivetrain', 'Engine', 'Transmission', 'Tires', 'Suspension']
@@ -471,9 +487,9 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         />
         <b v-else>{{ local.shareCode || '—' }}</b>
       </div>
-      <!-- Car identity -->
+      <!-- Car identity — uses variant's carId in multi-car mode -->
       <div v-if="ui.isEditing" class="rs-car-row">
-        <CarPicker :car-id="props.carId" @update:car-id="id => { markDirty(); emit('update:carId', id) }" />
+        <CarPicker :car-id="effectiveCarId" @update:car-id="onVariantCarIdUpdate" />
       </div>
       <div v-else-if="linkedCar" class="rs-car-badge">
         <span class="rs-game-badge">{{ linkedCar.game }}</span>

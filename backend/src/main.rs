@@ -395,12 +395,16 @@ async fn submit_suggestion(
 ) -> Result<Json<Value>, ApiError> {
     let ip = addr.ip().to_string();
 
-    // Rate limit: 3 per hour per IP
+    // Rate limit: 3 per hour per IP.
+    // Sweep the whole map on each request so IPs that never return don't accumulate forever.
     {
         let mut limits = st.rate_limits.lock().await;
         let now = Instant::now();
+        limits.retain(|_, entries| {
+            entries.retain(|t| now.duration_since(*t) < SUGGESTION_RATE_WINDOW);
+            !entries.is_empty()
+        });
         let entries = limits.entry(ip.clone()).or_default();
-        entries.retain(|t| now.duration_since(*t) < SUGGESTION_RATE_WINDOW);
         if entries.len() >= SUGGESTION_RATE_LIMIT {
             return Err(err(StatusCode::TOO_MANY_REQUESTS, "Too many suggestions — try again later"));
         }
@@ -418,6 +422,9 @@ async fn submit_suggestion(
 
     let credit = req.credit.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
     let adjustments = req.adjustments.to_string();
+    if adjustments.len() > 65_536 {
+        return Err(err(StatusCode::UNPROCESSABLE_ENTITY, "adjustments payload too large"));
+    }
 
     sqlx::query(
         "INSERT INTO suggestions (card_id, title, credit, adjustments, ip) VALUES (?, ?, ?, ?, ?)"
@@ -1052,24 +1059,21 @@ fn walk_files(dir: &std::path::Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// Collect paths referenced in the DB (relative to uploads_dir, forward-slash separated).
+/// Collect paths referenced in the images table (relative to uploads_dir, forward-slash separated).
 async fn referenced_paths(pool: &SqlitePool) -> Result<std::collections::HashSet<String>, ApiError> {
-    let rows = sqlx::query("SELECT body FROM cards")
-        .fetch_all(pool).await
+    let rows = sqlx::query("SELECT path, thumb_path, stage_path FROM images")
+        .fetch_all(pool)
+        .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     let mut set = std::collections::HashSet::new();
     for row in &rows {
-        let Ok(v) = serde_json::from_str::<Value>(row.get::<String, _>("body").as_str()) else { continue };
-        if let Some(imgs) = v["images"].as_array() {
-            for img in imgs {
-                for key in ["path", "thumbPath", "stagePath"] {
-                    if let Some(p) = img[key].as_str() {
-                        // Strip /uploads/ prefix so the string is relative to uploads_dir.
-                        let rel = p.trim_start_matches('/').trim_start_matches("uploads/");
-                        set.insert(rel.to_string());
-                    }
-                }
-            }
+        let path: String = row.get("path");
+        set.insert(path.trim_start_matches('/').trim_start_matches("uploads/").to_string());
+        if let Some(tp) = row.get::<Option<String>, _>("thumb_path") {
+            set.insert(tp.trim_start_matches('/').trim_start_matches("uploads/").to_string());
+        }
+        if let Some(sp) = row.get::<Option<String>, _>("stage_path") {
+            set.insert(sp.trim_start_matches('/').trim_start_matches("uploads/").to_string());
         }
     }
     Ok(set)
@@ -1125,6 +1129,7 @@ async fn admin_scan_orphans(
                 .map(|c| c.as_os_str().to_string_lossy().into_owned())
                 .collect::<Vec<_>>()
                 .join("/");
+            if s.starts_with("trash/") { return None; } // intentionally moved files
             if !refs.contains(&s) { Some(s) } else { None }
         })
         .collect();
@@ -1147,6 +1152,7 @@ async fn admin_delete_orphans(
                 .map(|c| c.as_os_str().to_string_lossy().into_owned())
                 .collect::<Vec<_>>()
                 .join("/");
+            if s.starts_with("trash/") { continue; } // intentionally moved files
             if !refs.contains(&s) {
                 let _ = std::fs::remove_file(f);
                 deleted += 1;
@@ -1435,14 +1441,9 @@ async fn delete_images(
         let target = st.uploads_dir.join(rel);
         if !target.starts_with(&st.uploads_dir) { continue; }
 
-        let stem = target.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_string();
-        let dir  = target.parent().unwrap_or(&target);
-        let lowres = dir.join("Lowres_Assets");
-
-        // Delete original + both variants (ignore missing files).
+        // collectOrphans() on the frontend sends all three variant paths (original,
+        // thumb, stage) separately — delete each path as given, no stem derivation.
         let _ = std::fs::remove_file(&target);
-        let _ = std::fs::remove_file(lowres.join(format!("{stem}_200w.jpg")));
-        let _ = std::fs::remove_file(lowres.join(format!("{stem}_1000w.jpg")));
     }
     StatusCode::NO_CONTENT
 }

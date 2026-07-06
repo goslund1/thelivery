@@ -54,8 +54,8 @@ export function yamlToCard(text: string): ParseResult {
   let doc: unknown
   try {
     doc = yaml.load(text)
-  } catch (e: any) {
-    return { ok: false, error: `YAML parse error: ${e.message}` }
+  } catch (e) {
+    return { ok: false, error: `YAML parse error: ${e instanceof Error ? e.message : String(e)}` }
   }
 
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
@@ -113,25 +113,31 @@ function parseSection(s: unknown): Section | null {
     }
 
     const upgrades: UpgradeCategory[] = Array.isArray(d.upgrades)
-      ? (d.upgrades as unknown[]).filter(u => u && typeof u === 'object').map((u: any) => ({
-          category: String(u.category ?? ''),
-          parts: Array.isArray(u.parts) ? (u.parts as unknown[]).map(String) : [],
-        }))
+      ? (d.upgrades as unknown[]).filter(u => u && typeof u === 'object').map((u) => {
+          const uo = u as Record<string, unknown>
+          return {
+            category: String(uo.category ?? ''),
+            parts: Array.isArray(uo.parts) ? (uo.parts as unknown[]).map(String) : [],
+          }
+        })
       : []
 
     const adjustments: AdjustmentRow[] = Array.isArray(d.adjustments)
-      ? (d.adjustments as unknown[]).filter(a => a && typeof a === 'object').map((a: any) => ({
-          tab: String(a.tab ?? ''),
-          group: String(a.group ?? ''),
-          key: String(a.key ?? `${a.tab ?? ''}${String(a.group ?? '').replace(/\s/g, '')}${String(a.label ?? '').replace(/\s/g, '')}`),
-          label: String(a.label ?? ''),
-          unit: String(a.unit ?? ''),
-          min: Number(a.min ?? 0),
-          max: Number(a.max ?? 0),
-          stock: Number(a.stock ?? 0),
-          value: Number(a.value ?? 0),
-          step: Number(a.step ?? 1),
-        }))
+      ? (d.adjustments as unknown[]).filter(a => a && typeof a === 'object').map((a) => {
+          const ao = a as Record<string, unknown>
+          return {
+            tab: String(ao.tab ?? ''),
+            group: String(ao.group ?? ''),
+            key: String(ao.key ?? `${ao.tab ?? ''}${String(ao.group ?? '').replace(/\s/g, '')}${String(ao.label ?? '').replace(/\s/g, '')}`),
+            label: String(ao.label ?? ''),
+            unit: String(ao.unit ?? ''),
+            min: Number(ao.min ?? 0),
+            max: Number(ao.max ?? 0),
+            stock: Number(ao.stock ?? 0),
+            value: Number(ao.value ?? 0),
+            step: Number(ao.step ?? 1),
+          }
+        })
       : []
 
     return {

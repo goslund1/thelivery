@@ -92,6 +92,8 @@ Foundation working on Smokin (3-car test case: 599D, FD Corvette #777, Austin He
 
 ## Maintenance
 
+### Pre-launch checklist
+- **Lock CORS to production domain** — currently `CorsLayer::permissive()` in `backend/src/main.rs:368`. Change to `CorsLayer::new().allow_origin("https://thelivery.silverleaf.services")` before public launch. Low risk while the backend binds to 127.0.0.1, but wrong in principle.
 
 ### Backfill pass (another round coming)
 - Card data was brought in line once. Expect another round after card accent, tuning gate, and other structural changes land.
@@ -100,6 +102,8 @@ Foundation working on Smokin (3-car test case: 599D, FD Corvette #777, Austin He
 ---
 
 ## Recently completed
+
+- Security & quality audit pass: fixed orphan scanner (queried card body instead of images table — would have wiped all uploads), delete_images legacy variant naming (thumbs/stages never cleaned up on discard), orphan scan/delete now skips uploads/trash/, rate limit HashMap unbounded growth, suggestion adjustments 64KB cap, e:any error catches in UserSettingsModal + cardYaml.ts — 2026-07-06
 
 - Multi-car mashup: tab strip, auto-propose banner, + button consolidation, gallery carId filtering wired — 2026-07-06
 

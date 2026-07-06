@@ -12,6 +12,10 @@ const ui = useUiStore()
 const modal = useModalStore()
 const auth = useAuthStore()
 
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e)
+}
+
 type Tab = 'password' | 'create' | 'admin' | 'migrate'
 const tab = ref<Tab>('password')
 
@@ -33,8 +37,8 @@ async function submitChangePassword() {
     await api.changePassword(currentPw.value, newPw.value)
     pwSuccess.value = 'Password updated.'
     currentPw.value = ''; newPw.value = ''; confirmPw.value = ''
-  } catch (e: any) {
-    pwError.value = e.message?.includes('incorrect') ? 'Current password is incorrect.' : 'Failed to update password.'
+  } catch (e) {
+    pwError.value = errMsg(e).includes('incorrect') ? 'Current password is incorrect.' : 'Failed to update password.'
   } finally {
     pwBusy.value = false
   }
@@ -59,8 +63,8 @@ async function submitCreateUser() {
     const res = await api.createUser(newUsername.value.trim(), newUserPw.value)
     userSuccess.value = `User '${res.username}' created.`
     newUsername.value = ''; newUserPw.value = ''; newUserConfirm.value = ''
-  } catch (e: any) {
-    userError.value = e.message?.includes('already exists') ? 'That username is already taken.' : 'Failed to create user.'
+  } catch (e) {
+    userError.value = errMsg(e).includes('already exists') ? 'That username is already taken.' : 'Failed to create user.'
   } finally {
     userBusy.value = false
   }
@@ -90,7 +94,7 @@ async function loadSuggestions() {
   suggestionsBusy.value = true
   suggestionsError.value = null
   try { suggestions.value = await api.adminListSuggestions() }
-  catch (e: any) { suggestionsError.value = `Failed: ${e.message}` }
+  catch (e) { suggestionsError.value = `Failed: ${errMsg(e)}` }
   finally { suggestionsBusy.value = false }
 }
 
@@ -124,7 +128,7 @@ async function loadAdminStats() {
   adminStatsBusy.value = true
   adminError.value = null
   try { adminStats.value = await api.adminStats() }
-  catch (e: any) { adminError.value = `Stats failed: ${e.message}` }
+  catch (e) { adminError.value = `Stats failed: ${errMsg(e)}` }
   finally { adminStatsBusy.value = false }
 }
 
@@ -133,7 +137,7 @@ async function scanOrphans() {
   orphanResult.value = null
   adminError.value = null
   try { orphanScan.value = await api.adminScanOrphans() }
-  catch (e: any) { adminError.value = `Scan failed: ${e.message}` }
+  catch (e) { adminError.value = `Scan failed: ${errMsg(e)}` }
   finally { orphanBusy.value = false }
 }
 
@@ -145,7 +149,7 @@ async function deleteOrphans() {
     orphanResult.value = `Deleted ${res.deleted} file${res.deleted !== 1 ? 's' : ''}.`
     orphanScan.value = null
   }
-  catch (e: any) { adminError.value = `Delete failed: ${e.message}` }
+  catch (e) { adminError.value = `Delete failed: ${errMsg(e)}` }
   finally { orphanBusy.value = false }
 }
 
@@ -157,7 +161,7 @@ async function exportSeed() {
     const res = await api.adminExportSeed()
     exportResult.value = `Exported ${res.exported} cards to seed file.`
   }
-  catch (e: any) { adminError.value = `Export failed: ${e.message}` }
+  catch (e) { adminError.value = `Export failed: ${errMsg(e)}` }
   finally { exportBusy.value = false }
 }
 
@@ -169,7 +173,7 @@ async function reloadSeed() {
     const res = await api.adminReloadSeed()
     reloadResult.value = `Reloaded ${res.upserted} cards${res.removed > 0 ? `, removed ${res.removed}` : ''}.`
   }
-  catch (e: any) { adminError.value = `Reload failed: ${e.message}` }
+  catch (e) { adminError.value = `Reload failed: ${errMsg(e)}` }
   finally { reloadBusy.value = false }
 }
 
@@ -241,8 +245,8 @@ async function fixAllCategories() {
       fixed++
     }
     catResult.value = fixed ? `Fixed ${fixed} card${fixed !== 1 ? 's' : ''}.` : 'Nothing to fix.'
-  } catch (e: any) {
-    catResult.value = `Error: ${e.message}`
+  } catch (e) {
+    catResult.value = `Error: ${errMsg(e)}`
   } finally {
     catBusy.value = false
   }
@@ -363,8 +367,8 @@ async function commitAdjMigration() {
     const skipped = [...adjResults.value.values()].filter(v => v === 'skip').length
     adjResult.value = `Saved ${saved} row${saved !== 1 ? 's' : ''}${skipped ? `, skipped ${skipped}` : ''}.`
     adjCardId.value = null
-  } catch (e: any) {
-    adjResult.value = `Error: ${e.message}`
+  } catch (e) {
+    adjResult.value = `Error: ${errMsg(e)}`
   } finally {
     adjBusy.value = false
   }
@@ -429,8 +433,8 @@ async function confirmImport() {
     importResult.value = `Imported "${newCard.name}" as card #${newCard.catalogNumber}.`
     importPreview.value = null
     if (importFileRef.value) importFileRef.value.value = ''
-  } catch (e: any) {
-    importResult.value = `Error: ${e.message}`
+  } catch (e) {
+    importResult.value = `Error: ${errMsg(e)}`
   } finally {
     importBusy.value = false
   }

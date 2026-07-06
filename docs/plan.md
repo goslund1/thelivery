@@ -64,6 +64,39 @@ All 12 build steps shipped. Step 8 hardening done (livery.id no longer optional-
 
 ---
 
+### 4. Trash + orphan management  ← PLANNED
+
+Ongoing maintenance workflow for unreferenced and user-deleted images.
+
+**Why:** Two sources of dead files accumulate over time — (1) the orphan scanner finds files with no `images` table reference, (2) users explicitly remove images from cards via the × button. Both currently land in `uploads/trash/` but there's no UI to review or manage them. The trash dir also contains the migration-era originals that need clearing.
+
+**Full workflow:**
+
+1. **Scan** (manual trigger in Admin panel) — walks `uploads/`, identifies files with no matching row in the `images` table, moves them to `trash/`. Returns count + size of what was herded. Distinct from "delete" — scan only moves, never permanently removes.
+
+2. **Trash viewer** — list of files currently in `uploads/trash/`, showing filename, size, origin card (if known), and reason:
+   - `orphan` — no images table reference found at scan time
+   - `user_delete` — explicitly removed from a card via the × button
+
+3. **Delete permanently** — select all or individual files, hard-delete from disk. Irreversible; requires explicit confirm.
+
+4. **Restore** — move a file back from trash, re-create its `images` table row, then open PhotoDetail-style assignment (pick card, set car/livery). `user_delete` entries are most likely to need this; the UI should surface them first or flag them differently.
+
+**Data model — trash log:**
+When any file is moved to trash (by scan or by card save), write a row to a new `trash_log` table:
+- `id`, `filename` (basename in trash), `original_path`, `original_thumb_path`, `original_stage_path`, `card_id` (nullable), `images_row_id` (the PK that was deleted, for reference), `reason` (`orphan` | `user_delete`), `trashed_at`
+
+This log is what makes restore a one-click undo rather than a manual re-discovery. Without it, restore has to treat every trashed file as unknown.
+
+**Build order:**
+1. Migration: add `trash_log` table (`backend/migrations/`)
+2. Backend: `GET /api/admin/trash` — list trash with log data; `DELETE /api/admin/trash` — permanent delete (accepts `{ ids: [...] }` or `{ all: true }`); `POST /api/admin/trash/restore` — move back + re-insert images row
+3. Update `DELETE /api/admin/orphans` — move to trash + write log instead of hard-delete
+4. Update card save (`put_card`) — when `sync_card_images` drops an image row, move the physical files to trash + write log with `reason: 'user_delete'`
+5. Frontend: Admin tab — relabel existing "Delete" button to "Move to Trash"; add Trash section with file list, reason badges, select/delete/restore controls
+
+---
+
 ### 3. Multi-car mashup card  ← IN PROGRESS (2026-07-06)
 Foundation working on Smokin (3-car test case: 599D, FD Corvette #777, Austin Healey Sprite).
 

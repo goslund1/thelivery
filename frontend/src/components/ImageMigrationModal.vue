@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted, onMounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useCardsStore } from '../stores/cards'
 import { useModalStore } from '../stores/modal'
 import { useLiveriesStore } from '../stores/liveries'
@@ -9,6 +9,7 @@ import { useToastsStore } from '../stores/toasts'
 import { api } from '../api'
 import CarPicker from './CarPicker.vue'
 import DrawerPanel from './DrawerPanel.vue'
+import { useAssessFailures, type FailedAssess } from '../composables/useAssessFailures'
 import type { Card } from '../types'
 
 const store = useCardsStore()
@@ -98,25 +99,7 @@ const filenamePreview = computed(() => {
 const batchProcessing = ref(false)
 const toastDrawerOpen = ref(false)
 
-// --- Persistent failed-assess list ---
-interface FailedAssess { liveryId: number; liveryName: string; cardName: string }
-const FAIL_KEY = 'imm-assess-failures'
-const failedAssess = ref<FailedAssess[]>([])
-
-onMounted(() => {
-  try { failedAssess.value = JSON.parse(localStorage.getItem(FAIL_KEY) ?? '[]') } catch { /* empty */ }
-})
-
-function persistFailures() { localStorage.setItem(FAIL_KEY, JSON.stringify(failedAssess.value)) }
-
-function addFailure(f: FailedAssess) {
-  failedAssess.value = [...failedAssess.value.filter(x => x.liveryId !== f.liveryId), f]
-  persistFailures()
-}
-function removeFailure(liveryId: number) {
-  failedAssess.value = failedAssess.value.filter(x => x.liveryId !== liveryId)
-  persistFailures()
-}
+const { failedAssess, add: addFailure, remove: removeFailure } = useAssessFailures()
 
 const retryingId = ref<number | null>(null)
 
@@ -319,6 +302,7 @@ function close() { modal.closeImageMigration() }
               <div class="imm-header-top">
                 <span class="imm-counter">{{ currentIndex + 1 }} / {{ cardsWithImages.length }}</span>
                 <h2 class="imm-title">{{ currentCard.name }}</h2>
+                <span v-if="failedAssess.length" class="imm-retry-badge" :title="`${failedAssess.length} assess failure${failedAssess.length !== 1 ? 's' : ''} queued`">{{ failedAssess.length }} retry</span>
               </div>
               <div class="imm-filename-preview">{{ filenamePreview }}</div>
             </div>
@@ -590,6 +574,18 @@ function close() { modal.closeImageMigration() }
   text-transform: uppercase;
   letter-spacing: .05em;
 }
+.imm-retry-badge {
+  margin-left: auto;
+  font: 700 9px/1 'JetBrains Mono', monospace;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, #c44 18%, transparent);
+  border: 1px solid color-mix(in srgb, #c44 40%, transparent);
+  color: #e07070;
+  white-space: nowrap;
+  cursor: default;
+}
+
 .imm-filename-preview {
   font: 9px/1.3 'JetBrains Mono', monospace;
   color: var(--muted);

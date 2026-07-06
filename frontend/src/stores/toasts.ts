@@ -53,8 +53,11 @@ export const useToastsStore = defineStore('toasts', () => {
   function tryFade(toastId: string) {
     const t = toasts.value.find(t => t.id === toastId)
     if (!t || t.fadingOut) return
-    const allDone = t.items.every(i => i.status === 'done' || i.status === 'error')
-    if (!allDone) return
+    const allSettled = t.items.every(i => i.status === 'done' || i.status === 'error')
+    if (!allSettled) return
+    // Any error → stay open; user must dismiss manually to read it.
+    const hasError = t.items.some(i => i.status === 'error')
+    if (hasError) return
     setTimeout(() => {
       const t2 = toasts.value.find(t => t.id === toastId)
       if (t2) t2.fadingOut = true

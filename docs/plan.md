@@ -7,7 +7,7 @@ Completed items move to `docs/completed/`.
 
 ## Active — ordered by priority
 
-### 0. Image identity refactor + migration tool  ← IN PROGRESS (2026-07-05)
+### 0. Image identity refactor + migration tool  ← SHIPPED (2026-07-05, commit aee2dfd)
 **Safe return point:** commit `45be373` (feat: batch import flow) — everything before this work is stable.
 
 **What we're doing and why:**

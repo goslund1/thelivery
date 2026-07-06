@@ -95,7 +95,12 @@ const filenamePreview = computed(() => {
 })
 
 const batchProcessing = ref(false)
-const toastDrawerOpen = ref(true)
+const toastDrawerOpen = ref(false)
+
+// Auto-close drawer once all toasts have faded and been removed
+watch(() => toasts.toasts.length, (len) => {
+  if (len === 0) toastDrawerOpen.value = false
+})
 
 // Reset per-card state when card changes
 watch(currentCard, (card) => {
@@ -136,6 +141,7 @@ async function assignSelected() {
   const car = carsStore.byId(carId.value)
   const carLabel = car ? `${car.make} ${car.model}` : carId.value
 
+  toastDrawerOpen.value = true
   const toastId = toasts.push(`${card.name} — ${carLabel}`, [
     { text: `${ids.length} image${ids.length !== 1 ? 's' : ''} — re-filing…`, status: 'processing' },
     { text: 'Creating livery…', status: 'pending' },
@@ -179,8 +185,14 @@ async function assignSelected() {
         const colors = r.primary + (r.secondary ? ' / ' + r.secondary : '')
         toasts.updateItem(toastId, assessItemId, { status: 'done', text: 'Colors assessed', detail: colors })
       })
-      .catch(() => {
-        toasts.updateItem(toastId, assessItemId, { status: 'done', text: 'Color assess skipped' })
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e)
+        const isQuota = msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('credit')
+        toasts.updateItem(toastId, assessItemId, {
+          status: 'error',
+          text: isQuota ? 'AI quota exceeded' : 'Color assess failed',
+          detail: isQuota ? 'retry later' : undefined,
+        })
       })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -391,14 +403,14 @@ function close() { modal.closeImageMigration() }
 }
 .imm-close:hover { color: var(--fg); }
 
-/* Toast drawer — right side panel */
+/* Toast drawer — right side panel, matches DrawerPanel glass surface */
 .imm-toast-drawer {
   display: flex;
   flex-direction: row;
-  border-left: 1px solid var(--panel-edge, #333);
-  background: color-mix(in srgb, var(--panel-bg, #1a1a1a) 72%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  border-left: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   width: 220px;
   transition: width 0.22s ease;
   overflow: hidden;

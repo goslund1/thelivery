@@ -1763,8 +1763,11 @@ async fn admin_assess_livery_color(
         .and_then(|b| b["text"].as_str())
         .unwrap_or("");
 
-    // Parse the returned JSON; fall back gracefully.
-    let colors: Value = serde_json::from_str(text.trim()).unwrap_or(Value::Null);
+    // Strip optional markdown fences (```json … ```) before parsing.
+    let stripped = text.trim();
+    let stripped = stripped.strip_prefix("```json").or_else(|| stripped.strip_prefix("```")).unwrap_or(stripped);
+    let stripped = stripped.strip_suffix("```").unwrap_or(stripped).trim();
+    let colors: Value = serde_json::from_str(stripped).unwrap_or(Value::Null);
     let primary   = colors["primary"].as_str().filter(|c| COLOR_TAXONOMY.contains(c));
     let secondary = colors["secondary"].as_str().filter(|c| COLOR_TAXONOMY.contains(c));
 

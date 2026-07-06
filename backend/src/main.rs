@@ -1352,6 +1352,7 @@ async fn upload_image(
     let mut card_collections = String::new();
     let mut card_id = String::new();
     let mut car_id: Option<String> = None;
+    let mut livery_id: Option<i64> = None;
     let mut file_index: Option<u32> = None;
 
     while let Some(field) = multipart
@@ -1379,6 +1380,10 @@ async fn upload_image(
             Some("carId") => {
                 let v = field.text().await.unwrap_or_default();
                 car_id = if v.is_empty() { None } else { Some(v) };
+                continue;
+            }
+            Some("liveryId") => {
+                livery_id = field.text().await.ok().and_then(|s| s.parse().ok());
                 continue;
             }
             Some("fileIndex") => {
@@ -1443,13 +1448,14 @@ async fn upload_image(
         // Insert a row into the images table when the card_id is known.
         let db_id: Option<i64> = if !card_id.is_empty() {
             let result = sqlx::query(
-                "INSERT INTO images (card_id, path, thumb_path, stage_path, car_id) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO images (card_id, path, thumb_path, stage_path, car_id, livery_id) VALUES (?, ?, ?, ?, ?, ?)",
             )
             .bind(&card_id)
             .bind(&path)
             .bind(&thumb_path)
             .bind(&stage_path)
             .bind(&car_id)
+            .bind(&livery_id)
             .execute(&st.pool)
             .await;
             result.ok().map(|r| r.last_insert_rowid())

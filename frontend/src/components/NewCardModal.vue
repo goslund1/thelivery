@@ -2,14 +2,17 @@
 import { ref, reactive, computed, nextTick, watch, onUnmounted } from 'vue'
 import { useCardsStore } from '../stores/cards'
 import { useModalStore } from '../stores/modal'
+import { useLiveriesStore } from '../stores/liveries'
 import { api } from '../api'
 import type { ForzaRecipeSection } from '../types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import RecipeSection from './RecipeSection.vue'
 import SubtitleEditor from './SubtitleEditor.vue'
+import CarPicker from './CarPicker.vue'
 
 const store = useCardsStore()
 const modal = useModalStore()
+const liveriesStore = useLiveriesStore()
 
 // Fields
 const name = ref('')
@@ -95,6 +98,21 @@ const recipe = ref<ForzaRecipeSection>(blankRecipe())
 const recipeResetToken = ref(0)
 const newCarId = ref<string | null>(null)
 
+// Livery name for batch import (required when photos are staged, default must be changed)
+const liveryName = ref('Livery Name')
+const liveryNameValid = computed(() =>
+  liveryName.value.trim().length > 0 && liveryName.value.trim() !== 'Livery Name'
+)
+
+// Import progress log
+interface ImportEntry { label: string; progress: number; status: 'uploading' | 'done' | 'error' }
+const importing = ref(false)
+const importLog = ref<ImportEntry[]>([])
+const assessStatus = ref<'idle' | 'pending' | 'done' | 'error'>('idle')
+const assessColors = ref<{ primary: string; secondary?: string } | null>(null)
+const importFading = ref(false)
+let importFadeTimer: ReturnType<typeof setTimeout> | null = null
+
 const sectionOpen = reactive({ insp: true, notes: true, recipe: true })
 
 // Upload staging (gallery images)
@@ -147,6 +165,13 @@ watch(() => modal.newCardOpen, async (open) => {
   recipe.value = blankRecipe()
   recipeResetToken.value++
   newCarId.value = null
+  liveryName.value = 'Livery Name'
+  importing.value = false
+  importLog.value = []
+  assessStatus.value = 'idle'
+  assessColors.value = null
+  importFading.value = false
+  if (importFadeTimer) { clearTimeout(importFadeTimer); importFadeTimer = null }
   staged.value.forEach(s => URL.revokeObjectURL(s.url))
   staged.value = []
   activeStaged.value = 0
@@ -224,6 +249,8 @@ function setFeature(i: number) {
 // Create
 async function onCreate() {
   if (!name.value.trim()) { error.value = 'Name is required.'; return }
+  if (staged.value.length > 0 && !newCarId.value) { error.value = 'Select a car before importing photos.'; return }
+  if (staged.value.length > 0 && !liveryNameValid.value) { error.value = 'Enter a unique livery name (not the default).'; return }
   saving.value = true
   error.value = ''
   try {
@@ -243,29 +270,80 @@ async function onCreate() {
       adjustments: JSON.parse(JSON.stringify(recipe.value.adjustments)),
       carId: newCarId.value ?? undefined,
     })
-    // Write modal section open state as the card's display default.
     for (const s of card.sections) {
       if (s.key === 'inspiration') s.defaultOpen = sectionOpen.insp ? undefined : false
       else if (s.key === 'notes') s.defaultOpen = sectionOpen.notes ? undefined : false
       else if (s.type === 'forza_recipe') s.defaultOpen = sectionOpen.recipe ? undefined : false
     }
     await store.save(card.id)
-    for (let i = 0; i < staged.value.length; i++) {
-      const result = await api.uploadImage(staged.value[i].file, { ...card, id: card.id }, i)
-      store.addImageToPool(card.id, result.path, result.thumbPath, result.stagePath, true, result.id)
+
+    if (staged.value.length === 0) {
+      modal.closeNewCard()
+      await nextTick()
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+      return
     }
-    if (staged.value.length > 0) await store.save(card.id)
-    staged.value.forEach(s => URL.revokeObjectURL(s.url))
-    modal.closeNewCard()
-    await nextTick()
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+
+    // Create livery first so we have an ID to attach to every upload.
+    const livery = await liveriesStore.create({ carId: newCarId.value!, name: liveryName.value.trim() })
+    const liveryId = livery?.id ?? undefined
+
+    // Switch to import log view.
+    importing.value = true
+    importLog.value = staged.value.map(s => ({ label: s.file.name, progress: 0, status: 'uploading' as const }))
+    assessStatus.value = liveryId ? 'pending' : 'idle'
+
+    let firstDone = false
+    const uploads = staged.value.map((s, i) =>
+      api.uploadImageWithProgress(
+        s.file,
+        { name: card.name, subtitle: card.subtitle, collections: card.collections, id: card.id },
+        { fileIndex: i, carId: newCarId.value ?? undefined, liveryId },
+        (pct) => { importLog.value[i].progress = pct },
+      ).then(result => {
+        importLog.value[i].progress = 100
+        importLog.value[i].status = 'done'
+        store.addImageToPool(card.id, result.path, result.thumbPath, result.stagePath, true, result.id)
+        // Trigger assess once, after first successful upload with a livery attached.
+        if (!firstDone && liveryId) {
+          firstDone = true
+          api.assessLiveryColor(liveryId)
+            .then(r => { assessStatus.value = 'done'; assessColors.value = { primary: r.primary, secondary: r.secondary } })
+            .catch(() => { assessStatus.value = 'error' })
+        }
+      }).catch(() => { importLog.value[i].status = 'error' })
+    )
+
+    await Promise.all(uploads)
+    await store.save(card.id)
+
+    // Wait for assess to settle (it may still be in flight).
+    const waitForAssess = () => new Promise<void>(resolve => {
+      if (assessStatus.value !== 'pending') { resolve(); return }
+      const id = setInterval(() => { if (assessStatus.value !== 'pending') { clearInterval(id); resolve() } }, 200)
+    })
+    await waitForAssess()
+
+    // All done — fade log then close.
+    importFadeTimer = setTimeout(() => {
+      importFading.value = true
+      importFadeTimer = setTimeout(async () => {
+        staged.value.forEach(s => URL.revokeObjectURL(s.url))
+        modal.closeNewCard()
+        await nextTick()
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+      }, 700)
+    }, 2000)
   } catch (e) {
     error.value = (e as Error).message
+    importing.value = false
   } finally {
     saving.value = false
   }
 }
 
+function onLiveryFocus() { if (liveryName.value === 'Livery Name') liveryName.value = '' }
+function onLiveryBlur() { if (!liveryName.value.trim()) liveryName.value = 'Livery Name' }
 function onCancel() { modal.closeNewCard() }
 function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel() }
 onUnmounted(() => { document.body.style.overflow = '' })
@@ -362,6 +440,25 @@ onUnmounted(() => { document.body.style.overflow = '' })
         </div>
       </div>
 
+      <!-- Photo setup: car + livery name — shown when photos are staged -->
+      <div v-if="staged.length" class="nc-photo-setup">
+        <div class="nc-setup-row">
+          <span class="nc-setup-label">Car</span>
+          <CarPicker :car-id="newCarId" @update:car-id="id => { newCarId = id }" />
+        </div>
+        <div class="nc-setup-row">
+          <span class="nc-setup-label">Livery</span>
+          <input
+            class="nc-livery-input"
+            :class="{ 'nc-livery-input--default': !liveryNameValid }"
+            v-model="liveryName"
+            placeholder="Unique livery name…"
+            @focus="onLiveryFocus"
+            @blur="onLiveryBlur"
+          />
+        </div>
+      </div>
+
       <!-- Tag cloud -->
       <div class="tag-cloud nc-tag-cloud">
         <span v-for="t in selectedTags" :key="t" class="tag nc-tag-sel">
@@ -451,14 +548,41 @@ onUnmounted(() => { document.body.style.overflow = '' })
 
       <!-- Footer -->
       <div class="nc-footer">
-        <p v-if="figureError" class="nc-error">{{ figureError }}</p>
-        <p v-if="error" class="nc-error">{{ error }}</p>
-        <div class="nc-actions">
-          <button class="nc-btn-cancel" type="button" @click="onCancel">Cancel</button>
-          <button class="nc-btn-create" type="button" :disabled="saving" @click="onCreate">
-            {{ saving ? 'Creating…' : 'Create Card →' }}
-          </button>
-        </div>
+        <template v-if="importing">
+          <!-- Import progress log -->
+          <div class="nc-import-log" :class="{ 'nc-import-log--fading': importFading }">
+            <div
+              v-for="(entry, i) in importLog"
+              :key="i"
+              class="nc-import-row"
+              :class="'nc-import-row--' + entry.status"
+              :style="{ '--prog': entry.progress + '%' }"
+            >
+              <span class="nc-import-label">{{ entry.label }}</span>
+              <span class="nc-import-status">
+                {{ entry.status === 'uploading' ? entry.progress + '%' : entry.status === 'done' ? '✓' : '✗' }}
+              </span>
+            </div>
+            <div v-if="assessStatus !== 'idle'" class="nc-import-row" :class="assessStatus === 'pending' ? 'nc-import-row--uploading' : assessStatus === 'done' ? 'nc-import-row--done' : 'nc-import-row--error'" :style="{ '--prog': assessStatus === 'pending' ? '60%' : '100%' }">
+              <span class="nc-import-label">Color assess</span>
+              <span class="nc-import-status">
+                <template v-if="assessStatus === 'pending'">assessing…</template>
+                <template v-else-if="assessStatus === 'done' && assessColors">{{ assessColors.primary }}<template v-if="assessColors.secondary"> / {{ assessColors.secondary }}</template></template>
+                <template v-else>failed</template>
+              </span>
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <p v-if="figureError" class="nc-error">{{ figureError }}</p>
+          <p v-if="error" class="nc-error">{{ error }}</p>
+          <div class="nc-actions">
+            <button class="nc-btn-cancel" type="button" @click="onCancel">Cancel</button>
+            <button class="nc-btn-create" type="button" :disabled="saving" @click="onCreate">
+              {{ saving ? 'Creating…' : staged.length ? 'Import →' : 'Create Card →' }}
+            </button>
+          </div>
+        </template>
       </div>
 
       <!-- Inline folder-name prompt (shown when no card name is set at figure upload time) -->
@@ -497,6 +621,95 @@ onUnmounted(() => { document.body.style.overflow = '' })
   resize: vertical;
   align-self: stretch;
 }
+
+/* Photo setup — car + livery name row */
+.nc-photo-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--panel-edge);
+  background: color-mix(in srgb, var(--panel-well, #111) 40%, transparent);
+}
+.nc-setup-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.nc-setup-label {
+  font: 700 10px/1 'Oswald', sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  min-width: 40px;
+  padding-top: 6px;
+  flex-shrink: 0;
+}
+.nc-livery-input {
+  flex: 1;
+  font: 12px/1 'JetBrains Mono', monospace;
+  padding: 5px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--panel-edge);
+  background: color-mix(in srgb, var(--panel-well) 60%, transparent);
+  color: var(--fg);
+  outline: none;
+  transition: border-color .12s;
+}
+.nc-livery-input:focus { border-color: var(--accent); }
+.nc-livery-input--default { color: var(--muted); border-style: dashed; }
+
+/* Import log */
+.nc-import-log {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0 4px;
+  opacity: 1;
+  transition: opacity 0.7s ease;
+}
+.nc-import-log--fading { opacity: 0; }
+
+.nc-import-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 3px;
+  font: 11px/1 'JetBrains Mono', monospace;
+  overflow: hidden;
+}
+.nc-import-row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--accent) 16%, transparent) var(--prog, 0%),
+    transparent var(--prog, 0%)
+  );
+  transition: background 0.3s ease;
+  pointer-events: none;
+}
+.nc-import-label {
+  color: var(--muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
+}
+.nc-import-status {
+  flex-shrink: 0;
+  position: relative;
+}
+.nc-import-row--uploading .nc-import-status { color: var(--muted); }
+.nc-import-row--done .nc-import-label,
+.nc-import-row--done .nc-import-status { color: var(--accent); }
+.nc-import-row--error .nc-import-label,
+.nc-import-row--error .nc-import-status { color: #c94444; }
 
 /* Folder-name prompt — fixed to viewport, not the modal card */
 .nc-folder-prompt {

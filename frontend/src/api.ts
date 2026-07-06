@@ -175,6 +175,35 @@ export const api = {
     )
   },
 
+  uploadImageWithProgress: (
+    file: File,
+    card: { name: string; subtitle: string; collections: string[]; id?: string },
+    options: { fileIndex?: number; carId?: string; liveryId?: number },
+    onProgress: (pct: number) => void,
+  ): Promise<{ id?: number; path: string; thumbPath?: string; stagePath?: string; carId?: string | null }> => {
+    return new Promise((resolve, reject) => {
+      const fd = new FormData()
+      fd.append('cardName', card.name)
+      fd.append('cardSubtitle', card.subtitle)
+      fd.append('cardCollections', card.collections.join(','))
+      if (card.id) fd.append('cardId', card.id)
+      if (options.carId) fd.append('carId', options.carId)
+      if (options.liveryId !== undefined) fd.append('liveryId', String(options.liveryId))
+      if (options.fileIndex !== undefined) fd.append('fileIndex', String(options.fileIndex))
+      fd.append('file', file)
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', '/api/images')
+      const t = localStorage.getItem('auth_token')
+      if (t) xhr.setRequestHeader('Authorization', `Bearer ${t}`)
+      xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)) }
+      xhr.onload = () => xhr.status >= 200 && xhr.status < 300
+        ? resolve(JSON.parse(xhr.responseText))
+        : reject(new Error(`Upload failed: ${xhr.status}`))
+      xhr.onerror = () => reject(new Error('Upload failed'))
+      xhr.send(fd)
+    })
+  },
+
   assessLiveryColor: (id: number) =>
     fetch(`/api/admin/liveries/${id}/assess-color`, { method: 'POST', headers: authHeaders() }).then(
       json<{ id: number; serial: string; primary: string; secondary?: string }>

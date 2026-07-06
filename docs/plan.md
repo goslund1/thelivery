@@ -64,6 +64,24 @@ All 12 build steps shipped. Step 8 hardening done (livery.id no longer optional-
 
 ---
 
+### 3. Multi-car mashup card  ← IN PROGRESS (2026-07-06)
+Foundation working on Smokin (3-car test case: 599D, FD Corvette #777, Austin Healey Sprite).
+
+**Shipped:**
+- Tab strip UI in `RecipeSection.vue` — renders when `variants.length >= 2`
+- Auto-propose banner in edit mode — detects distinct carIds across card images, offers one-click tab setup
+- Auto-propose builds all N variant tabs directly (sorted by photo count), current recipe data on the anchor tab
+- `+` button consolidation — single button, expands to Car/Tune choice when both are valid
+- Gallery `activeCarId` prop + image filtering already wired (`Gallery.vue`, `CardView.vue`)
+
+**Still needs shakedown:**
+- Verify gallery filters correctly when switching tabs (end-to-end on Smokin)
+- Fill in tune/spec data per variant and confirm save/restore round-trip
+- View-mode tab strip experience for visitors (not just edit mode)
+- Edge cases: removing a variant, single-car cards unaffected, save/discard behavior
+
+---
+
 ## Parked
 
 ### Mobile layout
@@ -82,6 +100,8 @@ All 12 build steps shipped. Step 8 hardening done (livery.id no longer optional-
 ---
 
 ## Recently completed
+
+- Multi-car mashup: tab strip, auto-propose banner, + button consolidation, gallery carId filtering wired — 2026-07-06
 
 - Car identity model Step 8 hardening: livery.id required (no optional chaining), assess failure retry list + badge, assess failures non-blocking (queued for retry) — 2026-07-06
 - Image migration pipeline — full re-file + rename: all 11 cards migrated, structured filenames, drum CarPicker, toast drawer, dotenvy, error persistence, assess skip, FH6 FD cars, Bronco R — 2026-07-06

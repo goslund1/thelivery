@@ -8,6 +8,7 @@ import { useCarsStore } from '../stores/cars'
 import { useToastsStore } from '../stores/toasts'
 import { api } from '../api'
 import CarPicker from './CarPicker.vue'
+import DrawerPanel from './DrawerPanel.vue'
 import type { Card } from '../types'
 
 const store = useCardsStore()
@@ -216,6 +217,37 @@ function close() { modal.closeImageMigration() }
     <div v-if="modal.imageMigrationOpen" class="imm-overlay" @click.self="close">
       <div class="imm-shell">
 
+        <!-- Migration Log drawer — left side, same pattern as ThemeBuilder picker wing -->
+        <DrawerPanel v-model:open="toastDrawerOpen" :width="200" :tab-width="16">
+          <template #header>Migration Log</template>
+          <div class="imm-toast-scroll">
+            <template v-if="toasts.toasts.length">
+              <div
+                v-for="toast in toasts.toasts"
+                :key="toast.id"
+                class="imm-toast-panel"
+                :class="{ 'imm-toast-panel--fading': toast.fadingOut }"
+              >
+                <div class="imm-toast-title-row">
+                  <span class="imm-toast-title">{{ toast.title }}</span>
+                  <button class="imm-toast-dismiss" @click="toasts.dismiss(toast.id)">×</button>
+                </div>
+                <div
+                  v-for="item in toast.items"
+                  :key="item.id"
+                  class="imm-toast-item"
+                  :class="'imm-toast-item--' + item.status"
+                >
+                  <span class="imm-toast-dot" />
+                  <span class="imm-toast-text">{{ item.text }}</span>
+                  <span v-if="item.detail" class="imm-toast-detail">{{ item.detail }}</span>
+                </div>
+              </div>
+            </template>
+            <p v-else class="imm-toast-empty">No activity yet</p>
+          </div>
+        </DrawerPanel>
+
         <!-- Main content column -->
         <div class="imm-main">
           <button class="imm-close" @click="close">×</button>
@@ -317,44 +349,6 @@ function close() { modal.closeImageMigration() }
           </template>
         </div>
 
-        <!-- Toast drawer — frosted glass right panel -->
-        <div class="imm-toast-drawer" :class="{ 'imm-toast-drawer--collapsed': !toastDrawerOpen }">
-          <!-- Tab handle -->
-          <button class="imm-toast-tab" @click="toastDrawerOpen = !toastDrawerOpen" :title="toastDrawerOpen ? 'Collapse log' : 'Expand log'">
-            <span class="imm-toast-tab-chevron" :class="{ 'imm-toast-tab-chevron--collapsed': !toastDrawerOpen }">›</span>
-          </button>
-          <!-- Body -->
-          <div class="imm-toast-body">
-            <div class="imm-toast-header">Migration Log</div>
-            <div class="imm-toast-scroll">
-              <template v-if="toasts.toasts.length">
-                <div
-                  v-for="toast in toasts.toasts"
-                  :key="toast.id"
-                  class="imm-toast-panel"
-                  :class="{ 'imm-toast-panel--fading': toast.fadingOut }"
-                >
-                  <div class="imm-toast-title-row">
-                    <span class="imm-toast-title">{{ toast.title }}</span>
-                    <button class="imm-toast-dismiss" @click="toasts.dismiss(toast.id)">×</button>
-                  </div>
-                  <div
-                    v-for="item in toast.items"
-                    :key="item.id"
-                    class="imm-toast-item"
-                    :class="'imm-toast-item--' + item.status"
-                  >
-                    <span class="imm-toast-dot" />
-                    <span class="imm-toast-text">{{ item.text }}</span>
-                    <span v-if="item.detail" class="imm-toast-detail">{{ item.detail }}</span>
-                  </div>
-                </div>
-              </template>
-              <p v-else class="imm-toast-empty">No activity yet</p>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   </Teleport>
@@ -403,73 +397,15 @@ function close() { modal.closeImageMigration() }
 }
 .imm-close:hover { color: var(--fg); }
 
-/* Toast drawer — right side panel, matches DrawerPanel glass surface */
-.imm-toast-drawer {
-  display: flex;
-  flex-direction: row;
-  border-left: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  width: 220px;
-  transition: width 0.22s ease;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.imm-toast-drawer--collapsed {
-  width: 20px;
-}
-
-/* Tab handle — left edge of the drawer */
-.imm-toast-tab {
-  width: 20px;
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  border-right: 1px solid var(--panel-edge, #333);
-  color: var(--muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: color 0.15s;
-}
-.imm-toast-tab:hover { color: var(--fg); }
-.imm-toast-tab-chevron {
-  font-size: 14px;
-  line-height: 1;
-  display: block;
-  transition: transform 0.22s ease;
-}
-.imm-toast-tab-chevron--collapsed { transform: scaleX(-1); }
-
-/* Drawer body */
-.imm-toast-body {
-  flex: 1;
+/* Toast content inside DrawerPanel body slot */
+.imm-toast-scroll {
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-}
-.imm-toast-header {
-  padding: 8px 10px 6px;
-  font: 700 9px/1 'Oswald', sans-serif;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  border-bottom: 1px solid var(--panel-edge, #333);
-  flex-shrink: 0;
-}
-.imm-toast-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 6px 0 10px;
+  gap: 10px;
 }
 .imm-toast-empty {
   font: 10px/1 'JetBrains Mono', monospace;
   color: var(--muted);
-  padding: 12px 10px;
   margin: 0;
   opacity: 0.5;
 }

@@ -1683,26 +1683,33 @@ async fn admin_assess_livery_color(
 
     let serial: String = livery.get("serial");
 
-    let img_row = sqlx::query(
-        "SELECT path, thumb_path FROM images WHERE livery_id = ? ORDER BY sort_order ASC LIMIT 1",
+    let img_rows = sqlx::query(
+        "SELECT path, thumb_path FROM images WHERE livery_id = ? ORDER BY sort_order ASC",
     )
     .bind(id)
-    .fetch_optional(&st.pool)
+    .fetch_all(&st.pool)
     .await
-    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
-    .ok_or_else(|| err(StatusCode::NOT_FOUND, "no images tagged to this livery"))?;
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
-    // Prefer the thumbnail — same color info, far fewer tokens.
-    let thumb: Option<String> = img_row.try_get("thumb_path").unwrap_or(None);
-    let img_path: String = thumb
-        .filter(|s| !s.is_empty())
-        .unwrap_or_else(|| img_row.get("path"));
+    if img_rows.is_empty() {
+        return Err(err(StatusCode::NOT_FOUND, "no images tagged to this livery"));
+    }
 
-    // Resolve the file path: strip leading /uploads/ and join with uploads_dir.
-    let rel = img_path.trim_start_matches('/').trim_start_matches("uploads/");
-    let file_path = st.uploads_dir.join(rel);
-    let img_bytes = std::fs::read(&file_path)
-        .map_err(|_| err(StatusCode::NOT_FOUND, "image file not found on disk"))?;
+    // Try each image in order until one resolves on disk.
+    let mut img_bytes_opt: Option<Vec<u8>> = None;
+    for row in &img_rows {
+        let thumb: Option<String> = row.try_get("thumb_path").unwrap_or(None);
+        let img_path: String = thumb.filter(|s| !s.is_empty())
+            .unwrap_or_else(|| row.get("path"));
+        let rel = img_path.trim_start_matches('/').trim_start_matches("uploads/");
+        let file_path = st.uploads_dir.join(rel);
+        if let Ok(bytes) = std::fs::read(&file_path) {
+            img_bytes_opt = Some(bytes);
+            break;
+        }
+    }
+    let img_bytes = img_bytes_opt
+        .ok_or_else(|| err(StatusCode::NOT_FOUND, "no image files found on disk for this livery"))?;
 
     // Detect media type from magic bytes (JPEG or PNG; fall back to JPEG).
     let media_type = if img_bytes.starts_with(b"\x89PNG") { "image/png" } else { "image/jpeg" };

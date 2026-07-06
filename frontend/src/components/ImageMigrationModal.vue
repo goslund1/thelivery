@@ -180,6 +180,10 @@ async function assignSelected() {
     carId.value = null
     liveryName.value = currentCard.value?.name?.trim() || ''
 
+    if (result.migrated.length === 0) {
+      toasts.updateItem(toastId, assessItemId, { status: 'done', text: 'Assess skipped', detail: 'no new files' })
+      return
+    }
     toasts.updateItem(toastId, assessItemId, { status: 'processing', text: 'Assessing colors…' })
     api.assessLiveryColor(livery.id)
       .then(r => {

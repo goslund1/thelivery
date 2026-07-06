@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useCardsStore } from '../stores/cards'
 import { useModalStore } from '../stores/modal'
 import { useLiveriesStore } from '../stores/liveries'
@@ -28,7 +28,16 @@ const done = computed(() => currentIndex.value >= cardsWithImages.value.length)
 
 // Per-image selection
 const selectedIds = ref<Set<number>>(new Set())
-const assignedIds = ref<Set<number>>(new Set()) // images already given a livery this session
+
+// Derived from actual data — persists across modal open/close
+const assignedIds = computed(() =>
+  new Set((currentCard.value?.images ?? []).filter(i => i.liveryId != null).map(i => i.id))
+)
+
+const allAssigned = computed(() => {
+  const imgs = currentCard.value?.images ?? []
+  return imgs.length > 0 && imgs.every(i => assignedIds.value.has(i.id))
+})
 
 const allSelected = computed(() => {
   const imgs = currentCard.value?.images ?? []
@@ -74,8 +83,12 @@ const filenamePreview = computed(() => {
   }
   const lv = liveryName.value.trim()
   if (lv) parts.push(slug(lv))
+  const today = new Date()
+  const dateStr = today.getFullYear().toString()
+    + String(today.getMonth() + 1).padStart(2, '0')
+    + String(today.getDate()).padStart(2, '0')
   parts.push('XXX')
-  parts.push('YYYYMMDD')
+  parts.push(dateStr)
   parts.push('xxxxxx')
   parts.push('WxH')
   return parts.filter(Boolean).join('_') + '.jpg'
@@ -83,10 +96,9 @@ const filenamePreview = computed(() => {
 
 const batchProcessing = ref(false)
 
-// Reset when card changes
+// Reset per-card state when card changes
 watch(currentCard, (card) => {
   selectedIds.value = new Set()
-  assignedIds.value = new Set()
   batchProcessing.value = false
   carId.value = card?.carId ?? null
   liveryName.value = card?.name?.trim() || ''
@@ -95,6 +107,19 @@ watch(currentCard, (card) => {
 watch(() => modal.imageMigrationOpen, (open) => {
   if (open) currentIndex.value = 0
 })
+
+function onKeydown(e: KeyboardEvent) {
+  if (!modal.imageMigrationOpen) return
+  if (e.key === 'Enter' && allAssigned.value && !batchProcessing.value) {
+    e.preventDefault()
+    nextCard()
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', onKeydown)
+}
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 async function assignSelected() {
   const card = currentCard.value
@@ -142,10 +167,6 @@ async function assignSelected() {
     await store.save(card.id)
 
     toasts.updateItem(toastId, imgItemId, { status: 'done', text: `${result.migrated.length} image${result.migrated.length !== 1 ? 's' : ''} migrated` })
-
-    const next = new Set(assignedIds.value)
-    ids.forEach(id => next.add(id))
-    assignedIds.value = next
 
     selectedIds.value = new Set()
     carId.value = null
@@ -258,7 +279,11 @@ function close() { modal.closeImageMigration() }
 
           <!-- Actions -->
           <div class="imm-actions">
-            <button class="imm-btn-skip" @click="nextCard">Next card →</button>
+            <button
+              class="imm-btn-skip"
+              :class="{ 'imm-btn-skip--ready': allAssigned }"
+              @click="nextCard"
+            >Next card →</button>
             <button
               class="imm-btn-primary"
               :disabled="!canAssign"
@@ -486,6 +511,12 @@ function close() { modal.closeImageMigration() }
   cursor: pointer;
 }
 .imm-btn-skip:hover { color: var(--fg); }
+.imm-btn-skip--ready {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: bold;
+}
+.imm-btn-skip--ready:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 
 .imm-done {
   padding: 32px 24px;

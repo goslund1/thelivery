@@ -38,23 +38,28 @@ const toasts = useToastsStore()
 <style scoped>
 .ts-stack {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  top: 0;
+  right: 0;
+  bottom: 0;
   z-index: 900;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   pointer-events: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 100vh;
 }
 
 .ts-panel {
   pointer-events: all;
   width: 280px;
   background: var(--panel-bg, #1a1a1a);
-  border: 1px solid var(--panel-edge, #333);
-  border-radius: 6px;
+  border-left: 1px solid var(--panel-edge, #333);
+  border-bottom: 1px solid var(--panel-edge, #333);
   overflow: hidden;
   transition: opacity .5s ease;
+  flex-shrink: 0;
 }
 .ts-panel--fading { opacity: 0; pointer-events: none; }
 

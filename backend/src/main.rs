@@ -341,6 +341,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/images", post(upload_image).delete(delete_images))
         .route("/api/admin/stats", get(admin_stats))
         .route("/api/admin/orphans", get(admin_scan_orphans).delete(admin_delete_orphans))
+        .route("/api/admin/trash", get(admin_list_trash).delete(admin_delete_trash))
+        .route("/api/admin/trash/restore", post(admin_restore_trash))
         .route("/api/admin/export-seed", post(admin_export_seed))
         .route("/api/admin/reload-seed", post(admin_reload_seed))
         .route("/api/suggestions", post(submit_suggestion))
@@ -1145,33 +1147,35 @@ async fn admin_delete_orphans(
     let mut all_files = Vec::new();
     walk_files(&st.uploads_dir, &mut all_files);
 
-    let mut deleted = 0u64;
+    let trash_dir = st.uploads_dir.join("trash");
+    let _ = std::fs::create_dir_all(&trash_dir);
+
+    let mut moved = 0u64;
     for f in &all_files {
         if let Ok(rel) = f.strip_prefix(&st.uploads_dir) {
             let s = rel.components()
                 .map(|c| c.as_os_str().to_string_lossy().into_owned())
                 .collect::<Vec<_>>()
                 .join("/");
-            if s.starts_with("trash/") { continue; } // intentionally moved files
+            if s.starts_with("trash/") { continue; }
+            if s.starts_with("recovered/") { continue; }
             if !refs.contains(&s) {
-                let _ = std::fs::remove_file(f);
-                deleted += 1;
+                if let Some(trash_name) = move_to_trash(f, &trash_dir) {
+                    let original_path = format!("/uploads/{s}");
+                    let _ = sqlx::query(
+                        "INSERT INTO trash_log (trash_filename, original_path, reason) VALUES (?, ?, 'orphan')",
+                    )
+                    .bind(&trash_name)
+                    .bind(&original_path)
+                    .execute(&st.pool)
+                    .await;
+                    moved += 1;
+                }
             }
         }
     }
-    // Prune empty directories (walk again bottom-up via sorted reverse).
-    let mut dirs: Vec<_> = all_files.iter()
-        .filter_map(|f| f.parent().map(|p| p.to_path_buf()))
-        .collect();
-    dirs.sort();
-    dirs.dedup();
-    for d in dirs.iter().rev() {
-        if d != &st.uploads_dir {
-            let _ = std::fs::remove_dir(d); // only removes if empty
-        }
-    }
 
-    Ok(Json(json!({ "deleted": deleted })))
+    Ok(Json(json!({ "moved": moved })))
 }
 
 async fn admin_reload_seed(
@@ -1420,9 +1424,89 @@ fn card_folder(name: &str, card_id: &str) -> String {
     }
 }
 
-/// Delete a list of uploaded image paths (all three variants: original, thumb, stage).
+/// Move a single file to the trash directory. Returns the new basename in trash.
+fn move_to_trash(src: &std::path::Path, trash_dir: &std::path::Path) -> Option<String> {
+    if !src.exists() { return None; }
+    let original_name = src.file_name()?.to_str()?;
+    let uuid = uuid::Uuid::new_v4().to_string().replace('-', "");
+    let trash_name = format!("{}_{original_name}", &uuid[..8]);
+    let dest = trash_dir.join(&trash_name);
+    std::fs::rename(src, dest).ok()?;
+    Some(trash_name)
+}
+
+/// Move an image (and its thumb/stage variants) to trash, log the event, and
+/// remove the images table row. Called when an image is explicitly removed from
+/// a card (reason = 'user_delete') or auto-detected as orphaned (reason = 'orphan').
+async fn trash_image(
+    pool: &SqlitePool,
+    uploads_dir: &std::path::Path,
+    trash_dir: &std::path::Path,
+    path_str: &str,
+    reason: &str,
+) -> bool {
+    let row = sqlx::query(
+        "SELECT id, card_id, path, thumb_path, stage_path FROM images WHERE path = ?",
+    )
+    .bind(path_str)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
+    let rel = |p: &str| -> std::path::PathBuf {
+        let r = p.trim_start_matches('/').trim_start_matches("uploads/");
+        uploads_dir.join(r)
+    };
+
+    if let Some(row) = row {
+        let img_id: i64 = row.get("id");
+        let card_id: Option<String> = row.try_get("card_id").unwrap_or(None);
+        let orig_path: String = row.get("path");
+        let thumb_path: Option<String> = row.try_get("thumb_path").unwrap_or(None);
+        let stage_path: Option<String> = row.try_get("stage_path").unwrap_or(None);
+
+        let trash_orig  = move_to_trash(&rel(&orig_path), trash_dir);
+        let trash_thumb = thumb_path.as_deref().and_then(|p| move_to_trash(&rel(p), trash_dir));
+        let trash_stage = stage_path.as_deref().and_then(|p| move_to_trash(&rel(p), trash_dir));
+
+        let primary = trash_orig.as_deref().unwrap_or("").to_string();
+        let _ = sqlx::query(
+            "INSERT INTO trash_log (trash_filename, trash_thumb_filename, trash_stage_filename,
+               original_path, original_thumb_path, original_stage_path,
+               card_id, images_row_id, reason)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&primary)
+        .bind(&trash_thumb)
+        .bind(&trash_stage)
+        .bind(&orig_path)
+        .bind(&thumb_path)
+        .bind(&stage_path)
+        .bind(&card_id)
+        .bind(img_id)
+        .bind(reason)
+        .execute(pool)
+        .await;
+
+        let _ = sqlx::query("DELETE FROM images WHERE id = ?")
+            .bind(img_id)
+            .execute(pool)
+            .await;
+        true
+    } else {
+        // No images row — lone file (thumb/stage of already-handled image, or legacy).
+        let target = rel(path_str);
+        if target.starts_with(uploads_dir) {
+            move_to_trash(&target, trash_dir).is_some()
+        } else {
+            false
+        }
+    }
+}
+
+/// Move a list of uploaded image paths to trash (all three variants).
 /// Body: { "paths": ["/uploads/folder/001.jpg", ...] }
-/// Silently skips paths that don't exist or that escape the uploads directory.
 async fn delete_images(
     State(st): State<AppState>,
     _auth: AuthUser,
@@ -1432,20 +1516,250 @@ async fn delete_images(
         Some(p) => p.clone(),
         None => return StatusCode::NO_CONTENT,
     };
-    for v in paths {
-        let rel = match v.as_str() {
-            Some(s) => s.trim_start_matches('/').trim_start_matches("uploads/"),
-            None => continue,
-        };
-        // Resolve against uploads_dir and verify it stays inside (no path traversal).
-        let target = st.uploads_dir.join(rel);
-        if !target.starts_with(&st.uploads_dir) { continue; }
 
-        // collectOrphans() on the frontend sends all three variant paths (original,
-        // thumb, stage) separately — delete each path as given, no stem derivation.
-        let _ = std::fs::remove_file(&target);
+    let trash_dir = st.uploads_dir.join("trash");
+    let _ = std::fs::create_dir_all(&trash_dir);
+
+    // Track which images rows we've already handled so thumb/stage don't create dupe log entries.
+    let mut handled: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for v in &paths {
+        let path_str = match v.as_str() {
+            Some(s) if !s.is_empty() => s,
+            _ => continue,
+        };
+        // Only process original paths (the images.path column); thumb/stage are covered by trash_image().
+        if handled.contains(path_str) { continue; }
+        handled.insert(path_str.to_string());
+        trash_image(&st.pool, &st.uploads_dir, &trash_dir, path_str, "user_delete").await;
     }
     StatusCode::NO_CONTENT
+}
+
+// --- Admin: trash management ------------------------------------------------
+
+async fn admin_list_trash(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+) -> Result<Json<Value>, ApiError> {
+    let rows = sqlx::query(
+        "SELECT id, trash_filename, trash_thumb_filename, trash_stage_filename,
+                original_path, original_thumb_path, original_stage_path,
+                card_id, images_row_id, reason, trashed_at
+         FROM trash_log ORDER BY trashed_at DESC",
+    )
+    .fetch_all(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let trash_dir = st.uploads_dir.join("trash");
+
+    let mut logged_names: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    let mut entries: Vec<Value> = rows.iter().map(|r| {
+        let fname: String = r.get("trash_filename");
+        logged_names.insert(fname.clone());
+        let fpath = trash_dir.join(&fname);
+        let bytes = std::fs::metadata(&fpath).map(|m| m.len()).unwrap_or(0);
+        json!({
+            "id":                 r.get::<i64, _>("id"),
+            "trashFilename":      fname,
+            "originalPath":       r.get::<String, _>("original_path"),
+            "originalThumbPath":  r.get::<Option<String>, _>("original_thumb_path"),
+            "originalStagePath":  r.get::<Option<String>, _>("original_stage_path"),
+            "cardId":             r.get::<Option<String>, _>("card_id"),
+            "reason":             r.get::<String, _>("reason"),
+            "trashedAt":          r.get::<String, _>("trashed_at"),
+            "onDisk":             fpath.exists(),
+            "bytes":              bytes,
+        })
+    }).collect();
+
+    // Include unlogged files in trash/ as 'unknown' entries (e.g. migration-era files).
+    if let Ok(dir_iter) = std::fs::read_dir(&trash_dir) {
+        for entry in dir_iter.flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if logged_names.contains(&name) { continue; }
+            let bytes = std::fs::metadata(entry.path()).map(|m| m.len()).unwrap_or(0);
+            entries.push(json!({
+                "id":             null,
+                "trashFilename":  name,
+                "originalPath":   null,
+                "reason":         "unknown",
+                "trashedAt":      null,
+                "onDisk":         true,
+                "bytes":          bytes,
+            }));
+        }
+    }
+
+    let total_bytes: u64 = entries.iter().filter_map(|e| e["bytes"].as_u64()).sum();
+    Ok(Json(json!({ "entries": entries, "totalBytes": total_bytes })))
+}
+
+#[derive(Deserialize)]
+struct DeleteTrashReq {
+    ids: Option<Vec<i64>>,
+    all: Option<bool>,
+    unknown: Option<bool>, // also wipe unlogged files
+}
+
+async fn admin_delete_trash(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Json(req): Json<DeleteTrashReq>,
+) -> Result<Json<Value>, ApiError> {
+    let trash_dir = st.uploads_dir.join("trash");
+    let mut deleted = 0u64;
+
+    if req.all.unwrap_or(false) {
+        // Wipe every file in the trash directory.
+        if let Ok(iter) = std::fs::read_dir(&trash_dir) {
+            for entry in iter.flatten() {
+                if std::fs::remove_file(entry.path()).is_ok() { deleted += 1; }
+            }
+        }
+        sqlx::query("DELETE FROM trash_log")
+            .execute(&st.pool)
+            .await
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    } else {
+        let ids = req.ids.clone().unwrap_or_default();
+        for id in &ids {
+            let row = sqlx::query(
+                "SELECT trash_filename, trash_thumb_filename, trash_stage_filename FROM trash_log WHERE id = ?",
+            )
+            .bind(id)
+            .fetch_optional(&st.pool)
+            .await
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+            if let Some(row) = row {
+                for col in &["trash_filename", "trash_thumb_filename", "trash_stage_filename"] {
+                    if let Some(fname) = row.try_get::<Option<String>, _>(col).unwrap_or(None) {
+                        if !fname.is_empty() {
+                            if std::fs::remove_file(trash_dir.join(&fname)).is_ok() { deleted += 1; }
+                        }
+                    }
+                }
+                sqlx::query("DELETE FROM trash_log WHERE id = ?")
+                    .bind(id)
+                    .execute(&st.pool)
+                    .await
+                    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+            }
+        }
+        // Also delete unlogged (unknown) files by filename if requested.
+        if req.unknown.unwrap_or(false) {
+            if let Ok(iter) = std::fs::read_dir(&trash_dir) {
+                let logged: std::collections::HashSet<String> = sqlx::query_scalar(
+                    "SELECT trash_filename FROM trash_log",
+                )
+                .fetch_all(&st.pool)
+                .await
+                .unwrap_or_default()
+                .into_iter()
+                .collect();
+                for entry in iter.flatten() {
+                    let name = entry.file_name().to_string_lossy().into_owned();
+                    if !logged.contains(&name) {
+                        if std::fs::remove_file(entry.path()).is_ok() { deleted += 1; }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(Json(json!({ "deleted": deleted })))
+}
+
+#[derive(Deserialize)]
+struct RestoreTrashReq {
+    ids: Vec<i64>,
+}
+
+async fn admin_restore_trash(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Json(req): Json<RestoreTrashReq>,
+) -> Result<Json<Value>, ApiError> {
+    let trash_dir = st.uploads_dir.join("trash");
+    let mut restored = 0u64;
+    let mut image_ids: Vec<i64> = Vec::new();
+
+    for log_id in &req.ids {
+        let row = sqlx::query(
+            "SELECT trash_filename, trash_thumb_filename, trash_stage_filename,
+                    original_path, original_thumb_path, original_stage_path,
+                    card_id FROM trash_log WHERE id = ?",
+        )
+        .bind(log_id)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+        let Some(row) = row else { continue };
+
+        let restore_file = |trash_name: Option<String>, orig: Option<&str>| -> Option<String> {
+            let tname = trash_name.filter(|s| !s.is_empty())?;
+            let src = trash_dir.join(&tname);
+            let orig_path = orig?;
+            let rel = orig_path.trim_start_matches('/').trim_start_matches("uploads/");
+            let dest = st.uploads_dir.join(rel);
+            if let Some(parent) = dest.parent() { let _ = std::fs::create_dir_all(parent); }
+            // If original path is occupied, put it in a recovered/ subfolder.
+            let actual_dest = if dest.exists() {
+                let fname = dest.file_name().and_then(|f| f.to_str()).unwrap_or("file");
+                st.uploads_dir.join("recovered").join(fname)
+            } else {
+                dest.clone()
+            };
+            if let Some(parent) = actual_dest.parent() { let _ = std::fs::create_dir_all(parent); }
+            std::fs::rename(&src, &actual_dest).ok()?;
+            let actual_rel = actual_dest.strip_prefix(&st.uploads_dir).ok()?;
+            let rel_str = actual_rel.components()
+                .map(|c| c.as_os_str().to_string_lossy().into_owned())
+                .collect::<Vec<_>>()
+                .join("/");
+            Some(format!("/uploads/{rel_str}"))
+        };
+
+        let orig_path: String = row.get("original_path");
+        let orig_thumb: Option<String> = row.try_get("original_thumb_path").unwrap_or(None);
+        let orig_stage: Option<String> = row.try_get("original_stage_path").unwrap_or(None);
+        let card_id: Option<String> = row.try_get("card_id").unwrap_or(None);
+
+        let trash_orig: Option<String>  = row.try_get("trash_filename").unwrap_or(None);
+        let trash_thumb: Option<String> = row.try_get("trash_thumb_filename").unwrap_or(None);
+        let trash_stage: Option<String> = row.try_get("trash_stage_filename").unwrap_or(None);
+
+        let new_path  = restore_file(trash_orig,  Some(&orig_path));
+        let new_thumb = restore_file(trash_thumb, orig_thumb.as_deref());
+        let new_stage = restore_file(trash_stage, orig_stage.as_deref());
+
+        if new_path.is_some() || new_thumb.is_some() {
+            // Re-insert into images table so it shows up for reassignment.
+            let result = sqlx::query(
+                "INSERT INTO images (card_id, path, thumb_path, stage_path) VALUES (?, ?, ?, ?)",
+            )
+            .bind(&card_id)
+            .bind(&new_path)
+            .bind(&new_thumb)
+            .bind(&new_stage)
+            .execute(&st.pool)
+            .await
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+            image_ids.push(result.last_insert_rowid());
+            restored += 1;
+        }
+
+        sqlx::query("DELETE FROM trash_log WHERE id = ?")
+            .bind(log_id)
+            .execute(&st.pool)
+            .await
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    }
+
+    Ok(Json(json!({ "restored": restored, "imageIds": image_ids })))
 }
 
 /// Build a structured image stem from car + livery DB data.

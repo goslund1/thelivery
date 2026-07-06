@@ -92,8 +92,41 @@ export const api = {
 
   adminDeleteOrphans: () =>
     fetch('/api/admin/orphans', { method: 'DELETE', headers: authHeaders() }).then(
-      json<{ deleted: number }>
+      json<{ moved: number }>
     ),
+
+  adminListTrash: () =>
+    fetch('/api/admin/trash', { headers: authHeaders() }).then(
+      json<{
+        entries: Array<{
+          id: number | null
+          trashFilename: string
+          originalPath: string | null
+          originalThumbPath?: string | null
+          originalStagePath?: string | null
+          cardId?: string | null
+          reason: 'orphan' | 'user_delete' | 'unknown'
+          trashedAt: string | null
+          onDisk: boolean
+          bytes: number
+        }>
+        totalBytes: number
+      }>
+    ),
+
+  adminDeleteTrash: (opts: { ids?: number[]; all?: boolean; unknown?: boolean }) =>
+    fetch('/api/admin/trash', {
+      method: 'DELETE',
+      headers: { ...authHeaders(), 'content-type': 'application/json' },
+      body: JSON.stringify(opts),
+    }).then(json<{ deleted: number }>),
+
+  adminRestoreTrash: (ids: number[]) =>
+    fetch('/api/admin/trash/restore', {
+      method: 'POST',
+      headers: { ...authHeaders(), 'content-type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    }).then(json<{ restored: number; imageIds: number[] }>),
 
   adminExportSeed: () =>
     fetch('/api/admin/export-seed', { method: 'POST', headers: authHeaders() }).then(

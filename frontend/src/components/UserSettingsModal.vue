@@ -102,7 +102,7 @@ async function dismissSuggestion(id: number) {
   try {
     await api.adminDismissSuggestion(id)
     suggestions.value = suggestions.value.filter(s => s.id !== id)
-  } catch (e: any) { suggestionsError.value = `Failed: ${e.message}` }
+  } catch (e) { suggestionsError.value = `Failed: ${errMsg(e)}` }
 }
 
 // Admin
@@ -146,11 +146,100 @@ async function deleteOrphans() {
   adminError.value = null
   try {
     const res = await api.adminDeleteOrphans()
-    orphanResult.value = `Deleted ${res.deleted} file${res.deleted !== 1 ? 's' : ''}.`
+    orphanResult.value = `Moved ${res.moved} file${res.moved !== 1 ? 's' : ''} to trash.`
     orphanScan.value = null
+    await loadTrash()
   }
-  catch (e) { adminError.value = `Delete failed: ${errMsg(e)}` }
+  catch (e) { adminError.value = `Sweep failed: ${errMsg(e)}` }
   finally { orphanBusy.value = false }
+}
+
+// Trash management
+type TrashEntry = {
+  id: number | null
+  trashFilename: string
+  originalPath: string | null
+  cardId?: string | null
+  reason: 'orphan' | 'user_delete' | 'unknown'
+  trashedAt: string | null
+  onDisk: boolean
+  bytes: number
+}
+const trashEntries    = ref<TrashEntry[]>([])
+const trashTotalBytes = ref(0)
+const trashBusy       = ref(false)
+const trashExpanded   = ref(false)
+const trashSelected   = ref<Set<number>>(new Set())
+const trashResult     = ref<string | null>(null)
+
+async function loadTrash() {
+  trashBusy.value = true
+  try {
+    const res = await api.adminListTrash()
+    trashEntries.value = res.entries
+    trashTotalBytes.value = res.totalBytes
+  } catch (_e) { /* non-fatal */ }
+  finally { trashBusy.value = false }
+}
+
+function toggleTrashSelect(id: number) {
+  const s = new Set(trashSelected.value)
+  if (s.has(id)) s.delete(id)
+  else s.add(id)
+  trashSelected.value = s
+}
+
+function toggleSelectAll() {
+  const ids = trashEntries.value.filter(e => e.id !== null).map(e => e.id as number)
+  if (trashSelected.value.size === ids.length) {
+    trashSelected.value = new Set()
+  } else {
+    trashSelected.value = new Set(ids)
+  }
+}
+
+async function deleteTrashSelected() {
+  const ids = [...trashSelected.value]
+  if (!ids.length) return
+  trashBusy.value = true
+  trashResult.value = null
+  adminError.value = null
+  try {
+    const res = await api.adminDeleteTrash({ ids })
+    trashResult.value = `Permanently deleted ${res.deleted} file${res.deleted !== 1 ? 's' : ''}.`
+    trashSelected.value = new Set()
+    await loadTrash()
+  } catch (e) { adminError.value = `Delete failed: ${errMsg(e)}` }
+  finally { trashBusy.value = false }
+}
+
+async function deleteAllTrash() {
+  trashBusy.value = true
+  trashResult.value = null
+  adminError.value = null
+  try {
+    const res = await api.adminDeleteTrash({ all: true })
+    trashResult.value = `Permanently deleted ${res.deleted} file${res.deleted !== 1 ? 's' : ''}.`
+    trashSelected.value = new Set()
+    trashExpanded.value = false
+    await loadTrash()
+  } catch (e) { adminError.value = `Delete failed: ${errMsg(e)}` }
+  finally { trashBusy.value = false }
+}
+
+async function restoreTrashSelected() {
+  const ids = [...trashSelected.value]
+  if (!ids.length) return
+  trashBusy.value = true
+  trashResult.value = null
+  adminError.value = null
+  try {
+    const res = await api.adminRestoreTrash(ids)
+    trashResult.value = `Restored ${res.restored} image${res.restored !== 1 ? 's' : ''} — reassign via Photo Detail.`
+    trashSelected.value = new Set()
+    await loadTrash()
+  } catch (e) { adminError.value = `Restore failed: ${errMsg(e)}` }
+  finally { trashBusy.value = false }
 }
 
 async function exportSeed() {
@@ -183,9 +272,11 @@ function onTabAdmin() {
   orphanResult.value = null
   exportResult.value = null
   reloadResult.value = null
+  trashResult.value = null
   adminError.value = null
   loadAdminStats()
   loadSuggestions()
+  loadTrash()
 }
 
 // ── Migration ────────────────────────────────────────────────────────────────
@@ -503,20 +594,99 @@ function cancelImport() {
         <!-- Orphan cleanup -->
         <div class="admin-section">
           <div class="admin-section-head">Orphan Files</div>
-          <p class="admin-muted">Files in uploads that no card references.</p>
+          <p class="admin-muted">Files in uploads with no images table reference.</p>
           <div class="admin-row">
             <button class="admin-btn" :disabled="orphanBusy" @click="scanOrphans">
               {{ orphanBusy && !orphanScan ? 'Scanning…' : 'Scan' }}
             </button>
             <button
               v-if="orphanScan && orphanScan.count > 0"
-              class="admin-btn admin-btn-red"
+              class="admin-btn"
               :disabled="orphanBusy"
               @click="deleteOrphans"
-            >{{ orphanBusy ? 'Deleting…' : `Delete ${orphanScan.count} file${orphanScan.count !== 1 ? 's' : ''}` }}</button>
+            >{{ orphanBusy ? 'Sweeping…' : `Move ${orphanScan.count} to Trash` }}</button>
           </div>
           <p v-if="orphanScan && orphanScan.count === 0" class="admin-ok">No orphans found.</p>
           <p v-if="orphanResult" class="admin-ok">{{ orphanResult }}</p>
+        </div>
+
+        <!-- Trash -->
+        <div class="admin-section">
+          <div class="admin-section-head">
+            Trash
+            <span v-if="trashEntries.length" class="admin-badge">{{ trashEntries.length }}</span>
+          </div>
+          <div v-if="trashBusy && !trashEntries.length" class="admin-muted">Loading…</div>
+          <template v-else>
+            <p v-if="!trashEntries.length" class="admin-muted">Trash is empty.</p>
+            <template v-else>
+              <div class="admin-row" style="justify-content: space-between; align-items: center;">
+                <span class="admin-muted">{{ trashEntries.length }} file{{ trashEntries.length !== 1 ? 's' : '' }} · {{ formatBytes(trashTotalBytes) }}</span>
+                <button class="admin-btn admin-btn-link" @click="trashExpanded = !trashExpanded">
+                  {{ trashExpanded ? 'Collapse' : 'View' }}
+                </button>
+              </div>
+
+              <!-- Expanded file list -->
+              <div v-if="trashExpanded" class="trash-list">
+                <div class="trash-select-row">
+                  <label class="trash-check-label">
+                    <input
+                      type="checkbox"
+                      :checked="trashSelected.size === trashEntries.filter(e => e.id !== null).length && trashEntries.some(e => e.id !== null)"
+                      @change="toggleSelectAll"
+                    />
+                    <span>Select all</span>
+                  </label>
+                </div>
+                <div
+                  v-for="entry in trashEntries"
+                  :key="entry.trashFilename"
+                  class="trash-item"
+                  :class="{ 'trash-item--selected': entry.id !== null && trashSelected.has(entry.id) }"
+                >
+                  <input
+                    v-if="entry.id !== null"
+                    type="checkbox"
+                    :checked="trashSelected.has(entry.id)"
+                    class="trash-item-check"
+                    @change="toggleTrashSelect(entry.id)"
+                  />
+                  <div v-else class="trash-item-check-placeholder" />
+                  <div class="trash-item-info">
+                    <span class="trash-item-name" :title="entry.originalPath ?? entry.trashFilename">
+                      {{ entry.originalPath?.split('/').pop() ?? entry.trashFilename }}
+                    </span>
+                    <span class="trash-item-meta">
+                      <span class="trash-reason" :class="`trash-reason--${entry.reason}`">{{ entry.reason }}</span>
+                      <span v-if="entry.cardId" class="trash-card-id">{{ entry.cardId }}</span>
+                      <span>{{ formatBytes(entry.bytes) }}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action row -->
+              <div v-if="trashExpanded" class="admin-row" style="margin-top:4px;">
+                <button
+                  class="admin-btn"
+                  :disabled="trashBusy || trashSelected.size === 0"
+                  @click="restoreTrashSelected"
+                >{{ trashBusy ? 'Restoring…' : `Restore (${trashSelected.size})` }}</button>
+                <button
+                  class="admin-btn admin-btn-red"
+                  :disabled="trashBusy || trashSelected.size === 0"
+                  @click="deleteTrashSelected"
+                >{{ trashBusy ? 'Deleting…' : `Delete (${trashSelected.size})` }}</button>
+                <button
+                  class="admin-btn admin-btn-red"
+                  :disabled="trashBusy"
+                  @click="deleteAllTrash"
+                >{{ trashBusy ? 'Deleting…' : 'Delete All' }}</button>
+              </div>
+            </template>
+            <p v-if="trashResult" class="admin-ok">{{ trashResult }}</p>
+          </template>
         </div>
 
         <!-- Export seed -->
@@ -1107,5 +1277,92 @@ function cancelImport() {
   color: var(--muted);
   opacity: 0.6;
   margin-top: 6px;
+}
+
+/* Trash viewer */
+.admin-btn-link {
+  background: none;
+  border-color: transparent;
+  padding: 2px 6px;
+  font-size: 10px;
+  color: var(--accent);
+}
+.admin-btn-link:hover:not(:disabled) { border-color: var(--accent); background: none; color: var(--accent); }
+
+.trash-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.trash-select-row {
+  padding: 3px 4px 5px;
+  border-bottom: 1px solid var(--panel-edge);
+  margin-bottom: 2px;
+}
+.trash-check-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 10px/1 'JetBrains Mono', monospace;
+  color: var(--muted);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.trash-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 4px;
+  border-radius: 3px;
+  transition: background 0.1s;
+}
+.trash-item--selected { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.trash-item-check { flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+.trash-item-check-placeholder { width: 13px; flex-shrink: 0; }
+.trash-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.trash-item-name {
+  font: 11px/1.3 'JetBrains Mono', monospace;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+}
+.trash-item-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font: 10px/1 'JetBrains Mono', monospace;
+  color: var(--muted);
+}
+
+.trash-reason {
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.trash-reason--orphan      { background: color-mix(in srgb, var(--muted) 15%, transparent);     color: var(--muted); }
+.trash-reason--user_delete { background: color-mix(in srgb, var(--highlight) 15%, transparent); color: var(--highlight); }
+.trash-reason--unknown     { background: color-mix(in srgb, var(--danger) 12%, transparent);    color: var(--danger-bright); }
+
+.trash-card-id {
+  opacity: 0.6;
+  font-size: 9px;
 }
 </style>

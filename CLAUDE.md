@@ -34,8 +34,19 @@ interface Card {
   isLegend: boolean          // the "legend" template card
   collections: string[]      // e.g. FH5, FH6, Drift, Street, Photo Safari
   tags: string[]
-  images: { id, path, order }[]   // lead/feature image === order 0 (no isLead flag)
+  images: CardImage[]        // lead/feature image === order 0 (no isLead flag)
   sections: Section[]
+}
+
+interface CardImage {
+  id: number          // images table PK — stable across file moves; negative temp while pre-upload
+  path: string        // resolved server-side from images table on every read
+  thumbPath?: string
+  stagePath?: string
+  alt?: string
+  order: number
+  carId?: string | null
+  liveryId?: number | null
 }
 
 type Section =
@@ -81,8 +92,8 @@ and `/uploads` to the backend, so the app always uses same-origin relative URLs.
 ## Backend (`backend/`)
 
 - **Axum + SQLx (SQLite).** Single file: `backend/src/main.rs`.
-- **Storage model:** one row per card in the `cards` table — `id`, `catalog_number`, and `body` (the full `Card` JSON). Reads/writes are whole-object; the API hands the frontend an array of these JSON objects verbatim.
-- **Endpoints:** `GET/PUT/POST/DELETE /api/cards[/:id]`, `POST /api/images` (multipart upload → returns `{ path }`), `GET /api/health`, static `/uploads/*`, and (production) the SPA at everything else.
+- **Storage model:** one row per card in the `cards` table — `id`, `catalog_number`, and `body` (the full `Card` JSON). The `images` table is the **single source of truth** for image data; card body stores only `{ id, alt, order, carId }` per image — **no paths**. On every card read, `inject_images()` replaces body["images"] with the full rows from the DB (path, thumbPath, stagePath, livery_id, etc.). On every card write, `sync_card_images()` upserts the images table from the body and strips paths before saving. `normalize_bodies()` step 3 migrates legacy cards at startup (idempotent).
+- **Endpoints:** `GET/PUT/POST/DELETE /api/cards[/:id]`, `POST /api/images` (multipart upload, accepts `livery_id` field → returns `{ id, path, ... }`), `GET /api/cars` (search), `GET/POST /api/liveries`, `POST /api/admin/liveries/:id/assess-color` (auth-gated, calls Claude with thumbnail, stores primary/secondary color), `GET /api/health`, static `/uploads/*`, and (production) the SPA at everything else.
 - **Serving the SPA:** `ServeDir::new(FRONTEND_DIR).not_found_service(ServeFile::new(index.html))`. Real files (index, hashed assets) serve at 200; unknown paths return index.html with a 404 status — acceptable because the app has **no client-side router** (only `/` is a real entry point). Don't "fix" this with `ServeDir::fallback` — that broke static serving entirely in this tower-http version.
 - **Config via env** (set by the systemd unit in prod):
   - `BIND_ADDR` (default `0.0.0.0`; prod `127.0.0.1`), `PORT` (default `8787`)
@@ -126,7 +137,10 @@ String template refs (`ref="x"`) aren't counted as "used" by `vue-tsc`'s unused-
 
 ## Images
 
-- Stored as files under `backend/uploads/`, served at `/uploads/*`; DB rows hold the relative path.
+- Files live under `backend/uploads/`, served at `/uploads/*`.
+- **`images` table is the single source of truth** — `id INTEGER PRIMARY KEY AUTOINCREMENT`, `card_id`, `path`, `thumb_path`, `stage_path`, `car_id`, `alt_text`, `sort_order`, `livery_id`. Card body JSON stores only `{ id, alt, order, carId }` — no paths. Paths are resolved server-side by `inject_images()` on every card read.
+- `POST /api/images` (multipart) accepts `file`, `card_id`, and optionally `livery_id`; resizes to thumb + stage variants; inserts an `images` row immediately; returns `{ id, path, thumbPath, stagePath }`. `id` is the integer PK — always use it as the stable image identifier, never the path.
+- `CardImage.id` on the frontend is a `number` (DB PK). The only valid negative value is a temp id (`--_imageIdCounter`) used in `addImageToPool` for the brief window before the upload response arrives. All component logic (`Gallery.vue`, `ImagePicker.vue`, `PhotoDetail.vue`, `cards.ts`) treats image id as `number`.
 - The seed images were decoded from the original HTML's base64. **The data URIs claimed `image/png` but the bytes are JPEG** — `tools/extract/extract.mjs` sniffs magic bytes for the real extension. Re-run extraction only if needed (`cd tools/extract && npm run extract`); it reads `archive/livery_catalog_edited.html` (kept locally, not in the repo).
 - `backend/uploads/` is **tracked in git** (the seed set), so a fresh clone runs as-is. Production deploys **never overwrite** `data.db` or uploaded images (seed images are copied in only if missing).
 
@@ -142,14 +156,14 @@ String template refs (`ref="x"`) aren't counted as "used" by `vue-tsc`'s unused-
 ### Shipped and working
 - **Card gallery** — full-page scrolling catalog, 16:9 slideshow with autoplay (IntersectionObserver), thumbnail rail, lightbox
 - **Edit mode** — inline `EditableText` for name/subtitle/sections, per-card Save button, dirty tracking, snapshot/discard on exit, `ExitConfirmModal`
-- **New card modal** (`NewCardModal.vue`) — photo upload (drag/drop + browse), staged thumbnail strip, feature-image selection, tag/collection pickers, full RecipeSection (tune + specs + upgrades + adjustments)
+- **New card modal** (`NewCardModal.vue`) — photo upload (drag/drop + browse), staged thumbnail strip, feature-image selection, tag/collection pickers, full RecipeSection (tune + specs + upgrades + adjustments). **Batch import flow:** when photos are staged, a photo setup row appears (CarPicker + livery name input — must be changed from default to unlock Import). Clicking Import: creates card, creates livery, launches all uploads in parallel via XHR (`uploadImageWithProgress` with `liveryId` field), shows a per-file progress log with a CSS linear-gradient bg bar (`--prog` custom property per row), appends a "Color assess" row that fires `assessLiveryColor()` after first upload resolves, then fades the whole log and closes after assess settles.
 - **Edit card modal** (`EditCardModal.vue`) — same section parity as card edit view: `CollapsibleSection` headers, textareas for Inspiration/Design Notes, full `RecipeSection` for recipe with Cancel-safe snapshot/restore
 - **Recipe section** (`RecipeSection.vue`) — tune name, share code (auto-formatted), 5-column spec table with dropdowns, `UpgradesPicker` (add/remove parts by category), Show Stock toggle, upgrade cost tally, preset system (save/apply/delete via localStorage), adjustments list (view/inline edit)
 - **Orphan image cleanup** — auto-wired into `save()` (deleted images on card = orphan delete on save); also available on-demand via Admin panel
 - **Admin panel** (tab in UserSettingsModal) — stats (card count, image count, file count, DB/uploads size), orphan scan + confirm delete, export seed to `seed/cards.json`, reload DB from seed
 - **User management** — login (JWT), logout (clears token + exits edit mode), change password, create users (admin only), sign-out button (redlight style)
 - **Theme system** — 5 themes (dark/light/rainbow/clouds/stormy) via `data-theme` on `<html>`; text-size knob; both persist to localStorage
-- **Filters** — by collection, tag, search text (SideBug flyouts)
+- **Filters** — by collection, tag, search text, livery color (15 taxonomy values from `COLOR_TAXONOMY`), and tune type (SideBug flyouts). `isCardVisible(card)` is the single gate; color axis looks up liveries linked to the card's images; tune type axis checks recipe sections.
 - **Favorites** — per-card star toggle, persisted to DB
 - **Upgrade presets** — save/apply/delete named upgrade configs via localStorage (per-browser, not per-card)
 - **DB sync workflow** — Admin → Export Seed → git push → production Admin → Reload from Seed (no SSH/Geoff required for content pushes)
@@ -163,7 +177,10 @@ String template refs (`ref="x"`) aren't counted as "used" by `vue-tsc`'s unused-
 
 - **Two-surface drawer design principle** — core visual language for all collapsible panels in this app. A panel that can expand/collapse always uses two physically distinct surfaces with a clear visual parent/child hierarchy: (1) the **primary surface** is always visible and houses the persistent controls (toggle, action buttons); (2) the **secondary/child surface** is visually subordinate — less opaque — and houses the collapsible content (message text, detail controls). The secondary attaches flush to the primary's shared edge with no border between them (remove the border on whichever side they meet), and slides open/closed with a 0.22s ease transition. The toggle that controls the secondary lives on the secondary surface itself (as its tab/handle strip), not on the primary. Use theme CSS variables for all color/opacity values — never hardcode. **Orientation rules**: (a) **Horizontal drawer** (e.g. DrawerPanel, ColorPicker wing): the secondary can be slightly narrower in height because the tab is a vertical side strip — the depth reads naturally. Width transitions. (b) **Vertical drawer** (e.g. suggest bar): the secondary must be the **same width** as the primary — narrowing it creates misaligned edges and broken corners. Height transitions. Visual subordination comes from transparency alone, not narrowing. The tab handle must be `position:absolute; bottom:0` anchored — flex layout fails when the wing has padding that forces a minimum height. **Examples**: ThemeBuilder ColorPicker wing (horizontal, slides left, secondary slightly inset) + list panel (primary); suggest bar message drawer (vertical, slides up, same width, clear glass) + button strip (primary, smoked glass).
 
-- **Car identity** — `cars` table (FH5 + FH6 models, seeded from `backend/seed/cars.json`), backend migration `0008_cars.sql`, `/api/cars` endpoint (search by game+query, up to 50 results), `stores/cars.ts` singleton. `CarPicker.vue`: [+ FH5]/[+ FH6] game-gated buttons → search input → results dropdown → chip display; emits `update:carId`. Wired into `RecipeSection` (view badge + edit picker), `CardView` (threads carId, handles update via `cardsStore.setCarId()`), `EditCardModal` (snapshot/restore on Cancel), `NewCardModal`. `PhotoDetail.vue`: full-size photo shadowbox (Teleport to body), prev/next nav, per-photo CarPicker + alt text input; launched via ⤢ button on `ImagePicker` thumbs. Alt text flows through `setImageMeta()` in cards store → `img.alt` on Gallery stage images.
+- **Car identity** — `cars` table (FH5 + FH6 models, seeded from `backend/seed/cars.json`), backend migration `0008_cars.sql`, `/api/cars` endpoint (search by game+query, up to 50 results), `stores/cars.ts` singleton. `CarPicker.vue`: [+ FH5]/[+ FH6] game-gated buttons → search input → results dropdown → chip display; emits `update:carId`. Wired into `RecipeSection` (view badge + edit picker), `CardView` (threads carId, handles update via `cardsStore.setCarId()`), `EditCardModal` (snapshot/restore on Cancel), `NewCardModal`. `PhotoDetail.vue`: full-size photo shadowbox (Teleport to body), prev/next nav, per-photo CarPicker + LiveryPicker + alt text input; launched via ⤢ button on `ImagePicker` thumbs. Tagging a livery in PhotoDetail auto-triggers `assessLiveryColor()` — inline assess log shows livery name → "assessing…" → "Gold / Black", fades after 2s. This is the per-photo edit/fix path; bulk tagging uses the import flow or `ImageMigrationModal`.
+- **Livery identity** — `liveries` table (`id`, `car_id`, `name`, `primary_color`, `secondary_color`), `/api/liveries` endpoint, `stores/liveries.ts`. `LiveryPicker.vue`: filtered by carId, shows livery names as a dropdown chip. `livery_id` on `images` table rows links a photo to its livery.
+- **AI color assessment** — `POST /api/admin/liveries/:id/assess-color` (auth-gated). Loads `thumb_path` (falls back to `path`) from the livery's linked images, sends to Claude claude-haiku-4-5-20251001 with a prompt constraining the answer to `COLOR_TAXONOMY` values. Updates `primary_color` / `secondary_color` on the livery row. Returns `{ primary, secondary }`. Frontend: `api.assessLiveryColor(id)` in `api.ts`.
+- **Image migration tool** (`ImageMigrationModal.vue`) — admin-only (SideBug → Filters → "Image Migration"). Walks every non-legend card that has images, one at a time. Per card: thumbnail strip, CarPicker, livery name input. "Process card →" creates a livery, calls `setImageMeta` on all images (sets `livery_id` + `carId`), saves the card (syncs `images` table), fires color assess. Per-row progress log with sweeping accent bg bar; assess row appended; auto-fades + advances to next card after assess settles. Skip button skips without processing.
 
 - **RecipeSection** (`RecipeSection.vue`) — fully refactored to emit `update:recipe` instead of mutating props directly. Local reactive copy + `flush()` pattern; loop-prevention flags (`skipNextPropsSync`, `inPropsSync`) prevent watch cycles. All four callers (CardView, EditCardModal, NewCardModal, and the component itself) handle the emit correctly.
 - **Card migration tool** (Migrate tab in UserSettingsModal) — upgrade category normalization (auto), free-text adjustment row migration (manual per-card form with tab defaults), YAML export/import. Export downloads a human-readable `.yaml` file; import parses, previews, and POSTs as a new card via `crypto.randomUUID()` + `max(catalogNumber) + 1`. Images excluded from YAML; header comment notes original count. Uses `js-yaml` (v5).
@@ -172,9 +189,12 @@ String template refs (`ref="x"`) aren't counted as "used" by `vue-tsc`'s unused-
 ### Pending / in progress
 
 See `docs/plan.md` for the current work list. High-level categories:
-- **Battle-test shakedown** — full dialog/flow verification pass; see checklist in `docs/plan.md`.
-- **Mobile layout** — theme builder flyout + general narrow-screen pass; deferred until shakedown is complete.
-- **Multi-car mashup card** — plan doc at `docs/plan-multi-car-mashup.md`. Foundation: `images` DB table + CarPicker at upload time; then `variants` array on `ForzaRecipeSection` + tab strip UI in RecipeSection + gallery carId filtering.
+- **Livery backfill** — existing cards have no `livery_id` on their images yet. Use `ImageMigrationModal` (admin, SideBug → Filters → Image Migration) to walk through cards and tag them.
+- **AI assess admin UI** — `POST /api/admin/liveries/:id/assess-color` is built but no trigger button in the livery management UI yet.
+- **Step 2 (car_colors)** — factory color options per car; requires scraping Forza wikis.
+- **Step 8 hardening** — `CardVariant.liveryId` + `tuneId` currently optional; tighten to required once backfill is complete.
+- **Mobile layout** — theme builder flyout + general narrow-screen pass; deferred.
+- **Multi-car mashup card** — plan doc at `docs/plan-multi-car-mashup.md`. Foundation already live (`images` table + per-photo carId); next: `variants` array on `ForzaRecipeSection` + tab strip UI in RecipeSection + gallery carId filtering.
 
 ## Conventions & rules
 

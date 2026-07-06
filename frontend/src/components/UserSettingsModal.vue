@@ -7,6 +7,9 @@ import { useCardsStore } from '../stores/cards'
 import { api } from '../api'
 import type { Card, ForzaRecipeSection, AdjustmentRow } from '../types'
 import { cardToYaml, yamlToCard } from '../utils/cardYaml'
+import { useAssessFailures } from '../composables/useAssessFailures'
+
+const { failedAssess } = useAssessFailures()
 
 const ui = useUiStore()
 const modal = useModalStore()
@@ -577,6 +580,17 @@ function cancelImport() {
       <div v-if="tab === 'admin'" class="admin-panel">
 
         <p v-if="adminError" class="settings-error">{{ adminError }}</p>
+
+        <!-- Tools -->
+        <div class="admin-section">
+          <div class="admin-section-head">Tools</div>
+          <div class="admin-row">
+            <button class="admin-btn" @click="modal.openImageMigration(); modal.closeSettings()">
+              Image Migration
+              <span v-if="failedAssess.length" class="admin-badge">{{ failedAssess.length }}</span>
+            </button>
+          </div>
+        </div>
 
         <!-- Stats -->
         <div class="admin-section">

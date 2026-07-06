@@ -5,7 +5,6 @@ import { useCardsStore } from '../stores/cards'
 import { useAuthStore } from '../stores/auth'
 import { useModalStore } from '../stores/modal'
 import { useTuneTypesStore } from '../stores/tune-types'
-import { useAssessFailures } from '../composables/useAssessFailures'
 import { api } from '../api'
 
 const filters = useFilterStore()
@@ -13,7 +12,6 @@ const store = useCardsStore()
 const auth = useAuthStore()
 const modal = useModalStore()
 const tuneTypes = useTuneTypesStore()
-const { failedAssess } = useAssessFailures()
 
 async function fetchCount() {
   if (!auth.isAuthenticated) return
@@ -42,10 +40,6 @@ function toggleTuneType(name: string) {
     <button class="bug-check sugg-row" @click="modal.openSuggestionViewer()">
       <span class="sugg-badge">{{ modal.pendingSuggestionCount }}</span>
       Suggestions
-    </button>
-    <button class="bug-check sugg-row" @click="modal.openImageMigration()">
-      <span v-if="failedAssess.length" class="sugg-badge">{{ failedAssess.length }}</span>
-      Migrate Images
     </button>
     <p class="bug-flyout-label" style="margin-top: 8px;">Show sections</p>
   </template>

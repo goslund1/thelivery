@@ -10,8 +10,9 @@ export interface CardImage {
   stagePath?: string // 1000px-wide JPEG for the slideshow stage
   order: number     // the image at order 0 is the lead/feature image
   included?: boolean // undefined or true = in slideshow; false = in pool but hidden
-  carId?: string   // links this photo to a specific car in the registry
-  alt?: string     // descriptive alt text / caption; used for SEO and accessibility
+  carId?: string     // links this photo to a specific car in the registry
+  liveryId?: number  // FK into liveries table; set once photo is tagged with a livery
+  alt?: string       // descriptive alt text / caption; used for SEO and accessibility
 }
 
 // A free-text section with an optional figure (Inspiration, Design Notes, ...).

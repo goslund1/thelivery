@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import type { CardVariant, ForzaRecipeSection, UpgradeCategory } from '../types'
+import type { CardVariant, ForzaRecipeSection, Tune, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
 import { useFilterStore } from '../stores/filters'
 import { useCarsStore } from '../stores/cars'
+import { useTunesStore } from '../stores/tunes'
 import { MarkDirtyKey } from '../keys'
 import EditableText from './EditableText.vue'
 import UpgradesPicker from './UpgradesPicker.vue'
@@ -28,6 +29,7 @@ const emit = defineEmits<{
 const ui = useUiStore()
 const filters = useFilterStore()
 const carsStore = useCarsStore()
+const tunesStore = useTunesStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
 // Active variant owns the car identity when variants exist; single slot uses the card-level carId.
@@ -178,6 +180,53 @@ function removeVariant(idx: number) {
   markDirty()
   flush()
 }
+
+// ── Tune import offer (step 10) ───────────────────────────────────────────────
+// Set when addVariantWithLookup finds existing tunes for the incoming car.
+// Cleared when user accepts or dismisses.
+const pendingTuneImport = ref<{ carId: string; tunes: Tune[] } | null>(null)
+const pendingVariantCarId = ref<string | null>(null)
+
+function acceptTuneImport(tune: Tune) {
+  const carId = pendingVariantCarId.value
+  pendingTuneImport.value = null
+  pendingVariantCarId.value = null
+  if (!carId) return
+  addVariant(carId)
+  // Pre-populate the newly added variant with the selected tune's data.
+  const newIdx = (local.variants?.length ?? 1) - 1
+  const v = local.variants?.[newIdx]
+  if (!v) return
+  v.tuneName = tune.officialName ?? ''
+  v.shareCode = tune.shareCode ?? ''
+  try { if (tune.coreSpecs) Object.assign(v.coreSpecs, JSON.parse(tune.coreSpecs)) } catch {}
+  try { if (tune.upgrades) v.upgrades = JSON.parse(tune.upgrades) } catch {}
+  try { if (tune.adjustments) v.adjustments = JSON.parse(tune.adjustments) } catch {}
+  applyVariant(newIdx)
+  markDirty()
+  flush()
+}
+
+function dismissTuneImport() {
+  const carId = pendingVariantCarId.value
+  pendingTuneImport.value = null
+  pendingVariantCarId.value = null
+  if (carId) addVariant(carId)
+}
+
+// Called by CardView when the multi-car interrupt fires via ui store.
+// Looks up existing tunes for the car; if found, shows an import offer first.
+async function addVariantWithLookup(carId: string) {
+  const tunes = await tunesStore.loadForCar(carId)
+  if (tunes.length) {
+    pendingVariantCarId.value = carId
+    pendingTuneImport.value = { carId, tunes }
+  } else {
+    addVariant(carId)
+  }
+}
+
+defineExpose({ addVariantWithLookup })
 
 watch(activeVariantIndex, (idx) => {
   applyVariant(idx)
@@ -494,6 +543,24 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
           <CarPicker :car-id="null" @update:car-id="addVariant" />
           <button class="rs-add-picker-cancel" type="button" @click="showAddVariantPicker = false">×</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Tune import offer (step 10) — shown when a variant is added for a car that already has tunes -->
+    <div v-if="pendingTuneImport" class="rs-tune-import">
+      <span class="rs-tune-import-msg">
+        Found {{ pendingTuneImport.tunes.length }} existing tune{{ pendingTuneImport.tunes.length > 1 ? 's' : '' }} for
+        <strong>{{ carsStore.byId(pendingTuneImport.carId) ? `${carsStore.byId(pendingTuneImport.carId)!.year} ${carsStore.byId(pendingTuneImport.carId)!.make} ${carsStore.byId(pendingTuneImport.carId)!.model}` : pendingTuneImport.carId }}</strong>
+        — import one?
+      </span>
+      <div class="rs-tune-import-options">
+        <button
+          v-for="t in pendingTuneImport.tunes"
+          :key="t.id"
+          class="rs-tune-import-btn"
+          @click="acceptTuneImport(t)"
+        >{{ t.officialName || t.serial }}</button>
+        <button class="rs-tune-import-skip" @click="dismissTuneImport">Skip — start fresh</button>
       </div>
     </div>
 
@@ -942,6 +1009,39 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   font-size: 16px; cursor: pointer; padding: 0 4px; line-height: 1;
 }
 .rs-add-picker-cancel:hover { opacity: 1; }
+
+.rs-tune-import {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 9px 12px;
+  margin-bottom: 10px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.rs-tune-import-msg strong { color: var(--fg); }
+.rs-tune-import-options { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.rs-tune-import-btn {
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  color: var(--accent);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.rs-tune-import-btn:hover { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.rs-tune-import-skip {
+  background: none; border: 1px solid var(--panel-edge);
+  border-radius: 3px; color: var(--muted); font-size: 11px;
+  padding: 3px 10px; cursor: pointer; opacity: 0.7;
+}
+.rs-tune-import-skip:hover { opacity: 1; color: var(--fg); }
 
 .rs-remove-confirm {
   display: flex;

@@ -202,6 +202,17 @@ export const useUiStore = defineStore('ui', () => {
     exitConfirmOpen.value = false
   }
 
+  // ── Multi-car interrupt signal ───────────────────────────────────────────────
+  // Set by ImagePicker when the interrupt fires; consumed by CardView to trigger
+  // variant creation in RecipeSection. Cleared by CardView after consuming.
+  const pendingMultiCarTrigger = ref<{ cardId: string; carId: string } | null>(null)
+  function triggerMultiCar(cardId: string, carId: string) {
+    pendingMultiCarTrigger.value = { cardId, carId }
+  }
+  function consumeMultiCarTrigger() {
+    pendingMultiCarTrigger.value = null
+  }
+
   return {
     theme, textDelta, isEditing, THEMES,
     dirtyIds, hasUnsavedChanges, markCardDirty, isCardDirty, clearCardDirty, clearAllDirty,
@@ -210,5 +221,6 @@ export const useUiStore = defineStore('ui', () => {
     editCount, currentEditIndex, addToEditList, saveRange, setFocusedEdit, getEditAt,
     enterEdit, requestExit, toggleEdit, saveCard, saveAllDirty,
     confirmSaveAndExit, confirmDiscardAndExit, cancelExit,
+    pendingMultiCarTrigger, triggerMultiCar, consumeMultiCarTrigger,
   }
 })

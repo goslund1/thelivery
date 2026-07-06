@@ -150,6 +150,24 @@ function onDetailCarId(imageId: string, carId: string | null) {
   if (c) { store.setImageMeta(c.cardId, imageId, { carId }); ui.markCardDirty(c.cardId) }
 }
 
+function onDetailLiveryId(imageId: string, liveryId: number | null) {
+  const c = ctx.value
+  if (c) { store.setImageMeta(c.cardId, imageId, { liveryId }); ui.markCardDirty(c.cardId) }
+}
+
+function onTriggerMultiCar(carId: string) {
+  const c = ctx.value
+  if (c) ui.triggerMultiCar(c.cardId, carId)
+}
+
+// carIds of all other gallery images excluding the current detail image.
+const otherTaggedCarIds = computed(() => {
+  const detailId = detailImage.value?.id
+  return gallery.value
+    .filter(img => img.id !== detailId && !!img.carId)
+    .map(img => img.carId as string)
+})
+
 // ── Manage mode — drag reorder ───────────────────────────────────────────────
 const orderSnapshot = ref<{ id: string; order: number }[] | null>(null)
 const dragFromIdx = ref(-1)
@@ -350,6 +368,8 @@ async function onManageUpload(e: Event) {
     v-if="detailImage"
     :image="detailImage"
     :card-car-id="card?.carId"
+    :card-id="ctx?.cardId"
+    :other-tagged-car-ids="otherTaggedCarIds"
     :position="detailIdx! + 1"
     :total="gallery.length"
     :has-prev="detailIdx! > 0"
@@ -359,6 +379,8 @@ async function onManageUpload(e: Event) {
     @next="nextDetail"
     @update:alt="onDetailAlt"
     @update:car-id="onDetailCarId"
+    @update:livery-id="onDetailLiveryId"
+    @trigger-multi-car="onTriggerMultiCar"
   />
 </template>
 

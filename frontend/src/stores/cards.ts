@@ -244,13 +244,14 @@ export const useCardsStore = defineStore('cards', () => {
     c.images.push({ id, path, thumbPath, stagePath, order: maxOrder + 1, included })
   }
 
-  function setImageMeta(cardId: string, imageId: string, meta: { carId?: string | null; alt?: string }) {
+  function setImageMeta(cardId: string, imageId: string, meta: { carId?: string | null; alt?: string; liveryId?: number | null }) {
     const c = byId(cardId)
     if (!c) return
     const img = c.images.find(i => i.id === imageId)
     if (!img) return
     if ('carId' in meta) img.carId = meta.carId ?? undefined
     if ('alt' in meta) img.alt = meta.alt
+    if ('liveryId' in meta) img.liveryId = meta.liveryId ?? undefined
   }
 
   function setColor(id: string, key: string, color: string | undefined) {

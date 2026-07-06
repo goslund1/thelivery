@@ -27,11 +27,29 @@
           </div>
           <div class="pd-meta-row pd-meta-row--car">
             <span class="pd-label">Car</span>
-            <CarPicker
-              :car-id="image.carId ?? cardCarId"
-              @update:car-id="onCarId"
+            <CarPicker :car-id="effectiveCarId" @update:car-id="onCarId" />
+          </div>
+          <div class="pd-meta-row pd-meta-row--car">
+            <span class="pd-label">Livery</span>
+            <LiveryPicker
+              :car-id="effectiveCarId"
+              :livery-id="image.liveryId"
+              @update:livery-id="onLiveryId"
             />
           </div>
+
+          <!-- Multi-car interrupt -->
+          <div v-if="pendingInterruptCarId" class="pd-interrupt">
+            <span class="pd-interrupt-msg">
+              Photos from 2 different cars — set this up as a multi-car card?
+              <strong>{{ interruptCarName }}</strong>
+            </span>
+            <div class="pd-interrupt-actions">
+              <button class="pd-interrupt-yes" @click="acceptInterrupt">Yes, set up</button>
+              <button class="pd-interrupt-no" @click="dismissInterrupt">Not now</button>
+            </div>
+          </div>
+
           <div class="pd-meta-footer">
             <span class="pd-hint">Changes save with the card</span>
             <span class="pd-counter">{{ position }} / {{ total }}</span>
@@ -44,14 +62,19 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import { useCarsStore } from '../stores/cars'
+import { useLiveriesStore } from '../stores/liveries'
 import CarPicker from './CarPicker.vue'
+import LiveryPicker from './LiveryPicker.vue'
 import type { CardImage } from '../types'
 
 const props = defineProps<{
   image: CardImage
-  cardCarId?: string | null  // card-level default, shown when photo has no override
-  position: number           // 1-based index for display
+  cardCarId?: string | null       // card-level default car, shown when photo has no override
+  cardId?: string                 // for the interrupt sessionStorage gate
+  otherTaggedCarIds?: string[]    // carIds of other photos on this card (for interrupt check)
+  position: number                // 1-based index for display
   total: number
   hasPrev: boolean
   hasNext: boolean
@@ -63,9 +86,24 @@ const emit = defineEmits<{
   next: []
   'update:alt': [imageId: string, alt: string]
   'update:carId': [imageId: string, carId: string | null]
+  'update:liveryId': [imageId: string, liveryId: number | null]
+  'trigger-multi-car': [carId: string]
 }>()
 
-useCarsStore().load()
+const carsStore = useCarsStore()
+const liveriesStore = useLiveriesStore()
+carsStore.load()
+
+// The effective carId for this photo (image override takes precedence over card-level).
+const effectiveCarId = computed(() => props.image.carId ?? props.cardCarId ?? null)
+
+// Interrupt state — shows inline when a second distinct car is tagged.
+const pendingInterruptCarId = ref<string | null>(null)
+const interruptCarName = computed(() => {
+  if (!pendingInterruptCarId.value) return ''
+  const car = carsStore.byId(pendingInterruptCarId.value)
+  return car ? `${car.year ?? ''} ${car.make} ${car.model}`.trim() : pendingInterruptCarId.value
+})
 
 function onAlt(e: Event) {
   emit('update:alt', props.image.id, (e.target as HTMLInputElement).value)
@@ -73,6 +111,31 @@ function onAlt(e: Event) {
 
 function onCarId(carId: string | null) {
   emit('update:carId', props.image.id, carId)
+}
+
+function onLiveryId(liveryId: number | null) {
+  emit('update:liveryId', props.image.id, liveryId)
+  if (!liveryId || !props.cardId) return
+  // Interrupt: only fires once per card per session, only when a second distinct car appears.
+  const key = `tl-interrupt-fired-${props.cardId}`
+  if (sessionStorage.getItem(key)) return
+  const livery = liveriesStore.get(liveryId)
+  if (!livery) return
+  const others = props.otherTaggedCarIds ?? []
+  if (!others.length || others.includes(livery.carId)) return
+  // New car detected — show interrupt.
+  sessionStorage.setItem(key, '1')
+  pendingInterruptCarId.value = livery.carId
+}
+
+function acceptInterrupt() {
+  if (!pendingInterruptCarId.value) return
+  emit('trigger-multi-car', pendingInterruptCarId.value)
+  pendingInterruptCarId.value = null
+}
+
+function dismissInterrupt() {
+  pendingInterruptCarId.value = null
 }
 </script>
 
@@ -192,6 +255,39 @@ function onCarId(carId: string | null) {
 .pd-alt-input::placeholder { color: var(--text-muted, #555); }
 
 .pd-meta-row--car { align-items: flex-start; }
+
+.pd-interrupt {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px 10px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent, #c9aa71) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, #c9aa71) 35%, transparent);
+  font: 12px/1.4 'Oswald', sans-serif;
+  color: var(--text-secondary, #ccc);
+}
+.pd-interrupt-msg strong { color: var(--text-primary, #e0e0e0); }
+.pd-interrupt-actions { display: flex; gap: 6px; }
+.pd-interrupt-yes {
+  font: 11px/1 'Oswald', sans-serif;
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--accent, #c9aa71);
+  background: var(--accent, #c9aa71);
+  color: #000;
+  cursor: pointer;
+}
+.pd-interrupt-no {
+  font: 11px/1 'Oswald', sans-serif;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--muted-light, #555);
+  background: transparent;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+}
+.pd-interrupt-no:hover { color: var(--text-primary, #e0e0e0); }
 
 .pd-meta-footer {
   display: flex;

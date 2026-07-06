@@ -62,6 +62,17 @@ function onBuildIt() {
 // Active car ID for gallery filtering. Set by RecipeSection when a variant tab is selected.
 // Null = no filter (single-car cards or no tab selection yet).
 const activeCarId = ref<string | null>(null)
+
+// Ref to RecipeSection so we can call addVariantWithLookup when the interrupt fires.
+type RecipeSectionInstance = InstanceType<typeof RecipeSection>
+const recipeSectionRef = ref<RecipeSectionInstance | null>(null)
+
+// Consume ui.pendingMultiCarTrigger if it targets this card.
+watch(() => ui.pendingMultiCarTrigger, (trigger) => {
+  if (!trigger || trigger.cardId !== props.card.id) return
+  ui.consumeMultiCarTrigger()
+  recipeSectionRef.value?.addVariantWithLookup(trigger.carId)
+})
 </script>
 
 <template>
@@ -82,6 +93,7 @@ const activeCarId = ref<string | null>(null)
       <TextSection v-if="section.type === 'text'" :card-id="card.id" :section="section" />
       <RecipeSection
         v-else-if="section.type === 'forza_recipe'"
+        ref="recipeSectionRef"
         :recipe="section"
         :card-id="card.id"
         :car-id="card.carId"

@@ -1,10 +1,10 @@
 <template>
   <div class="cp-wrap">
-    <!-- Set state: chip -->
+    <!-- Set state: chip (click label area to re-enter search) -->
     <template v-if="car && !searching">
-      <span class="cp-chip">
-        <span class="cp-game-badge">{{ car.game }}</span>
-        <span class="cp-car-label">{{ car.year }} {{ car.make }} {{ car.model }}</span>
+      <span class="cp-chip" @click.self="startSearch(car.game as 'FH5' | 'FH6')">
+        <span class="cp-game-badge" @click="startSearch(car.game as 'FH5' | 'FH6')">{{ car.game }}</span>
+        <span class="cp-car-label" @click="startSearch(car.game as 'FH5' | 'FH6')">{{ car.year }} {{ car.make }} {{ car.model }}</span>
         <button class="cp-clear" @click="clear" title="Clear car">×</button>
       </span>
     </template>
@@ -83,10 +83,12 @@ const results = computed<Car[]>(() =>
 async function startSearch(game: 'FH5' | 'FH6') {
   activeGame.value = game
   searching.value = true
-  query.value = ''
+  // Pre-fill with current car's make so dropdown opens showing the selection.
+  query.value = car.value ? car.value.make : ''
   cursor.value = -1
   await nextTick()
   inputRef.value?.focus()
+  inputRef.value?.select()
 }
 
 function select(c: Car) {
@@ -193,7 +195,9 @@ watch(() => props.carId, () => {
 .cp-car-label {
   font: 12px/1.2 'Oswald', sans-serif;
   color: var(--text-primary, #e0e0e0);
+  cursor: pointer;
 }
+.cp-car-label:hover { color: var(--accent); }
 
 /* clear × */
 .cp-clear {

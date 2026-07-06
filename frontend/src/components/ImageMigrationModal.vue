@@ -192,7 +192,7 @@ async function assignSelected() {
         toasts.updateItem(toastId, assessItemId, {
           status: 'error',
           text: isQuota ? 'AI quota exceeded' : 'Color assess failed',
-          detail: isQuota ? 'retry later' : undefined,
+          detail: isQuota ? 'retry later' : msg,
         })
       })
   } catch (e) {
@@ -457,8 +457,9 @@ function close() { modal.closeImageMigration() }
 
 .imm-toast-item {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 6px;
   padding: 2px 8px;
   font: 9px/1.5 'JetBrains Mono', monospace;
 }
@@ -474,7 +475,7 @@ function close() { modal.closeImageMigration() }
 }
 .imm-toast-item--done .imm-toast-dot { background: #4a9; }
 .imm-toast-item--error .imm-toast-dot { background: #c44; }
-.imm-toast-text { color: var(--fg); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.imm-toast-text { color: var(--fg); flex: 1; min-width: 0; overflow-wrap: break-word; overflow: hidden; }
 .imm-toast-item--done .imm-toast-text { color: var(--muted); }
 .imm-toast-item--error .imm-toast-text { color: #e07070; }
 .imm-toast-detail { color: var(--muted); font-size: 8px; flex-shrink: 0; }

@@ -57,12 +57,10 @@ All 11 production cards migrated. Images live under structured `{slug}_{id}/` fo
 
 ---
 
-### 2. Car identity model — shakedown + backfill
-All 12 build steps shipped (2026-07-05). Remaining items:
-- **Step 2 (deferred)**: `car_colors` scrape — factory color options per car. Requires finding a source and scraping Forza wikis.
-- **AI color assess UI**: `POST /api/admin/liveries/:id/assess-color` is built but no admin UI button yet. Covered by the migration tool retry list for now.
-- ~~Backfill~~ — tunes and liveries belong to cards independently; images already have livery_id from migration; tune data is normal card editing. Nothing to build.
-- ~~Step 8 hardening~~ — CardVariant.liveryId/tuneId were a misread of the model. Removed.
+### 2. Car identity model  ← SHIPPED (2026-07-06)
+All 12 build steps shipped. Step 8 hardening done (livery.id no longer optional-chained in NewCardModal). Remaining deferred items:
+- **Step 2 (deferred)**: `car_colors` scrape — factory color options per car. Requires a Forza wiki source.
+- **Audit + crash test pass** — planned for later; harden further if gaps found.
 
 ---
 
@@ -85,6 +83,7 @@ All 12 build steps shipped (2026-07-05). Remaining items:
 
 ## Recently completed
 
+- Car identity model Step 8 hardening: livery.id required (no optional chaining), assess failure retry list + badge, assess failures non-blocking (queued for retry) — 2026-07-06
 - Image migration pipeline — full re-file + rename: all 11 cards migrated, structured filenames, drum CarPicker, toast drawer, dotenvy, error persistence, assess skip, FH6 FD cars, Bronco R — 2026-07-06
 - Suggest bar two-tier trigger: inline Share tweaks button activates on any slider change; floating push bar fires on 2+ tab categories; ASK ME LATER uses sessionStorage reload reminder; NOT FOR ME = session dismiss; S&D tier dialog gated to edit mode only — 2026-07-05
 - Shakedown pass (desktop): 2 bugs found + fixed (CardHistoryModal z-index, EditCardModal Escape handler); sections 1-3, 5-7, 9 suggest bar, 11-13 verified; sections 4, 8, 14-15, 17 (mobile) still need manual/device run — 2026-07-05

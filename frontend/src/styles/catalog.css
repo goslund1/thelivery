@@ -2098,3 +2098,21 @@
   color: var(--accent);
 }
 .nc-thumb-star:not(.is-feature):hover { color: var(--accent); }
+
+.catalog-credits {
+  text-align: center;
+  padding: 24px 16px 32px;
+  margin-top: 16px;
+  border-top: 1px solid var(--panel-edge, rgba(255,255,255,0.06));
+}
+.catalog-credits p {
+  font: 10px/1.6 'JetBrains Mono', monospace;
+  color: var(--text-muted, #555);
+  margin: 0;
+}
+.catalog-credits a {
+  color: var(--text-muted, #555);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.catalog-credits a:hover { color: var(--accent); }

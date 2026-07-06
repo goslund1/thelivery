@@ -81,6 +81,10 @@ onBeforeUnmount(() => {
     </template>
   </div>
 
+  <footer class="catalog-credits">
+    <p>Car data sourced from <a href="https://forza.fandom.com" target="_blank" rel="noopener">Forza Wiki</a> and <a href="https://www.forzamotorsport.net" target="_blank" rel="noopener">Forza Motorsport</a>. Fan project — not affiliated with Microsoft or Playground Games.</p>
+  </footer>
+
   <Lightbox />
   <ChipPicker />
   <ImagePicker />

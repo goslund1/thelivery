@@ -158,7 +158,6 @@ async function assignSelected() {
   try {
     toasts.updateItem(toastId, liveryItemId, { status: 'processing', text: 'Creating livery…' })
     const livery = await liveriesStore.create({ carId: carId.value!, name })
-    if (!livery) throw new Error('Failed to create livery')
     toasts.updateItem(toastId, liveryItemId, { status: 'done', text: `Livery: ${name}`, detail: livery.serial })
 
     toasts.updateItem(toastId, imgItemId, { status: 'processing' })

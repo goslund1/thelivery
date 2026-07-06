@@ -31,7 +31,7 @@ export const useLiveriesStore = defineStore('liveries', () => {
     shareCode?: string
     colorPrimary?: string
     colorSecondary?: string
-  }): Promise<{ id: number; serial: string } | null> {
+  }): Promise<{ id: number; serial: string }> {
     const auth = useAuthStore()
     const res = await fetch('/api/liveries', {
       method: 'POST',
@@ -40,8 +40,7 @@ export const useLiveriesStore = defineStore('liveries', () => {
     })
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      console.error('[liveries.create] server error', res.status, text)
-      return null
+      throw new Error(text || `HTTP ${res.status}`)
     }
     const created = await res.json() as { id: number; serial: string }
     // Invalidate the cache for this car so next loadForCar re-fetches.

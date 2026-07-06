@@ -245,11 +245,10 @@ async function assignSelected() {
       })
       .catch((e: unknown) => {
         const msg = e instanceof Error ? e.message : String(e)
-        const isQuota = msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('credit')
         toasts.updateItem(toastId, assessItemId, {
-          status: 'error',
-          text: isQuota ? 'AI quota exceeded' : 'Color assess failed',
-          detail: isQuota ? 'retry later' : msg,
+          status: 'done',
+          text: 'Queued for retry',
+          detail: msg.slice(0, 40),
         })
         addFailure({ liveryId: livery.id, liveryName: name, cardName: card.name })
       })

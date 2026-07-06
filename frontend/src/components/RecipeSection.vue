@@ -3,6 +3,7 @@ import { computed, inject, onBeforeUnmount, onMounted, reactive, ref, watch } fr
 import type { CardVariant, ForzaRecipeSection, Tune, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
 import { useFilterStore } from '../stores/filters'
+import { useCardsStore } from '../stores/cards'
 import { useCarsStore } from '../stores/cars'
 import { useTunesStore } from '../stores/tunes'
 import { MarkDirtyKey } from '../keys'
@@ -102,6 +103,31 @@ function variantLabel(v: CardVariant): string {
 // ── Edit-mode variant management ──────────────────────────────────────────────
 const showAddVariantPicker = ref(false)
 const showAddVariantChoice = ref(false)
+
+// Auto-propose tabs when card images span 2+ distinct cars and no variants exist yet
+const cardsStore = useCardsStore()
+const autoProposeCarIds = computed<string[]>(() => {
+  if (hasVariants.value || !props.cardId) return []
+  const card = cardsStore.cards.find(c => c.id === props.cardId)
+  if (!card) return []
+  const counts = new Map<string, number>()
+  for (const img of card.images) {
+    if (img.carId) counts.set(img.carId, (counts.get(img.carId) ?? 0) + 1)
+  }
+  if (counts.size < 2) return []
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id)
+})
+const autoProposesDismissed = ref(false)
+const showAutoPropose = computed(() => ui.isEditing && autoProposeCarIds.value.length >= 2 && !autoProposesDismissed.value)
+
+function acceptAutoPropose() {
+  const ids = autoProposeCarIds.value
+  // First addVariant promotes current single-car data to variant[0] and adds variant[1]
+  for (const id of ids) {
+    addVariant(id)
+  }
+  autoProposesDismissed.value = true
+}
 const pendingRemoveIdx = ref<number | null>(null)
 
 function variantIsEmpty(v: CardVariant): boolean {
@@ -524,6 +550,13 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
           >×</button>
         </div>
       </template>
+
+      <!-- Auto-propose tabs when images span multiple cars -->
+      <div v-if="showAutoPropose" class="rs-autopropose">
+        <span class="rs-autopropose-msg">{{ autoProposeCarIds.length }} cars detected in photos</span>
+        <button class="rs-autopropose-accept" type="button" @click="acceptAutoPropose">Set up tabs</button>
+        <button class="rs-autopropose-dismiss" type="button" @click="autoProposesDismissed = true">×</button>
+      </div>
 
       <!-- Add variant button (edit mode only) -->
       <div v-if="ui.isEditing" class="rs-add-variant-wrap">
@@ -981,6 +1014,43 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 .rs-variant-remove:hover { opacity: 1; color: #e03030; }
 
 .rs-add-variant-wrap { display: flex; align-items: center; gap: 4px; }
+
+.rs-autopropose {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 10px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: 4px;
+  margin-right: 6px;
+}
+.rs-autopropose-msg {
+  font: 10px/1 'JetBrains Mono', monospace;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.rs-autopropose-accept {
+  font: 700 10px/1 'Oswald', sans-serif;
+  letter-spacing: .04em;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #000;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.rs-autopropose-dismiss {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.rs-autopropose-dismiss:hover { color: var(--fg); }
 
 .rs-variant-tab--suggested {
   border-style: dashed;

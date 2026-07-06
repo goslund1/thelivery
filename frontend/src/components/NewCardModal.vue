@@ -286,12 +286,12 @@ async function onCreate() {
 
     // Create livery first so we have an ID to attach to every upload.
     const livery = await liveriesStore.create({ carId: newCarId.value!, name: liveryName.value.trim() })
-    const liveryId = livery?.id ?? undefined
+    const liveryId = livery.id
 
     // Switch to import log view.
     importing.value = true
     importLog.value = staged.value.map(s => ({ label: s.file.name, progress: 0, status: 'uploading' as const }))
-    assessStatus.value = liveryId ? 'pending' : 'idle'
+    assessStatus.value = 'pending'
 
     let firstDone = false
     const uploads = staged.value.map((s, i) =>

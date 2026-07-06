@@ -58,11 +58,11 @@ All 11 production cards migrated. Images live under structured `{slug}_{id}/` fo
 ---
 
 ### 2. Car identity model — shakedown + backfill
-All 12 build steps shipped (2026-07-05). Remaining items before this is fully live:
+All 12 build steps shipped (2026-07-05). Remaining items:
 - **Step 2 (deferred)**: `car_colors` scrape — factory color options per car. Requires finding a source and scraping Forza wikis.
-- **Backfill**: Existing cards have no `livery_id` / `tune_id` set (lazy migration). Needs manual tagging pass via PhotoDetail livery picker.
-- **Step 8 hardening**: `CardVariant.liveryId` + `tuneId` are optional; tighten to required once liveries are linked to cards and RecipeSection resolves from stores.
-- **AI color assess UI**: `POST /api/admin/liveries/:id/assess-color` is built but no admin UI button yet. Needs a trigger in the livery management UI.
+- **AI color assess UI**: `POST /api/admin/liveries/:id/assess-color` is built but no admin UI button yet. Covered by the migration tool retry list for now.
+- ~~Backfill~~ — tunes and liveries belong to cards independently; images already have livery_id from migration; tune data is normal card editing. Nothing to build.
+- ~~Step 8 hardening~~ — CardVariant.liveryId/tuneId were a misread of the model. Removed.
 
 ---
 

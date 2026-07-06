@@ -64,10 +64,10 @@ All components derived from DB lookups at upload/migrate time.
 5. AI color assess fires on livery; result stored on livery row
 
 **Parts:**
-- [ ] **Backend A**: Refactor upload handler — new folder scheme (`{slug}_{id}`), new filename stem (car/livery DB lookups)
-- [ ] **Backend B**: `POST /api/admin/images/migrate` — re-files selected image IDs with car_id/livery_id, moves old files to bin
-- [ ] **Frontend A**: Car required gate in ImageMigrationModal (blocking popover, can't assign without car)
-- [ ] **Frontend B**: `assignSelected` calls migrate endpoint instead of just setting metadata; progress feedback
+- [x] **Backend A**: Refactor upload handler — new folder scheme (`{slug}_{id}`), new filename stem (car/livery DB lookups) — commit 5ce7d18
+- [x] **Backend B**: `POST /api/admin/images/migrate` — re-files selected image IDs with car_id/livery_id, moves old files to bin — commit 5ce7d18
+- [x] **Frontend A**: Car required gate in ImageMigrationModal (blocking popover, can't assign without car) — commit 5ce7d18
+- [x] **Frontend B**: `assignSelected` calls migrate endpoint; paths updated in store immediately — commit 5ce7d18
 
 **New uploads** (NewCardModal batch import) also get the new folder + filename scheme via Backend A.
 

@@ -1608,19 +1608,21 @@ async fn upload_image(
         // Falls back to {folder}_{uuid} when no car is assigned.
         let stem = build_image_stem(&st.pool, &card_id, &car_id, livery_id, file_index).await;
 
-        let orig_name  = format!("{stem}.jpg");
-        let thumb_name = format!("{stem}_200w.jpg");
-        let stage_name = format!("{stem}_1000w.jpg");
+        // Generate resized variants before naming so we can embed actual dimensions.
+        let (orig_w, orig_h) = (img.width(), img.height());
+        let thumb = img.thumbnail(200, u32::MAX);
+        let (thumb_w, thumb_h) = (thumb.width(), thumb.height());
+        let stage = img.thumbnail(1000, u32::MAX);
+        let (stage_w, stage_h) = (stage.width(), stage.height());
+
+        let orig_name  = format!("{stem}_{orig_w}x{orig_h}.jpg");
+        let thumb_name = format!("{stem}_{thumb_w}x{thumb_h}.jpg");
+        let stage_name = format!("{stem}_{stage_w}x{stage_h}.jpg");
 
         img.save_with_format(card_dir.join(&orig_name), image::ImageFormat::Jpeg)
             .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-
-        let _ = img
-            .thumbnail(200, u32::MAX)
-            .save_with_format(lowres_dir.join(&thumb_name), image::ImageFormat::Jpeg);
-        let _ = img
-            .thumbnail(1000, u32::MAX)
-            .save_with_format(lowres_dir.join(&stage_name), image::ImageFormat::Jpeg);
+        let _ = thumb.save_with_format(lowres_dir.join(&thumb_name), image::ImageFormat::Jpeg);
+        let _ = stage.save_with_format(lowres_dir.join(&stage_name), image::ImageFormat::Jpeg);
 
         let path       = format!("/uploads/{folder}/{orig_name}");
         let thumb_path = format!("/uploads/{folder}/Lowres_Assets/{thumb_name}");
@@ -1887,16 +1889,20 @@ async fn admin_migrate_images(
 
         let stem = build_image_stem(&st.pool, &card_id, &car_id, livery_id, None).await;
 
-        let orig_name  = format!("{stem}.jpg");
-        let thumb_name = format!("{stem}_200w.jpg");
-        let stage_name = format!("{stem}_1000w.jpg");
+        let (orig_w, orig_h) = (img.width(), img.height());
+        let thumb = img.thumbnail(200, u32::MAX);
+        let (thumb_w, thumb_h) = (thumb.width(), thumb.height());
+        let stage = img.thumbnail(1000, u32::MAX);
+        let (stage_w, stage_h) = (stage.width(), stage.height());
+
+        let orig_name  = format!("{stem}_{orig_w}x{orig_h}.jpg");
+        let thumb_name = format!("{stem}_{thumb_w}x{thumb_h}.jpg");
+        let stage_name = format!("{stem}_{stage_w}x{stage_h}.jpg");
 
         img.save_with_format(card_dir.join(&orig_name), image::ImageFormat::Jpeg)
             .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-        let _ = img.thumbnail(200, u32::MAX)
-            .save_with_format(lowres_dir.join(&thumb_name), image::ImageFormat::Jpeg);
-        let _ = img.thumbnail(1000, u32::MAX)
-            .save_with_format(lowres_dir.join(&stage_name), image::ImageFormat::Jpeg);
+        let _ = thumb.save_with_format(lowres_dir.join(&thumb_name), image::ImageFormat::Jpeg);
+        let _ = stage.save_with_format(lowres_dir.join(&stage_name), image::ImageFormat::Jpeg);
 
         let new_path       = format!("/uploads/{folder}/{orig_name}");
         let new_thumb_path = format!("/uploads/{folder}/Lowres_Assets/{thumb_name}");

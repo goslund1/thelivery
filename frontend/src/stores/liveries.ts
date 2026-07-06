@@ -38,7 +38,11 @@ export const useLiveriesStore = defineStore('liveries', () => {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
       body: JSON.stringify(payload),
     })
-    if (!res.ok) return null
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      console.error('[liveries.create] server error', res.status, text)
+      return null
+    }
     const created = await res.json() as { id: number; serial: string }
     // Invalidate the cache for this car so next loadForCar re-fetches.
     const updated = new Map(byCarId.value)

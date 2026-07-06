@@ -21,8 +21,14 @@ export const useCarsStore = defineStore('cars', () => {
     return all.value.find(c => c.id === id)
   }
 
+  const MAKE_ALIASES: Record<string, string> = {
+    'fd': 'formula drift',
+  }
+
   function search(game: 'FH5' | 'FH6', query: string): Car[] {
-    const q = query.trim().toLowerCase()
+    const raw = query.trim().toLowerCase()
+    // Expand known shorthands before searching.
+    const q = MAKE_ALIASES[raw] ?? raw
     const pool = game === 'FH5' ? fh5.value : fh6.value
     if (!q) return pool.slice(0, 50)
     return pool.filter(c =>

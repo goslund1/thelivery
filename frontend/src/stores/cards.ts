@@ -246,7 +246,7 @@ export const useCardsStore = defineStore('cards', () => {
     c.images.push({ id, path, thumbPath, stagePath, order: maxOrder + 1, included })
   }
 
-  function setImageMeta(cardId: string, imageId: number, meta: { carId?: string | null; alt?: string; liveryId?: number | null }) {
+  function setImageMeta(cardId: string, imageId: number, meta: { carId?: string | null; alt?: string; liveryId?: number | null; path?: string; thumbPath?: string; stagePath?: string }) {
     const c = byId(cardId)
     if (!c) return
     const img = c.images.find(i => i.id === imageId)
@@ -254,6 +254,9 @@ export const useCardsStore = defineStore('cards', () => {
     if ('carId' in meta) img.carId = meta.carId ?? undefined
     if ('alt' in meta) img.alt = meta.alt
     if ('liveryId' in meta) img.liveryId = meta.liveryId ?? undefined
+    if ('path' in meta && meta.path) img.path = meta.path
+    if ('thumbPath' in meta && meta.thumbPath) img.thumbPath = meta.thumbPath
+    if ('stagePath' in meta && meta.stagePath) img.stagePath = meta.stagePath
   }
 
   function setColor(id: string, key: string, color: string | undefined) {

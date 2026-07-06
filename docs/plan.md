@@ -40,7 +40,40 @@ Admin-only modal, walks cards one-by-one:
 
 ---
 
-### 1. Car identity model — shakedown + backfill
+### 1. Image migration pipeline — full re-file + rename
+
+The `ImageMigrationModal` assign flow needs to physically re-file existing images, not just update metadata.
+
+**New folder structure (all uploads, new and migrated):**
+```
+/uploads/{card-title-slug}_{card-id}/
+         └── Lowres_Assets/
+```
+
+**New filename scheme:**
+```
+{FH5|FH6}_{Make}_{Model}_{Year}_{LiveryName}_{NNN}_{YYYYMMDD}_{uuid6}.jpg
+```
+All components derived from DB lookups at upload/migrate time.
+
+**Pipeline per batch in ImageMigrationModal (assign flow):**
+1. Car required gate — if no car selected, blocking popover forces car pick before proceeding
+2. For each selected image: read existing file from disk, run through upload pipeline with new naming/folder, regenerate thumbs, insert new `images` row, delete old row, move old file + thumbs to `/uploads/bin/`
+3. Create livery record linked to car
+4. Card re-saved pointing to new image rows
+5. AI color assess fires on livery; result stored on livery row
+
+**Parts:**
+- [ ] **Backend A**: Refactor upload handler — new folder scheme (`{slug}_{id}`), new filename stem (car/livery DB lookups)
+- [ ] **Backend B**: `POST /api/admin/images/migrate` — re-files selected image IDs with car_id/livery_id, moves old files to bin
+- [ ] **Frontend A**: Car required gate in ImageMigrationModal (blocking popover, can't assign without car)
+- [ ] **Frontend B**: `assignSelected` calls migrate endpoint instead of just setting metadata; progress feedback
+
+**New uploads** (NewCardModal batch import) also get the new folder + filename scheme via Backend A.
+
+---
+
+### 2. Car identity model — shakedown + backfill
 All 12 build steps shipped (2026-07-05). Remaining items before this is fully live:
 - **Step 2 (deferred)**: `car_colors` scrape — factory color options per car. Requires finding a source and scraping Forza wikis.
 - **Backfill**: Existing cards have no `livery_id` / `tune_id` set (lazy migration). Needs manual tagging pass via PhotoDetail livery picker.

@@ -346,6 +346,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/suggestions", get(admin_list_suggestions))
         .route("/api/admin/suggestions/:id", delete(admin_dismiss_suggestion).patch(admin_like_suggestion))
         .route("/api/admin/liveries/:id/assess-color", post(admin_assess_livery_color))
+        .route("/api/admin/images/migrate", post(admin_migrate_images))
         .route("/api/cars", get(list_cars).post(create_car))
         .route("/api/tune-types", get(list_tune_types).post(create_tune_type))
         .route("/api/liveries", get(list_liveries).post(create_livery))
@@ -1400,26 +1401,15 @@ fn slugify(s: &str) -> String {
     out
 }
 
-/// Build the card folder name from metadata fields sent with the upload.
-/// Pattern: {fh_tag}_{subtitle_slug}_{name_slug}  e.g. FH5_Nissan_S13_Midnight_Drift
-/// Falls back to "misc" when metadata is absent (e.g. legacy uploads).
-fn card_folder(name: &str, subtitle: &str, collections: &str) -> String {
-    // Pick first FH* collection tag, or "FHX" if none found.
-    let fh_tag = collections
-        .split(',')
-        .map(|c| c.trim())
-        .find(|c| c.to_uppercase().starts_with("FH"))
-        .unwrap_or("FHX")
-        .to_uppercase();
-
-    let sub_slug = slugify(subtitle);
-    let name_slug = slugify(name);
-
-    match (sub_slug.is_empty(), name_slug.is_empty()) {
-        (false, false) => format!("{fh_tag}_{sub_slug}_{name_slug}"),
-        (true,  false) => format!("{fh_tag}_{name_slug}"),
-        (false, true)  => format!("{fh_tag}_{sub_slug}"),
-        (true,  true)  => "FHX_misc".into(),
+/// Card folder: {card_name_slug}_{card_id}  e.g. smokin_abc123
+/// Falls back to "misc" when either field is absent.
+fn card_folder(name: &str, card_id: &str) -> String {
+    let slug = slugify(name);
+    match (slug.is_empty(), card_id.is_empty()) {
+        (false, false) => format!("{slug}_{card_id}"),
+        (false, true)  => slug,
+        (true,  false) => format!("card_{card_id}"),
+        (true,  true)  => "misc".into(),
     }
 }
 
@@ -1456,6 +1446,88 @@ async fn delete_images(
     StatusCode::NO_CONTENT
 }
 
+/// Build a structured image stem from car + livery DB data.
+/// Pattern: {GAME}_{make}_{model}_{year}_{livery}_{NNN}_{YYYYMMDD}_{uuid6}
+/// Falls back to a UUID stem when car data is absent.
+async fn build_image_stem(
+    pool: &sqlx::SqlitePool,
+    card_id: &str,
+    car_id: &Option<String>,
+    livery_id: Option<i64>,
+    file_index: Option<u32>,
+) -> String {
+    let uuid_full = uuid::Uuid::new_v4().to_string();
+    let uuid6 = uuid_full.replace('-', "");
+    let uuid6 = &uuid6[..6];
+
+    // Date from SQLite so we don't need chrono.
+    let date: String = sqlx::query_scalar("SELECT strftime('%Y%m%d', 'now')")
+        .fetch_one(pool).await.unwrap_or_else(|_| "00000000".into());
+
+    let Some(cid) = car_id else {
+        // No car — simple fallback.
+        return format!("img_{date}_{uuid6}");
+    };
+
+    // Look up car fields.
+    let car_row = sqlx::query(
+        "SELECT game, make, model, year FROM cars WHERE id = ?"
+    )
+    .bind(cid)
+    .fetch_optional(pool).await.ok().flatten();
+
+    let Some(car) = car_row else {
+        return format!("img_{date}_{uuid6}");
+    };
+
+    let game: String = car.try_get("game").unwrap_or_else(|_| "FHX".into());
+    let make: String = car.try_get("make").unwrap_or_default();
+    let model: String = car.try_get("model").unwrap_or_default();
+    let year: Option<i64> = car.try_get("year").ok().flatten();
+    let year_s = year.map(|y| y.to_string()).unwrap_or_else(|| "xxxx".into());
+
+    // Look up livery name.
+    let livery_slug = if let Some(lid) = livery_id {
+        let name: Option<String> = sqlx::query_scalar(
+            "SELECT name FROM liveries WHERE id = ?"
+        )
+        .bind(lid)
+        .fetch_optional(pool).await.ok().flatten();
+        name.map(|n| slugify(&n)).filter(|s| !s.is_empty())
+    } else {
+        None
+    };
+
+    // NNN: count of images already stored for this card + livery combo, +1.
+    let existing: i64 = if !card_id.is_empty() {
+        sqlx::query_scalar(
+            "SELECT COUNT(*) FROM images WHERE card_id = ? AND livery_id IS ?"
+        )
+        .bind(card_id)
+        .bind(livery_id)
+        .fetch_one(pool).await.unwrap_or(0)
+    } else {
+        file_index.map(|i| i as i64).unwrap_or(0)
+    };
+    let nnn = existing as u32 + 1;
+
+    let mut parts = vec![
+        game.to_uppercase(),
+        slugify(&make),
+        slugify(&model),
+        year_s,
+    ];
+    if let Some(ls) = livery_slug {
+        parts.push(ls);
+    }
+    parts.push(format!("{nnn:03}"));
+    parts.push(date);
+    parts.push(uuid6.to_string());
+
+    parts.retain(|p| !p.is_empty());
+    parts.join("_")
+}
+
 /// Accept multipart fields (in any order before the file field):
 ///   cardName, cardSubtitle, cardCollections (comma-separated), fileIndex (optional u32)
 ///
@@ -1472,8 +1544,6 @@ async fn upload_image(
     mut multipart: Multipart,
 ) -> Result<Json<Value>, ApiError> {
     let mut card_name = String::new();
-    let mut card_subtitle = String::new();
-    let mut card_collections = String::new();
     let mut card_id = String::new();
     let mut car_id: Option<String> = None;
     let mut livery_id: Option<i64> = None;
@@ -1489,12 +1559,9 @@ async fn upload_image(
                 card_name = field.text().await.unwrap_or_default();
                 continue;
             }
-            Some("cardSubtitle") => {
-                card_subtitle = field.text().await.unwrap_or_default();
-                continue;
-            }
-            Some("cardCollections") => {
-                card_collections = field.text().await.unwrap_or_default();
+            // Legacy fields accepted but unused — folder no longer uses subtitle/collections.
+            Some("cardSubtitle") | Some("cardCollections") => {
+                let _ = field.text().await;
                 continue;
             }
             Some("cardId") => {
@@ -1523,7 +1590,7 @@ async fn upload_image(
             .await
             .map_err(|e| err(StatusCode::BAD_REQUEST, e))?;
 
-        let folder = card_folder(&card_name, &card_subtitle, &card_collections);
+        let folder = card_folder(&card_name, &card_id);
         let card_dir = st.uploads_dir.join(&folder);
         let lowres_dir = card_dir.join("Lowres_Assets");
 
@@ -1536,20 +1603,10 @@ async fn upload_image(
         let img = image::load_from_memory(&data)
             .map_err(|e| err(StatusCode::BAD_REQUEST, e))?;
 
-        // Build stem: sequential number when fileIndex provided, UUID otherwise.
-        // Guard against collision (e.g. re-importing same batch).
-        let stem = match file_index {
-            Some(idx) => {
-                let candidate = format!("{folder}_{:03}", idx + 1);
-                if card_dir.join(format!("{candidate}.jpg")).exists() {
-                    let short = &uuid::Uuid::new_v4().to_string()[..6];
-                    format!("{candidate}_{short}")
-                } else {
-                    candidate
-                }
-            }
-            None => format!("{folder}_{}", uuid::Uuid::new_v4()),
-        };
+        // Build stem from car identity when available.
+        // Format: {game}_{make}_{model}_{year}_{livery}_{NNN}_{YYYYMMDD}_{uuid6}
+        // Falls back to {folder}_{uuid} when no car is assigned.
+        let stem = build_image_stem(&st.pool, &card_id, &car_id, livery_id, file_index).await;
 
         let orig_name  = format!("{stem}.jpg");
         let thumb_name = format!("{stem}_200w.jpg");
@@ -1732,6 +1789,160 @@ async fn admin_assess_livery_color(
         "primary":   primary,
         "secondary": secondary,
     })))
+}
+
+// --- Image migration ---------------------------------------------------------
+//
+// POST /api/admin/images/migrate
+// Body: { imageIds: [1,2,3], carId: "fh5-ferrari-...", liveryId: 7 }
+//
+// For each image:
+//  1. Read the existing file from disk
+//  2. Re-encode + save under new folder/filename scheme
+//  3. Move old file + thumbs to uploads/bin/
+//  4. Update the images table row with new paths, car_id, livery_id
+//
+// Returns a list of updated image records.
+
+async fn admin_migrate_images(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Json(body): Json<Value>,
+) -> Result<Json<Value>, ApiError> {
+    let ids: Vec<i64> = body["imageIds"]
+        .as_array()
+        .map(|a| a.iter().filter_map(|v| v.as_i64()).collect())
+        .unwrap_or_default();
+
+    if ids.is_empty() {
+        return Err(err(StatusCode::BAD_REQUEST, "imageIds is required"));
+    }
+
+    let car_id: Option<String> = body["carId"].as_str()
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+
+    let livery_id: Option<i64> = body["liveryId"].as_i64();
+
+    // Bin directory — moved originals land here, never auto-deleted.
+    let bin_dir = st.uploads_dir.join("bin");
+    std::fs::create_dir_all(&bin_dir)
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let mut results: Vec<Value> = Vec::new();
+
+    for img_id in ids {
+        // Fetch existing image row.
+        let row = sqlx::query(
+            "SELECT id, card_id, path, thumb_path, stage_path FROM images WHERE id = ?"
+        )
+        .bind(img_id)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+        let Some(row) = row else { continue; };
+
+        let card_id: String = row.try_get("card_id").unwrap_or_default();
+        let old_path: String = row.try_get("path").unwrap_or_default();
+        let old_thumb: Option<String> = row.try_get("thumb_path").unwrap_or(None);
+        let old_stage: Option<String> = row.try_get("stage_path").unwrap_or(None);
+
+        // Resolve the current file on disk.
+        let rel = old_path.trim_start_matches('/').trim_start_matches("uploads/");
+        let src_file = st.uploads_dir.join(rel);
+        if !src_file.exists() {
+            // File already gone — just update metadata and continue.
+            sqlx::query(
+                "UPDATE images SET car_id = ?, livery_id = ? WHERE id = ?"
+            )
+            .bind(&car_id)
+            .bind(livery_id)
+            .bind(img_id)
+            .execute(&st.pool)
+            .await.ok();
+            continue;
+        }
+
+        // Read and re-encode the image.
+        let data = std::fs::read(&src_file)
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        let img = image::load_from_memory(&data)
+            .map_err(|e| err(StatusCode::BAD_REQUEST, e))?;
+
+        // Look up card name for the folder.
+        let card_name: String = sqlx::query_scalar(
+            "SELECT json_extract(body, '$.name') FROM cards WHERE id = ?"
+        )
+        .bind(&card_id)
+        .fetch_optional(&st.pool).await.ok().flatten().unwrap_or_default();
+
+        let folder = card_folder(&card_name, &card_id);
+        let card_dir = st.uploads_dir.join(&folder);
+        let lowres_dir = card_dir.join("Lowres_Assets");
+        std::fs::create_dir_all(&card_dir)
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        std::fs::create_dir_all(&lowres_dir)
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+        let stem = build_image_stem(&st.pool, &card_id, &car_id, livery_id, None).await;
+
+        let orig_name  = format!("{stem}.jpg");
+        let thumb_name = format!("{stem}_200w.jpg");
+        let stage_name = format!("{stem}_1000w.jpg");
+
+        img.save_with_format(card_dir.join(&orig_name), image::ImageFormat::Jpeg)
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        let _ = img.thumbnail(200, u32::MAX)
+            .save_with_format(lowres_dir.join(&thumb_name), image::ImageFormat::Jpeg);
+        let _ = img.thumbnail(1000, u32::MAX)
+            .save_with_format(lowres_dir.join(&stage_name), image::ImageFormat::Jpeg);
+
+        let new_path       = format!("/uploads/{folder}/{orig_name}");
+        let new_thumb_path = format!("/uploads/{folder}/Lowres_Assets/{thumb_name}");
+        let new_stage_path = format!("/uploads/{folder}/Lowres_Assets/{stage_name}");
+
+        // Move old files to bin (ignore errors — file may already be in bin or missing).
+        let bin_stem = src_file.file_stem().and_then(|s| s.to_str()).unwrap_or("old").to_string();
+        let old_dir  = src_file.parent().unwrap_or(&st.uploads_dir);
+        let old_lowres = old_dir.join("Lowres_Assets");
+        let _ = std::fs::rename(&src_file, bin_dir.join(format!("{bin_stem}.jpg")));
+        if let Some(ref tp) = old_thumb {
+            let tr = tp.trim_start_matches('/').trim_start_matches("uploads/");
+            let _ = std::fs::rename(st.uploads_dir.join(tr), bin_dir.join(format!("{bin_stem}_200w.jpg")));
+        }
+        if let Some(ref sp) = old_stage {
+            let sr = sp.trim_start_matches('/').trim_start_matches("uploads/");
+            let _ = std::fs::rename(st.uploads_dir.join(sr), bin_dir.join(format!("{bin_stem}_1000w.jpg")));
+        }
+        // Suppress the unused warning — these are used in the rename calls above.
+        let _ = &old_lowres;
+
+        // Update the images row.
+        sqlx::query(
+            "UPDATE images SET path = ?, thumb_path = ?, stage_path = ?, car_id = ?, livery_id = ? WHERE id = ?"
+        )
+        .bind(&new_path)
+        .bind(&new_thumb_path)
+        .bind(&new_stage_path)
+        .bind(&car_id)
+        .bind(livery_id)
+        .bind(img_id)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+        results.push(json!({
+            "id":        img_id,
+            "path":      new_path,
+            "thumbPath": new_thumb_path,
+            "stagePath": new_stage_path,
+            "carId":     car_id,
+            "liveryId":  livery_id,
+        }));
+    }
+
+    Ok(Json(json!({ "migrated": results })))
 }
 
 // --- Serial generator -------------------------------------------------------

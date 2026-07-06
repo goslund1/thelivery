@@ -208,4 +208,11 @@ export const api = {
     fetch(`/api/admin/liveries/${id}/assess-color`, { method: 'POST', headers: authHeaders() }).then(
       json<{ id: number; serial: string; primary: string; secondary?: string }>
     ),
+
+  migrateImages: (imageIds: number[], carId: string, liveryId: number) =>
+    fetch('/api/admin/images/migrate', {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageIds, carId, liveryId }),
+    }).then(json<{ migrated: Array<{ id: number; path: string; thumbPath: string; stagePath: string; carId: string; liveryId: number }> }>),
 }

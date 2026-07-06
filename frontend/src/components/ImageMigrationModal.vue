@@ -49,6 +49,7 @@ function toggleAll() {
 // Per-batch assignment state
 const carId = ref<string | null>(null)
 const liveryName = ref('')
+const showCarRequired = ref(false)   // blocking gate shown when assign clicked without car
 const liveryNameValid = computed(() => liveryName.value.trim().length > 0)
 const canAssign = computed(() =>
   selectedIds.value.size > 0 && liveryNameValid.value && !batchProcessing.value
@@ -77,47 +78,55 @@ async function assignSelected() {
   const card = currentCard.value
   if (!card || !auth.isAuthenticated || !canAssign.value) return
 
+  // Car is required — show blocking gate instead of proceeding.
+  if (!carId.value) {
+    showCarRequired.value = true
+    return
+  }
+
   const ids = [...selectedIds.value]
   const name = liveryName.value.trim()
-  const batchLabel = name + (carId.value ? '' : ' (no car)')
 
   batchProcessing.value = true
-  batchLog.value.push({ label: batchLabel, count: ids.length, status: 'processing' })
+  batchLog.value.push({ label: name, count: ids.length, status: 'processing' })
   const entry = batchLog.value[batchLog.value.length - 1]
 
   try {
-    const livery = carId.value
-      ? await liveriesStore.create({ carId: carId.value, name })
-      : null
+    // Create livery first so we have the id for migrate.
+    const livery = await liveriesStore.create({ carId: carId.value, name })
+    if (!livery) throw new Error('Failed to create livery')
 
-    for (const id of ids) {
-      store.setImageMeta(card.id, id, {
-        carId: carId.value ?? undefined,
-        liveryId: livery?.id,
+    // Re-file the images on disk with new naming scheme, update DB rows.
+    const result = await api.migrateImages(ids, carId.value, livery.id)
+
+    // Reflect new paths in the card store so the UI updates without reload.
+    for (const updated of result.migrated) {
+      store.setImageMeta(card.id, updated.id, {
+        carId: updated.carId,
+        liveryId: updated.liveryId,
+        path: updated.path,
+        thumbPath: updated.thumbPath,
+        stagePath: updated.stagePath,
       })
     }
     await store.save(card.id)
 
-    // Mark as assigned
+    // Mark as assigned so they dim.
     const next = new Set(assignedIds.value)
     ids.forEach(id => next.add(id))
     assignedIds.value = next
 
-    // Clear selection for next batch
+    // Ready next batch.
     selectedIds.value = new Set()
     carId.value = null
     liveryName.value = currentCard.value?.name?.trim() || ''
 
-    if (livery) {
-      api.assessLiveryColor(livery.id)
-        .then(r => {
-          entry.status = 'done'
-          entry.colors = r.primary + (r.secondary ? ' / ' + r.secondary : '')
-        })
-        .catch(() => { entry.status = 'done' })
-    } else {
-      entry.status = 'done'
-    }
+    entry.status = 'done'
+
+    // Assess color in background — updates entry when done.
+    api.assessLiveryColor(livery.id)
+      .then(r => { entry.colors = r.primary + (r.secondary ? ' / ' + r.secondary : '') })
+      .catch(() => {})
   } catch (e) {
     entry.status = 'error'
     entry.errorMsg = e instanceof Error ? e.message : String(e)
@@ -189,9 +198,14 @@ function close() { modal.closeImageMigration() }
 
           <!-- Assignment controls -->
           <div class="imm-assign">
-            <div class="imm-row">
+            <!-- Car required gate -->
+            <div v-if="showCarRequired" class="imm-car-gate">
+              <span class="imm-car-gate-msg">A car must be selected before assigning images.</span>
+              <button class="imm-car-gate-dismiss" @click="showCarRequired = false">Got it</button>
+            </div>
+            <div class="imm-row" :class="{ 'imm-row--highlight': showCarRequired }">
               <span class="imm-label">Car</span>
-              <CarPicker :car-id="carId" @update:car-id="id => carId = id" />
+              <CarPicker :car-id="carId" @update:car-id="id => { carId = id; showCarRequired = false }" />
             </div>
             <div class="imm-row">
               <span class="imm-label">Livery</span>
@@ -344,6 +358,34 @@ function close() { modal.closeImageMigration() }
   text-shadow: 0 0 3px rgba(0,0,0,0.8);
 }
 .imm-img-check--done { color: var(--muted); }
+
+/* Car required gate */
+.imm-car-gate {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  background: color-mix(in srgb, #c94444 14%, transparent);
+  border: 1px solid #c94444;
+  border-radius: 4px;
+}
+.imm-car-gate-msg {
+  font: 11px/1.4 'JetBrains Mono', monospace;
+  color: #e07070;
+}
+.imm-car-gate-dismiss {
+  font: 10px/1 'JetBrains Mono', monospace;
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid #c94444;
+  background: transparent;
+  color: #e07070;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.imm-row--highlight .imm-label { color: #e07070; }
 
 /* Assignment controls */
 .imm-assign {

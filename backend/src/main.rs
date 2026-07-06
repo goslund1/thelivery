@@ -345,6 +345,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/suggestions", post(submit_suggestion))
         .route("/api/admin/suggestions", get(admin_list_suggestions))
         .route("/api/admin/suggestions/:id", delete(admin_dismiss_suggestion).patch(admin_like_suggestion))
+        .route("/api/admin/liveries/:id/assess-color", post(admin_assess_livery_color))
         .route("/api/cars", get(list_cars).post(create_car))
         .route("/api/tune-types", get(list_tune_types).post(create_tune_type))
         .route("/api/liveries", get(list_liveries).post(create_livery))
@@ -1465,6 +1466,138 @@ async fn upload_image(
         })));
     }
     Err(err(StatusCode::BAD_REQUEST, "no file field in upload"))
+}
+
+// --- AI color assessment ----------------------------------------------------
+
+const COLOR_TAXONOMY: &[&str] = &[
+    "Red", "Blue", "Green", "Yellow", "Orange", "Purple", "Pink",
+    "White", "Black", "Silver", "Grey", "Gold", "Bronze", "Teal", "Multi",
+];
+
+async fn admin_assess_livery_color(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Path(id): Path<i64>,
+) -> Result<Json<Value>, ApiError> {
+    let api_key = std::env::var("ANTHROPIC_API_KEY")
+        .map_err(|_| err(StatusCode::SERVICE_UNAVAILABLE, "ANTHROPIC_API_KEY not configured"))?;
+
+    // Fetch the livery and its lead image.
+    let livery = sqlx::query("SELECT id, serial FROM liveries WHERE id = ?")
+        .bind(id)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .ok_or_else(|| err(StatusCode::NOT_FOUND, "livery not found"))?;
+
+    let serial: String = livery.get("serial");
+
+    let img_row = sqlx::query(
+        "SELECT path FROM images WHERE livery_id = ? ORDER BY sort_order ASC LIMIT 1",
+    )
+    .bind(id)
+    .fetch_optional(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+    .ok_or_else(|| err(StatusCode::NOT_FOUND, "no images tagged to this livery"))?;
+
+    let img_path: String = img_row.get("path");
+
+    // Resolve the file path: strip leading /uploads/ and join with uploads_dir.
+    let rel = img_path.trim_start_matches('/').trim_start_matches("uploads/");
+    let file_path = st.uploads_dir.join(rel);
+    let img_bytes = std::fs::read(&file_path)
+        .map_err(|_| err(StatusCode::NOT_FOUND, "image file not found on disk"))?;
+
+    // Detect media type from magic bytes (JPEG or PNG; fall back to JPEG).
+    let media_type = if img_bytes.starts_with(b"\x89PNG") { "image/png" } else { "image/jpeg" };
+    let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &img_bytes);
+
+    let taxonomy = COLOR_TAXONOMY.join(", ");
+    let prompt = format!(
+        "This is a photo of a car with a custom livery (paint and vinyl wrap design). \
+         Identify the 1-2 most dominant colors of the livery itself (ignore the background). \
+         Choose ONLY from this list: {taxonomy}. \
+         Reply with JSON only, no explanation: \
+         {{\"primary\": \"Blue\", \"secondary\": \"Silver\"}} \
+         Omit the secondary key if only one color dominates."
+    );
+
+    let body = serde_json::json!({
+        "model": "claude-haiku-4-5-20251001",
+        "max_tokens": 64,
+        "messages": [{
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": media_type,
+                        "data": b64,
+                    }
+                },
+                { "type": "text", "text": prompt }
+            ]
+        }]
+    });
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .post("https://api.anthropic.com/v1/messages")
+        .header("x-api-key", &api_key)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| err(StatusCode::BAD_GATEWAY, e.to_string()))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status().as_u16();
+        let text = resp.text().await.unwrap_or_default();
+        return Err(err(StatusCode::BAD_GATEWAY, format!("Anthropic API {status}: {text}")));
+    }
+
+    let resp_json: Value = resp.json().await
+        .map_err(|e| err(StatusCode::BAD_GATEWAY, e.to_string()))?;
+
+    // Extract the text content from the first choice.
+    let text = resp_json["content"]
+        .as_array()
+        .and_then(|a| a.first())
+        .and_then(|b| b["text"].as_str())
+        .unwrap_or("");
+
+    // Parse the returned JSON; fall back gracefully.
+    let colors: Value = serde_json::from_str(text.trim()).unwrap_or(Value::Null);
+    let primary   = colors["primary"].as_str().filter(|c| COLOR_TAXONOMY.contains(c));
+    let secondary = colors["secondary"].as_str().filter(|c| COLOR_TAXONOMY.contains(c));
+
+    if primary.is_none() {
+        return Err(err(StatusCode::UNPROCESSABLE_ENTITY,
+            format!("model returned unrecognised colors — raw: {text}")));
+    }
+
+    sqlx::query(
+        "UPDATE liveries SET color_primary = ?, color_secondary = ? WHERE id = ?",
+    )
+    .bind(primary)
+    .bind(secondary)
+    .bind(id)
+    .execute(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    tracing::info!("color assessment: {serial} → primary={primary:?} secondary={secondary:?}");
+
+    Ok(Json(json!({
+        "id":        id,
+        "serial":    serial,
+        "primary":   primary,
+        "secondary": secondary,
+    })))
 }
 
 // --- Serial generator -------------------------------------------------------

@@ -807,6 +807,103 @@ async fn upsert(pool: &SqlitePool, body: &Value) -> Result<(), sqlx::Error> {
 /// recipe fields, per-image `isLead`) into the new card shape: a generic ordered
 /// `sections` array, with the lead image moved to `order` 0 and `isLead` dropped.
 /// Idempotent — rows that already carry `sections` are left untouched.
+/// Fetch images for a card from the authoritative images table.
+async fn fetch_images_for_card(pool: &SqlitePool, card_id: &str) -> Vec<Value> {
+    let rows = sqlx::query(
+        "SELECT id, path, thumb_path, stage_path, alt_text, sort_order, car_id, livery_id \
+         FROM images WHERE card_id = ? ORDER BY sort_order ASC",
+    )
+    .bind(card_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    rows.iter().map(|r| json!({
+        "id":        r.get::<i64, _>("id"),
+        "path":      r.get::<String, _>("path"),
+        "thumbPath": r.get::<Option<String>, _>("thumb_path"),
+        "stagePath": r.get::<Option<String>, _>("stage_path"),
+        "alt":       r.get::<Option<String>, _>("alt_text").unwrap_or_default(),
+        "order":     r.get::<i64, _>("sort_order"),
+        "carId":     r.get::<Option<String>, _>("car_id"),
+        "liveryId":  r.get::<Option<i64>, _>("livery_id"),
+    })).collect()
+}
+
+/// Replace body["images"] with rows from the images table.
+/// Falls back to body["images"] as-is when no DB rows exist (unmigrated card).
+async fn inject_images(pool: &SqlitePool, body: &mut Value) {
+    let card_id = match body.get("id").and_then(Value::as_str) {
+        Some(id) => id.to_string(),
+        None => return,
+    };
+    let db_images = fetch_images_for_card(pool, &card_id).await;
+    if !db_images.is_empty() {
+        body["images"] = json!(db_images);
+    }
+}
+
+/// Sync card body images into the images table; strip paths from body (store only id+meta).
+/// Images with a numeric id → UPDATE metadata.
+/// Images with a path but no numeric id → INSERT or find-by-path then UPDATE.
+async fn sync_card_images(pool: &SqlitePool, card_id: &str, body: &mut Value) -> Result<(), sqlx::Error> {
+    let images = match body.get("images").and_then(Value::as_array) {
+        Some(arr) if !arr.is_empty() => arr.clone(),
+        _ => return Ok(()),
+    };
+
+    let mut synced: Vec<Value> = Vec::new();
+    for img in &images {
+        let db_id: Option<i64> = img.get("id").and_then(Value::as_i64);
+        let path    = img.get("path").and_then(Value::as_str).map(String::from);
+        let alt     = img.get("alt").and_then(Value::as_str).unwrap_or_default().to_string();
+        let order   = img.get("order").and_then(Value::as_i64).unwrap_or(0);
+        let car_id  = img.get("carId").and_then(Value::as_str).map(String::from);
+
+        let final_id: i64 = if let Some(id) = db_id {
+            sqlx::query(
+                "UPDATE images SET alt_text = ?, sort_order = ?, car_id = ? WHERE id = ? AND card_id = ?",
+            )
+            .bind(&alt).bind(order).bind(&car_id).bind(id).bind(card_id)
+            .execute(pool).await?;
+            id
+        } else if let Some(ref p) = path {
+            let existing: Option<i64> = sqlx::query_scalar(
+                "SELECT id FROM images WHERE card_id = ? AND path = ?",
+            )
+            .bind(card_id).bind(p)
+            .fetch_optional(pool).await?;
+
+            if let Some(existing_id) = existing {
+                sqlx::query(
+                    "UPDATE images SET alt_text = ?, sort_order = ?, car_id = ? WHERE id = ?",
+                )
+                .bind(&alt).bind(order).bind(&car_id).bind(existing_id)
+                .execute(pool).await?;
+                existing_id
+            } else {
+                let thumb  = img.get("thumbPath").and_then(Value::as_str).map(String::from);
+                let stage  = img.get("stagePath").and_then(Value::as_str).map(String::from);
+                let livery: Option<i64> = img.get("liveryId").and_then(Value::as_i64);
+                sqlx::query(
+                    "INSERT INTO images (card_id, path, thumb_path, stage_path, car_id, alt_text, sort_order, livery_id) \
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                )
+                .bind(card_id).bind(p).bind(&thumb).bind(&stage)
+                .bind(&car_id).bind(&alt).bind(order).bind(livery)
+                .execute(pool).await?.last_insert_rowid()
+            }
+        } else {
+            continue; // no id and no path — skip
+        };
+
+        synced.push(json!({ "id": final_id, "alt": alt, "order": order, "carId": car_id }));
+    }
+
+    body["images"] = json!(synced);
+    Ok(())
+}
+
 async fn normalize_bodies(pool: &SqlitePool) -> anyhow::Result<()> {
     let rows = sqlx::query("SELECT body FROM cards").fetch_all(pool).await?;
     let mut migrated = 0;
@@ -824,6 +921,19 @@ async fn normalize_bodies(pool: &SqlitePool) -> anyhow::Result<()> {
         // Step 2: ensure all 3 standard sections exist (handles sections:[]).
         if ensure_standard_sections(&mut v) {
             changed = true;
+        }
+        // Step 3: sync body images to images table, strip paths from body.
+        let card_id = v.get("id").and_then(Value::as_str).map(String::from);
+        if let Some(card_id) = card_id {
+            let has_path_images = v.get("images")
+                .and_then(Value::as_array)
+                .map(|arr| arr.iter().any(|img| img.get("path").is_some()))
+                .unwrap_or(false);
+            if has_path_images {
+                if sync_card_images(pool, &card_id, &mut v).await.is_ok() {
+                    changed = true;
+                }
+            }
         }
         if changed {
             upsert(pool, &v).await?;
@@ -1115,10 +1225,13 @@ async fn list_cards(State(st): State<AppState>) -> Result<Json<Vec<Value>>, ApiE
         .fetch_all(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-    let out = rows
-        .iter()
-        .filter_map(|r| serde_json::from_str::<Value>(r.get::<String, _>("body").as_str()).ok())
-        .collect();
+    let mut out = Vec::new();
+    for row in &rows {
+        if let Ok(mut v) = serde_json::from_str::<Value>(row.get::<String, _>("body").as_str()) {
+            inject_images(&st.pool, &mut v).await;
+            out.push(v);
+        }
+    }
     Ok(Json(out))
 }
 
@@ -1132,8 +1245,9 @@ async fn get_card(
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
         .ok_or_else(|| err(StatusCode::NOT_FOUND, "card not found"))?;
-    let body: Value = serde_json::from_str(row.get::<String, _>("body").as_str())
+    let mut body: Value = serde_json::from_str(row.get::<String, _>("body").as_str())
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    inject_images(&st.pool, &mut body).await;
     Ok(Json(body))
 }
 
@@ -1185,9 +1299,13 @@ async fn put_card(
         .ok();
     }
 
+    sync_card_images(&st.pool, &id, &mut body)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     upsert(&st.pool, &body)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    inject_images(&st.pool, &mut body).await;
     Ok(Json(body))
 }
 
@@ -1234,14 +1352,19 @@ async fn get_card_history_version(
 async fn create_card(
     State(st): State<AppState>,
     _auth: AuthUser,
-    Json(body): Json<Value>,
+    Json(mut body): Json<Value>,
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
-    if body.get("id").and_then(Value::as_str).unwrap_or_default().is_empty() {
+    let card_id = body.get("id").and_then(Value::as_str).unwrap_or_default().to_string();
+    if card_id.is_empty() {
         return Err(err(StatusCode::BAD_REQUEST, "body.id is required"));
     }
+    sync_card_images(&st.pool, &card_id, &mut body)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     upsert(&st.pool, &body)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    inject_images(&st.pool, &mut body).await;
     Ok((StatusCode::CREATED, Json(body)))
 }
 

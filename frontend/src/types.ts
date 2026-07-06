@@ -4,8 +4,8 @@
 // added without changing the card schema.
 
 export interface CardImage {
-  id: string
-  path: string      // original full-res URL, e.g. "/uploads/uuid.jpg"
+  id: number         // images table PK — the stable identity; paths live only in the DB
+  path: string      // original full-res URL, e.g. "/uploads/uuid.jpg" — resolved server-side
   thumbPath?: string // 200px-wide JPEG for the thumb rail
   stagePath?: string // 1000px-wide JPEG for the slideshow stage
   order: number     // the image at order 0 is the lead/feature image

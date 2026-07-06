@@ -181,7 +181,7 @@ export const useCardsStore = defineStore('cards', () => {
 
   // Make an image the lead by moving it to order 0 (lead === order 0), then
   // renumber the rest.
-  function setLeadImage(id: string, imageId: string) {
+  function setLeadImage(id: string, imageId: number) {
     const c = byId(id)
     if (!c) return
     const imgs = [...c.images].sort((a, b) => a.order - b.order)
@@ -205,7 +205,7 @@ export const useCardsStore = defineStore('cards', () => {
     c.images = imgs
   }
 
-  function restoreImageOrders(id: string, snapshot: { id: string; order: number }[]) {
+  function restoreImageOrders(id: string, snapshot: { id: number; order: number }[]) {
     const c = byId(id)
     if (!c) return
     const orderMap = new Map(snapshot.map(s => [s.id, s.order]))
@@ -215,13 +215,13 @@ export const useCardsStore = defineStore('cards', () => {
     }
   }
 
-  function removeImage(cardId: string, imageId: string) {
+  function removeImage(cardId: string, imageId: number) {
     const c = byId(cardId)
     if (!c) return
     c.images = c.images.filter((i) => i.id !== imageId)
   }
 
-  function toggleImageIncluded(id: string, imageId: string) {
+  function toggleImageIncluded(id: string, imageId: number) {
     const c = byId(id)
     if (!c) return
     const img = c.images.find((i) => i.id === imageId)
@@ -240,11 +240,13 @@ export const useCardsStore = defineStore('cards', () => {
     const c = byId(cardId)
     if (!c) return
     const maxOrder = c.images.reduce((m, i) => Math.max(m, i.order), -1)
-    const id = dbId !== undefined ? String(dbId) : `${cardId}-${++_imageIdCounter}`
+    // dbId is expected for all new uploads; --_imageIdCounter produces a negative
+    // temporary id for the rare case where we add before the server round-trip.
+    const id = dbId !== undefined ? dbId : --_imageIdCounter
     c.images.push({ id, path, thumbPath, stagePath, order: maxOrder + 1, included })
   }
 
-  function setImageMeta(cardId: string, imageId: string, meta: { carId?: string | null; alt?: string; liveryId?: number | null }) {
+  function setImageMeta(cardId: string, imageId: number, meta: { carId?: string | null; alt?: string; liveryId?: number | null }) {
     const c = byId(cardId)
     if (!c) return
     const img = c.images.find(i => i.id === imageId)

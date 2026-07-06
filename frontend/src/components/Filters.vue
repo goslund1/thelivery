@@ -41,6 +41,9 @@ function toggleTuneType(name: string) {
       <span class="sugg-badge">{{ modal.pendingSuggestionCount }}</span>
       Suggestions
     </button>
+    <button class="bug-check sugg-row" @click="modal.openImageMigration()">
+      Image Migration
+    </button>
     <p class="bug-flyout-label" style="margin-top: 8px;">Show sections</p>
   </template>
   <p v-else class="bug-flyout-label">Show sections</p>

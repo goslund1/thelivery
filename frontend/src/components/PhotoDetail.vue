@@ -98,9 +98,9 @@ const emit = defineEmits<{
   close: []
   prev: []
   next: []
-  'update:alt': [imageId: string, alt: string]
-  'update:carId': [imageId: string, carId: string | null]
-  'update:liveryId': [imageId: string, liveryId: number | null]
+  'update:alt': [imageId: number, alt: string]
+  'update:carId': [imageId: number, carId: string | null]
+  'update:liveryId': [imageId: number, liveryId: number | null]
   'trigger-multi-car': [carId: string]
 }>()
 

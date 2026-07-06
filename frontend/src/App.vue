@@ -22,6 +22,7 @@ import FactoidPanel from './components/FactoidPanel.vue'
 import CardHistoryModal from './components/CardHistoryModal.vue'
 import SuggestionViewer from './components/SuggestionViewer.vue'
 import EditCardModal from './components/EditCardModal.vue'
+import ImageMigrationModal from './components/ImageMigrationModal.vue'
 
 const store = useCardsStore()
 const ui = useUiStore()
@@ -92,5 +93,6 @@ onBeforeUnmount(() => {
   <CardHistoryModal v-if="modal.historyCardId" :card-id="modal.historyCardId" />
   <SuggestionViewer v-if="modal.suggestionViewerOpen" @close="modal.closeSuggestionViewer()" />
   <EditCardModal v-if="modal.promotedCard" :card="modal.promotedCard" @close="modal.closePromotedCard()" />
+  <ImageMigrationModal />
   <CustomTip />
 </template>

@@ -98,6 +98,11 @@ export const useModalStore = defineStore('modal', () => {
   function openPromotedCard(card: Card) { promotedCard.value = card }
   function closePromotedCard() { promotedCard.value = null }
 
+  // ── Image migration tool ─────────────────────────────────────────────────────
+  const imageMigrationOpen = ref(false)
+  function openImageMigration() { imageMigrationOpen.value = true }
+  function closeImageMigration() { imageMigrationOpen.value = false }
+
   // Close whichever modal is frontmost. Returns true if anything was closed.
   // Priority order mirrors visual z-order: innermost/topmost first.
   function closeTopModal(): boolean {
@@ -126,6 +131,7 @@ export const useModalStore = defineStore('modal', () => {
     historyCardId, openHistory, closeHistory,
     suggestionViewerOpen, pendingSuggestionCount, openSuggestionViewer, closeSuggestionViewer,
     promotedCard, openPromotedCard, closePromotedCard,
+    imageMigrationOpen, openImageMigration, closeImageMigration,
     closeTopModal,
   }
 })

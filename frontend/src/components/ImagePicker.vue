@@ -29,22 +29,23 @@ async function onPickUpload(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!c?.sectionKey || !file) return
   const cv = card.value
-  const { path, thumbPath, stagePath } = await api.uploadImage(file, {
+  const result = await api.uploadImage(file, {
     name: cv?.name ?? '',
     subtitle: cv?.subtitle ?? '',
     collections: cv?.collections ?? [],
+    id: c.cardId,
   })
-  store.setFigure(c.cardId, c.sectionKey, path)
-  store.addImageToPool(c.cardId, path, thumbPath, stagePath, false)
+  store.setFigure(c.cardId, c.sectionKey, result.path)
+  store.addImageToPool(c.cardId, result.path, result.thumbPath, result.stagePath, false, result.id)
   ui.markCardDirty(c.cardId)
   modal.closeImagePicker()
 }
 
 // ── Manage mode — selection ───────────────────────────────────────────────────
-const selectedIds = ref<Set<string>>(new Set())
+const selectedIds = ref<Set<number>>(new Set())
 const lastClickedIndex = ref(-1)
 
-function onThumbClick(e: MouseEvent, imageId: string, index: number) {
+function onThumbClick(e: MouseEvent, imageId: number, index: number) {
   if (e.shiftKey && lastClickedIndex.value >= 0) {
     const min = Math.min(lastClickedIndex.value, index)
     const max = Math.max(lastClickedIndex.value, index)
@@ -89,24 +90,24 @@ watch(isManage, (on) => {
 onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 
 // ── Manage mode — per-image controls ─────────────────────────────────────────
-const pendingDeleteId = ref<string | null>(null)
+const pendingDeleteId = ref<number | null>(null)
 const pendingBatchDelete = ref(false)
 
-function doSetLead(imageId: string) {
+function doSetLead(imageId: number) {
   const c = ctx.value
   if (!c) return
   store.setLeadImage(c.cardId, imageId)
   ui.markCardDirty(c.cardId)
 }
 
-function doToggleIncluded(imageId: string) {
+function doToggleIncluded(imageId: number) {
   const c = ctx.value
   if (!c) return
   store.toggleImageIncluded(c.cardId, imageId)
   ui.markCardDirty(c.cardId)
 }
 
-function doRemove(imageId: string) {
+function doRemove(imageId: number) {
   const c = ctx.value
   if (!c) return
   store.removeImage(c.cardId, imageId)
@@ -141,16 +142,16 @@ function closeDetail() { detailIdx.value = null }
 function prevDetail() { if (detailIdx.value != null && detailIdx.value > 0) detailIdx.value-- }
 function nextDetail() { if (detailIdx.value != null && detailIdx.value < gallery.value.length - 1) detailIdx.value++ }
 
-function onDetailAlt(imageId: string, alt: string) {
+function onDetailAlt(imageId: number, alt: string) {
   const c = ctx.value
   if (c) { store.setImageMeta(c.cardId, imageId, { alt }); ui.markCardDirty(c.cardId) }
 }
-function onDetailCarId(imageId: string, carId: string | null) {
+function onDetailCarId(imageId: number, carId: string | null) {
   const c = ctx.value
   if (c) { store.setImageMeta(c.cardId, imageId, { carId }); ui.markCardDirty(c.cardId) }
 }
 
-function onDetailLiveryId(imageId: string, liveryId: number | null) {
+function onDetailLiveryId(imageId: number, liveryId: number | null) {
   const c = ctx.value
   if (c) { store.setImageMeta(c.cardId, imageId, { liveryId }); ui.markCardDirty(c.cardId) }
 }
@@ -169,7 +170,7 @@ const otherTaggedCarIds = computed(() => {
 })
 
 // ── Manage mode — drag reorder ───────────────────────────────────────────────
-const orderSnapshot = ref<{ id: string; order: number }[] | null>(null)
+const orderSnapshot = ref<{ id: number; order: number }[] | null>(null)
 const dragFromIdx = ref(-1)
 const dropIdx = ref(-1)
 

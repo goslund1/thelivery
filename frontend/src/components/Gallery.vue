@@ -83,18 +83,18 @@ function onDrop(i: number) {
   dragFrom.value = -1
   dropIdx.value = -1
 }
-function setLead(imageId: string) {
+function setLead(imageId: number) {
   store.setLeadImage(props.card.id, imageId)
   ui.markCardDirty(props.card.id)
 }
-function toggleIncluded(imageId: string) {
+function toggleIncluded(imageId: number) {
   store.toggleImageIncluded(props.card.id, imageId)
   ui.markCardDirty(props.card.id)
 }
 
 // ── Upload ────────────────────────────────────────────────────────────────────
 const uploadProgress = ref<{ done: number; total: number } | null>(null)
-const pendingDeleteId = ref<string | null>(null)
+const pendingDeleteId = ref<number | null>(null)
 const uploadResult = ref<{ added: number; failed: number } | null>(null)
 
 async function runUpload(
@@ -108,8 +108,8 @@ async function runUpload(
     for (let i = 0; i < files.length; i++) {
       try {
         const fileIndex = startIndex !== undefined ? startIndex + i : undefined
-        const { path, thumbPath, stagePath } = await api.uploadImage(files[i], cardCtx, fileIndex)
-        store.addImageToPool(props.card.id, path, thumbPath, stagePath)
+        const result = await api.uploadImage(files[i], { ...cardCtx, id: props.card.id }, fileIndex)
+        store.addImageToPool(props.card.id, result.path, result.thumbPath, result.stagePath, true, result.id)
         ui.markCardDirty(props.card.id)
         added++
       } catch (e) {

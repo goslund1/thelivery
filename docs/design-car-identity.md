@@ -1,7 +1,8 @@
 # Design: Car Identity, Livery & Tune Data Model
 
-Decided in session 2026-07-05. This doc is the foundation for the next build
-phase. Do not start schema migrations or UI work until this is agreed.
+Decided in session 2026-07-05. Updated same session with all open-item resolutions.
+This doc is the foundation for the next build phase. Do not start schema
+migrations or UI work until this is agreed.
 
 ---
 
@@ -39,7 +40,7 @@ FH6 - NISR34 - L001 - T002           ← second tune on the same livery
 | Segment | Scope | Notes |
 |---|---|---|
 | `GAME` | Global | `FH5` or `FH6` |
-| `CAR-CODE` | Per game | Auto-derived from cars table. First 3 of make + model abbreviation: `NIS` + `R34` → `NISR34`. Year suffix added on collision. |
+| `CAR-CODE` | Per game | Curated field on `cars` table (`cars.code`). Auto-suggested at seed time from make + model abbreviation (`NIS` + `R34` → `NISR34`); collision resolution appends year then a digit. `UNIQUE` DB constraint. See Car Code section. |
 | `L###` | Per car-game | `L000` reserved for factory/stock liveries (one per factory color). `L001`+ for custom. 3 digits. |
 | `T###` | Per livery | `T001`+ for each tune under a livery. 3 digits. |
 | `C###` | Global | Existing `catalogNumber`. 3 digits. |
@@ -49,13 +50,34 @@ FH6 - NISR34 - L001 - T002           ← second tune on the same livery
 
 ## Tables
 
-### `cars` (exists — no changes needed now)
+### `cars` (exists — gains `code` field)
 
 ```sql
 id TEXT PRIMARY KEY   -- 'fh6-nissan-skyline-gtr-r34'
 game TEXT             -- 'FH5' | 'FH6'
 make, model, year, class, pi, drive, country, category, decade, status, dlc
+code TEXT UNIQUE      -- 'NISR34', 'NISR34-2002' — curated, collision-checked
 ```
+
+#### Car Code generation
+
+`code` is a curated field auto-suggested at seed time, frozen after creation.
+
+**Generation algorithm:**
+1. Candidate = first 3 chars of make (uppercased) + model abbreviation (stripped of spaces/punctuation, uppercased). E.g. `Nissan` + `Skyline GT-R R34` → `NIS` + `R34` → `NISR34`.
+2. Check `UNIQUE` constraint — if clear, insert.
+3. On collision: append 2-digit year → `NISR34-02` (2002). Re-check.
+4. Still collides: append sequential digit → `NISR34-02-2`. Re-check.
+5. After 3 failed attempts: flag for manual review, do not insert.
+
+**Enforcement:**
+- `UNIQUE` constraint on `cars.code` at DB level — hard rejection of duplicates regardless of source.
+- Seed script runs the algorithm, logs any manual-review flags, inserts clean ones.
+- New car API endpoint returns `409 Conflict` with the suggested alternative code if a collision is detected, so you can pick a better one before committing.
+
+**`car_colors` data source:** scraped by us from Forza wikis and fan databases
+(same approach as the cars DB). Geoff is not involved — this is our own scrape
+and seed.
 
 ---
 
@@ -191,20 +213,38 @@ interface CardVariant {
 
 ### Tab strip modes
 
-The variant tab strip handles two distinct card shapes:
+Mode is **derived from the variants array** — no explicit flag on the card.
 
-| Mode | Tabs show | Example |
+| Condition | Mode | Tabs show |
 |---|---|---|
-| **Multi-car** | Car name (different cars, one tune each) | Tasting menu: R34 / NSX / 350Z |
-| **Multi-tune** | Tune type/name (same car, different tunes) | R34: Street Build / Track Setup / Drift |
+| All variants share the same `carId` | **Multi-tune** | Tune name / type |
+| Variants have different `carId` values | **Multi-car** | Car name |
+
+Constraint: the same car cannot appear twice in a multi-car card. Each car
+gets exactly one slot.
 
 The `+ Add` button in the tab strip expands to offer:
 - **Add Car** — adds a new (car + livery + tune) variant with a different car
 - **Add Tune** — adds a new tune variant for the same car/livery
 
-**Featured suggested tune:** a pinned tab that displays a promoted community
-submission (from the `suggestions` table). Read-only, with a "Promote to
-official" action.
+### Suggested tune tab
+
+When a community suggestion is promoted to official, it auto-creates a tune
+record and a read-only variant tab appears alongside the published tune tab.
+
+- **Published tab** (yours): interactive sliders, works as today
+- **Suggested tab**: read-only sliders in their recommended positions, colored
+  to show deviation from FH stock — same display as SuggestionViewer, but
+  inline on the card. Cannot be adjusted by visitors.
+- Suggested variants are flagged: `variant.isSuggested = true`
+- No "Promote" action needed — it was already promoted to get this tab
+
+### Migration strategy for existing cards
+
+Existing cards keep inline tune data in the recipe JSON body. `livery_id` and
+`tune_id` on `cards` and `images` are nullable FKs — populated lazily when
+cards are next edited. No batch migration. Clean up after the feature is
+working.
 
 ---
 
@@ -226,20 +266,19 @@ Extendable via admin UI (same pattern as tune types).
 
 ## Real-Time Import Interrupt
 
-When a photo is tagged with a carId/liveryId in PhotoDetail that differs from
-any existing tag on the card's images:
+When a photo is tagged with a liveryId in PhotoDetail that belongs to a
+different car than any existing tagged photo on the card:
 
-1. **First firing only** — triggers once per card. Once the card is multi-car,
-   no further interrupts regardless of how many more cars are added.
+1. **First firing only** — triggers once per card. Once the card is already
+   multi-car, no further interrupts regardless of how many more cars are added.
 2. **Prompt:** "Photos from 2 different cars detected — set this up as a
    multi-car card?"
 3. **Accepting:** initiates the variant creation flow for the new car.
-4. **Existing tune lookup:** when creating the new variant, query `tunes` +
-   `liveries` for any existing tune data for that carId. If found: "Found tune
-   data for [Year Make Model] in [Card Name] — import it?" Accepting copies
-   `tuneName`, `shareCode`, `coreSpecs`, `upgrades`, `adjustments` into the
-   new variant.
-5. **No match:** variant is created empty. User selects an upgrade preset and
+4. **Existing tune lookup:** query `tunes` + `liveries` for any existing tune
+   data for that carId anywhere in the catalog. If found: "Found tune data for
+   [Year Make Model] in [Card Name] — import it?" Accepting copies tune data
+   into the new variant.
+5. **No match:** variant created empty. User selects an upgrade preset and
    dials in sliders from scratch.
 
 ---
@@ -264,15 +303,24 @@ offer to pull data in.
 
 ## Build Order (next session)
 
-1. `car_colors` seed script + scrape
-2. DB migrations: `car_colors`, `liveries`, `tune_types`, `tunes`; add
-   `livery_id`/`tune_id`/`serial` to `images` and `cards`
-3. Update `CardVariant` interface to `(liveryId, tuneId)` refs
-4. Livery + tune creation flows (backend API + frontend forms)
-5. Serial number generation utility
-6. Import dialog upgrade (Make/Model → color → livery → tune)
-7. Real-time interrupt (PhotoDetail carId change detection)
-8. Existing tune lookup on variant add
-9. AI color assessment on custom livery photo import
-10. `car_colors` dropdown in factory livery flow
-11. Color + tune-type filter axes in SideBug
+1. `cars.code` field: add to DB (migration), update seed script with
+   auto-generation algorithm + collision check + manual-review flagging
+2. `car_colors` scrape + seed (our own scrape, not Geoff)
+3. DB migrations: `car_colors`, `liveries`, `tune_types`, `tunes`; add
+   `code`/`livery_id`/`tune_id`/`serial` to `cars`, `images`, `cards`
+4. Backend API: CRUD for liveries, tunes, tune_types; serial generator
+   utility; 409 on car code collision
+5. Update `CardVariant` type to `(liveryId, tuneId)` refs + resolved
+   display fields
+6. New stores: liveries, tunes, tune_types
+7. New component: `LiveryPicker.vue`
+   (Make/Model → factory/custom → factory color dropdown or AI assess → name)
+8. `RecipeSection.vue`: resolve variant data from stores; Add Car / Add Tune
+   button split; suggested tune tab (read-only, `isSuggested` flag)
+9. `PhotoDetail.vue`: tag by livery; real-time interrupt on second distinct car
+10. Existing tune lookup when creating a new variant
+11. AI color assessment endpoint (server-side Claude API call, admin-only)
+12. Color + tune-type filter axes in SideBug
+
+**Lazy migration:** existing cards keep inline recipe data. `livery_id` /
+`tune_id` on cards/images populate on next edit. No batch migration needed now.

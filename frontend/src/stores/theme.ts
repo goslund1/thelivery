@@ -94,6 +94,12 @@ function applyEffects(effects: ThemeEffects) {
   } else {
     root.style.removeProperty('--glass-bg')
   }
+  const pickerBase = effects.pickerColor ?? effects.glassColor
+  if (pickerBase) {
+    root.style.setProperty('--picker-glass-bg', `color-mix(in srgb, ${pickerBase} ${effects.pickerOpacity}%, transparent)`)
+  } else {
+    root.style.setProperty('--picker-glass-bg', `color-mix(in srgb, var(--panel) ${effects.pickerOpacity}%, transparent)`)
+  }
 }
 
 const LEGACY_COLOR_MAP: Record<string, keyof ThemeColors> = {

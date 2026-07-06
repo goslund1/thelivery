@@ -122,11 +122,26 @@ const showAutoPropose = computed(() => ui.isEditing && autoProposeCarIds.value.l
 
 function acceptAutoPropose() {
   const ids = autoProposeCarIds.value
-  // First addVariant promotes current single-car data to variant[0] and adds variant[1]
-  for (const id of ids) {
-    addVariant(id)
-  }
+  const currentCarId = props.carId ?? ''
+  const matchIdx = ids.indexOf(currentCarId)
+  const anchorIdx = matchIdx >= 0 ? matchIdx : 0
+  local.variants = ids.map((id, i) => {
+    if (i === anchorIdx) {
+      return {
+        carId: id,
+        tuneName: local.tuneName,
+        shareCode: local.shareCode,
+        coreSpecs: { ...local.coreSpecs },
+        upgrades: [...local.upgrades],
+        adjustments: [...local.adjustments],
+      }
+    }
+    return makeEmptyVariant(id)
+  })
+  activeVariantIndex.value = anchorIdx
   autoProposesDismissed.value = true
+  markDirty()
+  flush()
 }
 const pendingRemoveIdx = ref<number | null>(null)
 

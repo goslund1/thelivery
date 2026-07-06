@@ -18,7 +18,7 @@
     <!-- Search state: input row + drum reel -->
     <template v-else>
       <div class="cp-search-wrap" ref="wrapRef">
-        <span class="cp-game-badge cp-game-badge--active">{{ activeGame }}</span>
+        <button class="cp-game-badge cp-game-badge--active" @mousedown.prevent="activeGame = activeGame === 'FH5' ? 'FH6' : 'FH5'; cursor = -1" title="Switch game">{{ activeGame }}</button>
         <input
           ref="inputRef"
           class="cp-input"

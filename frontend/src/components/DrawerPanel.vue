@@ -7,10 +7,12 @@ const props = withDefaults(defineProps<{
   tabWidth?: number
   background?: string
   side?: 'left' | 'right'
+  flush?: boolean
 }>(), {
   width: 272,
   tabWidth: 14,
   side: 'left',
+  flush: false,
 })
 
 const emit = defineEmits<{ 'update:open': [value: boolean] }>()
@@ -20,7 +22,7 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
   <div
     v-scroll-contain
     class="dp-pane"
-    :class="{ 'dp-pane--open': open, 'dp-pane--right': side === 'right' }"
+    :class="{ 'dp-pane--open': open, 'dp-pane--right': side === 'right', 'dp-pane--flush': flush }"
     :style="{ '--dp-w': width + 'px', '--dp-tab': tabWidth + 'px', background }"
   >
     <button
@@ -79,6 +81,12 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
 }
 .dp-pane.dp-pane--open {
   width: calc(var(--dp-w) + var(--dp-tab));
+}
+
+/* Flush: no margin, no radius — for embedding inside a bounded container */
+.dp-pane--flush {
+  margin: 0;
+  border-radius: 0;
 }
 
 /* Right-side variant: tab on left edge, wing opens rightward */

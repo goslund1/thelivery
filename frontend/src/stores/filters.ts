@@ -1,6 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useCardsStore } from './cards'
+import { useLiveriesStore } from './liveries'
+import type { Card } from '../types'
+
+export const COLOR_TAXONOMY = [
+  'Red', 'Blue', 'Green', 'Yellow', 'Orange', 'Purple', 'Pink',
+  'White', 'Black', 'Silver', 'Grey', 'Gold', 'Bronze', 'Teal', 'Multi',
+] as const
+export type LiveryColor = typeof COLOR_TAXONOMY[number]
 
 export const useFilterStore = defineStore('filters', () => {
   const allExpanded = ref(false)
@@ -9,6 +17,10 @@ export const useFilterStore = defineStore('filters', () => {
 
   const favoritesOnly = ref(false)
   const disabledCollections = ref<Set<string>>(new Set())
+
+  // Color + tune-type axes (null = no filter active)
+  const activeColor = ref<LiveryColor | null>(null)
+  const activeTuneTypeName = ref<string | null>(null)
 
   function toggleAll() {
     allExpanded.value = !allExpanded.value
@@ -27,15 +39,37 @@ export const useFilterStore = defineStore('filters', () => {
     disabledCollections.value = s
   }
 
-  function isCardVisible(collections: string[], isFavorite: boolean) {
-    if (favoritesOnly.value && !isFavorite) return false
-    if (!collections.length) return true
-    return collections.some(c => !disabledCollections.value.has(c))
+  function isCardVisible(card: Card) {
+    if (favoritesOnly.value && !card.isFavorite) return false
+
+    if (card.collections.length && !card.collections.some(c => !disabledCollections.value.has(c))) return false
+
+    if (activeColor.value) {
+      const liveriesStore = useLiveriesStore()
+      const matches = card.images.some(img => {
+        if (!img.liveryId) return false
+        const livery = liveriesStore.get(img.liveryId)
+        return livery?.colorPrimary === activeColor.value || livery?.colorSecondary === activeColor.value
+      })
+      if (!matches) return false
+    }
+
+    if (activeTuneTypeName.value) {
+      const sections = card.sections.filter(s => s.type === 'forza_recipe')
+      const matches = sections.some(s => {
+        if (s.type !== 'forza_recipe') return false
+        return s.variants?.some(v => v.tuneType === activeTuneTypeName.value)
+      })
+      if (!matches) return false
+    }
+
+    return true
   }
 
   return {
     allExpanded, sectionExpanded, upgradesExpanded,
     favoritesOnly, disabledCollections,
+    activeColor, activeTuneTypeName,
     toggleAll, setSectionExpanded, toggleCollection, isCardVisible,
   }
 })

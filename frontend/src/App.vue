@@ -75,7 +75,7 @@ onBeforeUnmount(() => {
         v-for="c in store.cards"
         :key="c.id"
         :card="c"
-        v-show="c.isLegend ? ui.isEditing : filters.isCardVisible(c.collections, c.isFavorite)"
+        v-show="c.isLegend ? ui.isEditing : filters.isCardVisible(c)"
       />
     </template>
   </div>

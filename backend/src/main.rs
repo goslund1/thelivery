@@ -1494,7 +1494,7 @@ async fn admin_assess_livery_color(
     let serial: String = livery.get("serial");
 
     let img_row = sqlx::query(
-        "SELECT path FROM images WHERE livery_id = ? ORDER BY sort_order ASC LIMIT 1",
+        "SELECT path, thumb_path FROM images WHERE livery_id = ? ORDER BY sort_order ASC LIMIT 1",
     )
     .bind(id)
     .fetch_optional(&st.pool)
@@ -1502,7 +1502,11 @@ async fn admin_assess_livery_color(
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
     .ok_or_else(|| err(StatusCode::NOT_FOUND, "no images tagged to this livery"))?;
 
-    let img_path: String = img_row.get("path");
+    // Prefer the thumbnail — same color info, far fewer tokens.
+    let thumb: Option<String> = img_row.try_get("thumb_path").unwrap_or(None);
+    let img_path: String = thumb
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| img_row.get("path"));
 
     // Resolve the file path: strip leading /uploads/ and join with uploads_dir.
     let rel = img_path.trim_start_matches('/').trim_start_matches("uploads/");

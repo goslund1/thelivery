@@ -38,6 +38,18 @@
             />
           </div>
 
+          <!-- Color assessment log -->
+          <div v-if="assessLog.length" class="pd-assess-log" :class="{ 'pd-assess-log--fading': assessFading }">
+            <div v-for="e in assessLog" :key="e.liveryId" class="pd-assess-row">
+              <span class="pd-assess-name">{{ e.name }}</span>
+              <span v-if="e.status === 'pending'" class="pd-assess-status pd-assess-status--pending">assessing…</span>
+              <span v-else-if="e.status === 'done'" class="pd-assess-status pd-assess-status--done">
+                {{ e.primary }}<template v-if="e.secondary"> / {{ e.secondary }}</template>
+              </span>
+              <span v-else class="pd-assess-status pd-assess-status--error">failed</span>
+            </div>
+          </div>
+
           <!-- Multi-car interrupt -->
           <div v-if="pendingInterruptCarId" class="pd-interrupt">
             <span class="pd-interrupt-msg">
@@ -65,8 +77,10 @@
 import { ref, computed } from 'vue'
 import { useCarsStore } from '../stores/cars'
 import { useLiveriesStore } from '../stores/liveries'
+import { useAuthStore } from '../stores/auth'
 import CarPicker from './CarPicker.vue'
 import LiveryPicker from './LiveryPicker.vue'
+import { api } from '../api'
 import type { CardImage } from '../types'
 
 const props = defineProps<{
@@ -92,6 +106,7 @@ const emit = defineEmits<{
 
 const carsStore = useCarsStore()
 const liveriesStore = useLiveriesStore()
+const auth = useAuthStore()
 carsStore.load()
 
 // The effective carId for this photo (image override takes precedence over card-level).
@@ -105,6 +120,50 @@ const interruptCarName = computed(() => {
   return car ? `${car.year ?? ''} ${car.make} ${car.model}`.trim() : pendingInterruptCarId.value
 })
 
+// Color assessment log — one entry per livery tagged in this session.
+type AssessEntry = { liveryId: number; name: string; status: 'pending' | 'done' | 'error'; primary?: string; secondary?: string }
+const assessLog = ref<AssessEntry[]>([])
+const assessFading = ref(false)
+let assessFadeTimer: ReturnType<typeof setTimeout> | null = null
+
+function triggerAssess(liveryId: number) {
+  if (!auth.isAuthenticated) return
+  const livery = liveriesStore.get(liveryId)
+  const name = livery?.name ?? `Livery #${liveryId}`
+  const existing = assessLog.value.find(e => e.liveryId === liveryId)
+  if (existing) {
+    // Re-assess if already done — update in place.
+    existing.status = 'pending'
+    existing.primary = undefined
+    existing.secondary = undefined
+  } else {
+    assessLog.value.push({ liveryId, name, status: 'pending' })
+  }
+  assessFading.value = false
+  if (assessFadeTimer) clearTimeout(assessFadeTimer)
+
+  api.assessLiveryColor(liveryId)
+    .then(result => {
+      const entry = assessLog.value.find(e => e.liveryId === liveryId)
+      if (entry) { entry.status = 'done'; entry.primary = result.primary; entry.secondary = result.secondary }
+      scheduleFade()
+    })
+    .catch(() => {
+      const entry = assessLog.value.find(e => e.liveryId === liveryId)
+      if (entry) entry.status = 'error'
+      scheduleFade()
+    })
+}
+
+function scheduleFade() {
+  const allDone = assessLog.value.every(e => e.status !== 'pending')
+  if (!allDone) return
+  assessFadeTimer = setTimeout(() => {
+    assessFading.value = true
+    assessFadeTimer = setTimeout(() => { assessLog.value = []; assessFading.value = false }, 800)
+  }, 2000)
+}
+
 function onAlt(e: Event) {
   emit('update:alt', props.image.id, (e.target as HTMLInputElement).value)
 }
@@ -115,6 +174,7 @@ function onCarId(carId: string | null) {
 
 function onLiveryId(liveryId: number | null) {
   emit('update:liveryId', props.image.id, liveryId)
+  if (liveryId) triggerAssess(liveryId)
   if (!liveryId || !props.cardId) return
   // Interrupt: only fires once per card per session, only when a second distinct car appears.
   const key = `tl-interrupt-fired-${props.cardId}`
@@ -255,6 +315,38 @@ function dismissInterrupt() {
 .pd-alt-input::placeholder { color: var(--text-muted, #555); }
 
 .pd-meta-row--car { align-items: flex-start; }
+
+.pd-assess-log {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--panel-well, #111) 60%, transparent);
+  border: 1px solid var(--panel-edge, #333);
+  opacity: 1;
+  transition: opacity 0.8s ease;
+}
+.pd-assess-log--fading { opacity: 0; }
+
+.pd-assess-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font: 11px/1.3 'JetBrains Mono', monospace;
+}
+.pd-assess-name {
+  color: var(--text-muted, #888);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pd-assess-status { flex-shrink: 0; }
+.pd-assess-status--pending { color: var(--text-muted, #666); font-style: italic; }
+.pd-assess-status--done { color: var(--accent, #c9aa71); }
+.pd-assess-status--error { color: #c94444; }
 
 .pd-interrupt {
   display: flex;

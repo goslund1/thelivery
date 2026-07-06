@@ -174,4 +174,9 @@ export const api = {
       json<{ id?: number; path: string; thumbPath?: string; stagePath?: string; carId?: string | null }>,
     )
   },
+
+  assessLiveryColor: (id: number) =>
+    fetch(`/api/admin/liveries/${id}/assess-color`, { method: 'POST', headers: authHeaders() }).then(
+      json<{ id: number; serial: string; primary: string; secondary?: string }>
+    ),
 }

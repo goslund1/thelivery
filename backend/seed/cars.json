@@ -18032,6 +18032,22 @@
     "code": "FORGTMKIV"
   },
   {
+    "id": "fh6-ford-bronco-r-2020",
+    "game": "FH6",
+    "make": "Ford",
+    "model": "Bronco R #2069",
+    "year": 2020,
+    "class": "A",
+    "category": "Offroad",
+    "drive": "4WD",
+    "country": "US",
+    "decade": "2020s",
+    "status": "confirmed",
+    "pi": null,
+    "dlc": null,
+    "code": "BRNCR2069"
+  },
+  {
     "id": "fh6-ford-bronco-raptor-2024",
     "game": "FH6",
     "make": "Ford",

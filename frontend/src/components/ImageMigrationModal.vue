@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted, onMounted } from 'vue'
 import { useCardsStore } from '../stores/cards'
 import { useModalStore } from '../stores/modal'
 import { useLiveriesStore } from '../stores/liveries'
@@ -97,6 +97,59 @@ const filenamePreview = computed(() => {
 
 const batchProcessing = ref(false)
 const toastDrawerOpen = ref(false)
+
+// --- Persistent failed-assess list ---
+interface FailedAssess { liveryId: number; liveryName: string; cardName: string }
+const FAIL_KEY = 'imm-assess-failures'
+const failedAssess = ref<FailedAssess[]>([])
+
+onMounted(() => {
+  try { failedAssess.value = JSON.parse(localStorage.getItem(FAIL_KEY) ?? '[]') } catch { /* empty */ }
+})
+
+function persistFailures() { localStorage.setItem(FAIL_KEY, JSON.stringify(failedAssess.value)) }
+
+function addFailure(f: FailedAssess) {
+  failedAssess.value = [...failedAssess.value.filter(x => x.liveryId !== f.liveryId), f]
+  persistFailures()
+}
+function removeFailure(liveryId: number) {
+  failedAssess.value = failedAssess.value.filter(x => x.liveryId !== liveryId)
+  persistFailures()
+}
+
+const retryingId = ref<number | null>(null)
+
+async function retryAssess(f: FailedAssess) {
+  retryingId.value = f.liveryId
+  toastDrawerOpen.value = true
+  const toastId = toasts.push(`Retry: ${f.cardName}`, [
+    { text: `Assessing ${f.liveryName}…`, status: 'processing' },
+  ])
+  const itemId = toasts.toasts.find(t => t.id === toastId)!.items[0].id
+  try {
+    const r = await api.assessLiveryColor(f.liveryId)
+    const colors = r.primary + (r.secondary ? ' / ' + r.secondary : '')
+    toasts.updateItem(toastId, itemId, { status: 'done', text: 'Colors assessed', detail: colors })
+    removeFailure(f.liveryId)
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    const isQuota = msg.includes('429') || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('credit')
+    toasts.updateItem(toastId, itemId, {
+      status: 'error',
+      text: isQuota ? 'AI quota exceeded' : 'Color assess failed',
+      detail: isQuota ? 'retry later' : msg,
+    })
+  } finally {
+    retryingId.value = null
+  }
+}
+
+async function retryAll() {
+  for (const f of [...failedAssess.value]) {
+    await retryAssess(f)
+  }
+}
 
 // Auto-close drawer once all toasts have faded and been removed
 watch(() => toasts.toasts.length, (len) => {
@@ -198,6 +251,7 @@ async function assignSelected() {
           text: isQuota ? 'AI quota exceeded' : 'Color assess failed',
           detail: isQuota ? 'retry later' : msg,
         })
+        addFailure({ liveryId: livery.id, liveryName: name, cardName: card.name })
       })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -234,7 +288,30 @@ function close() { modal.closeImageMigration() }
 
           <div v-if="done" class="imm-done">
             <p class="imm-done-msg">All {{ cardsWithImages.length }} cards visited.</p>
-            <button class="imm-btn-primary" @click="close">Close</button>
+
+            <!-- Failed assess list -->
+            <div v-if="failedAssess.length" class="imm-retry-panel">
+              <div class="imm-retry-header">
+                <span class="imm-retry-title">Color assess failed ({{ failedAssess.length }})</span>
+                <button class="imm-btn-primary" :disabled="retryingId !== null" @click="retryAll">
+                  Retry all
+                </button>
+              </div>
+              <div class="imm-retry-list">
+                <div v-for="f in failedAssess" :key="f.liveryId" class="imm-retry-row">
+                  <span class="imm-retry-card">{{ f.cardName }}</span>
+                  <span class="imm-retry-name">{{ f.liveryName }}</span>
+                  <button
+                    class="imm-btn-skip"
+                    :disabled="retryingId === f.liveryId"
+                    @click="retryAssess(f)"
+                  >{{ retryingId === f.liveryId ? '…' : 'Retry' }}</button>
+                </div>
+              </div>
+            </div>
+            <p v-else class="imm-done-all-clear">All color assessments succeeded.</p>
+
+            <button class="imm-btn-skip" @click="close">Close</button>
           </div>
 
           <template v-else-if="currentCard">
@@ -704,7 +781,7 @@ function close() { modal.closeImageMigration() }
 .imm-btn-skip--ready:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 
 .imm-done {
-  padding: 32px 24px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -714,5 +791,57 @@ function close() { modal.closeImageMigration() }
   font: 13px/1.4 'JetBrains Mono', monospace;
   color: var(--fg);
   text-align: center;
+}
+.imm-done-all-clear {
+  font: 11px/1 'JetBrains Mono', monospace;
+  color: #4a9;
+  margin: 0;
+}
+
+.imm-retry-panel {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, #c44 30%, transparent);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.imm-retry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: color-mix(in srgb, #c44 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, #c44 20%, transparent);
+}
+.imm-retry-title {
+  font: 700 10px/1 'Oswald', sans-serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #e07070;
+}
+.imm-retry-list {
+  display: flex;
+  flex-direction: column;
+}
+.imm-retry-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-edge) 40%, transparent);
+}
+.imm-retry-row:last-child { border-bottom: none; }
+.imm-retry-card {
+  font: 9px/1 'JetBrains Mono', monospace;
+  color: var(--muted);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+.imm-retry-name {
+  font: 10px/1 'Oswald', sans-serif;
+  color: var(--fg);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

@@ -95,6 +95,7 @@ const filenamePreview = computed(() => {
 })
 
 const batchProcessing = ref(false)
+const toastDrawerOpen = ref(true)
 
 // Reset per-card state when card changes
 watch(currentCard, (card) => {
@@ -202,103 +203,146 @@ function close() { modal.closeImageMigration() }
   <Teleport to="body">
     <div v-if="modal.imageMigrationOpen" class="imm-overlay" @click.self="close">
       <div class="imm-shell">
-        <button class="imm-close" @click="close">×</button>
 
-        <div v-if="done" class="imm-done">
-          <p class="imm-done-msg">All {{ cardsWithImages.length }} cards visited.</p>
-          <button class="imm-btn-primary" @click="close">Close</button>
+        <!-- Main content column -->
+        <div class="imm-main">
+          <button class="imm-close" @click="close">×</button>
+
+          <div v-if="done" class="imm-done">
+            <p class="imm-done-msg">All {{ cardsWithImages.length }} cards visited.</p>
+            <button class="imm-btn-primary" @click="close">Close</button>
+          </div>
+
+          <template v-else-if="currentCard">
+            <!-- Header -->
+            <div class="imm-header">
+              <div class="imm-header-top">
+                <span class="imm-counter">{{ currentIndex + 1 }} / {{ cardsWithImages.length }}</span>
+                <h2 class="imm-title">{{ currentCard.name }}</h2>
+              </div>
+              <div class="imm-filename-preview">{{ filenamePreview }}</div>
+            </div>
+
+            <!-- Selection controls -->
+            <div class="imm-select-bar">
+              <button class="imm-select-all" @click="toggleAll">
+                {{ allSelected ? 'Deselect all' : 'Select all' }}
+              </button>
+              <span class="imm-sel-count">
+                {{ selectedIds.size }} selected
+                <template v-if="assignedIds.size"> · {{ assignedIds.size }} assigned</template>
+              </span>
+            </div>
+
+            <!-- Image grid -->
+            <div class="imm-img-grid" :class="{ 'imm-img-grid--done': allAssigned }">
+              <div v-if="allAssigned" class="imm-done-overlay">
+                <span>Images</span>
+                <span>Migrated</span>
+              </div>
+              <button
+                v-for="img in currentCard.images.slice().sort((a,b) => a.order - b.order)"
+                :key="img.id"
+                class="imm-img-cell"
+                :class="{
+                  'imm-img-cell--selected': selectedIds.has(img.id),
+                  'imm-img-cell--assigned': assignedIds.has(img.id) && !selectedIds.has(img.id),
+                }"
+                @click="toggleImage(img.id)"
+              >
+                <img
+                  :src="img.thumbPath ?? img.path"
+                  class="imm-thumb"
+                  :alt="img.alt ?? ''"
+                />
+                <div class="imm-img-check">
+                  <span v-if="selectedIds.has(img.id)">✓</span>
+                  <span v-else-if="assignedIds.has(img.id)" class="imm-img-check--done">·</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- Assignment controls -->
+            <div class="imm-assign">
+              <div v-if="showCarRequired" class="imm-car-gate">
+                <span class="imm-car-gate-msg">A car must be selected before assigning images.</span>
+                <button class="imm-car-gate-dismiss" @click="showCarRequired = false">Got it</button>
+              </div>
+              <div class="imm-row" :class="{ 'imm-row--highlight': showCarRequired }">
+                <span class="imm-label">Car</span>
+                <CarPicker :car-id="carId" @update:car-id="id => { carId = id; showCarRequired = false }" />
+              </div>
+              <div class="imm-row">
+                <span class="imm-label">Livery</span>
+                <input
+                  class="imm-livery-input"
+                  v-model="liveryName"
+                  placeholder="Livery name…"
+                />
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="imm-actions">
+              <div class="imm-nav-btns">
+                <button
+                  class="imm-btn-skip"
+                  :disabled="currentIndex === 0"
+                  @click="prevCard"
+                >← Prev</button>
+                <button
+                  class="imm-btn-skip"
+                  :class="{ 'imm-btn-skip--ready': allAssigned }"
+                  @click="nextCard"
+                >Next →</button>
+              </div>
+              <button
+                class="imm-btn-primary"
+                :disabled="!canAssign"
+                @click="assignSelected"
+              >Assign selected →</button>
+            </div>
+          </template>
         </div>
 
-        <template v-else-if="currentCard">
-          <!-- Header -->
-          <div class="imm-header">
-            <div class="imm-header-top">
-              <span class="imm-counter">{{ currentIndex + 1 }} / {{ cardsWithImages.length }}</span>
-              <h2 class="imm-title">{{ currentCard.name }}</h2>
-            </div>
-            <div class="imm-filename-preview">{{ filenamePreview }}</div>
-          </div>
-
-          <!-- Selection controls -->
-          <div class="imm-select-bar">
-            <button class="imm-select-all" @click="toggleAll">
-              {{ allSelected ? 'Deselect all' : 'Select all' }}
-            </button>
-            <span class="imm-sel-count">
-              {{ selectedIds.size }} selected
-              <template v-if="assignedIds.size"> · {{ assignedIds.size }} assigned</template>
-            </span>
-          </div>
-
-          <!-- Image grid -->
-          <div class="imm-img-grid" :class="{ 'imm-img-grid--done': allAssigned }">
-            <div v-if="allAssigned" class="imm-done-overlay">
-              <span>Images</span>
-              <span>Migrated</span>
-            </div>
-            <button
-              v-for="img in currentCard.images.slice().sort((a,b) => a.order - b.order)"
-              :key="img.id"
-              class="imm-img-cell"
-              :class="{
-                'imm-img-cell--selected': selectedIds.has(img.id),
-                'imm-img-cell--assigned': assignedIds.has(img.id) && !selectedIds.has(img.id),
-              }"
-              @click="toggleImage(img.id)"
-            >
-              <img
-                :src="img.thumbPath ?? img.path"
-                class="imm-thumb"
-                :alt="img.alt ?? ''"
-              />
-              <div class="imm-img-check">
-                <span v-if="selectedIds.has(img.id)">✓</span>
-                <span v-else-if="assignedIds.has(img.id)" class="imm-img-check--done">·</span>
-              </div>
-            </button>
-          </div>
-
-          <!-- Assignment controls -->
-          <div class="imm-assign">
-            <!-- Car required gate -->
-            <div v-if="showCarRequired" class="imm-car-gate">
-              <span class="imm-car-gate-msg">A car must be selected before assigning images.</span>
-              <button class="imm-car-gate-dismiss" @click="showCarRequired = false">Got it</button>
-            </div>
-            <div class="imm-row" :class="{ 'imm-row--highlight': showCarRequired }">
-              <span class="imm-label">Car</span>
-              <CarPicker :car-id="carId" @update:car-id="id => { carId = id; showCarRequired = false }" />
-            </div>
-            <div class="imm-row">
-              <span class="imm-label">Livery</span>
-              <input
-                class="imm-livery-input"
-                v-model="liveryName"
-                placeholder="Livery name…"
-              />
+        <!-- Toast drawer — frosted glass right panel -->
+        <div class="imm-toast-drawer" :class="{ 'imm-toast-drawer--collapsed': !toastDrawerOpen }">
+          <!-- Tab handle -->
+          <button class="imm-toast-tab" @click="toastDrawerOpen = !toastDrawerOpen" :title="toastDrawerOpen ? 'Collapse log' : 'Expand log'">
+            <span class="imm-toast-tab-chevron" :class="{ 'imm-toast-tab-chevron--collapsed': !toastDrawerOpen }">›</span>
+          </button>
+          <!-- Body -->
+          <div class="imm-toast-body">
+            <div class="imm-toast-header">Migration Log</div>
+            <div class="imm-toast-scroll">
+              <template v-if="toasts.toasts.length">
+                <div
+                  v-for="toast in toasts.toasts"
+                  :key="toast.id"
+                  class="imm-toast-panel"
+                  :class="{ 'imm-toast-panel--fading': toast.fadingOut }"
+                >
+                  <div class="imm-toast-title-row">
+                    <span class="imm-toast-title">{{ toast.title }}</span>
+                    <button class="imm-toast-dismiss" @click="toasts.dismiss(toast.id)">×</button>
+                  </div>
+                  <div
+                    v-for="item in toast.items"
+                    :key="item.id"
+                    class="imm-toast-item"
+                    :class="'imm-toast-item--' + item.status"
+                  >
+                    <span class="imm-toast-dot" />
+                    <span class="imm-toast-text">{{ item.text }}</span>
+                    <span v-if="item.detail" class="imm-toast-detail">{{ item.detail }}</span>
+                  </div>
+                </div>
+              </template>
+              <p v-else class="imm-toast-empty">No activity yet</p>
             </div>
           </div>
+        </div>
 
-
-          <!-- Actions -->
-          <div class="imm-actions">
-            <button
-              class="imm-btn-skip"
-              :disabled="currentIndex === 0"
-              @click="prevCard"
-            >← Prev</button>
-            <button
-              class="imm-btn-skip"
-              :class="{ 'imm-btn-skip--ready': allAssigned }"
-              @click="nextCard"
-            >Next →</button>
-            <button
-              class="imm-btn-primary"
-              :disabled="!canAssign"
-              @click="assignSelected"
-            >Assign selected →</button>
-          </div>
-        </template>
       </div>
     </div>
   </Teleport>
@@ -314,17 +358,30 @@ function close() { modal.closeImageMigration() }
   align-items: center;
   justify-content: center;
 }
+
+/* Outer shell: flex row — main content + toast drawer side by side */
 .imm-shell {
   position: relative;
-  width: min(92vw, 600px);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
   max-height: 90vh;
-  overflow-y: auto;
   background: var(--panel-bg, #1a1a1a);
   border: 1px solid var(--panel-edge, #333);
   border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Main content column */
+.imm-main {
+  position: relative;
+  width: min(92vw, 560px);
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
+
 .imm-close {
   position: absolute;
   top: 8px; right: 10px;
@@ -333,6 +390,142 @@ function close() { modal.closeImageMigration() }
   cursor: pointer; z-index: 1;
 }
 .imm-close:hover { color: var(--fg); }
+
+/* Toast drawer — right side panel */
+.imm-toast-drawer {
+  display: flex;
+  flex-direction: row;
+  border-left: 1px solid var(--panel-edge, #333);
+  background: color-mix(in srgb, var(--panel-bg, #1a1a1a) 72%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  width: 220px;
+  transition: width 0.22s ease;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.imm-toast-drawer--collapsed {
+  width: 20px;
+}
+
+/* Tab handle — left edge of the drawer */
+.imm-toast-tab {
+  width: 20px;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  border-right: 1px solid var(--panel-edge, #333);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color 0.15s;
+}
+.imm-toast-tab:hover { color: var(--fg); }
+.imm-toast-tab-chevron {
+  font-size: 14px;
+  line-height: 1;
+  display: block;
+  transition: transform 0.22s ease;
+}
+.imm-toast-tab-chevron--collapsed { transform: scaleX(-1); }
+
+/* Drawer body */
+.imm-toast-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+.imm-toast-header {
+  padding: 8px 10px 6px;
+  font: 700 9px/1 'Oswald', sans-serif;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--panel-edge, #333);
+  flex-shrink: 0;
+}
+.imm-toast-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0 10px;
+}
+.imm-toast-empty {
+  font: 10px/1 'JetBrains Mono', monospace;
+  color: var(--muted);
+  padding: 12px 10px;
+  margin: 0;
+  opacity: 0.5;
+}
+
+/* Toast panels */
+.imm-toast-panel {
+  margin-bottom: 10px;
+  transition: opacity .5s ease;
+}
+.imm-toast-panel--fading { opacity: 0; pointer-events: none; }
+
+.imm-toast-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 3px;
+  border-bottom: 1px solid color-mix(in srgb, var(--panel-edge) 50%, transparent);
+}
+.imm-toast-title {
+  font: 700 9px/1 'Oswald', sans-serif;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.imm-toast-dismiss {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.imm-toast-dismiss:hover { color: var(--fg); }
+
+.imm-toast-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  font: 9px/1.5 'JetBrains Mono', monospace;
+}
+.imm-toast-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--muted);
+}
+.imm-toast-item--processing .imm-toast-dot {
+  background: var(--accent);
+  animation: imm-pulse 1s ease-in-out infinite;
+}
+.imm-toast-item--done .imm-toast-dot { background: #4a9; }
+.imm-toast-item--error .imm-toast-dot { background: #c44; }
+.imm-toast-text { color: var(--fg); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.imm-toast-item--done .imm-toast-text { color: var(--muted); }
+.imm-toast-item--error .imm-toast-text { color: #e07070; }
+.imm-toast-detail { color: var(--muted); font-size: 8px; flex-shrink: 0; }
+.imm-toast-item--done .imm-toast-detail { color: #4a9; }
+
+@keyframes imm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
 
 .imm-header {
   padding: 12px 16px 10px;
@@ -515,6 +708,10 @@ function close() { modal.closeImageMigration() }
   align-items: center;
   padding: 10px 14px;
   gap: 8px;
+}
+.imm-nav-btns {
+  display: flex;
+  gap: 4px;
 }
 .imm-btn-primary {
   font: 11px/1 'JetBrains Mono', monospace;

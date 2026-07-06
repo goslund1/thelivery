@@ -15,7 +15,7 @@
       <button class="cp-add-btn" @click="startSearch('FH6')">+ FH6</button>
     </template>
 
-    <!-- Search state: input + dropdown -->
+    <!-- Search state: input row + drum reel -->
     <template v-else>
       <div class="cp-search-wrap" ref="wrapRef">
         <span class="cp-game-badge cp-game-badge--active">{{ activeGame }}</span>
@@ -31,24 +31,37 @@
           spellcheck="false"
         />
         <button class="cp-clear" @click="cancel" title="Cancel">×</button>
-        <ul v-if="results.length" class="cp-dropdown" :class="{ 'cp-dropdown--up': dropUp }" ref="listRef">
-          <li
-            v-for="(c, i) in results"
-            :key="c.id"
-            class="cp-option"
-            :class="{ 'cp-option--active': i === cursor }"
-            @mousedown.prevent="select(c)"
-            @mousemove="cursor = i"
-          >
-            <span class="cp-opt-year">{{ c.year }}</span>
-            <span class="cp-opt-name">{{ c.make }} {{ c.model }}</span>
-            <span v-if="c.dlc" class="cp-opt-dlc">{{ c.dlc }}</span>
-          </li>
-        </ul>
-        <ul v-else-if="query.length > 1" class="cp-dropdown cp-dropdown--empty">
-          <li class="cp-option cp-option--none">No match — try make or model</li>
-        </ul>
       </div>
+
+      <!-- Drum reel — Teleported to body to escape modal overflow clipping -->
+      <Teleport to="body">
+        <div
+          v-if="(results.length || query.length > 1) && drumStyle.top !== undefined"
+          class="cp-drum"
+          :style="drumStyle"
+        >
+          <ul
+            class="cp-drum-track"
+            :style="{ transform: `translateY(${trackY}px)` }"
+          >
+            <li
+              v-for="(c, i) in results"
+              :key="c.id"
+              class="cp-drum-item"
+              :class="{ 'cp-drum-item--active': i === cursor }"
+              @mousedown.prevent="select(c)"
+              @mousemove="cursor = i"
+            >
+              <span class="cp-opt-year">{{ c.year }}</span>
+              <span class="cp-opt-name">{{ c.make }} {{ c.model }}</span>
+              <span v-if="c.dlc" class="cp-opt-dlc">{{ c.dlc }}</span>
+            </li>
+            <li v-if="!results.length" class="cp-drum-item cp-drum-item--none">
+              No match — try make or model
+            </li>
+          </ul>
+        </div>
+      </Teleport>
     </template>
   </div>
 </template>
@@ -57,6 +70,11 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useCarsStore } from '../stores/cars'
 import type { Car } from '../types'
+
+const ITEM_H  = 28
+const N_ABOVE = 3
+const N_BELOW = 4
+const DRUM_H  = (N_ABOVE + 1 + N_BELOW) * ITEM_H  // 224px
 
 const props = defineProps<{ carId?: string | null }>()
 const emit = defineEmits<{ (e: 'update:carId', id: string | null): void }>()
@@ -70,14 +88,18 @@ const query = ref('')
 const cursor = ref(-1)
 const inputRef = ref<HTMLInputElement>()
 const wrapRef = ref<HTMLElement>()
-const listRef = ref<HTMLElement>()
-const dropUp = ref(false)
 
-function measurePlacement() {
+const drumStyle = ref<Record<string, string>>({})
+
+function updateDrumStyle() {
   if (!wrapRef.value) return
   const rect = wrapRef.value.getBoundingClientRect()
-  const spaceBelow = window.innerHeight - rect.bottom
-  dropUp.value = spaceBelow < 240
+  drumStyle.value = {
+    top:    `${rect.top - N_ABOVE * ITEM_H}px`,
+    left:   `${rect.left}px`,
+    width:  `${rect.width}px`,
+    height: `${DRUM_H}px`,
+  }
 }
 
 const car = computed<Car | undefined>(() =>
@@ -88,13 +110,19 @@ const results = computed<Car[]>(() =>
   searching.value ? carsStore.search(activeGame.value, query.value) : []
 )
 
+// Translate the track so the cursor item sits at the center slot.
+const trackY = computed(() => {
+  const idx = cursor.value >= 0 ? cursor.value : 0
+  return N_ABOVE * ITEM_H - idx * ITEM_H
+})
+
 async function startSearch(game: 'FH5' | 'FH6') {
   activeGame.value = game
   searching.value = true
   query.value = car.value ? car.value.make : ''
   cursor.value = -1
-  measurePlacement()
   await nextTick()
+  updateDrumStyle()
   inputRef.value?.focus()
   inputRef.value?.select()
 }
@@ -119,11 +147,9 @@ function onKey(e: KeyboardEvent) {
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     cursor.value = Math.min(cursor.value + 1, results.value.length - 1)
-    scrollCursor()
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     cursor.value = Math.max(cursor.value - 1, 0)
-    scrollCursor()
   } else if (e.key === 'Enter') {
     e.preventDefault()
     const pick = results.value[cursor.value] ?? results.value[0]
@@ -131,14 +157,6 @@ function onKey(e: KeyboardEvent) {
   }
 }
 
-function scrollCursor() {
-  nextTick(() => {
-    const li = listRef.value?.children[cursor.value] as HTMLElement | undefined
-    li?.scrollIntoView({ block: 'nearest' })
-  })
-}
-
-// short delay lets mousedown.prevent select fire before blur dismisses
 function onBlur() {
   setTimeout(() => {
     if (!wrapRef.value?.contains(document.activeElement)) cancel()
@@ -219,7 +237,7 @@ watch(() => props.carId, () => {
 }
 .cp-clear:hover { color: var(--text-primary, #e0e0e0); }
 
-/* search wrap */
+/* search row */
 .cp-search-wrap {
   position: relative;
   display: flex;
@@ -242,54 +260,71 @@ watch(() => props.carId, () => {
 }
 .cp-input::placeholder { color: var(--text-muted, #666); }
 
-/* dropdown */
-.cp-dropdown {
-  position: absolute;
-  top: calc(100% + 3px);
-  bottom: auto;
-  left: 0;
-  right: 0;
-  max-height: 220px;
-  overflow-y: auto;
-  border-radius: 4px;
+/* drum reel — fixed position, escapes overflow clipping */
+.cp-drum {
+  position: fixed;
+  z-index: 9999;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--panel, #1e1e1e) 96%, transparent);
   border: 1px solid var(--muted-light, #444);
-  background: color-mix(in srgb, var(--panel-bg, #1e1e1e) 95%, transparent);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  /* Fade items at top and bottom edges */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%);
+}
+
+/* Center slot highlight band */
+.cp-drum::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(3 * 28px);  /* N_ABOVE * ITEM_H */
+  height: 28px;         /* ITEM_H */
+  background: color-mix(in srgb, var(--accent, #c9aa71) 10%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--accent, #c9aa71) 25%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent, #c9aa71) 25%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cp-drum-track {
+  position: absolute;
+  left: 0; right: 0;
+  top: 0;
   list-style: none;
   margin: 0;
-  padding: 2px 0;
-  z-index: 200;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  padding: 0;
+  transition: transform 0.1s ease;
 }
-.cp-dropdown--up { top: auto; bottom: calc(100% + 3px); }
-.cp-dropdown--empty { }
 
-.cp-option {
+.cp-drum-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 10px;
+  height: 28px;
+  padding: 0 10px;
   cursor: pointer;
   font-size: 12px;
-  color: var(--text-secondary, #ccc);
-  transition: background 0.08s;
+  color: var(--muted, #999);
+  font-family: 'Oswald', sans-serif;
 }
-.cp-option--active,
-.cp-option:hover {
-  background: color-mix(in srgb, var(--accent, #c9aa71) 15%, transparent);
-  color: var(--text-primary, #e0e0e0);
+.cp-drum-item:hover,
+.cp-drum-item--active {
+  color: var(--fg, #e0e0e0);
 }
-.cp-option--none {
-  color: var(--text-muted, #666);
+.cp-drum-item--none {
+  color: var(--muted, #666);
   font-style: italic;
   cursor: default;
 }
+
 .cp-opt-year {
   font-weight: 700;
-  color: var(--text-muted, #999);
+  color: var(--muted, #999);
   min-width: 36px;
-  font-family: 'Oswald', sans-serif;
 }
-.cp-opt-name { flex: 1; font-family: 'Oswald', sans-serif; }
+.cp-opt-name { flex: 1; }
 .cp-opt-dlc {
   font-size: 10px;
   color: var(--accent, #c9aa71);

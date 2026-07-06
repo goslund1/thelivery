@@ -31,7 +31,7 @@
           spellcheck="false"
         />
         <button class="cp-clear" @click="cancel" title="Cancel">×</button>
-        <ul v-if="results.length" class="cp-dropdown" ref="listRef">
+        <ul v-if="results.length" class="cp-dropdown" :class="{ 'cp-dropdown--up': dropUp }" ref="listRef">
           <li
             v-for="(c, i) in results"
             :key="c.id"
@@ -71,6 +71,14 @@ const cursor = ref(-1)
 const inputRef = ref<HTMLInputElement>()
 const wrapRef = ref<HTMLElement>()
 const listRef = ref<HTMLElement>()
+const dropUp = ref(false)
+
+function measurePlacement() {
+  if (!wrapRef.value) return
+  const rect = wrapRef.value.getBoundingClientRect()
+  const spaceBelow = window.innerHeight - rect.bottom
+  dropUp.value = spaceBelow < 240
+}
 
 const car = computed<Car | undefined>(() =>
   props.carId ? carsStore.byId(props.carId) : undefined
@@ -83,9 +91,9 @@ const results = computed<Car[]>(() =>
 async function startSearch(game: 'FH5' | 'FH6') {
   activeGame.value = game
   searching.value = true
-  // Pre-fill with current car's make so dropdown opens showing the selection.
   query.value = car.value ? car.value.make : ''
   cursor.value = -1
+  measurePlacement()
   await nextTick()
   inputRef.value?.focus()
   inputRef.value?.select()
@@ -238,6 +246,7 @@ watch(() => props.carId, () => {
 .cp-dropdown {
   position: absolute;
   top: calc(100% + 3px);
+  bottom: auto;
   left: 0;
   right: 0;
   max-height: 220px;
@@ -251,6 +260,7 @@ watch(() => props.carId, () => {
   z-index: 200;
   box-shadow: 0 4px 16px rgba(0,0,0,0.5);
 }
+.cp-dropdown--up { top: auto; bottom: calc(100% + 3px); }
 .cp-dropdown--empty { }
 
 .cp-option {

@@ -366,24 +366,26 @@ function close() { modal.closeImageMigration() }
   justify-content: center;
 }
 
-/* Outer shell: flex row — main content + toast drawer side by side */
+/* Outer shell: no background — lets the overlay bleed through glass surfaces */
 .imm-shell {
   position: relative;
   display: flex;
   flex-direction: row;
   align-items: stretch;
   max-height: 90vh;
-  background: var(--panel-bg, #1a1a1a);
-  border: 1px solid var(--panel-edge, #333);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
   overflow: hidden;
 }
 
-/* Main content column */
+/* Main content column — primary glass surface */
 .imm-main {
   position: relative;
   width: min(92vw, 560px);
   display: flex;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   flex-direction: column;
   overflow-y: auto;
   flex-shrink: 0;

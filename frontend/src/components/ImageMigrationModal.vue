@@ -5,6 +5,7 @@ import { useModalStore } from '../stores/modal'
 import { useLiveriesStore } from '../stores/liveries'
 import { useAuthStore } from '../stores/auth'
 import { useCarsStore } from '../stores/cars'
+import { useToastsStore } from '../stores/toasts'
 import { api } from '../api'
 import CarPicker from './CarPicker.vue'
 import type { Card } from '../types'
@@ -14,6 +15,7 @@ const modal = useModalStore()
 const liveriesStore = useLiveriesStore()
 const auth = useAuthStore()
 const carsStore = useCarsStore()
+const toasts = useToastsStore()
 carsStore.load()
 
 const cardsWithImages = computed(() =>
@@ -49,22 +51,42 @@ function toggleAll() {
 // Per-batch assignment state
 const carId = ref<string | null>(null)
 const liveryName = ref('')
-const showCarRequired = ref(false)   // blocking gate shown when assign clicked without car
+const showCarRequired = ref(false)
 const liveryNameValid = computed(() => liveryName.value.trim().length > 0)
 const canAssign = computed(() =>
   selectedIds.value.size > 0 && liveryNameValid.value && !batchProcessing.value
 )
 
-// Batch log — multiple batches per card
-interface BatchEntry { label: string; count: number; status: 'processing' | 'done' | 'error'; colors?: string; errorMsg?: string }
-const batchLog = ref<BatchEntry[]>([])
+// Live filename preview — shown in header, XXX for series number
+const filenamePreview = computed(() => {
+  const car = carId.value ? carsStore.byId(carId.value) : null
+  const game = car?.game?.toUpperCase() ?? 'FHX'
+
+  function slug(s: string) {
+    return s.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '')
+  }
+
+  const parts: string[] = [game]
+  if (car) {
+    parts.push(slug(car.make))
+    parts.push(slug(car.model))
+    if (car.year) parts.push(String(car.year))
+  }
+  const lv = liveryName.value.trim()
+  if (lv) parts.push(slug(lv))
+  parts.push('XXX')
+  parts.push('YYYYMMDD')
+  parts.push('xxxxxx')
+  parts.push('WxH')
+  return parts.filter(Boolean).join('_') + '.jpg'
+})
+
 const batchProcessing = ref(false)
 
 // Reset when card changes
 watch(currentCard, (card) => {
   selectedIds.value = new Set()
   assignedIds.value = new Set()
-  batchLog.value = []
   batchProcessing.value = false
   carId.value = card?.carId ?? null
   liveryName.value = card?.name?.trim() || ''
@@ -78,7 +100,6 @@ async function assignSelected() {
   const card = currentCard.value
   if (!card || !auth.isAuthenticated || !canAssign.value) return
 
-  // Car is required — show blocking gate instead of proceeding.
   if (!carId.value) {
     showCarRequired.value = true
     return
@@ -86,20 +107,29 @@ async function assignSelected() {
 
   const ids = [...selectedIds.value]
   const name = liveryName.value.trim()
+  const car = carsStore.byId(carId.value)
+  const carLabel = car ? `${car.make} ${car.model}` : carId.value
+
+  const toastId = toasts.push(`${card.name} — ${carLabel}`, [
+    { text: `${ids.length} image${ids.length !== 1 ? 's' : ''} — re-filing…`, status: 'processing' },
+    { text: 'Creating livery…', status: 'pending' },
+    { text: 'Assessing colors…', status: 'pending' },
+  ])
+
+  const [imgItemId, liveryItemId, assessItemId] = [0, 1, 2].map(i =>
+    toasts.toasts.find(t => t.id === toastId)!.items[i].id
+  )
 
   batchProcessing.value = true
-  batchLog.value.push({ label: name, count: ids.length, status: 'processing' })
-  const entry = batchLog.value[batchLog.value.length - 1]
 
   try {
-    // Create livery first so we have the id for migrate.
-    const livery = await liveriesStore.create({ carId: carId.value, name })
+    toasts.updateItem(toastId, liveryItemId, { status: 'processing', text: 'Creating livery…' })
+    const livery = await liveriesStore.create({ carId: carId.value!, name })
     if (!livery) throw new Error('Failed to create livery')
+    toasts.updateItem(toastId, liveryItemId, { status: 'done', text: `Livery: ${name}`, detail: livery.serial })
 
-    // Re-file the images on disk with new naming scheme, update DB rows.
-    const result = await api.migrateImages(ids, carId.value, livery.id)
+    const result = await api.migrateImages(ids, carId.value!, livery.id)
 
-    // Reflect new paths in the card store so the UI updates without reload.
     for (const updated of result.migrated) {
       store.setImageMeta(card.id, updated.id, {
         carId: updated.carId,
@@ -111,25 +141,30 @@ async function assignSelected() {
     }
     await store.save(card.id)
 
-    // Mark as assigned so they dim.
+    toasts.updateItem(toastId, imgItemId, { status: 'done', text: `${result.migrated.length} image${result.migrated.length !== 1 ? 's' : ''} migrated` })
+
     const next = new Set(assignedIds.value)
     ids.forEach(id => next.add(id))
     assignedIds.value = next
 
-    // Ready next batch.
     selectedIds.value = new Set()
     carId.value = null
     liveryName.value = currentCard.value?.name?.trim() || ''
 
-    entry.status = 'done'
-
-    // Assess color in background — updates entry when done.
+    toasts.updateItem(toastId, assessItemId, { status: 'processing', text: 'Assessing colors…' })
     api.assessLiveryColor(livery.id)
-      .then(r => { entry.colors = r.primary + (r.secondary ? ' / ' + r.secondary : '') })
-      .catch(() => {})
+      .then(r => {
+        const colors = r.primary + (r.secondary ? ' / ' + r.secondary : '')
+        toasts.updateItem(toastId, assessItemId, { status: 'done', text: 'Colors assessed', detail: colors })
+      })
+      .catch(() => {
+        toasts.updateItem(toastId, assessItemId, { status: 'done', text: 'Color assess skipped' })
+      })
   } catch (e) {
-    entry.status = 'error'
-    entry.errorMsg = e instanceof Error ? e.message : String(e)
+    const msg = e instanceof Error ? e.message : String(e)
+    toasts.updateItem(toastId, imgItemId, { status: 'error', text: msg })
+    toasts.updateItem(toastId, liveryItemId, { status: 'error', text: 'Failed' })
+    toasts.updateItem(toastId, assessItemId, { status: 'error', text: '' })
     console.error('[ImageMigration] assignSelected failed:', e)
   } finally {
     batchProcessing.value = false
@@ -157,8 +192,11 @@ function close() { modal.closeImageMigration() }
         <template v-else-if="currentCard">
           <!-- Header -->
           <div class="imm-header">
-            <span class="imm-counter">{{ currentIndex + 1 }} / {{ cardsWithImages.length }}</span>
-            <h2 class="imm-title">{{ currentCard.name }}</h2>
+            <div class="imm-header-top">
+              <span class="imm-counter">{{ currentIndex + 1 }} / {{ cardsWithImages.length }}</span>
+              <h2 class="imm-title">{{ currentCard.name }}</h2>
+            </div>
+            <div class="imm-filename-preview">{{ filenamePreview }}</div>
           </div>
 
           <!-- Selection controls -->
@@ -217,23 +255,6 @@ function close() { modal.closeImageMigration() }
             </div>
           </div>
 
-          <!-- Batch log -->
-          <div v-if="batchLog.length" class="imm-batch-log">
-            <div
-              v-for="(b, i) in batchLog"
-              :key="i"
-              class="imm-batch-row"
-              :class="'imm-batch-row--' + b.status"
-            >
-              <span class="imm-batch-label">{{ b.label }}</span>
-              <span class="imm-batch-meta">
-                {{ b.count }} photo{{ b.count !== 1 ? 's' : '' }}
-                <template v-if="b.status === 'processing'"> · saving…</template>
-                <template v-else-if="b.colors"> · {{ b.colors }}</template>
-                <template v-else-if="b.status === 'error'"> · {{ b.errorMsg || 'failed' }}</template>
-              </span>
-            </div>
-          </div>
 
           <!-- Actions -->
           <div class="imm-actions">
@@ -281,8 +302,13 @@ function close() { modal.closeImageMigration() }
 .imm-close:hover { color: var(--fg); }
 
 .imm-header {
-  padding: 14px 16px 10px;
+  padding: 12px 16px 10px;
   border-bottom: 1px solid var(--panel-edge);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.imm-header-top {
   display: flex;
   align-items: baseline;
   gap: 12px;
@@ -299,6 +325,15 @@ function close() { modal.closeImageMigration() }
   text-transform: uppercase;
   letter-spacing: .05em;
 }
+.imm-filename-preview {
+  font: 9px/1.3 'JetBrains Mono', monospace;
+  color: var(--muted);
+  word-break: break-all;
+  padding-left: 2px;
+  opacity: 0.7;
+  transition: color .15s;
+}
+.imm-filename-preview:not(:empty) { color: var(--accent); opacity: 1; }
 
 .imm-select-bar {
   display: flex;
@@ -422,26 +457,6 @@ function close() { modal.closeImageMigration() }
 .imm-livery-input:focus { border-color: var(--accent); }
 .imm-livery-input::placeholder { color: var(--muted); }
 
-/* Batch log */
-.imm-batch-log {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px 14px;
-  border-bottom: 1px solid var(--panel-edge);
-}
-.imm-batch-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font: 11px/1.4 'JetBrains Mono', monospace;
-  padding: 2px 0;
-}
-.imm-batch-label { color: var(--fg); }
-.imm-batch-meta { color: var(--muted); font-size: 10px; }
-.imm-batch-row--done .imm-batch-label { color: var(--accent); }
-.imm-batch-row--processing .imm-batch-label { color: var(--muted); font-style: italic; }
-.imm-batch-row--error .imm-batch-label { color: #c94444; }
 
 /* Actions */
 .imm-actions {

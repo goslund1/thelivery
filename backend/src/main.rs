@@ -1827,7 +1827,7 @@ async fn admin_migrate_images(
     let livery_id: Option<i64> = body["liveryId"].as_i64();
 
     // Bin directory — moved originals land here, never auto-deleted.
-    let bin_dir = st.uploads_dir.join("bin");
+    let bin_dir = st.uploads_dir.join("trash");
     std::fs::create_dir_all(&bin_dir)
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
@@ -1912,10 +1912,10 @@ async fn admin_migrate_images(
         let bin_stem = src_file.file_stem().and_then(|s| s.to_str()).unwrap_or("old").to_string();
         let old_dir  = src_file.parent().unwrap_or(&st.uploads_dir);
         let old_lowres = old_dir.join("Lowres_Assets");
-        let _ = std::fs::rename(&src_file, bin_dir.join(format!("{bin_stem}.jpg")));
+        let _ = std::fs::rename(&src_file, bin_dir.join(format!("{bin_stem}.jpg")) );
         if let Some(ref tp) = old_thumb {
             let tr = tp.trim_start_matches('/').trim_start_matches("uploads/");
-            let _ = std::fs::rename(st.uploads_dir.join(tr), bin_dir.join(format!("{bin_stem}_200w.jpg")));
+            let _ = std::fs::rename(st.uploads_dir.join(tr), bin_dir.join(format!("{bin_stem}_200w.jpg")) );
         }
         if let Some(ref sp) = old_stage {
             let sr = sp.trim_start_matches('/').trim_start_matches("uploads/");

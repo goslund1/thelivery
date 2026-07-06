@@ -320,7 +320,7 @@ function close() { modal.closeImageMigration() }
 
         <!-- Migration Log drawer — right side, tab on left edge -->
         <DrawerPanel v-model:open="toastDrawerOpen" :width="200" :tab-width="16" side="right" flush
-          background="color-mix(in srgb, var(--panel-bg) 30%, transparent)">
+          background="var(--picker-glass-bg)">
           <template #header>Migration Log</template>
           <div class="imm-toast-scroll">
             <template v-if="toasts.toasts.length">

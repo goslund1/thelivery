@@ -7,6 +7,39 @@ Completed items move to `docs/completed/`.
 
 ## Active — ordered by priority
 
+### 0. Image identity refactor + migration tool  ← IN PROGRESS (2026-07-05)
+**Safe return point:** commit `45be373` (feat: batch import flow) — everything before this work is stable.
+
+**What we're doing and why:**
+Card body JSON currently stores image paths as strings — paths are the de-facto identifier.
+The `images` table has integer PKs but is a secondary/parallel structure; the card body is the source of truth.
+This is fragile: path changes break references, sharing the same image across contexts requires file duplication.
+
+**Target architecture:**
+- `images` table is the single source of truth for all image data (path, thumbPath, stagePath, livery_id, car_id, alt, sort_order)
+- Card body stores only `id` (images PK) + `alt` + `order` + `carId` per image — no paths
+- Backend resolves full image data from the table on every card fetch (JOIN or second query)
+- Backend syncs the table on every card save
+- Migration tool handles existing cards (see below)
+
+**Files that will change:**
+- `backend/src/main.rs` — card read (inject images from DB), card write (sync to DB), normalize_bodies()
+- `backend/migrations/0012_*.sql` — ensure images table has needed columns (may be a no-op)
+- `frontend/src/types.ts` — CardImage: `path?` becomes optional (resolved server-side)
+- `frontend/src/stores/cards.ts` — addImageToPool, setImageMeta touch points
+- `frontend/src/components/` — Gallery, ImagePicker, PhotoDetail (all use image.path; stays same since backend still provides it)
+- New: `frontend/src/components/ImageMigrationModal.vue` — admin tool
+
+**Migration tool plan:**
+Admin-only modal, walks cards one-by-one:
+1. Shows card name + all current images (resolved from body paths — files exist on disk)
+2. Ensures each image has an `images` table row (inserts if missing, skips if already present)
+3. Car picker + livery name input for the batch
+4. On confirm: creates livery → sets livery_id on all images → triggers assess → advances to next card
+5. Skip button for cards with no photos or no livery needed
+
+---
+
 ### 1. Car identity model — shakedown + backfill
 All 12 build steps shipped (2026-07-05). Remaining items before this is fully live:
 - **Step 2 (deferred)**: `car_colors` scrape — factory color options per car. Requires finding a source and scraping Forza wikis.

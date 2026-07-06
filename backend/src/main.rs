@@ -346,6 +346,11 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/suggestions", get(admin_list_suggestions))
         .route("/api/admin/suggestions/:id", delete(admin_dismiss_suggestion).patch(admin_like_suggestion))
         .route("/api/cars", get(list_cars).post(create_car))
+        .route("/api/tune-types", get(list_tune_types).post(create_tune_type))
+        .route("/api/liveries", get(list_liveries).post(create_livery))
+        .route("/api/liveries/:id", put(update_livery).delete(delete_livery))
+        .route("/api/tunes", get(list_tunes).post(create_tune))
+        .route("/api/tunes/:id", put(update_tune).delete(delete_tune))
         .route("/api/theme", get(get_theme).put(put_theme))
         .route("/api/tuning-presets", get(list_tuning_presets).post(create_tuning_preset))
         .route("/api/tuning-presets/:id", delete(delete_tuning_preset))
@@ -677,7 +682,7 @@ async fn list_cars(
 ) -> Result<Json<Value>, ApiError> {
     let rows = if let Some(game) = params.get("game") {
         sqlx::query(
-            "SELECT id,game,make,model,year,class,pi,drive,country,category,decade,status,dlc
+            "SELECT id,game,make,model,year,class,pi,drive,country,category,decade,status,dlc,code
              FROM cars WHERE game = ? ORDER BY make, model, year",
         )
         .bind(game)
@@ -685,7 +690,7 @@ async fn list_cars(
         .await
     } else {
         sqlx::query(
-            "SELECT id,game,make,model,year,class,pi,drive,country,category,decade,status,dlc
+            "SELECT id,game,make,model,year,class,pi,drive,country,category,decade,status,dlc,code
              FROM cars ORDER BY game, make, model, year",
         )
         .fetch_all(&st.pool)
@@ -1460,4 +1465,422 @@ async fn upload_image(
         })));
     }
     Err(err(StatusCode::BAD_REQUEST, "no file field in upload"))
+}
+
+// --- Serial generator -------------------------------------------------------
+
+/// Returns the next L### serial for a car, e.g. "FH6-NISRVGTSP99-L003".
+/// Reads MAX of existing serials for that car rather than COUNT so deletions
+/// don't cause collisions.
+async fn next_livery_serial(pool: &SqlitePool, car_id: &str) -> Result<String, sqlx::Error> {
+    // Fetch car game + code so we can build the prefix.
+    let row = sqlx::query("SELECT game, code FROM cars WHERE id = ?")
+        .bind(car_id)
+        .fetch_one(pool)
+        .await?;
+    let game: String = row.get("game");
+    let code: Option<String> = row.get("code");
+    let car_code = code.unwrap_or_else(|| car_id.to_uppercase().replace('-', "").chars().take(9).collect());
+
+    let prefix = format!("{}-{}-L", game, car_code);
+    let row2 = sqlx::query("SELECT MAX(CAST(SUBSTR(serial, ?) AS INTEGER)) FROM liveries WHERE car_id = ?")
+        .bind((prefix.len() + 1) as i64)
+        .bind(car_id)
+        .fetch_one(pool)
+        .await?;
+    let max_n: Option<i64> = row2.try_get::<Option<i64>, _>(0).unwrap_or(None);
+    let n = max_n.unwrap_or(0) + 1;
+    Ok(format!("{}{:03}", prefix, n))
+}
+
+/// Returns the next T### serial for a livery, e.g. "FH6-NISRVGTSP99-L001-T002".
+async fn next_tune_serial(pool: &SqlitePool, livery_id: i64) -> Result<String, sqlx::Error> {
+    let row = sqlx::query("SELECT serial FROM liveries WHERE id = ?")
+        .bind(livery_id)
+        .fetch_one(pool)
+        .await?;
+    let livery_serial: String = row.get("serial");
+
+    let prefix = format!("{}-T", livery_serial);
+    let row2 = sqlx::query("SELECT MAX(CAST(SUBSTR(serial, ?) AS INTEGER)) FROM tunes WHERE livery_id = ?")
+        .bind((prefix.len() + 1) as i64)
+        .bind(livery_id)
+        .fetch_one(pool)
+        .await?;
+    let max_n: Option<i64> = row2.try_get::<Option<i64>, _>(0).unwrap_or(None);
+    let n = max_n.unwrap_or(0) + 1;
+    Ok(format!("{}{:03}", prefix, n))
+}
+
+// --- Tune types -------------------------------------------------------------
+
+async fn list_tune_types(
+    State(st): State<AppState>,
+) -> Result<Json<Value>, ApiError> {
+    let rows = sqlx::query("SELECT id, name, sort_order FROM tune_types ORDER BY sort_order, name")
+        .fetch_all(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let types: Vec<Value> = rows.iter().map(|r| json!({
+        "id":        r.get::<i64, _>("id"),
+        "name":      r.get::<String, _>("name"),
+        "sortOrder": r.get::<i64, _>("sort_order"),
+    })).collect();
+    Ok(Json(json!(types)))
+}
+
+#[derive(Deserialize)]
+struct CreateTuneTypeReq {
+    name: String,
+    #[serde(rename = "sortOrder")]
+    sort_order: Option<i64>,
+}
+
+async fn create_tune_type(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Json(req): Json<CreateTuneTypeReq>,
+) -> Result<(StatusCode, Json<Value>), ApiError> {
+    let id = sqlx::query("INSERT INTO tune_types (name, sort_order) VALUES (?, ?)")
+        .bind(&req.name)
+        .bind(req.sort_order.unwrap_or(0))
+        .execute(&st.pool)
+        .await
+        .map_err(|e| {
+            if e.to_string().contains("UNIQUE") {
+                err(StatusCode::CONFLICT, "tune type name already exists")
+            } else {
+                err(StatusCode::INTERNAL_SERVER_ERROR, e)
+            }
+        })?
+        .last_insert_rowid();
+    Ok((StatusCode::CREATED, Json(json!({ "id": id, "name": req.name }))))
+}
+
+// --- Liveries ---------------------------------------------------------------
+
+fn livery_row_to_json(r: &sqlx::sqlite::SqliteRow) -> Value {
+    json!({
+        "id":             r.get::<i64, _>("id"),
+        "carId":          r.get::<String, _>("car_id"),
+        "serial":         r.get::<String, _>("serial"),
+        "name":           r.get::<String, _>("name"),
+        "isFactory":      r.get::<bool, _>("is_factory"),
+        "carColorId":     r.get::<Option<i64>, _>("car_color_id"),
+        "shareCode":      r.get::<Option<String>, _>("share_code"),
+        "colorPrimary":   r.get::<Option<String>, _>("color_primary"),
+        "colorSecondary": r.get::<Option<String>, _>("color_secondary"),
+        "createdAt":      r.get::<String, _>("created_at"),
+    })
+}
+
+async fn list_liveries(
+    State(st): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<Value>, ApiError> {
+    let rows = if let Some(car_id) = params.get("carId") {
+        sqlx::query(
+            "SELECT id,car_id,serial,name,is_factory,car_color_id,share_code,color_primary,color_secondary,created_at
+             FROM liveries WHERE car_id = ? ORDER BY serial",
+        )
+        .bind(car_id)
+        .fetch_all(&st.pool)
+        .await
+    } else {
+        sqlx::query(
+            "SELECT id,car_id,serial,name,is_factory,car_color_id,share_code,color_primary,color_secondary,created_at
+             FROM liveries ORDER BY car_id, serial",
+        )
+        .fetch_all(&st.pool)
+        .await
+    }
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let liveries: Vec<Value> = rows.iter().map(livery_row_to_json).collect();
+    Ok(Json(json!(liveries)))
+}
+
+#[derive(Deserialize)]
+struct CreateLiveryReq {
+    #[serde(rename = "carId")]
+    car_id: String,
+    name: String,
+    #[serde(rename = "isFactory")]
+    is_factory: Option<bool>,
+    #[serde(rename = "carColorId")]
+    car_color_id: Option<i64>,
+    #[serde(rename = "shareCode")]
+    share_code: Option<String>,
+    #[serde(rename = "colorPrimary")]
+    color_primary: Option<String>,
+    #[serde(rename = "colorSecondary")]
+    color_secondary: Option<String>,
+}
+
+async fn create_livery(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Json(req): Json<CreateLiveryReq>,
+) -> Result<(StatusCode, Json<Value>), ApiError> {
+    let serial = next_livery_serial(&st.pool, &req.car_id)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let id = sqlx::query(
+        "INSERT INTO liveries (car_id, serial, name, is_factory, car_color_id, share_code, color_primary, color_secondary)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(&req.car_id)
+    .bind(&serial)
+    .bind(&req.name)
+    .bind(req.is_factory.unwrap_or(false))
+    .bind(req.car_color_id)
+    .bind(&req.share_code)
+    .bind(&req.color_primary)
+    .bind(&req.color_secondary)
+    .execute(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+    .last_insert_rowid();
+
+    Ok((StatusCode::CREATED, Json(json!({ "id": id, "serial": serial }))))
+}
+
+#[derive(Deserialize)]
+struct UpdateLiveryReq {
+    name: Option<String>,
+    #[serde(rename = "isFactory")]
+    is_factory: Option<bool>,
+    #[serde(rename = "carColorId")]
+    car_color_id: Option<i64>,
+    #[serde(rename = "shareCode")]
+    share_code: Option<String>,
+    #[serde(rename = "colorPrimary")]
+    color_primary: Option<String>,
+    #[serde(rename = "colorSecondary")]
+    color_secondary: Option<String>,
+}
+
+async fn update_livery(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Path(id): Path<i64>,
+    Json(req): Json<UpdateLiveryReq>,
+) -> Result<Json<Value>, ApiError> {
+    let affected = sqlx::query(
+        "UPDATE liveries SET
+           name            = COALESCE(?, name),
+           is_factory      = COALESCE(?, is_factory),
+           car_color_id    = COALESCE(?, car_color_id),
+           share_code      = COALESCE(?, share_code),
+           color_primary   = COALESCE(?, color_primary),
+           color_secondary = COALESCE(?, color_secondary)
+         WHERE id = ?",
+    )
+    .bind(&req.name)
+    .bind(req.is_factory)
+    .bind(req.car_color_id)
+    .bind(&req.share_code)
+    .bind(&req.color_primary)
+    .bind(&req.color_secondary)
+    .bind(id)
+    .execute(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+    .rows_affected();
+
+    if affected == 0 {
+        return Err(err(StatusCode::NOT_FOUND, "livery not found"));
+    }
+    Ok(Json(json!({ "id": id })))
+}
+
+async fn delete_livery(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Path(id): Path<i64>,
+) -> Result<Json<Value>, ApiError> {
+    let affected = sqlx::query("DELETE FROM liveries WHERE id = ?")
+        .bind(id)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .rows_affected();
+    if affected == 0 {
+        return Err(err(StatusCode::NOT_FOUND, "livery not found"));
+    }
+    Ok(Json(json!({ "deleted": id })))
+}
+
+// --- Tunes ------------------------------------------------------------------
+
+fn tune_row_to_json(r: &sqlx::sqlite::SqliteRow) -> Value {
+    json!({
+        "id":           r.get::<i64, _>("id"),
+        "liveryId":     r.get::<i64, _>("livery_id"),
+        "carId":        r.get::<String, _>("car_id"),
+        "serial":       r.get::<String, _>("serial"),
+        "officialName": r.get::<Option<String>, _>("official_name"),
+        "typeId":       r.get::<Option<i64>, _>("type_id"),
+        "shareCode":    r.get::<Option<String>, _>("share_code"),
+        "coreSpecs":    r.get::<Option<String>, _>("core_specs"),
+        "upgrades":     r.get::<Option<String>, _>("upgrades"),
+        "adjustments":  r.get::<Option<String>, _>("adjustments"),
+        "createdAt":    r.get::<String, _>("created_at"),
+    })
+}
+
+async fn list_tunes(
+    State(st): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
+) -> Result<Json<Value>, ApiError> {
+    let rows = if let Some(livery_id) = params.get("liveryId") {
+        sqlx::query(
+            "SELECT id,livery_id,car_id,serial,official_name,type_id,share_code,core_specs,upgrades,adjustments,created_at
+             FROM tunes WHERE livery_id = ? ORDER BY serial",
+        )
+        .bind(livery_id.parse::<i64>().unwrap_or(0))
+        .fetch_all(&st.pool)
+        .await
+    } else if let Some(car_id) = params.get("carId") {
+        sqlx::query(
+            "SELECT id,livery_id,car_id,serial,official_name,type_id,share_code,core_specs,upgrades,adjustments,created_at
+             FROM tunes WHERE car_id = ? ORDER BY serial",
+        )
+        .bind(car_id)
+        .fetch_all(&st.pool)
+        .await
+    } else {
+        sqlx::query(
+            "SELECT id,livery_id,car_id,serial,official_name,type_id,share_code,core_specs,upgrades,adjustments,created_at
+             FROM tunes ORDER BY car_id, serial",
+        )
+        .fetch_all(&st.pool)
+        .await
+    }
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let tunes: Vec<Value> = rows.iter().map(tune_row_to_json).collect();
+    Ok(Json(json!(tunes)))
+}
+
+#[derive(Deserialize)]
+struct CreateTuneReq {
+    #[serde(rename = "liveryId")]
+    livery_id: i64,
+    #[serde(rename = "carId")]
+    car_id: String,
+    #[serde(rename = "officialName")]
+    official_name: Option<String>,
+    #[serde(rename = "typeId")]
+    type_id: Option<i64>,
+    #[serde(rename = "shareCode")]
+    share_code: Option<String>,
+    #[serde(rename = "coreSpecs")]
+    core_specs: Option<Value>,
+    upgrades: Option<Value>,
+    adjustments: Option<Value>,
+}
+
+async fn create_tune(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Json(req): Json<CreateTuneReq>,
+) -> Result<(StatusCode, Json<Value>), ApiError> {
+    let serial = next_tune_serial(&st.pool, req.livery_id)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let core_specs_str = req.core_specs.as_ref().map(|v| v.to_string());
+    let upgrades_str   = req.upgrades.as_ref().map(|v| v.to_string());
+    let adjustments_str = req.adjustments.as_ref().map(|v| v.to_string());
+
+    let id = sqlx::query(
+        "INSERT INTO tunes (livery_id, car_id, serial, official_name, type_id, share_code, core_specs, upgrades, adjustments)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(req.livery_id)
+    .bind(&req.car_id)
+    .bind(&serial)
+    .bind(&req.official_name)
+    .bind(req.type_id)
+    .bind(&req.share_code)
+    .bind(&core_specs_str)
+    .bind(&upgrades_str)
+    .bind(&adjustments_str)
+    .execute(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+    .last_insert_rowid();
+
+    Ok((StatusCode::CREATED, Json(json!({ "id": id, "serial": serial }))))
+}
+
+#[derive(Deserialize)]
+struct UpdateTuneReq {
+    #[serde(rename = "officialName")]
+    official_name: Option<String>,
+    #[serde(rename = "typeId")]
+    type_id: Option<i64>,
+    #[serde(rename = "shareCode")]
+    share_code: Option<String>,
+    #[serde(rename = "coreSpecs")]
+    core_specs: Option<Value>,
+    upgrades: Option<Value>,
+    adjustments: Option<Value>,
+}
+
+async fn update_tune(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Path(id): Path<i64>,
+    Json(req): Json<UpdateTuneReq>,
+) -> Result<Json<Value>, ApiError> {
+    let core_specs_str  = req.core_specs.as_ref().map(|v| v.to_string());
+    let upgrades_str    = req.upgrades.as_ref().map(|v| v.to_string());
+    let adjustments_str = req.adjustments.as_ref().map(|v| v.to_string());
+
+    let affected = sqlx::query(
+        "UPDATE tunes SET
+           official_name = COALESCE(?, official_name),
+           type_id       = COALESCE(?, type_id),
+           share_code    = COALESCE(?, share_code),
+           core_specs    = COALESCE(?, core_specs),
+           upgrades      = COALESCE(?, upgrades),
+           adjustments   = COALESCE(?, adjustments)
+         WHERE id = ?",
+    )
+    .bind(&req.official_name)
+    .bind(req.type_id)
+    .bind(&req.share_code)
+    .bind(&core_specs_str)
+    .bind(&upgrades_str)
+    .bind(&adjustments_str)
+    .bind(id)
+    .execute(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+    .rows_affected();
+
+    if affected == 0 {
+        return Err(err(StatusCode::NOT_FOUND, "tune not found"));
+    }
+    Ok(Json(json!({ "id": id })))
+}
+
+async fn delete_tune(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Path(id): Path<i64>,
+) -> Result<Json<Value>, ApiError> {
+    let affected = sqlx::query("DELETE FROM tunes WHERE id = ?")
+        .bind(id)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .rows_affected();
+    if affected == 0 {
+        return Err(err(StatusCode::NOT_FOUND, "tune not found"));
+    }
+    Ok(Json(json!({ "deleted": id })))
 }

@@ -7,11 +7,14 @@ Completed items move to `docs/completed/`.
 
 ## Active — ordered by priority
 
-### 1. Multi-car mashup card (plan doc: `docs/plan-multi-car-mashup.md`)
-- Single card with multiple car variants, each with its own photos, tune, upgrades, and adjustments.
-- Tab strip inside RecipeSection switches between cars; gallery filters to match.
-- Foundation: `images` table migration + CarPicker at upload time; variants array on ForzaRecipeSection.
-- Single-car cards untouched — additive change.
+### 1. Car identity / livery / tune data model (design doc: `docs/design-car-identity.md`)
+- Full schema redesign: `liveries`, `tunes`, `tune_types`, `car_colors` tables.
+- Serial number system: `FH6-NISR34-L001-T001-C042`.
+- `CardVariant` redesign to `(liveryId, tuneId)` DB refs instead of inline data.
+- Real-time import interrupt + existing tune lookup.
+- AI color assessment on custom livery import.
+- See design doc for full build order (10 steps).
+- **Foundation already shipped:** tab strip UI, gallery filtering, `images` table, variant add/remove controls.
 
 ---
 
@@ -19,7 +22,7 @@ Completed items move to `docs/completed/`.
 
 ### Mobile layout
 - Theme builder flyout + general catalog narrow-screen pass.
-- Deferred until layout features (mashup) land — getting close.
+- Deferred until identity/livery model lands — that affects card layout.
 
 ---
 

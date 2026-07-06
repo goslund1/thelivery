@@ -37,6 +37,7 @@
       <Teleport to="body">
         <div
           v-if="(results.length || query.length > 1) && drumStyle.top !== undefined"
+          v-scroll-contain
           class="cp-drum"
           :style="drumStyle"
         >
@@ -69,6 +70,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { useCarsStore } from '../stores/cars'
+import { vScrollContain } from '../directives/scrollContain'
 import type { Car } from '../types'
 
 const ITEM_H  = 28

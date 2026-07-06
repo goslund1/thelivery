@@ -40,36 +40,20 @@ Admin-only modal, walks cards one-by-one:
 
 ---
 
-### 1. Image migration pipeline — full re-file + rename
+### 1. Image migration pipeline — full re-file + rename  ← SHIPPED (2026-07-06)
 
-The `ImageMigrationModal` assign flow needs to physically re-file existing images, not just update metadata.
+All 11 production cards migrated. Images live under structured `{slug}_{id}/` folders with structured filenames. Old files in `uploads/trash/`. All liveries have AI color assess data.
 
-**New folder structure (all uploads, new and migrated):**
-```
-/uploads/{card-title-slug}_{card-id}/
-         └── Lowres_Assets/
-```
-
-**New filename scheme:**
-```
-{FH5|FH6}_{Make}_{Model}_{Year}_{LiveryName}_{NNN}_{YYYYMMDD}_{uuid6}.jpg
-```
-All components derived from DB lookups at upload/migrate time.
-
-**Pipeline per batch in ImageMigrationModal (assign flow):**
-1. Car required gate — if no car selected, blocking popover forces car pick before proceeding
-2. For each selected image: read existing file from disk, run through upload pipeline with new naming/folder, regenerate thumbs, insert new `images` row, delete old row, move old file + thumbs to `/uploads/bin/`
-3. Create livery record linked to car
-4. Card re-saved pointing to new image rows
-5. AI color assess fires on livery; result stored on livery row
-
-**Parts:**
-- [x] **Backend A**: Refactor upload handler — new folder scheme (`{slug}_{id}`), new filename stem (car/livery DB lookups) — commit 5ce7d18
-- [x] **Backend B**: `POST /api/admin/images/migrate` — re-files selected image IDs with car_id/livery_id, moves old files to bin — commit 5ce7d18
-- [x] **Frontend A**: Car required gate in ImageMigrationModal (blocking popover, can't assign without car) — commit 5ce7d18
-- [x] **Frontend B**: `assignSelected` calls migrate endpoint; paths updated in store immediately — commit 5ce7d18
-
-**New uploads** (NewCardModal batch import) also get the new folder + filename scheme via Backend A.
+**What shipped:**
+- Backend re-file pipeline, new folder/filename scheme, `POST /api/admin/images/migrate`
+- `ImageMigrationModal` — car required gate, drum CarPicker, toast drawer, error persistence
+- `dotenvy` — `.env` loaded at startup; JWT_SECRET and ANTHROPIC_API_KEY now stable across restarts
+- Drum/reel CarPicker replacing the dropdown (no viewport overflow, `v-scroll-contain`)
+- Error toasts stay visible until manually dismissed
+- Smart catch block surfaces which step failed in the toast
+- Assess skips cleanly when 0 images were migrated; backend tries all images before giving up
+- All 13 FH6 Formula Drift cars added to DB + seed
+- Ford Bronco R #2069 (2020) added for Photo Safari Japan card
 
 ---
 
@@ -101,6 +85,7 @@ All 12 build steps shipped (2026-07-05). Remaining items before this is fully li
 
 ## Recently completed
 
+- Image migration pipeline — full re-file + rename: all 11 cards migrated, structured filenames, drum CarPicker, toast drawer, dotenvy, error persistence, assess skip, FH6 FD cars, Bronco R — 2026-07-06
 - Suggest bar two-tier trigger: inline Share tweaks button activates on any slider change; floating push bar fires on 2+ tab categories; ASK ME LATER uses sessionStorage reload reminder; NOT FOR ME = session dismiss; S&D tier dialog gated to edit mode only — 2026-07-05
 - Shakedown pass (desktop): 2 bugs found + fixed (CardHistoryModal z-index, EditCardModal Escape handler); sections 1-3, 5-7, 9 suggest bar, 11-13 verified; sections 4, 8, 14-15, 17 (mobile) still need manual/device run — 2026-07-05
 - Suggestion Viewer + Promote: SuggestionViewer.vue shadowbox, Pending/Liked tabs, read-only TuningAdjustments with diff highlighting, Like/Dismiss/Promote actions, SideBug badge + Filters row entry; Promote clones source card with suggestion adjustments (share code cleared, "(Updated)" name), opens in EditCardModal immediately — 2026-07-05

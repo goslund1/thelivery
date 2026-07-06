@@ -30,14 +30,14 @@ const filters = useFilterStore()
 const carsStore = useCarsStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
-// For multi-car cards the active variant owns the car identity; single-car uses the card-level carId.
+// Active variant owns the car identity when variants exist; single slot uses the card-level carId.
 const effectiveCarId = computed(() =>
-  isMultiCar.value ? (local.variants?.[activeVariantIndex.value]?.carId ?? null) : (props.carId ?? null)
+  hasVariants.value ? (local.variants?.[activeVariantIndex.value]?.carId ?? null) : (props.carId ?? null)
 )
 const linkedCar = computed(() => effectiveCarId.value ? carsStore.byId(effectiveCarId.value) : undefined)
 
 function onVariantCarIdUpdate(id: string | null) {
-  if (isMultiCar.value && local.variants?.[activeVariantIndex.value]) {
+  if (hasVariants.value && local.variants?.[activeVariantIndex.value]) {
     local.variants[activeVariantIndex.value].carId = id ?? ''
     emit('update:activeCarId', id)
     markDirty()
@@ -62,8 +62,20 @@ for (const k of CORE_SPEC_KEYS) {
   if (local.coreSpecs[k] == null) local.coreSpecs[k] = ''
 }
 
-// ── Multi-car variant support ─────────────────────────────────────────────────
-const isMultiCar = computed(() => (props.recipe.variants?.length ?? 0) >= 2)
+// ── Multi-car / multi-tune variant support ────────────────────────────────────
+// hasVariants: 2+ variant slots exist (could be multi-car or multi-tune)
+// isMultiCar:  variants exist AND at least one has a different carId
+// isMultiTune: variants exist AND all share the same carId
+const hasVariants = computed(() => (local.variants?.length ?? 0) >= 2)
+const isMultiCar  = computed(() => {
+  if (!hasVariants.value) return false
+  const first = local.variants![0].carId
+  return local.variants!.some(v => v.carId !== first)
+})
+const isMultiTune = computed(() => hasVariants.value && !isMultiCar.value)
+// "+ Add tune" is available when all current variants share the same car (or no variants yet).
+const canAddTune = computed(() => !isMultiCar.value)
+
 const activeVariantIndex = ref(0)
 
 function applyVariant(idx: number) {
@@ -77,6 +89,9 @@ function applyVariant(idx: number) {
 }
 
 function variantLabel(v: CardVariant): string {
+  if (isMultiTune.value) {
+    return v.tuneName || v.tuneType || 'Tune'
+  }
   const car = carsStore.byId(v.carId)
   if (!car) return v.carId || '(no car)'
   return `${car.year ? car.year + ' ' : ''}${car.make} ${car.model}`
@@ -106,8 +121,8 @@ function makeEmptyVariant(carId: string): CardVariant {
 function addVariant(carId: string | null) {
   if (!carId) { showAddVariantPicker.value = false; return }
   showAddVariantPicker.value = false
-  if (!isMultiCar.value) {
-    // Promote: current recipe → variant[0], new car → variant[1]
+  if (!hasVariants.value) {
+    // Promote: current recipe fields → variant[0], new slot → variant[1]
     local.variants = [
       {
         carId: props.carId ?? '',
@@ -131,11 +146,17 @@ function addVariant(carId: string | null) {
   flush()
 }
 
+// Add a tune slot for the same car as the current context.
+function addTuneVariant() {
+  const tuneCarId = local.variants?.[0]?.carId ?? props.carId ?? ''
+  addVariant(tuneCarId)
+}
+
 function removeVariant(idx: number) {
   pendingRemoveIdx.value = null
   if (!local.variants) return
   if (local.variants.length <= 2) {
-    // Demote back to single-car: keep the surviving variant's data
+    // Demote back to single slot: keep the surviving variant's data
     const keepIdx = idx === 0 ? 1 : 0
     const keep = local.variants[keepIdx]
     local.tuneName = keep.tuneName
@@ -164,7 +185,7 @@ watch(activeVariantIndex, (idx) => {
 })
 
 onMounted(() => {
-  if (isMultiCar.value) {
+  if (hasVariants.value) {
     applyVariant(0)
     emit('update:activeCarId', local.variants?.[0]?.carId ?? null)
   }
@@ -180,7 +201,7 @@ watch(() => props.resetToken, () => {
 
 function flush() {
   // Keep active variant in sync with local fields before cloning
-  if (isMultiCar.value && local.variants?.[activeVariantIndex.value]) {
+  if (hasVariants.value && local.variants?.[activeVariantIndex.value]) {
     const v = local.variants[activeVariantIndex.value]
     v.tuneName = local.tuneName
     v.shareCode = local.shareCode
@@ -192,7 +213,7 @@ function flush() {
   if (taRef.value) {
     const liveAdj = taRef.value.getAdjustments()
     clone.adjustments = liveAdj
-    if (isMultiCar.value && clone.variants?.[activeVariantIndex.value]) {
+    if (hasVariants.value && clone.variants?.[activeVariantIndex.value]) {
       clone.variants[activeVariantIndex.value].adjustments = liveAdj
     }
   }
@@ -423,25 +444,29 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 <template>
   <div class="section-body">
 
-    <!-- Multi-car variant tab strip — renders when 2+ variants, or in edit mode for add button -->
-    <div v-if="isMultiCar || ui.isEditing" class="rs-variant-tabs">
-      <template v-if="isMultiCar">
+    <!-- Variant tab strip — renders when 2+ variants exist, or in edit mode for the add buttons -->
+    <div v-if="hasVariants || ui.isEditing" class="rs-variant-tabs">
+      <template v-if="hasVariants">
         <div
           v-for="(v, i) in local.variants"
-          :key="v.carId + i"
+          :key="(v.carId || '') + i"
           class="rs-variant-tab-wrap"
           :class="{ 'rs-variant-tab-wrap--active': activeVariantIndex === i }"
         >
           <button
             class="rs-variant-tab"
-            :class="{ 'rs-variant-tab--active': activeVariantIndex === i }"
+            :class="{
+              'rs-variant-tab--active': activeVariantIndex === i,
+              'rs-variant-tab--suggested': v.isSuggested,
+            }"
             type="button"
             @click="activeVariantIndex = i"
           >
             {{ variantLabel(v) }}
+            <span v-if="v.isSuggested" class="rs-tab-suggested-badge">Suggested</span>
           </button>
           <button
-            v-if="ui.isEditing"
+            v-if="ui.isEditing && !v.isSuggested"
             class="rs-variant-remove"
             type="button"
             :title="`Remove ${variantLabel(v)}`"
@@ -450,14 +475,21 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         </div>
       </template>
 
-      <!-- + Add car (edit mode only) -->
+      <!-- Add buttons (edit mode only) -->
       <div v-if="ui.isEditing" class="rs-add-variant-wrap">
-        <button
-          v-if="!showAddVariantPicker"
-          class="rs-variant-tab rs-variant-tab--add"
-          type="button"
-          @click="showAddVariantPicker = true"
-        >+ Add car</button>
+        <template v-if="!showAddVariantPicker">
+          <button
+            class="rs-variant-tab rs-variant-tab--add"
+            type="button"
+            @click="showAddVariantPicker = true"
+          >+ Add car</button>
+          <button
+            v-if="canAddTune"
+            class="rs-variant-tab rs-variant-tab--add"
+            type="button"
+            @click="addTuneVariant"
+          >+ Add tune</button>
+        </template>
         <div v-else class="rs-add-picker-inline">
           <CarPicker :car-id="null" @update:car-id="addVariant" />
           <button class="rs-add-picker-cancel" type="button" @click="showAddVariantPicker = false">×</button>
@@ -881,7 +913,29 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 }
 .rs-variant-remove:hover { opacity: 1; color: #e03030; }
 
-.rs-add-variant-wrap { display: flex; align-items: center; }
+.rs-add-variant-wrap { display: flex; align-items: center; gap: 4px; }
+
+.rs-variant-tab--suggested {
+  border-style: dashed;
+  color: color-mix(in srgb, var(--accent) 70%, var(--muted));
+  opacity: 0.85;
+}
+.rs-variant-tab--suggested.rs-variant-tab--active {
+  opacity: 1;
+}
+.rs-tab-suggested-badge {
+  display: inline-block;
+  font-size: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  margin-left: 5px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  vertical-align: middle;
+}
 .rs-add-picker-inline { display: flex; align-items: center; gap: 6px; }
 .rs-add-picker-cancel {
   background: none; border: none; color: var(--muted); opacity: 0.5;

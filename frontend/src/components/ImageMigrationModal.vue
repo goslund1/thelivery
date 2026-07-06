@@ -232,7 +232,11 @@ function close() { modal.closeImageMigration() }
           </div>
 
           <!-- Image grid -->
-          <div class="imm-img-grid">
+          <div class="imm-img-grid" :class="{ 'imm-img-grid--done': allAssigned }">
+            <div v-if="allAssigned" class="imm-done-overlay">
+              <span>Images</span>
+              <span>Migrated</span>
+            </div>
             <button
               v-for="img in currentCard.images.slice().sort((a,b) => a.order - b.order)"
               :key="img.id"
@@ -384,12 +388,29 @@ function close() { modal.closeImageMigration() }
 
 /* Image grid */
 .imm-img-grid {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--panel-edge);
   background: color-mix(in srgb, var(--panel-well) 40%, transparent);
+}
+.imm-done-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.imm-done-overlay span {
+  font: 900 28px/1.1 'Oswald', sans-serif;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(180, 180, 180, 0.28);
 }
 .imm-img-cell {
   position: relative;

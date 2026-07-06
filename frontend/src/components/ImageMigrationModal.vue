@@ -144,7 +144,7 @@ async function assignSelected() {
 
   toastDrawerOpen.value = true
   const toastId = toasts.push(`${card.name} — ${carLabel}`, [
-    { text: `${ids.length} image${ids.length !== 1 ? 's' : ''} — re-filing…`, status: 'processing' },
+    { text: `${ids.length} image${ids.length !== 1 ? 's' : ''} — re-filing…`, status: 'pending' },
     { text: 'Creating livery…', status: 'pending' },
     { text: 'Assessing colors…', status: 'pending' },
   ])
@@ -161,6 +161,7 @@ async function assignSelected() {
     if (!livery) throw new Error('Failed to create livery')
     toasts.updateItem(toastId, liveryItemId, { status: 'done', text: `Livery: ${name}`, detail: livery.serial })
 
+    toasts.updateItem(toastId, imgItemId, { status: 'processing' })
     const result = await api.migrateImages(ids, carId.value!, livery.id)
 
     for (const updated of result.migrated) {
@@ -197,9 +198,16 @@ async function assignSelected() {
       })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
-    toasts.updateItem(toastId, imgItemId, { status: 'error', text: msg })
-    toasts.updateItem(toastId, liveryItemId, { status: 'error', text: 'Failed' })
-    toasts.updateItem(toastId, assessItemId, { status: 'error', text: '' })
+    const t = toasts.toasts.find(t => t.id === toastId)
+    if (t) {
+      for (const item of t.items) {
+        if (item.status === 'processing') {
+          toasts.updateItem(toastId, item.id, { status: 'error', text: msg })
+        } else if (item.status === 'pending') {
+          toasts.updateItem(toastId, item.id, { status: 'error', text: 'Skipped' })
+        }
+      }
+    }
     console.error('[ImageMigration] assignSelected failed:', e)
   } finally {
     batchProcessing.value = false

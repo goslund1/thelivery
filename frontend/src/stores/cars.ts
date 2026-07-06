@@ -21,14 +21,10 @@ export const useCarsStore = defineStore('cars', () => {
     return all.value.find(c => c.id === id)
   }
 
-  const MAKE_ALIASES: Record<string, string> = {
-    'fd': 'formula drift',
-  }
-
   function search(game: 'FH5' | 'FH6', query: string): Car[] {
     const raw = query.trim().toLowerCase()
-    // Expand known shorthands before searching.
-    const q = MAKE_ALIASES[raw] ?? raw
+    // Expand 'fd...' prefix to 'formula drift...' so typing 'fd 117' finds FD #117 cars.
+    const q = raw.startsWith('fd') ? 'formula drift' + raw.slice(2) : raw
     const pool = game === 'FH5' ? fh5.value : fh6.value
     if (!q) return pool.slice(0, 50)
     return pool.filter(c =>

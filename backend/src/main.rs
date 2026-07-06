@@ -273,6 +273,7 @@ async fn add_user(pool: &SqlitePool, username: &str) -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    dotenvy::dotenv().ok();  // load .env if present; ignore if missing
     tracing_subscriber::fmt().with_target(false).init();
 
     let db_path = std::env::var("DATABASE_PATH").unwrap_or_else(|_| "data.db".into());

@@ -192,9 +192,8 @@ async function assignSelected() {
   }
 }
 
-function nextCard() {
-  currentIndex.value++
-}
+function nextCard() { currentIndex.value++ }
+function prevCard() { if (currentIndex.value > 0) currentIndex.value-- }
 
 function close() { modal.closeImageMigration() }
 </script>
@@ -285,9 +284,14 @@ function close() { modal.closeImageMigration() }
           <div class="imm-actions">
             <button
               class="imm-btn-skip"
+              :disabled="currentIndex === 0"
+              @click="prevCard"
+            >← Prev</button>
+            <button
+              class="imm-btn-skip"
               :class="{ 'imm-btn-skip--ready': allAssigned }"
               @click="nextCard"
-            >Next card →</button>
+            >Next →</button>
             <button
               class="imm-btn-primary"
               :disabled="!canAssign"

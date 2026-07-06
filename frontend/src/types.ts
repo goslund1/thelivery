@@ -100,6 +100,7 @@ export interface Car {
   decade: string | null
   status: string | null
   dlc: string | null      // null = base game; pack name = paid DLC
+  code: string | null     // serial segment e.g. 'NISRVGTSP99'; unique per game
 }
 
 export type Theme = 'dark' | 'light' | 'rainbow' | 'clouds' | 'stormy'

@@ -624,13 +624,14 @@ async fn put_theme(
 
 async fn upsert_car(pool: &SqlitePool, c: &Value) -> Result<(), sqlx::Error> {
     sqlx::query(
-        "INSERT INTO cars (id, game, make, model, year, class, pi, drive, country, category, decade, status, dlc)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        "INSERT INTO cars (id, game, make, model, year, class, pi, drive, country, category, decade, status, dlc, code)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            game=excluded.game, make=excluded.make, model=excluded.model,
            year=excluded.year, class=excluded.class, pi=excluded.pi,
            drive=excluded.drive, country=excluded.country, category=excluded.category,
-           decade=excluded.decade, status=excluded.status, dlc=excluded.dlc",
+           decade=excluded.decade, status=excluded.status, dlc=excluded.dlc,
+           code=COALESCE(excluded.code, cars.code)",
     )
     .bind(c["id"].as_str().unwrap_or_default())
     .bind(c["game"].as_str().unwrap_or_default())
@@ -645,6 +646,7 @@ async fn upsert_car(pool: &SqlitePool, c: &Value) -> Result<(), sqlx::Error> {
     .bind(c["decade"].as_str())
     .bind(c["status"].as_str())
     .bind(c["dlc"].as_str())
+    .bind(c["code"].as_str())
     .execute(pool)
     .await?;
     Ok(())
@@ -665,6 +667,7 @@ fn car_row_to_json(r: &sqlx::sqlite::SqliteRow) -> Value {
         "decade":   r.get::<Option<String>, _>("decade"),
         "status":   r.get::<Option<String>, _>("status"),
         "dlc":      r.get::<Option<String>, _>("dlc"),
+        "code":     r.get::<Option<String>, _>("code"),
     })
 }
 

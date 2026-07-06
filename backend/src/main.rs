@@ -859,12 +859,13 @@ async fn sync_card_images(pool: &SqlitePool, card_id: &str, body: &mut Value) ->
         let alt     = img.get("alt").and_then(Value::as_str).unwrap_or_default().to_string();
         let order   = img.get("order").and_then(Value::as_i64).unwrap_or(0);
         let car_id  = img.get("carId").and_then(Value::as_str).map(String::from);
+        let livery_id: Option<i64> = img.get("liveryId").and_then(Value::as_i64);
 
         let final_id: i64 = if let Some(id) = db_id {
             sqlx::query(
-                "UPDATE images SET alt_text = ?, sort_order = ?, car_id = ? WHERE id = ? AND card_id = ?",
+                "UPDATE images SET alt_text = ?, sort_order = ?, car_id = ?, livery_id = COALESCE(?, livery_id) WHERE id = ? AND card_id = ?",
             )
-            .bind(&alt).bind(order).bind(&car_id).bind(id).bind(card_id)
+            .bind(&alt).bind(order).bind(&car_id).bind(livery_id).bind(id).bind(card_id)
             .execute(pool).await?;
             id
         } else if let Some(ref p) = path {

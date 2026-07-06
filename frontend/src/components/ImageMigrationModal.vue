@@ -4,6 +4,7 @@ import { useCardsStore } from '../stores/cards'
 import { useModalStore } from '../stores/modal'
 import { useLiveriesStore } from '../stores/liveries'
 import { useAuthStore } from '../stores/auth'
+import { useCarsStore } from '../stores/cars'
 import { api } from '../api'
 import CarPicker from './CarPicker.vue'
 import type { Card } from '../types'
@@ -12,8 +13,9 @@ const store = useCardsStore()
 const modal = useModalStore()
 const liveriesStore = useLiveriesStore()
 const auth = useAuthStore()
+const carsStore = useCarsStore()
+carsStore.load()
 
-// Walk through cards that have images
 const cardsWithImages = computed(() =>
   store.cards.filter(c => !c.isLegend && c.images.length > 0)
 )
@@ -22,107 +24,110 @@ const currentIndex = ref(0)
 const currentCard = computed<Card | null>(() => cardsWithImages.value[currentIndex.value] ?? null)
 const done = computed(() => currentIndex.value >= cardsWithImages.value.length)
 
-// Per-card state
+// Per-image selection
+const selectedIds = ref<Set<number>>(new Set())
+const assignedIds = ref<Set<number>>(new Set()) // images already given a livery this session
+
+const allSelected = computed(() => {
+  const imgs = currentCard.value?.images ?? []
+  return imgs.length > 0 && imgs.every(i => selectedIds.value.has(i.id))
+})
+
+function toggleImage(id: number) {
+  const s = new Set(selectedIds.value)
+  if (s.has(id)) s.delete(id); else s.add(id)
+  selectedIds.value = s
+}
+function toggleAll() {
+  if (allSelected.value) {
+    selectedIds.value = new Set()
+  } else {
+    selectedIds.value = new Set((currentCard.value?.images ?? []).map(i => i.id))
+  }
+}
+
+// Per-batch assignment state
 const carId = ref<string | null>(null)
 const liveryName = ref('')
-const liveryNameValid = computed(() => liveryName.value.trim().length > 0 && liveryName.value.trim() !== 'Livery Name')
+const liveryNameValid = computed(() => liveryName.value.trim().length > 0)
+const canAssign = computed(() =>
+  selectedIds.value.size > 0 && liveryNameValid.value && !batchProcessing.value
+)
 
-// Import log per card
-interface LogEntry { label: string; progress: number; status: 'pending' | 'assessing' | 'done' | 'error' }
-const log = ref<LogEntry[]>([])
-const assessStatus = ref<'idle' | 'pending' | 'done' | 'error'>('idle')
-const assessColors = ref<{ primary: string; secondary?: string } | null>(null)
-const processing = ref(false)
-const logFading = ref(false)
-let fadeTimer: ReturnType<typeof setTimeout> | null = null
+// Batch log — multiple batches per card
+interface BatchEntry { label: string; count: number; status: 'processing' | 'done' | 'error'; colors?: string; errorMsg?: string }
+const batchLog = ref<BatchEntry[]>([])
+const batchProcessing = ref(false)
 
-// Reset per-card state when card changes
+// Reset when card changes
 watch(currentCard, (card) => {
+  selectedIds.value = new Set()
+  assignedIds.value = new Set()
+  batchLog.value = []
+  batchProcessing.value = false
   carId.value = card?.carId ?? null
-  liveryName.value = card ? (card.name.trim() || 'Livery Name') : ''
-  log.value = []
-  assessStatus.value = 'idle'
-  assessColors.value = null
-  processing.value = false
-  logFading.value = false
-  if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null }
+  liveryName.value = card?.name?.trim() || ''
 }, { immediate: true })
 
 watch(() => modal.imageMigrationOpen, (open) => {
-  if (open) { currentIndex.value = 0 }
+  if (open) currentIndex.value = 0
 })
 
-async function processCard() {
+async function assignSelected() {
   const card = currentCard.value
-  if (!card || !auth.isAuthenticated) return
-  if (!liveryNameValid.value) return
+  if (!card || !auth.isAuthenticated || !canAssign.value) return
 
-  processing.value = true
-  assessStatus.value = 'idle'
-  assessColors.value = null
+  const ids = [...selectedIds.value]
+  const name = liveryName.value.trim()
+  const batchLabel = name + (carId.value ? '' : ' (no car)')
 
-  // Build log entries — one per image
-  log.value = card.images
-    .slice()
-    .sort((a, b) => a.order - b.order)
-    .map(img => ({
-      label: img.path.split('/').pop() ?? img.path,
-      progress: 0,
-      status: 'pending' as const,
-    }))
+  batchProcessing.value = true
+  batchLog.value.push({ label: batchLabel, count: ids.length, status: 'processing' })
+  const entry = batchLog.value[batchLog.value.length - 1]
 
-  // Create livery
-  const livery = carId.value
-    ? await liveriesStore.create({ carId: carId.value, name: liveryName.value.trim() })
-    : null
+  try {
+    const livery = carId.value
+      ? await liveriesStore.create({ carId: carId.value, name })
+      : null
 
-  if (livery) assessStatus.value = 'pending'
-
-  // Register all images via assess endpoint trigger.
-  // Images are already in the DB (sync_card_images ran on load), so we just
-  // need to set livery_id on them and trigger assess.
-  // We do this by patching each image's livery_id via card save.
-  const sortedImages = card.images.slice().sort((a, b) => a.order - b.order)
-
-  for (let i = 0; i < sortedImages.length; i++) {
-    const img = sortedImages[i]
-    if (img && livery) {
-      store.setImageMeta(card.id, img.id, { carId: carId.value ?? undefined, liveryId: livery.id })
-    }
-    log.value[i] = { ...log.value[i], progress: 100, status: 'done' }
-  }
-
-  // Save card so image livery_id rows get updated
-  await store.save(card.id)
-
-  // Trigger assess if livery was created
-  if (livery) {
-    api.assessLiveryColor(livery.id)
-      .then(r => {
-        assessStatus.value = 'done'
-        assessColors.value = { primary: r.primary, secondary: r.secondary }
+    for (const id of ids) {
+      store.setImageMeta(card.id, id, {
+        carId: carId.value ?? undefined,
+        liveryId: livery?.id,
       })
-      .catch(() => { assessStatus.value = 'error' })
-  } else {
-    assessStatus.value = 'idle'
-  }
+    }
+    await store.save(card.id)
 
-  // Wait briefly then auto-advance
-  fadeTimer = setTimeout(() => {
-    logFading.value = true
-    fadeTimer = setTimeout(() => {
-      currentIndex.value++
-      processing.value = false
-    }, 700)
-  }, livery ? 4000 : 1500) // longer wait when assessing
+    // Mark as assigned
+    const next = new Set(assignedIds.value)
+    ids.forEach(id => next.add(id))
+    assignedIds.value = next
+
+    // Clear selection for next batch
+    selectedIds.value = new Set()
+    carId.value = null
+    liveryName.value = currentCard.value?.name?.trim() || ''
+
+    if (livery) {
+      api.assessLiveryColor(livery.id)
+        .then(r => {
+          entry.status = 'done'
+          entry.colors = r.primary + (r.secondary ? ' / ' + r.secondary : '')
+        })
+        .catch(() => { entry.status = 'done' })
+    } else {
+      entry.status = 'done'
+    }
+  } catch (e) {
+    entry.status = 'error'
+    entry.errorMsg = e instanceof Error ? e.message : String(e)
+    console.error('[ImageMigration] assignSelected failed:', e)
+  } finally {
+    batchProcessing.value = false
+  }
 }
 
-function skip() {
-  if (fadeTimer) { clearTimeout(fadeTimer); fadeTimer = null }
-  logFading.value = false
-  log.value = []
-  assessStatus.value = 'idle'
-  processing.value = false
+function nextCard() {
   currentIndex.value++
 }
 
@@ -136,29 +141,54 @@ function close() { modal.closeImageMigration() }
         <button class="imm-close" @click="close">×</button>
 
         <div v-if="done" class="imm-done">
-          <p class="imm-done-msg">All {{ cardsWithImages.length }} cards processed.</p>
+          <p class="imm-done-msg">All {{ cardsWithImages.length }} cards visited.</p>
           <button class="imm-btn-primary" @click="close">Close</button>
         </div>
 
         <template v-else-if="currentCard">
+          <!-- Header -->
           <div class="imm-header">
             <span class="imm-counter">{{ currentIndex + 1 }} / {{ cardsWithImages.length }}</span>
             <h2 class="imm-title">{{ currentCard.name }}</h2>
           </div>
 
-          <!-- Image preview strip -->
-          <div class="imm-img-strip">
-            <img
-              v-for="img in currentCard.images.slice().sort((a,b) => a.order - b.order)"
-              :key="img.id"
-              :src="img.thumbPath ?? img.path"
-              class="imm-thumb"
-              :alt="img.alt ?? ''"
-            />
+          <!-- Selection controls -->
+          <div class="imm-select-bar">
+            <button class="imm-select-all" @click="toggleAll">
+              {{ allSelected ? 'Deselect all' : 'Select all' }}
+            </button>
+            <span class="imm-sel-count">
+              {{ selectedIds.size }} selected
+              <template v-if="assignedIds.size"> · {{ assignedIds.size }} assigned</template>
+            </span>
           </div>
 
-          <!-- Setup: car + livery name -->
-          <div v-if="!processing" class="imm-setup">
+          <!-- Image grid -->
+          <div class="imm-img-grid">
+            <button
+              v-for="img in currentCard.images.slice().sort((a,b) => a.order - b.order)"
+              :key="img.id"
+              class="imm-img-cell"
+              :class="{
+                'imm-img-cell--selected': selectedIds.has(img.id),
+                'imm-img-cell--assigned': assignedIds.has(img.id) && !selectedIds.has(img.id),
+              }"
+              @click="toggleImage(img.id)"
+            >
+              <img
+                :src="img.thumbPath ?? img.path"
+                class="imm-thumb"
+                :alt="img.alt ?? ''"
+              />
+              <div class="imm-img-check">
+                <span v-if="selectedIds.has(img.id)">✓</span>
+                <span v-else-if="assignedIds.has(img.id)" class="imm-img-check--done">·</span>
+              </div>
+            </button>
+          </div>
+
+          <!-- Assignment controls -->
+          <div class="imm-assign">
             <div class="imm-row">
               <span class="imm-label">Car</span>
               <CarPicker :car-id="carId" @update:car-id="id => carId = id" />
@@ -167,43 +197,38 @@ function close() { modal.closeImageMigration() }
               <span class="imm-label">Livery</span>
               <input
                 class="imm-livery-input"
-                :class="{ 'imm-livery-input--default': !liveryNameValid }"
                 v-model="liveryName"
-                placeholder="Unique livery name…"
+                placeholder="Livery name…"
               />
             </div>
           </div>
 
-          <!-- Progress log -->
-          <div v-if="log.length" class="imm-log" :class="{ 'imm-log--fading': logFading }">
+          <!-- Batch log -->
+          <div v-if="batchLog.length" class="imm-batch-log">
             <div
-              v-for="(entry, i) in log"
+              v-for="(b, i) in batchLog"
               :key="i"
-              class="imm-log-row"
-              :class="'imm-log-row--' + entry.status"
-              :style="{ '--prog': entry.progress + '%' }"
+              class="imm-batch-row"
+              :class="'imm-batch-row--' + b.status"
             >
-              <span class="imm-log-label">{{ entry.label }}</span>
-              <span class="imm-log-status">{{ entry.status === 'done' ? '✓' : entry.status === 'error' ? '✗' : '…' }}</span>
-            </div>
-            <div v-if="assessStatus !== 'idle'" class="imm-log-row" :class="assessStatus === 'pending' ? 'imm-log-row--pending' : assessStatus === 'done' ? 'imm-log-row--done' : 'imm-log-row--error'" :style="{ '--prog': assessStatus === 'pending' ? '55%' : '100%' }">
-              <span class="imm-log-label">Color assess</span>
-              <span class="imm-log-status">
-                <template v-if="assessStatus === 'pending'">assessing…</template>
-                <template v-else-if="assessStatus === 'done' && assessColors">{{ assessColors.primary }}<template v-if="assessColors.secondary"> / {{ assessColors.secondary }}</template></template>
-                <template v-else>failed</template>
+              <span class="imm-batch-label">{{ b.label }}</span>
+              <span class="imm-batch-meta">
+                {{ b.count }} photo{{ b.count !== 1 ? 's' : '' }}
+                <template v-if="b.status === 'processing'"> · saving…</template>
+                <template v-else-if="b.colors"> · {{ b.colors }}</template>
+                <template v-else-if="b.status === 'error'"> · {{ b.errorMsg || 'failed' }}</template>
               </span>
             </div>
           </div>
 
           <!-- Actions -->
-          <div v-if="!processing" class="imm-actions">
-            <button class="imm-btn-skip" @click="skip">Skip →</button>
+          <div class="imm-actions">
+            <button class="imm-btn-skip" @click="nextCard">Next card →</button>
             <button
               class="imm-btn-primary"
-              :disabled="!liveryNameValid"
-              @click="processCard"
-            >Process card →</button>
+              :disabled="!canAssign"
+              @click="assignSelected"
+            >Assign selected →</button>
           </div>
         </template>
       </div>
@@ -223,15 +248,14 @@ function close() { modal.closeImageMigration() }
 }
 .imm-shell {
   position: relative;
-  width: min(92vw, 580px);
-  max-height: 88vh;
+  width: min(92vw, 600px);
+  max-height: 90vh;
   overflow-y: auto;
   background: var(--panel-bg, #1a1a1a);
   border: 1px solid var(--panel-edge, #333);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
-  gap: 0;
 }
 .imm-close {
   position: absolute;
@@ -243,7 +267,7 @@ function close() { modal.closeImageMigration() }
 .imm-close:hover { color: var(--fg); }
 
 .imm-header {
-  padding: 16px 16px 8px;
+  padding: 14px 16px 10px;
   border-bottom: 1px solid var(--panel-edge);
   display: flex;
   align-items: baseline;
@@ -262,28 +286,71 @@ function close() { modal.closeImageMigration() }
   letter-spacing: .05em;
 }
 
-.imm-img-strip {
+.imm-select-bar {
   display: flex;
-  gap: 4px;
-  padding: 10px 14px;
-  overflow-x: auto;
-  background: color-mix(in srgb, var(--panel-well) 40%, transparent);
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
   border-bottom: 1px solid var(--panel-edge);
 }
-.imm-thumb {
-  height: 72px;
-  width: auto;
-  border-radius: 3px;
-  object-fit: cover;
-  flex-shrink: 0;
+.imm-select-all {
+  font: 10px/1 'JetBrains Mono', monospace;
+  background: none;
   border: 1px solid var(--panel-edge);
+  color: var(--muted);
+  border-radius: 3px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.imm-select-all:hover { color: var(--fg); border-color: var(--accent); }
+.imm-sel-count {
+  font: 10px/1 'JetBrains Mono', monospace;
+  color: var(--muted);
 }
 
-.imm-setup {
+/* Image grid */
+.imm-img-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--panel-edge);
+  background: color-mix(in srgb, var(--panel-well) 40%, transparent);
+}
+.imm-img-cell {
+  position: relative;
+  aspect-ratio: 16/9;
+  border: 2px solid transparent;
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+  transition: border-color .12s;
+}
+.imm-img-cell--selected { border-color: var(--accent); }
+.imm-img-cell--assigned { opacity: 0.45; }
+.imm-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.imm-img-check {
+  position: absolute;
+  top: 2px; right: 3px;
+  font: bold 11px/1 'JetBrains Mono', monospace;
+  color: var(--accent);
+  text-shadow: 0 0 3px rgba(0,0,0,0.8);
+}
+.imm-img-check--done { color: var(--muted); }
+
+/* Assignment controls */
+.imm-assign {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--panel-edge);
 }
 .imm-row {
@@ -311,53 +378,35 @@ function close() { modal.closeImageMigration() }
   outline: none;
 }
 .imm-livery-input:focus { border-color: var(--accent); }
-.imm-livery-input--default { color: var(--muted); }
+.imm-livery-input::placeholder { color: var(--muted); }
 
-.imm-log {
+/* Batch log */
+.imm-batch-log {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 8px 14px;
-  opacity: 1;
-  transition: opacity .7s ease;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--panel-edge);
 }
-.imm-log--fading { opacity: 0; }
-
-.imm-log-row {
-  position: relative;
+.imm-batch-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 8px;
-  border-radius: 3px;
-  font: 11px/1 'JetBrains Mono', monospace;
-  overflow: hidden;
+  font: 11px/1.4 'JetBrains Mono', monospace;
+  padding: 2px 0;
 }
-.imm-log-row::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to right,
-    color-mix(in srgb, var(--accent) 18%, transparent) var(--prog, 0%),
-    transparent var(--prog, 0%)
-  );
-  pointer-events: none;
-}
-.imm-log-label { color: var(--muted); position: relative; }
-.imm-log-status { flex-shrink: 0; position: relative; }
-.imm-log-row--done .imm-log-label,
-.imm-log-row--done .imm-log-status { color: var(--accent); }
-.imm-log-row--error .imm-log-label,
-.imm-log-row--error .imm-log-status { color: #c94444; }
-.imm-log-row--pending .imm-log-status { color: var(--muted); font-style: italic; }
+.imm-batch-label { color: var(--fg); }
+.imm-batch-meta { color: var(--muted); font-size: 10px; }
+.imm-batch-row--done .imm-batch-label { color: var(--accent); }
+.imm-batch-row--processing .imm-batch-label { color: var(--muted); font-style: italic; }
+.imm-batch-row--error .imm-batch-label { color: #c94444; }
 
+/* Actions */
 .imm-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
-  border-top: 1px solid var(--panel-edge);
+  padding: 10px 14px;
   gap: 8px;
 }
 .imm-btn-primary {
@@ -369,10 +418,7 @@ function close() { modal.closeImageMigration() }
   color: #000;
   cursor: pointer;
 }
-.imm-btn-primary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
+.imm-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .imm-btn-skip {
   font: 11px/1 'JetBrains Mono', monospace;
   padding: 7px 12px;

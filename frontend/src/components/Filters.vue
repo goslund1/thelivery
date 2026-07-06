@@ -42,7 +42,7 @@ function toggleTuneType(name: string) {
       Suggestions
     </button>
     <button class="bug-check sugg-row" @click="modal.openImageMigration()">
-      Image Migration
+      Migrate Images
     </button>
     <p class="bug-flyout-label" style="margin-top: 8px;">Show sections</p>
   </template>
@@ -113,6 +113,7 @@ function toggleTuneType(name: string) {
   flex-wrap: wrap;
   gap: 4px;
   padding: 2px 0 4px;
+  width: 154px;
 }
 .filter-color-chip {
   font: 10px/1 'JetBrains Mono', monospace;

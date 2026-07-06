@@ -217,37 +217,6 @@ function close() { modal.closeImageMigration() }
     <div v-if="modal.imageMigrationOpen" class="imm-overlay" @click.self="close">
       <div class="imm-shell">
 
-        <!-- Migration Log drawer — left side, same pattern as ThemeBuilder picker wing -->
-        <DrawerPanel v-model:open="toastDrawerOpen" :width="200" :tab-width="16">
-          <template #header>Migration Log</template>
-          <div class="imm-toast-scroll">
-            <template v-if="toasts.toasts.length">
-              <div
-                v-for="toast in toasts.toasts"
-                :key="toast.id"
-                class="imm-toast-panel"
-                :class="{ 'imm-toast-panel--fading': toast.fadingOut }"
-              >
-                <div class="imm-toast-title-row">
-                  <span class="imm-toast-title">{{ toast.title }}</span>
-                  <button class="imm-toast-dismiss" @click="toasts.dismiss(toast.id)">×</button>
-                </div>
-                <div
-                  v-for="item in toast.items"
-                  :key="item.id"
-                  class="imm-toast-item"
-                  :class="'imm-toast-item--' + item.status"
-                >
-                  <span class="imm-toast-dot" />
-                  <span class="imm-toast-text">{{ item.text }}</span>
-                  <span v-if="item.detail" class="imm-toast-detail">{{ item.detail }}</span>
-                </div>
-              </div>
-            </template>
-            <p v-else class="imm-toast-empty">No activity yet</p>
-          </div>
-        </DrawerPanel>
-
         <!-- Main content column -->
         <div class="imm-main">
           <button class="imm-close" @click="close">×</button>
@@ -348,6 +317,37 @@ function close() { modal.closeImageMigration() }
             </div>
           </template>
         </div>
+
+        <!-- Migration Log drawer — right side, tab on left edge -->
+        <DrawerPanel v-model:open="toastDrawerOpen" :width="200" :tab-width="16" side="right">
+          <template #header>Migration Log</template>
+          <div class="imm-toast-scroll">
+            <template v-if="toasts.toasts.length">
+              <div
+                v-for="toast in toasts.toasts"
+                :key="toast.id"
+                class="imm-toast-panel"
+                :class="{ 'imm-toast-panel--fading': toast.fadingOut }"
+              >
+                <div class="imm-toast-title-row">
+                  <span class="imm-toast-title">{{ toast.title }}</span>
+                  <button class="imm-toast-dismiss" @click="toasts.dismiss(toast.id)">×</button>
+                </div>
+                <div
+                  v-for="item in toast.items"
+                  :key="item.id"
+                  class="imm-toast-item"
+                  :class="'imm-toast-item--' + item.status"
+                >
+                  <span class="imm-toast-dot" />
+                  <span class="imm-toast-text">{{ item.text }}</span>
+                  <span v-if="item.detail" class="imm-toast-detail">{{ item.detail }}</span>
+                </div>
+              </div>
+            </template>
+            <p v-else class="imm-toast-empty">No activity yet</p>
+          </div>
+        </DrawerPanel>
 
       </div>
     </div>

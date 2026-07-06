@@ -6,9 +6,11 @@ const props = withDefaults(defineProps<{
   width?: number
   tabWidth?: number
   background?: string
+  side?: 'left' | 'right'
 }>(), {
   width: 272,
   tabWidth: 14,
+  side: 'left',
 })
 
 const emit = defineEmits<{ 'update:open': [value: boolean] }>()
@@ -18,9 +20,20 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
   <div
     v-scroll-contain
     class="dp-pane"
-    :class="{ 'dp-pane--open': open }"
+    :class="{ 'dp-pane--open': open, 'dp-pane--right': side === 'right' }"
     :style="{ '--dp-w': width + 'px', '--dp-tab': tabWidth + 'px', background }"
   >
+    <button
+      v-if="side === 'right'"
+      class="dp-tab"
+      :class="{ 'dp-tab--open': open }"
+      type="button"
+      :title="open ? 'Collapse' : 'Expand'"
+      @click="emit('update:open', !open)"
+    >
+      <slot name="tab">‹</slot>
+    </button>
+
     <div class="dp-wing">
       <div v-if="$slots.header" class="dp-header">
         <slot name="header" />
@@ -31,6 +44,7 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
     </div>
 
     <button
+      v-if="side !== 'right'"
       class="dp-tab"
       :class="{ 'dp-tab--open': open }"
       type="button"
@@ -65,6 +79,21 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
 }
 .dp-pane.dp-pane--open {
   width: calc(var(--dp-w) + var(--dp-tab));
+}
+
+/* Right-side variant: tab on left edge, wing opens rightward */
+.dp-pane--right {
+  border-right: 1px solid var(--glass-border);
+  border-left: none;
+  border-radius: 0 6px 0 0;
+}
+.dp-pane--right .dp-tab {
+  border-left: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+.dp-pane--right .dp-tab::after {
+  left: 0;
+  right: -1px;
 }
 
 .dp-wing {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import type { CarVariant, ForzaRecipeSection, UpgradeCategory } from '../types'
+import type { CardVariant, ForzaRecipeSection, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
 import { useFilterStore } from '../stores/filters'
 import { useCarsStore } from '../stores/cars'
@@ -76,7 +76,7 @@ function applyVariant(idx: number) {
   local.adjustments = v.adjustments
 }
 
-function variantLabel(v: CarVariant): string {
+function variantLabel(v: CardVariant): string {
   const car = carsStore.byId(v.carId)
   if (!car) return v.carId || '(no car)'
   return `${car.year ? car.year + ' ' : ''}${car.make} ${car.model}`
@@ -86,13 +86,13 @@ function variantLabel(v: CarVariant): string {
 const showAddVariantPicker = ref(false)
 const pendingRemoveIdx = ref<number | null>(null)
 
-function variantIsEmpty(v: CarVariant): boolean {
+function variantIsEmpty(v: CardVariant): boolean {
   return !v.tuneName.trim() && !v.shareCode.trim()
     && v.upgrades.every(c => c.parts.length === 0)
     && v.adjustments.length === 0
 }
 
-function makeEmptyVariant(carId: string): CarVariant {
+function makeEmptyVariant(carId: string): CardVariant {
   return {
     carId,
     tuneName: '',

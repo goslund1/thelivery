@@ -42,15 +42,32 @@ export interface AdjustmentRow {
   step: number
 }
 
-// One car's tune data inside a multi-car mashup card.
-export interface CarVariant {
+// One car/livery/tune slot in a multi-car or multi-tune card.
+// liveryId + tuneId are DB refs (populated once linked; 0 = not yet linked).
+// Inline data fields are the fallback for unlinked variants and the resolved
+// display cache once linked — step 8 wires store resolution.
+export interface CardVariant {
+  // DB refs (authoritative once set)
+  liveryId?: number
+  tuneId?: number
+  // Identity (from livery.car_id, resolved at load time)
   carId: string
+  carName?: string
+  liveryName?: string
+  // Tune display (from tunes row, resolved at load time)
   tuneName: string
+  tuneType?: string
   shareCode: string
+  // Inline tune data (stored in card JSON until linked, then resolved from store)
   coreSpecs: Record<string, string>
   upgrades: UpgradeCategory[]
   adjustments: AdjustmentRow[]
+  // Suggested tune flag — tab is read-only, colored to show deviation
+  isSuggested?: boolean
 }
+
+// Deprecated alias — use CardVariant.
+export type CarVariant = CardVariant
 
 // The Forza tune/build-parts section.
 export interface ForzaRecipeSection {
@@ -64,7 +81,42 @@ export interface ForzaRecipeSection {
   coreSpecs: Record<string, string>
   upgrades: UpgradeCategory[]
   adjustments: AdjustmentRow[]
-  variants?: CarVariant[]  // present only on multi-car mashup cards (2+ entries)
+  variants?: CardVariant[]  // present only on multi-car/multi-tune cards (2+ entries)
+}
+
+// ── Identity entity types (match API responses from /api/liveries, /api/tunes) ──
+
+export interface TuneType {
+  id: number
+  name: string
+  sortOrder: number
+}
+
+export interface Livery {
+  id: number
+  carId: string
+  serial: string     // e.g. 'FH6-NISRVGTSP99-L001'
+  name: string
+  isFactory: boolean
+  carColorId: number | null
+  shareCode: string | null
+  colorPrimary: string | null
+  colorSecondary: string | null
+  createdAt: string
+}
+
+export interface Tune {
+  id: number
+  liveryId: number
+  carId: string
+  serial: string       // e.g. 'FH6-NISRVGTSP99-L001-T001'
+  officialName: string | null
+  typeId: number | null
+  shareCode: string | null
+  coreSpecs: string | null   // JSON string → parse to Record<string,string>
+  upgrades: string | null    // JSON string → parse to UpgradeCategory[]
+  adjustments: string | null // JSON string → parse to AdjustmentRow[]
+  createdAt: string
 }
 
 export type Section = TextSection | ForzaRecipeSection

@@ -403,7 +403,7 @@ function close() { modal.closeImageMigration() }
   transition: border-color .12s;
 }
 .imm-img-cell--selected { border-color: var(--accent); }
-.imm-img-cell--assigned { opacity: 0.45; }
+.imm-img-cell--assigned { opacity: 0.2; }
 .imm-thumb {
   width: 100%;
   height: 100%;

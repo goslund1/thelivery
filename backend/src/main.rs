@@ -1964,7 +1964,12 @@ async fn next_livery_serial(pool: &SqlitePool, car_id: &str) -> Result<String, s
         .await?;
     let game: String = row.get("game");
     let code: Option<String> = row.get("code");
-    let car_code = code.unwrap_or_else(|| car_id.to_uppercase().replace('-', "").chars().take(9).collect());
+    // Fallback: djb2 hash of car_id → 8-char hex, guaranteed unique per id.
+    let car_code = code.unwrap_or_else(|| {
+        let mut h: u64 = 5381;
+        for b in car_id.bytes() { h = h.wrapping_mul(33).wrapping_add(b as u64); }
+        format!("{:08X}", h & 0xFFFFFFFF)
+    });
 
     let prefix = format!("{}-{}-L", game, car_code);
     let row2 = sqlx::query("SELECT MAX(CAST(SUBSTR(serial, ?) AS INTEGER)) FROM liveries WHERE car_id = ?")

@@ -101,6 +101,7 @@ function variantLabel(v: CardVariant): string {
 
 // ── Edit-mode variant management ──────────────────────────────────────────────
 const showAddVariantPicker = ref(false)
+const showAddVariantChoice = ref(false)
 const pendingRemoveIdx = ref<number | null>(null)
 
 function variantIsEmpty(v: CardVariant): boolean {
@@ -524,20 +525,19 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         </div>
       </template>
 
-      <!-- Add buttons (edit mode only) -->
+      <!-- Add variant button (edit mode only) -->
       <div v-if="ui.isEditing" class="rs-add-variant-wrap">
-        <template v-if="!showAddVariantPicker">
+        <template v-if="!showAddVariantPicker && !showAddVariantChoice">
           <button
             class="rs-variant-tab rs-variant-tab--add"
             type="button"
-            @click="showAddVariantPicker = true"
-          >+ Add car</button>
-          <button
-            v-if="canAddTune"
-            class="rs-variant-tab rs-variant-tab--add"
-            type="button"
-            @click="addTuneVariant"
-          >+ Add tune</button>
+            @click="canAddTune ? showAddVariantChoice = true : showAddVariantPicker = true"
+          >+</button>
+        </template>
+        <template v-else-if="showAddVariantChoice">
+          <button class="rs-variant-tab rs-variant-tab--add" type="button" @click="showAddVariantChoice = false; showAddVariantPicker = true">+ Car</button>
+          <button class="rs-variant-tab rs-variant-tab--add" type="button" @click="showAddVariantChoice = false; addTuneVariant()">+ Tune</button>
+          <button class="rs-add-picker-cancel" type="button" @click="showAddVariantChoice = false">×</button>
         </template>
         <div v-else class="rs-add-picker-inline">
           <CarPicker :car-id="null" @update:car-id="addVariant" />

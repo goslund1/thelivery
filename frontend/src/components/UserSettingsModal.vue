@@ -899,7 +899,7 @@ function cancelImport() {
 
         <!-- YAML Export -->
         <div class="admin-section">
-          <div class="admin-section-head">Export Card as YAML</div>
+          <div class="admin-section-head">Download YAML</div>
           <p class="admin-muted">Download a human-readable YAML file for any card. Images are not included.</p>
           <div class="mig-card-list">
             <div v-for="s in migrateStatus" :key="s.card.id" class="mig-card-row">

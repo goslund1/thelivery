@@ -103,6 +103,11 @@ export const useModalStore = defineStore('modal', () => {
   function openImageMigration() { imageMigrationOpen.value = true }
   function closeImageMigration() { imageMigrationOpen.value = false }
 
+  // ── Admin panel ──────────────────────────────────────────────────────────────
+  const adminPanelOpen = ref(false)
+  function openAdminPanel() { adminPanelOpen.value = true }
+  function closeAdminPanel() { adminPanelOpen.value = false }
+
   // Close whichever modal is frontmost. Returns true if anything was closed.
   // Priority order mirrors visual z-order: innermost/topmost first.
   function closeTopModal(): boolean {
@@ -113,6 +118,7 @@ export const useModalStore = defineStore('modal', () => {
     if (historyCardId.value)         { closeHistory();          return true }
     if (suggestionViewerOpen.value)  { closeSuggestionViewer(); return true }
     if (loginOpen.value)             { closeLogin();            return true }
+    if (adminPanelOpen.value)        { closeAdminPanel();       return true }
     if (settingsOpen.value)          { closeSettings();         return true }
     if (newCardOpen.value)           { closeNewCard();          return true }
     if (factoidPanelOpen.value)      { closeFactoidPanel();     return true }
@@ -132,6 +138,7 @@ export const useModalStore = defineStore('modal', () => {
     suggestionViewerOpen, pendingSuggestionCount, openSuggestionViewer, closeSuggestionViewer,
     promotedCard, openPromotedCard, closePromotedCard,
     imageMigrationOpen, openImageMigration, closeImageMigration,
+    adminPanelOpen, openAdminPanel, closeAdminPanel,
     closeTopModal,
   }
 })

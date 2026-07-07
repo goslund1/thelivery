@@ -2178,14 +2178,42 @@ async fn admin_repair_figure_paths(
             let rel = figure_path.trim_start_matches('/').trim_start_matches("uploads/");
             if st.uploads_dir.join(rel).exists() { continue; }
 
-            // Stale — find the card's lead image from the images table.
-            let img = sqlx::query(
-                "SELECT stage_path, path FROM images WHERE card_id = ? ORDER BY sort_order ASC LIMIT 1",
-            )
-            .bind(&card_id)
-            .fetch_optional(&st.pool)
-            .await
-            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+            // Extract the zero-padded sequence number from the old stem (e.g. "_019.jpg" → "019").
+            let old_stem = std::path::Path::new(&figure_path)
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("");
+            let nnn = old_stem.rsplit('_').next().unwrap_or("");
+
+            // Try to find an image for this card whose new path contains "_{nnn}_".
+            // This works because the migration preserves sort order, so the sequence
+            // number in the new structured name matches the old sequential suffix.
+            let img = if !nnn.is_empty() && nnn.chars().all(|c| c.is_ascii_digit()) {
+                let pattern = format!("%_{nnn}_%");
+                sqlx::query(
+                    "SELECT stage_path, path FROM images WHERE card_id = ? AND (path LIKE ? OR stage_path LIKE ?) LIMIT 1",
+                )
+                .bind(&card_id)
+                .bind(&pattern)
+                .bind(&pattern)
+                .fetch_optional(&st.pool)
+                .await
+                .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+            } else {
+                None
+            };
+
+            // Fall back to the card's lead image if no sequence match found.
+            let img = match img {
+                Some(r) => Some(r),
+                None => sqlx::query(
+                    "SELECT stage_path, path FROM images WHERE card_id = ? ORDER BY sort_order ASC LIMIT 1",
+                )
+                .bind(&card_id)
+                .fetch_optional(&st.pool)
+                .await
+                .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?,
+            };
 
             if let Some(img) = img {
                 let new_path: Option<String> = img

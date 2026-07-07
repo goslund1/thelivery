@@ -570,7 +570,7 @@ function cancelImport() {
         <button :class="{ active: tab === 'password' }" @click="tab = 'password'">Password</button>
         <button :class="{ active: tab === 'create' }" @click="tab = 'create'">Users</button>
         <button :class="{ active: tab === 'admin' }" @click="onTabAdmin">Admin</button>
-        <button :class="{ active: tab === 'migrate' }" @click="onTabMigrate">Migrate</button>
+        <button :class="{ active: tab === 'migrate' }" @click="onTabMigrate">Export Card</button>
       </div>
 
       <!-- Change Password -->

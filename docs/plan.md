@@ -64,7 +64,7 @@ All 12 build steps shipped. Step 8 hardening done (livery.id no longer optional-
 
 ---
 
-### 4. Trash + orphan management  ← PLANNED
+### 4. Trash + orphan management  ← SHIPPED (2026-07-06, commit 5bee55d)
 
 Ongoing maintenance workflow for unreferenced and user-deleted images.
 
@@ -136,6 +136,7 @@ Foundation working on Smokin (3-car test case: 599D, FD Corvette #777, Austin He
 
 ## Recently completed
 
+- Trash compactor: orphans scan now moves to trash instead of hard-delete; user-deleted images move to trash on card save; GET/DELETE /api/admin/trash + POST /api/admin/trash/restore; Admin tab trash section with reason badges, select/restore/delete; trash_log table (migration 0012) — 2026-07-06
 - Security & quality audit pass: fixed orphan scanner (queried card body instead of images table — would have wiped all uploads), delete_images legacy variant naming (thumbs/stages never cleaned up on discard), orphan scan/delete now skips uploads/trash/, rate limit HashMap unbounded growth, suggestion adjustments 64KB cap, e:any error catches in UserSettingsModal + cardYaml.ts — 2026-07-06
 
 - Multi-car mashup: tab strip, auto-propose banner, + button consolidation, gallery carId filtering wired — 2026-07-06

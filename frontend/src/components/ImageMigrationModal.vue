@@ -178,6 +178,11 @@ async function assignSelected() {
   const car = carsStore.byId(carId.value)
   const carLabel = car ? `${car.make} ${car.model}` : carId.value
 
+  // Snapshot old paths before re-filing so we can patch figurePath on sections.
+  const oldPaths = new Map<number, string>(
+    (card.images ?? []).filter(i => ids.includes(i.id)).map(i => [i.id, i.path])
+  )
+
   toastDrawerOpen.value = true
   const toastId = toasts.push(`${card.name} — ${carLabel}`, [
     { text: `${ids.length} image${ids.length !== 1 ? 's' : ''} — re-filing…`, status: 'pending' },
@@ -207,6 +212,15 @@ async function assignSelected() {
         thumbPath: updated.thumbPath,
         stagePath: updated.stagePath,
       })
+      // If any text section's figurePath pointed at this image's old path, update it.
+      const oldPath = oldPaths.get(updated.id)
+      if (oldPath) {
+        for (const section of card.sections) {
+          if (section.type === 'text' && section.figurePath === oldPath) {
+            store.setFigure(card.id, section.key, updated.path)
+          }
+        }
+      }
     }
     await store.save(card.id)
 

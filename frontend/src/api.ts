@@ -128,6 +128,11 @@ export const api = {
       body: JSON.stringify({ ids }),
     }).then(json<{ restored: number; imageIds: number[] }>),
 
+  adminRepairFigurePaths: () =>
+    fetch('/api/admin/repair-figure-paths', { method: 'POST', headers: authHeaders() }).then(
+      json<{ repaired: number; cleared: number }>
+    ),
+
   adminExportSeed: () =>
     fetch('/api/admin/export-seed', { method: 'POST', headers: authHeaders() }).then(
       json<{ exported: number }>

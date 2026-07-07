@@ -350,6 +350,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/suggestions/:id", delete(admin_dismiss_suggestion).patch(admin_like_suggestion))
         .route("/api/admin/liveries/:id/assess-color", post(admin_assess_livery_color))
         .route("/api/admin/images/migrate", post(admin_migrate_images))
+        .route("/api/admin/repair-figure-paths", post(admin_repair_figure_paths))
         .route("/api/cars", get(list_cars).post(create_car))
         .route("/api/tune-types", get(list_tune_types).post(create_tune_type))
         .route("/api/liveries", get(list_liveries).post(create_livery))
@@ -2131,6 +2132,93 @@ async fn admin_assess_livery_color(
 //  4. Update the images table row with new paths, car_id, livery_id
 //
 // Returns a list of updated image records.
+
+/// Scan all card bodies for text sections whose figurePath no longer exists on disk.
+/// For each stale path, replaces it with the card's lead image stage_path (or path).
+/// Returns { repaired, cleared } — cleared means the card had no images to fall back to.
+async fn admin_repair_figure_paths(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+) -> Result<Json<Value>, ApiError> {
+    let rows = sqlx::query("SELECT id, body FROM cards")
+        .fetch_all(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let mut repaired = 0u64;
+    let mut cleared = 0u64;
+
+    for row in &rows {
+        let card_id: String = row.get("id");
+        let body_str: String = row.get("body");
+        let mut body: Value = match serde_json::from_str(&body_str) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+
+        let sections = match body.get_mut("sections").and_then(Value::as_array_mut) {
+            Some(s) => s,
+            None => continue,
+        };
+
+        let mut changed = false;
+        for section in sections.iter_mut() {
+            let obj = match section.as_object_mut() {
+                Some(o) => o,
+                None => continue,
+            };
+            if obj.get("type").and_then(Value::as_str) != Some("text") { continue; }
+
+            let figure_path = match obj.get("figurePath").and_then(Value::as_str) {
+                Some(p) if !p.is_empty() => p.to_string(),
+                _ => continue,
+            };
+
+            // Check if the file still exists on disk.
+            let rel = figure_path.trim_start_matches('/').trim_start_matches("uploads/");
+            if st.uploads_dir.join(rel).exists() { continue; }
+
+            // Stale — find the card's lead image from the images table.
+            let img = sqlx::query(
+                "SELECT stage_path, path FROM images WHERE card_id = ? ORDER BY sort_order ASC LIMIT 1",
+            )
+            .bind(&card_id)
+            .fetch_optional(&st.pool)
+            .await
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+            if let Some(img) = img {
+                let new_path: Option<String> = img
+                    .try_get::<Option<String>, _>("stage_path").unwrap_or(None)
+                    .or_else(|| img.try_get::<String, _>("path").ok());
+                if let Some(p) = new_path {
+                    obj.insert("figurePath".into(), json!(p));
+                    repaired += 1;
+                } else {
+                    obj.remove("figurePath");
+                    cleared += 1;
+                }
+            } else {
+                obj.remove("figurePath");
+                cleared += 1;
+            }
+            changed = true;
+        }
+
+        if changed {
+            let new_body = serde_json::to_string(&body)
+                .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+            sqlx::query("UPDATE cards SET body = ? WHERE id = ?")
+                .bind(&new_body)
+                .bind(&card_id)
+                .execute(&st.pool)
+                .await
+                .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        }
+    }
+
+    Ok(Json(json!({ "repaired": repaired, "cleared": cleared })))
+}
 
 async fn admin_migrate_images(
     _auth: AuthUser,

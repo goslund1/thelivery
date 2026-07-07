@@ -116,6 +116,23 @@ const adminError = ref<string | null>(null)
 const orphanScan = ref<{ count: number; paths: string[] } | null>(null)
 const orphanBusy = ref(false)
 const orphanResult = ref<string | null>(null)
+const repairBusy = ref(false)
+const repairResult = ref<string | null>(null)
+
+async function repairFigurePaths() {
+  repairBusy.value = true
+  repairResult.value = null
+  adminError.value = null
+  try {
+    const res = await api.adminRepairFigurePaths()
+    await useCardsStore().load()
+    repairResult.value = res.repaired > 0 || res.cleared > 0
+      ? `Repaired ${res.repaired}${res.cleared ? `, cleared ${res.cleared} (no images on card)` : ''}.`
+      : 'All figure paths OK.'
+  } catch (e) { adminError.value = `Repair failed: ${errMsg(e)}` }
+  finally { repairBusy.value = false }
+}
+
 const exportBusy = ref(false)
 const exportResult = ref<string | null>(null)
 const reloadBusy = ref(false)
@@ -589,7 +606,11 @@ function cancelImport() {
               Image Migration
               <span v-if="failedAssess.length" class="admin-badge">{{ failedAssess.length }}</span>
             </button>
+            <button class="admin-btn" :disabled="repairBusy" @click="repairFigurePaths">
+              {{ repairBusy ? 'Repairing…' : 'Repair Figure Paths' }}
+            </button>
           </div>
+          <p v-if="repairResult" class="admin-ok">{{ repairResult }}</p>
         </div>
 
         <!-- Stats -->

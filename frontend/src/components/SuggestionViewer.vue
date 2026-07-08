@@ -165,10 +165,10 @@ function onOverlay(e: MouseEvent) {
 
 <template>
   <Teleport to="body">
-    <!-- TODO: remove legacy class sv-backdrop when float_ system is complete -->
-    <div class="sv-backdrop float_suggestions_backdrop" @click="onOverlay">
+    <!-- TODO: remove legacy class sv-backdrop when float_ system is complete — note: sv-backdrop is both backdrop and scroll container, so float_suggestions_panel sits here -->
+    <div class="sv-backdrop float_suggestions_panel" @click="onOverlay">
       <!-- TODO: remove legacy class sv-modal when float_ system is complete -->
-      <div class="sv-modal float_suggestions_panel">
+      <div class="sv-modal">
 
         <!-- Header -->
         <div class="sv-header">

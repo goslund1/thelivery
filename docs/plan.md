@@ -32,6 +32,15 @@ Foundation built on Smokin (3-car test case: 599D, FD Corvette #777, Austin Heal
 - Solution: discipline preset dropdown (Race / Rally / Drift / Street / etc.) on an empty variant tab that seeds base slider values from Jason's established starting points per discipline. Same concept as the existing upgrade presets but for adjustments. Then nudge sliders to the specific car's quirks and done.
 - "Add tune for this car" affordance in the empty tab opens the discipline dropdown first, then the full slider editor.
 - The upgrade presets system (`localStorage`, save/apply/delete) is the reference pattern to follow.
+- **The existing preset list needs actual base values populated** — currently the discipline names exist but default slider values are not filled in.
+
+**New card creation UX flow for multi-car detection (pending):**
+- When a second batch of images is submitted with a carId that doesn't match the lead car, a passive button appears in NewCardModal signalling unresolved multi-car content. Non-interrupting — user keeps adding cars until done.
+- Resolution is triggered either by clicking the button voluntarily, or by Save redirecting there if unresolved variants exist.
+- At resolution, two paths:
+  - **Yes tabs** — discipline dropdown per variant (from established profiles) seeds base slider values → tabs get defaults → finish creation
+  - **No tabs** — single tune for the lead car or no tune at all → proceed as normal
+- This mirrors the auto-propose banner already in RecipeSection (edit mode) but lives in the new card creation flow (NewCardModal) and is passive rather than inline.
 
 **Deferred — community tune scrape + compare:**
 - Scraping Forza tune share codes to compare community tuning approaches vs. in-house builds would be interesting analytical tooling.

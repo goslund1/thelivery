@@ -189,9 +189,10 @@ async function restoreTrashSelected() {
 
 // ── Deleted cards ─────────────────────────────────────────────────────────────
 type DeletedCard = { id: string; name: string; deletedAt: string }
-const deletedCards     = ref<DeletedCard[]>([])
-const deletedCardsBusy = ref(false)
+const deletedCards       = ref<DeletedCard[]>([])
+const deletedCardsBusy   = ref(false)
 const deletedCardsResult = ref<string | null>(null)
+const confirmPurgeId     = ref<string | null>(null)
 
 async function loadDeletedCards() {
   deletedCardsBusy.value = true
@@ -216,10 +217,10 @@ async function restoreCard(id: string) {
 }
 
 async function purgeCard(id: string, name: string) {
-  if (!confirm(`Permanently delete "${name}"? This cannot be undone.`)) return
   deletedCardsBusy.value = true
   deletedCardsResult.value = null
   adminError.value = null
+  confirmPurgeId.value = null
   try {
     await api.adminPurgeCard(id)
     deletedCardsResult.value = `"${name}" permanently deleted.`
@@ -524,9 +525,14 @@ function cancelImport() { importPreview.value = null; importError.value = null; 
                   <span class="deleted-card-name">{{ c.name }}</span>
                   <span class="deleted-card-date">{{ c.deletedAt.slice(0, 10) }}</span>
                 </div>
-                <div class="admin-row">
+                <div v-if="confirmPurgeId !== c.id" class="admin-row">
                   <button class="admin-btn mig-btn-sm" :disabled="deletedCardsBusy" @click="restoreCard(c.id)">Restore</button>
-                  <button class="admin-btn admin-btn-red mig-btn-sm" :disabled="deletedCardsBusy" @click="purgeCard(c.id, c.name)">Delete</button>
+                  <button class="admin-btn admin-btn-red mig-btn-sm" :disabled="deletedCardsBusy" @click="confirmPurgeId = c.id">Delete</button>
+                </div>
+                <div v-else class="admin-row">
+                  <span class="deleted-purge-label">Sure?</span>
+                  <button class="admin-btn admin-btn-red mig-btn-sm" :disabled="deletedCardsBusy" @click="purgeCard(c.id, c.name)">Yes, delete</button>
+                  <button class="admin-btn mig-btn-sm" @click="confirmPurgeId = null">Cancel</button>
                 </div>
               </div>
             </div>
@@ -816,4 +822,5 @@ function cancelImport() { importPreview.value = null; importError.value = null; 
 .deleted-card-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .deleted-card-name { font: 12px/1.3 'JetBrains Mono', monospace; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deleted-card-date { font: 10px/1 'JetBrains Mono', monospace; color: var(--muted); }
+.deleted-purge-label { font: 10px/1 'JetBrains Mono', monospace; color: var(--danger-bright); text-transform: uppercase; letter-spacing: 0.05em; align-self: center; }
 </style>

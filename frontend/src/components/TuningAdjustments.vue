@@ -1662,7 +1662,8 @@ async function submitSuggestion() {
   cursor: pointer;
   white-space: nowrap;
   transition: color 0.12s, background 0.12s, border-color 0.12s;
-  margin-bottom: -2px;
+  margin-bottom: -4px;
+  padding-bottom: 9px;
 }
 .ta-tab-btn:hover {
   color: var(--tabc, var(--fg));
@@ -1672,7 +1673,6 @@ async function submitSuggestion() {
 .ta-tab-btn.active {
   background: var(--tabc, var(--highlight));
   border-color: var(--tabc, var(--highlight));
-  border-bottom: 4px solid var(--panel-well);
   color: #fff;
   font-weight: 600;
 }
@@ -1684,10 +1684,9 @@ async function submitSuggestion() {
   background: color-mix(in srgb, var(--tabc, var(--highlight)) 90%, #fff);
 }
 .ta-tab-btn.active .ta-tab-dot { background: #fff; }
-/* Stack/inline toggle stays as a pill button, not a folder tab */
+/* Stack/inline toggle stays as a pill button */
 .ta-tab-btn--stack {
   margin-left: auto;
-  margin-bottom: 2px;
   border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--highlight) 40%, transparent);
   background: color-mix(in srgb, var(--panel) 60%, transparent);

@@ -136,6 +136,9 @@ Foundation working on Smokin (3-car test case: 599D, FD Corvette #777, Austin He
 
 ## Recently completed
 
+- Settings/Admin UI reorganization: Account panel (change password gated behind toggle, Add User toggle for admins, Admin Panel → button, Sign Out); separate Admin panel with Tools tab (image tools, stats, orphans, trash, seed) + Export Card tab (YAML download/import, legacy repair at bottom); Tune Suggestions stays in Filters flyout only — 2026-07-07
+- figurePath patching in migration flow: ImageMigrationModal now snapshots old paths before migration and patches matching TextSection.figurePath values after; Repair Figure Paths endpoint uses sequence-number matching (NNN from old stem → new path) before falling back to lead image — 2026-07-07
+
 - Trash compactor: orphans scan now moves to trash instead of hard-delete; user-deleted images move to trash on card save; GET/DELETE /api/admin/trash + POST /api/admin/trash/restore; Admin tab trash section with reason badges, select/restore/delete; trash_log table (migration 0012) — 2026-07-06
 - Security & quality audit pass: fixed orphan scanner (queried card body instead of images table — would have wiped all uploads), delete_images legacy variant naming (thumbs/stages never cleaned up on discard), orphan scan/delete now skips uploads/trash/, rate limit HashMap unbounded growth, suggestion adjustments 64KB cap, e:any error catches in UserSettingsModal + cardYaml.ts — 2026-07-06
 

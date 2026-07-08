@@ -10,6 +10,8 @@ const modal = useModalStore()
 const auth  = useAuthStore()
 
 function errMsg(e: unknown) { return e instanceof Error ? e.message : String(e) }
+function lockScroll()   { document.body.style.overflow = 'hidden' }
+function unlockScroll() { document.body.style.overflow = '' }
 
 // Change password
 const showChangePw = ref(false)
@@ -83,8 +85,7 @@ function openAdmin() {
 <template>
   <div v-if="modal.settingsOpen" class="image-picker open" @click.self="close()">
     <div class="image-picker-panel settings-panel"
-         @mouseenter="document.body.style.overflow='hidden'"
-         @mouseleave="document.body.style.overflow=''">
+         @mouseenter="lockScroll" @mouseleave="unlockScroll">
       <div class="image-picker-head">
         <span>Account — {{ auth.username }}</span>
         <button class="image-picker-close" aria-label="Close" @click="close()">×</button>

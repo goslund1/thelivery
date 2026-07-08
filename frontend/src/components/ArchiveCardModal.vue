@@ -3,6 +3,9 @@ import { useModalStore } from '../stores/modal'
 
 const modal = useModalStore()
 
+function lockScroll()   { document.body.style.overflow = 'hidden' }
+function unlockScroll() { document.body.style.overflow = '' }
+
 function confirm() {
   modal.confirmArchiveCard()
 }
@@ -14,9 +17,7 @@ function cancel() {
 
 <template>
   <div v-if="modal.archiveCardPending" class="archive-backdrop" @click.self="cancel">
-    <div class="archive-dialog"
-         @mouseenter="document.body.style.overflow='hidden'"
-         @mouseleave="document.body.style.overflow=''">
+    <div class="archive-dialog" @mouseenter="lockScroll" @mouseleave="unlockScroll">
       <div class="archive-title">Remove "{{ modal.archiveCardName }}" from gallery?</div>
       <p class="archive-body">
         This card will be hidden from the gallery but <strong>not permanently deleted</strong>.

@@ -2,10 +2,7 @@
 import { ref } from 'vue'
 import { useModalStore } from '../stores/modal'
 import { useFactoidSchema } from '../composables/useFactoidSchema'
-import { useScrollLock } from '../composables/useScrollLock'
-
 const modal = useModalStore()
-const { lockScroll, unlockScroll } = useScrollLock()
 const { schema, addType, removeType, renameType, addOption, removeOption, moveType } = useFactoidSchema()
 
 // Inline rename state: key → draft value
@@ -50,12 +47,14 @@ function confirmAddType() {
 
 <template>
   <Teleport to="body">
+    <!-- TODO: remove legacy class fp-backdrop when float_ system is complete -->
     <div
       v-if="modal.factoidPanelOpen"
-      class="fp-backdrop"
+      class="fp-backdrop float_factoid_backdrop"
       @click.self="modal.closeFactoidPanel()"
     ></div>
-    <div class="fp-panel" :class="{ open: modal.factoidPanelOpen }" :style="{ pointerEvents: modal.factoidPanelOpen ? 'auto' : 'none' }" @mouseenter="lockScroll" @mouseleave="unlockScroll">
+    <!-- TODO: remove legacy class fp-panel when float_ system is complete -->
+    <div class="fp-panel float_factoid_panel" :class="{ open: modal.factoidPanelOpen }" :style="{ pointerEvents: modal.factoidPanelOpen ? 'auto' : 'none' }">
       <div class="fp-header">
         <span class="fp-title">Factoid Types</span>
         <button class="fp-close" type="button" @click="modal.closeFactoidPanel()">×</button>

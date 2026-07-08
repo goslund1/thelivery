@@ -7,7 +7,6 @@ import { useAuthStore } from '../stores/auth'
 import { useCarsStore } from '../stores/cars'
 import { useToastsStore } from '../stores/toasts'
 import { api } from '../api'
-import { useScrollLock } from '../composables/useScrollLock'
 import CarPicker from './CarPicker.vue'
 import DrawerPanel from './DrawerPanel.vue'
 import { useAssessFailures, type FailedAssess } from '../composables/useAssessFailures'
@@ -15,7 +14,6 @@ import type { Card } from '../types'
 
 const store = useCardsStore()
 const modal = useModalStore()
-const { lockScroll, unlockScroll } = useScrollLock()
 const liveriesStore = useLiveriesStore()
 const auth = useAuthStore()
 const carsStore = useCarsStore()
@@ -277,8 +275,10 @@ function close() { modal.closeImageMigration() }
 
 <template>
   <Teleport to="body">
-    <div v-if="modal.imageMigrationOpen" class="imm-overlay" @click.self="close">
-      <div class="imm-shell" @mouseenter="lockScroll" @mouseleave="unlockScroll">
+    <!-- TODO: remove legacy class imm-overlay when float_ system is complete -->
+    <div v-if="modal.imageMigrationOpen" class="imm-overlay float_migration_backdrop" @click.self="close">
+      <!-- TODO: remove legacy class imm-shell when float_ system is complete -->
+      <div class="imm-shell float_migration_panel">
 
         <!-- Main content column -->
         <div class="imm-main">

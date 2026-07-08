@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { useModalStore } from '../stores/modal'
-import { useScrollLock } from '../composables/useScrollLock'
-
 const modal = useModalStore()
-const { lockScroll, unlockScroll } = useScrollLock()
 
 function confirm() {
   modal.confirmArchiveCard()
@@ -15,8 +12,10 @@ function cancel() {
 </script>
 
 <template>
-  <div v-if="modal.archiveCardPending" class="archive-backdrop" @click.self="cancel">
-    <div class="archive-dialog" @mouseenter="lockScroll" @mouseleave="unlockScroll">
+  <!-- TODO: remove legacy class archive-backdrop when float_ system is complete -->
+  <div v-if="modal.archiveCardPending" class="archive-backdrop float_archive_backdrop" @click.self="cancel">
+    <!-- TODO: remove legacy class archive-dialog when float_ system is complete -->
+    <div class="archive-dialog float_archive_panel">
       <div class="archive-title">Remove "{{ modal.archiveCardName }}" from gallery?</div>
       <p class="archive-body">
         This card will be hidden from the gallery but <strong>not permanently deleted</strong>.

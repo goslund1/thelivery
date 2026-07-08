@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
+import { useScrollGuard } from './composables/useScrollGuard'
 import { useCardsStore } from './stores/cards'
 import { useUiStore } from './stores/ui'
 import { useFilterStore } from './stores/filters'
@@ -25,6 +26,8 @@ import EditCardModal from './components/EditCardModal.vue'
 import ImageMigrationModal from './components/ImageMigrationModal.vue'
 import AdminPanel from './components/AdminPanel.vue'
 import ArchiveCardModal from './components/ArchiveCardModal.vue'
+
+useScrollGuard()
 
 const store = useCardsStore()
 const ui = useUiStore()

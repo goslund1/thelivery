@@ -245,8 +245,8 @@ async function onManageUpload(e: Event) {
 </script>
 
 <template>
-  <div class="image-picker" :class="{ open: !!ctx }" @click.self="modal.closeImagePicker()">
-    <div class="image-picker-panel" :class="{ 'mgr-panel': isManage }">
+  <div class="image-picker float_imagepicker_backdrop" :class="{ open: !!ctx }" @click.self="modal.closeImagePicker()">
+    <div class="image-picker-panel float_imagepicker_panel" :class="{ 'mgr-panel': isManage }">
 
       <!-- ── Pick mode ─────────────────────────────────────────────────────── -->
       <template v-if="!isManage">

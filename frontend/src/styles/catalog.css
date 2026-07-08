@@ -1,5 +1,19 @@
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
 
+  /* ── Float panel system ─────────────────────────────────────────────────────
+     Structural base for all floating surfaces (modals, drawers).
+     Visual/layout CSS stays on the legacy class names until they are removed.
+     Naming convention:
+       float_[instance]_backdrop  — the fixed dim/blur overlay behind the panel
+       float_[instance]_panel     — the interactive dialog surface
+       drawer_[instance]_panel    — slide-out drawer surface (no backdrop)
+  ─────────────────────────────────────────────────────────────────────────── */
+  [class*="float_"][class*="_panel"],
+  [class*="drawer_"][class*="_panel"] {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   :root{
     --base:#0b0b0d;
     --panel:#15151a;

@@ -4,12 +4,9 @@ import { useUiStore } from '../stores/ui'
 import { useModalStore } from '../stores/modal'
 import { useAuthStore } from '../stores/auth'
 import { api } from '../api'
-import { useScrollLock } from '../composables/useScrollLock'
-
 const ui    = useUiStore()
 const modal = useModalStore()
 const auth  = useAuthStore()
-const { lockScroll, unlockScroll } = useScrollLock()
 
 function errMsg(e: unknown) { return e instanceof Error ? e.message : String(e) }
 
@@ -83,9 +80,10 @@ function openAdmin() {
 </script>
 
 <template>
-  <div v-if="modal.settingsOpen" class="image-picker open" @click.self="close()">
-    <div class="image-picker-panel settings-panel"
-         @mouseenter="lockScroll" @mouseleave="unlockScroll">
+  <!-- TODO: remove legacy class image-picker (borrowed) → float_settings_backdrop when float_ system is complete -->
+  <div v-if="modal.settingsOpen" class="image-picker open float_settings_backdrop" @click.self="close()">
+    <!-- TODO: remove legacy classes image-picker-panel (borrowed), settings-panel when float_ system is complete -->
+    <div class="image-picker-panel settings-panel float_settings_panel">
       <div class="image-picker-head">
         <span>Account — {{ auth.username }}</span>
         <button class="image-picker-close" aria-label="Close" @click="close()">×</button>

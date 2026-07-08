@@ -6,7 +6,6 @@ import { api } from '../api'
 import type { Card, ForzaRecipeSection, AdjustmentRow } from '../types'
 import { cardToYaml, yamlToCard } from '../utils/cardYaml'
 import { useAssessFailures } from '../composables/useAssessFailures'
-import { useScrollLock } from '../composables/useScrollLock'
 
 const { failedAssess } = useAssessFailures()
 const modal = useModalStore()
@@ -19,7 +18,6 @@ function errMsg(e: unknown): string {
 type Tab = 'tools' | 'export'
 const tab = ref<Tab>('tools')
 
-const { lockScroll, unlockScroll } = useScrollLock()
 
 function close() {
   modal.closeAdminPanel()
@@ -404,9 +402,10 @@ function cancelImport() { importPreview.value = null; importError.value = null; 
 </script>
 
 <template>
-  <div v-if="modal.adminPanelOpen" class="image-picker open" @click.self="close()">
-    <div class="image-picker-panel admin-panel-modal"
-         @mouseenter="lockScroll" @mouseleave="unlockScroll">
+  <!-- TODO: remove legacy class image-picker (borrowed) → float_admin_backdrop when float_ system is complete -->
+  <div v-if="modal.adminPanelOpen" class="image-picker open float_admin_backdrop" @click.self="close()">
+    <!-- TODO: remove legacy classes image-picker (borrowed), admin-panel-modal when float_ system is complete -->
+    <div class="image-picker-panel admin-panel-modal float_admin_panel">
       <div class="image-picker-head">
         <span>Admin</span>
         <button class="image-picker-close" aria-label="Close" @click="close()">×</button>

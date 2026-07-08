@@ -2,11 +2,9 @@
 import { ref, watch, nextTick } from 'vue'
 import { useModalStore } from '../stores/modal'
 import { useAuthStore } from '../stores/auth'
-import { useScrollLock } from '../composables/useScrollLock'
 
 const modal = useModalStore()
 const auth = useAuthStore()
-const { lockScroll, unlockScroll } = useScrollLock()
 
 const username = ref('')
 const password = ref('')
@@ -44,8 +42,10 @@ watch(
 </script>
 
 <template>
-  <div v-if="modal.loginOpen" class="image-picker open" @click.self="modal.closeLogin()">
-    <div class="image-picker-panel login-panel" @mouseenter="lockScroll" @mouseleave="unlockScroll">
+  <!-- TODO: remove legacy class image-picker (borrowed) → float_login_backdrop when float_ system is complete -->
+  <div v-if="modal.loginOpen" class="image-picker open float_login_backdrop" @click.self="modal.closeLogin()">
+    <!-- TODO: remove legacy classes image-picker-panel (borrowed), login-panel when float_ system is complete -->
+    <div class="image-picker-panel login-panel float_login_panel">
       <div class="image-picker-head">
         <span>Sign in to edit</span>
         <button class="image-picker-close" aria-label="Close" @click="modal.closeLogin()">×</button>

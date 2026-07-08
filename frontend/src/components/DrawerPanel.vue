@@ -21,7 +21,7 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>()
 <template>
   <div
     v-scroll-contain
-    class="dp-pane"
+    class="dp-pane drawer_drawerpanel_panel"
     :class="{ 'dp-pane--open': open, 'dp-pane--right': side === 'right', 'dp-pane--flush': flush }"
     :style="{ '--dp-w': width + 'px', '--dp-tab': tabWidth + 'px', background }"
   >

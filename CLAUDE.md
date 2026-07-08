@@ -112,6 +112,18 @@ and `/uploads` to the backend, so the app always uses same-origin relative URLs.
 ### CSS — important
 - **All styling is one global stylesheet, `src/styles/catalog.css`, copied verbatim from the original HTML.** Components reuse those exact class names. **Do not rename classes or convert to scoped styles** — visual parity depends on the global rules. Scoped `<style>` is only for genuinely new bits (e.g. the per-card save button, unsaved-count).
 - **Themes:** `data-theme` on `<html>` swaps ~35 CSS variables; 5 themes (dark/light/rainbow/clouds/stormy). Two live knobs: `--text-delta` (text scaling) and `--dissolve` (crossfade).
+
+### Float panel system
+Every floating surface (modal, drawer) uses a two-class naming convention — a structural class alongside the legacy visual class:
+- `float_[instance]_backdrop` — the fixed dim/blur overlay (e.g. `float_admin_backdrop`)
+- `float_[instance]_panel` — the interactive dialog surface (e.g. `float_admin_panel`)
+- `drawer_[instance]_panel` — slide-out drawer surface, no backdrop (e.g. `drawer_theme_panel`)
+
+The shared structural CSS in `catalog.css` gives all `float_*_panel` and `drawer_*_panel` elements `overflow-y: auto` and `overscroll-behavior: contain`. The global scroll guard (`composables/useScrollGuard.ts`, wired in `App.vue`) intercepts wheel events: if the pointer is over a float/drawer panel it scrolls that surface and eats the event; if not it lets the body scroll freely. This means scroll always follows the pointer — the panel scrolls when hovered, the page scrolls through the backdrop.
+
+**When adding a new floating surface:** add `float_[instance]_backdrop` to the overlay div and `float_[instance]_panel` to the inner dialog div. No other wiring needed — the scroll guard picks it up automatically.
+
+Legacy class names (e.g. `image-picker`, `ch-backdrop`) are kept alongside the new ones and marked with `<!-- TODO: remove legacy class ... -->` comments. Remove them once the float_ system is fully adopted and visually verified.
 - **Edit-only affordances** (chip add/remove, lead-star, change-image, contenteditable styling) are `display:none` until `body.editing-mode` — so render them in markup always; the `ui.isEditing` watcher toggles the body class.
 
 ### Component tree

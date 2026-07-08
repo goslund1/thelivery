@@ -5,10 +5,8 @@ import { api } from '../api'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 import { useModalStore } from '../stores/modal'
-import { useScrollLock } from '../composables/useScrollLock'
 
 const props = defineProps<{ cardId: string }>()
-const { lockScroll, unlockScroll } = useScrollLock()
 const cards = useCardsStore()
 const ui = useUiStore()
 const modal = useModalStore()
@@ -180,8 +178,10 @@ function fmtVal(v: number | null) {
 </script>
 
 <template>
-  <div class="ch-backdrop" @click.self="modal.closeHistory()">
-    <div class="ch-modal" @mouseenter="lockScroll" @mouseleave="unlockScroll">
+  <!-- TODO: remove legacy class ch-backdrop when float_ system is complete -->
+  <div class="ch-backdrop float_history_backdrop" @click.self="modal.closeHistory()">
+    <!-- TODO: remove legacy class ch-modal when float_ system is complete -->
+    <div class="ch-modal float_history_panel">
 
       <div class="ch-header">
         <span class="ch-title">Version History</span>

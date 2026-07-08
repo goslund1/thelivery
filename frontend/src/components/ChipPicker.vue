@@ -46,8 +46,8 @@ watch(ctx, async (c) => {
 </script>
 
 <template>
-  <div class="image-picker" :class="{ open: !!ctx }" @click.self="modal.closeChipPicker()">
-    <div class="image-picker-panel">
+  <div class="image-picker float_chippicker_backdrop" :class="{ open: !!ctx }" @click.self="modal.closeChipPicker()">
+    <div class="image-picker-panel float_chippicker_panel">
       <div class="image-picker-head">
         <span>{{ title }}</span>
         <button class="image-picker-close" aria-label="Close" @click="modal.closeChipPicker()">×</button>

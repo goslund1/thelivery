@@ -27,10 +27,15 @@ Foundation built on Smokin (3-car test case: 599D, FD Corvette #777, Austin Heal
 - In tunes mode: same car image across all tabs.
 - Recipe sections in general could benefit from a figure image slot regardless of tabs.
 
-**Authoring gap / scraped tune defaults (pending):**
+**Authoring gap / discipline presets (pending):**
 - Secondary cars in a mashup (e.g. Corvette, Austin Healey in Smokin) have no tune data yet and no authoring UI to add one from within the card.
-- Short-term bridge: seed the DB with community/scraped tune data per car as defaults. If no personal tune exists for a variant's car, fall back to scraped data so the tab isn't empty.
-- Longer term: "Add tune for this car" affordance inside the empty tab in edit mode.
+- Solution: discipline preset dropdown (Race / Rally / Drift / Street / etc.) on an empty variant tab that seeds base slider values from Jason's established starting points per discipline. Same concept as the existing upgrade presets but for adjustments. Then nudge sliders to the specific car's quirks and done.
+- "Add tune for this car" affordance in the empty tab opens the discipline dropdown first, then the full slider editor.
+- The upgrade presets system (`localStorage`, save/apply/delete) is the reference pattern to follow.
+
+**Deferred — community tune scrape + compare:**
+- Scraping Forza tune share codes to compare community tuning approaches vs. in-house builds would be interesting analytical tooling.
+- Park until app is live and primary content is established. Not a data quality tool, more a research/learning one.
 
 **Still needs shakedown:**
 - Verify gallery filters correctly when switching tabs (end-to-end on Smokin)

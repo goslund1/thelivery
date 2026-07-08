@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch, computed } from 'vue'
 import type { Card } from '../types'
 
 export const useModalStore = defineStore('modal', () => {
@@ -128,6 +128,15 @@ export const useModalStore = defineStore('modal', () => {
     _archiveResolve?.(false)
     _archiveResolve = null
   }
+
+  const anyOpen = computed(() =>
+    !!promotedCard.value || !!lightboxSrc.value || !!chipPicker.value ||
+    !!imagePicker.value || !!historyCardId.value || suggestionViewerOpen.value ||
+    loginOpen.value || adminPanelOpen.value || settingsOpen.value ||
+    newCardOpen.value || factoidPanelOpen.value || archiveCardPending.value ||
+    imageMigrationOpen.value
+  )
+  watch(anyOpen, (open) => { document.body.style.overflow = open ? 'hidden' : '' })
 
   // Close whichever modal is frontmost. Returns true if anything was closed.
   // Priority order mirrors visual z-order: innermost/topmost first.

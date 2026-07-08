@@ -339,7 +339,20 @@ function getAdjustments(): AdjustmentRow[] {
   return [...active, ...sentinels]
 }
 
-defineExpose({ getAdjustments })
+function applyPresetValues(values: Record<string, number>) {
+  localRows.value = localRows.value.map(r => {
+    if (r.locked) return r
+    const updated = { ...r }
+    if (r.key in values) { updated.value = values[r.key]; updated.stock = values[r.key] }
+    if ((r.key + ':min') in values) updated.min = values[r.key + ':min']
+    if ((r.key + ':max') in values) updated.max = values[r.key + ':max']
+    return updated
+  })
+  endDisplay.value = {}
+  flush()
+}
+
+defineExpose({ getAdjustments, applyPresetValues })
 
 // ── Transmission picker dialog ────────────────────────────────────────────────
 const transDialogOpen = ref(false)

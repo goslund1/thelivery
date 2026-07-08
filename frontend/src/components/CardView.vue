@@ -59,6 +59,22 @@ function onBuildIt() {
   if (recipeKey.value) openState[recipeKey.value] = true
 }
 
+// True when card images span 2+ distinct carIds and no variant tabs exist yet.
+// Drives the persistent "Car tabs" button on the recipe section header.
+const multiCarDetected = computed(() => {
+  const recipe = props.card.sections.find(s => s.type === 'forza_recipe')
+  if (!recipe || recipe.type !== 'forza_recipe') return false
+  if ((recipe.variants?.length ?? 0) >= 1) return false
+  const seen = new Set<string>()
+  for (const img of props.card.images) { if (img.carId) seen.add(img.carId) }
+  return seen.size >= 2
+})
+
+function onSetupCarTabs(sectionKey: string) {
+  openState[sectionKey] = true
+  recipeSectionRef.value?.beginSetupWizard()
+}
+
 // Active car ID for gallery filtering. Set by RecipeSection when a variant tab is selected.
 // Null = no filter (single-car cards or no tab selection yet).
 const activeCarId = ref<string | null>(null)
@@ -90,6 +106,15 @@ watch(() => ui.pendingMultiCarTrigger, (trigger) => {
       :dom-id="`${section.key}-${card.id}`"
       v-model:open="openState[section.key]"
     >
+      <template v-if="section.type === 'forza_recipe' && ui.isEditing" #action>
+        <button
+          class="cv-cartabs-btn"
+          :class="{ 'cv-cartabs-btn--active': multiCarDetected }"
+          :disabled="!multiCarDetected"
+          type="button"
+          @click.stop="onSetupCarTabs(section.key)"
+        >Car tabs</button>
+      </template>
       <TextSection v-if="section.type === 'text'" :card-id="card.id" :section="section" />
       <RecipeSection
         v-else-if="section.type === 'forza_recipe'"
@@ -107,3 +132,31 @@ watch(() => ui.pendingMultiCarTrigger, (trigger) => {
   </div>
 </template>
 
+<style scoped>
+.cv-cartabs-btn {
+  margin-left: auto;
+  margin-right: 10px;
+  padding: 2px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  background: none;
+  color: var(--muted);
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+.cv-cartabs-btn--active {
+  color: var(--accent);
+  opacity: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.cv-cartabs-btn--active:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+</style>

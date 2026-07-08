@@ -58,6 +58,7 @@ const EFFECT_COLOR_LABELS: Record<string, string> = {
 
 const glassSwatchColor  = computed(() => theme.current?.effects.glassColor  ?? theme.current?.colors.panel ?? '#15151a')
 const pickerSwatchColor = computed(() => theme.current?.effects.pickerColor ?? theme.current?.colors.panel ?? '#15151a')
+const scrollDurMax = ref(1000)
 
 // pickerColor is the picker's own state — independent of what's selected in the list
 const pickerColor = ref(theme.current?.colors.accent ?? '#d4a017')
@@ -188,6 +189,25 @@ function onReset() { theme.reset() }
               @input="theme.setPickerOpacity(+($event.target as HTMLInputElement).value)"
             />
             <span class="tb-effect-val">{{ theme.current?.effects.pickerOpacity ?? 18 }}%</span>
+          </div>
+          <div class="tb-effect-row">
+            <span class="tb-effect-swatch" />
+            <span class="tb-effect-label">Card jump</span>
+            <input
+              class="tb-slider" type="range" min="0" :max="scrollDurMax"
+              :value="theme.current?.effects.scrollDur ?? 250"
+              @input="theme.setScrollDur(+($event.target as HTMLInputElement).value)"
+            />
+            <input
+              class="tb-effect-val tb-effect-max" type="number" min="0"
+              :value="scrollDurMax"
+              @change="scrollDurMax = Math.max(0, +($event.target as HTMLInputElement).value || 1000)"
+              title="Slider max (ms)"
+            />
+          </div>
+          <div class="tb-effect-row tb-effect-row--sub">
+            <span class="tb-effect-swatch" />
+            <span class="tb-effect-label tb-muted">{{ theme.current?.effects.scrollDur ?? 250 }}ms</span>
           </div>
         </div>
 
@@ -407,6 +427,22 @@ function onReset() { theme.reset() }
   min-width: 32px;
   text-align: right;
 }
+.tb-effect-max {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--panel-edge);
+  border-radius: 0;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  width: 44px;
+  text-align: right;
+  padding: 0;
+  cursor: text;
+}
+.tb-effect-max:focus { outline: none; border-color: var(--accent); color: var(--fg); }
+.tb-effect-row--sub { padding-top: 0; margin-top: -4px; opacity: 0.7; }
+.tb-muted { color: var(--muted); }
 
 .tb-ambiance-row {
   display: flex;

@@ -65,6 +65,8 @@ export interface CardVariant {
   adjustments: AdjustmentRow[]
   // Suggested tune flag — tab is read-only, colored to show deviation
   isSuggested?: boolean
+  // Set by the Car Tabs wizard — auto-applied the first time this variant tab is opened
+  pendingPresetId?: number
 }
 
 // Deprecated alias — use CardVariant.

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, inject, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import type { CardVariant, ForzaRecipeSection, Tune, UpgradeCategory } from '../types'
+import { api } from '../api'
 import { useUiStore } from '../stores/ui'
 import { useFilterStore } from '../stores/filters'
 import { useCardsStore } from '../stores/cards'
@@ -66,10 +67,10 @@ for (const k of CORE_SPEC_KEYS) {
 }
 
 // ── Multi-car / multi-tune variant support ────────────────────────────────────
-// hasVariants: 2+ variant slots exist (could be multi-car or multi-tune)
+// hasVariants: 1+ variant slots exist (tab strip is active)
 // isMultiCar:  variants exist AND at least one has a different carId
 // isMultiTune: variants exist AND all share the same carId
-const hasVariants = computed(() => (local.variants?.length ?? 0) >= 2)
+const hasVariants = computed(() => (local.variants?.length ?? 0) >= 1)
 const isMultiCar  = computed(() => {
   if (!hasVariants.value) return false
   const first = local.variants![0].carId
@@ -98,6 +99,13 @@ function variantLabel(v: CardVariant): string {
   const car = carsStore.byId(v.carId)
   if (!car) return v.carId || '(no car)'
   return `${car.year ? car.year + ' ' : ''}${car.make} ${car.model}`
+}
+
+function variantShortLabel(v: CardVariant): string {
+  if (isMultiTune.value) return variantLabel(v)
+  const car = carsStore.byId(v.carId)
+  if (!car) return v.carId || '(no car)'
+  return car.model
 }
 
 // ── Edit-mode variant management ──────────────────────────────────────────────
@@ -142,6 +150,64 @@ function acceptAutoPropose() {
   autoProposesDismissed.value = true
   markDirty()
   flush()
+}
+
+// ── Car Tabs setup wizard ─────────────────────────────────────────────────────
+type TuningPreset = { id: number; name: string; values: Record<string, number> }
+const showSetupWizard   = ref(false)
+const wizardStep        = ref(0)
+const wizardNonAnchorIds = ref<string[]>([])
+const wizardAnchorIdx   = ref(0)
+const wizardAllIds      = ref<string[]>([])
+const wizardPresets     = ref<TuningPreset[]>([])
+const wizardLoading     = ref(false)
+const wizardSelections  = ref<Record<string, number | null>>({})
+
+async function beginSetupWizard() {
+  const ids = autoProposeCarIds.value
+  if (ids.length < 2) return
+  const currentCarId = props.carId ?? ''
+  const matchIdx = ids.indexOf(currentCarId)
+  const anchorIdx = matchIdx >= 0 ? matchIdx : 0
+  wizardAllIds.value = ids
+  wizardAnchorIdx.value = anchorIdx
+  wizardNonAnchorIds.value = ids.filter((_, i) => i !== anchorIdx)
+  wizardStep.value = 0
+  wizardSelections.value = Object.fromEntries(wizardNonAnchorIds.value.map(id => [id, null]))
+  showSetupWizard.value = true  // show immediately; presets load behind the loading state
+  wizardLoading.value = true
+  try { wizardPresets.value = await api.listTuningPresets() } catch { /* proceed without presets */ } finally { wizardLoading.value = false }
+}
+
+function finishWizard() {
+  const ids = wizardAllIds.value
+  const anchorIdx = wizardAnchorIdx.value
+  local.variants = ids.map((id, i) => {
+    if (i === anchorIdx) {
+      return {
+        carId: id,
+        tuneName: local.tuneName,
+        shareCode: local.shareCode,
+        coreSpecs: { ...local.coreSpecs },
+        upgrades: [...local.upgrades],
+        adjustments: [...local.adjustments],
+      }
+    }
+    const v = makeEmptyVariant(id)
+    const presetId = wizardSelections.value[id]
+    if (presetId != null) v.pendingPresetId = presetId
+    return v
+  })
+  activeVariantIndex.value = anchorIdx
+  autoProposesDismissed.value = true
+  showSetupWizard.value = false
+  markDirty()
+  flush()
+}
+
+function wizardCarLabel(carId: string): string {
+  const car = carsStore.byId(carId)
+  return car ? `${car.year} ${car.make} ${car.model}` : carId
 }
 const pendingRemoveIdx = ref<number | null>(null)
 
@@ -199,15 +265,9 @@ function addTuneVariant() {
 function removeVariant(idx: number) {
   pendingRemoveIdx.value = null
   if (!local.variants) return
-  if (local.variants.length <= 2) {
-    // Demote back to single slot: keep the surviving variant's data
-    const keepIdx = idx === 0 ? 1 : 0
-    const keep = local.variants[keepIdx]
-    local.tuneName = keep.tuneName
-    local.shareCode = keep.shareCode
-    Object.assign(local.coreSpecs, keep.coreSpecs)
-    local.upgrades = keep.upgrades
-    local.adjustments = keep.adjustments
+  if (local.variants.length <= 1) {
+    // Last tab — demote to single slot. Root fields are already in sync via
+    // applyVariant, so we just clear the variants array.
     local.variants = undefined
     activeVariantIndex.value = 0
     emit('update:activeCarId', null)
@@ -268,11 +328,38 @@ async function addVariantWithLookup(carId: string) {
   }
 }
 
-defineExpose({ addVariantWithLookup })
+defineExpose({ addVariantWithLookup, acceptAutoPropose, beginSetupWizard })
 
-watch(activeVariantIndex, (idx) => {
+// Suppress the upgrades sync-flush during a variant switch — the TA widget
+// hasn't re-read the new adjustments yet, so getAdjustments() would return
+// stale data from the previous variant.
+let suppressFlush = false
+
+watch(activeVariantIndex, async (idx, prevIdx) => {
+  // Snapshot the outgoing variant's live TA state before switching
+  if (prevIdx !== undefined && local.variants?.[prevIdx] && taRef.value) {
+    local.variants[prevIdx].adjustments = taRef.value.getAdjustments()
+  }
+  suppressFlush = true
   applyVariant(idx)
+  suppressFlush = false
   emit('update:activeCarId', local.variants?.[idx]?.carId ?? null)
+
+  // Auto-apply a pending preset the first time this variant tab is opened
+  const v = local.variants?.[idx]
+  if (v?.pendingPresetId != null) {
+    if (!wizardPresets.value.length) {
+      try { wizardPresets.value = await api.listTuningPresets() } catch { return }
+    }
+    const preset = wizardPresets.value.find(p => p.id === v.pendingPresetId)
+    if (preset && taRef.value) {
+      await nextTick()
+      taRef.value.applyPresetValues(preset.values)
+      delete v.pendingPresetId
+      flush()
+      markDirty()
+    }
+  }
 })
 
 onMounted(() => {
@@ -301,6 +388,9 @@ function flush() {
     v.adjustments = local.adjustments
   }
   const clone = JSON.parse(JSON.stringify(local)) as ForzaRecipeSection
+  // JSON.stringify drops undefined properties — explicitly restore so CardView's
+  // Object.assign actually clears section.variants when variants are demoted.
+  if (!local.variants) clone.variants = undefined
   if (taRef.value) {
     const liveAdj = taRef.value.getAdjustments()
     clone.adjustments = liveAdj
@@ -345,6 +435,7 @@ const impliedPartNames = computed<Set<string>>(() => {
 
 // UpgradesPicker mutates local.upgrades in-place; detect those mutations and flush.
 watch(() => local.upgrades, () => {
+  if (suppressFlush) return
   flush()
   markDirty()
 }, { deep: true, flush: 'sync' })
@@ -535,8 +626,8 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 <template>
   <div class="section-body">
 
-    <!-- Variant tab strip — renders when 2+ variants exist, or in edit mode for the add buttons -->
-    <div v-if="hasVariants || ui.isEditing" class="rs-variant-tabs">
+    <!-- Variant tab strip — renders for 2+ variants in view mode, or always in edit mode -->
+    <div v-if="ui.isEditing || (local.variants?.length ?? 0) >= 2" class="rs-variant-tabs">
       <template v-if="hasVariants">
         <div
           v-for="(v, i) in local.variants"
@@ -551,9 +642,10 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
               'rs-variant-tab--suggested': v.isSuggested,
             }"
             type="button"
+            :title="variantLabel(v)"
             @click="activeVariantIndex = i"
           >
-            {{ variantLabel(v) }}
+            {{ variantShortLabel(v) }}
             <span v-if="v.isSuggested" class="rs-tab-suggested-badge">Suggested</span>
           </button>
           <button
@@ -569,7 +661,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
       <!-- Auto-propose tabs when images span multiple cars -->
       <div v-if="showAutoPropose" class="rs-autopropose">
         <span class="rs-autopropose-msg">{{ autoProposeCarIds.length }} cars detected in photos</span>
-        <button class="rs-autopropose-accept" type="button" @click="acceptAutoPropose">Set up tabs</button>
+        <button class="rs-autopropose-accept" type="button" @click="beginSetupWizard">Set up tabs</button>
         <button class="rs-autopropose-dismiss" type="button" @click="autoProposesDismissed = true">×</button>
       </div>
 
@@ -769,6 +861,52 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
       @springs-choice="onSpringsChoice"
     />
   </div>
+
+  <!-- Car Tabs setup wizard — floating modal -->
+  <Teleport to="body">
+    <div v-if="showSetupWizard" class="wiz-backdrop" @click.self="showSetupWizard = false">
+      <div class="wiz-panel">
+        <div class="wiz-header">
+          <span class="wiz-title">Set up Car Tabs</span>
+          <button class="wiz-close" type="button" @click="showSetupWizard = false">×</button>
+        </div>
+        <div v-if="wizardLoading" class="wiz-loading">Loading presets…</div>
+        <template v-else>
+          <div class="wiz-step-label">Car {{ wizardStep + 1 }} of {{ wizardNonAnchorIds.length }}</div>
+          <p class="wiz-car-name">{{ wizardCarLabel(wizardNonAnchorIds[wizardStep]) }}</p>
+          <label class="wiz-select-label">Starting tune preset</label>
+          <select
+            class="wiz-select"
+            :value="wizardSelections[wizardNonAnchorIds[wizardStep]] ?? ''"
+            @change="wizardSelections[wizardNonAnchorIds[wizardStep]] = ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null"
+          >
+            <option value="">None — start blank</option>
+            <option v-for="p in wizardPresets" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+          <div class="wiz-nav">
+            <button
+              v-if="wizardStep > 0"
+              class="wiz-btn"
+              type="button"
+              @click="wizardStep--"
+            >← Back</button>
+            <button
+              v-if="wizardStep < wizardNonAnchorIds.length - 1"
+              class="wiz-btn wiz-btn--primary"
+              type="button"
+              @click="wizardStep++"
+            >Next →</button>
+            <button
+              v-else
+              class="wiz-btn wiz-btn--primary"
+              type="button"
+              @click="finishWizard"
+            >Set up {{ wizardAllIds.length }} tabs</button>
+          </div>
+        </template>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -977,20 +1115,20 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 .rs-variant-tabs {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 4px;
-  padding-bottom: 10px;
   margin-bottom: 10px;
-  border-bottom: 1px solid var(--panel-edge);
+  border-bottom: 1px solid var(--accent);
 }
 .rs-variant-tab-wrap {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
 }
 .rs-variant-tab {
-  background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
-  border: 1px solid var(--panel-edge);
-  border-radius: 4px;
+  background: transparent;
+  border: 1px solid var(--muted);
+  border-bottom-color: var(--accent);
+  border-radius: 4px 4px 0 0;
   color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -998,20 +1136,25 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   text-transform: uppercase;
   padding: 5px 12px;
   cursor: pointer;
-  transition: background .15s, color .15s, border-color .15s;
+  transition: color .15s, border-color .15s;
+  margin-bottom: -1px;
 }
 .rs-variant-tab--active {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: var(--panel);
   border-color: var(--accent);
+  border-bottom-color: var(--panel);
   color: var(--accent);
 }
 .rs-variant-tab:not(.rs-variant-tab--active):hover {
-  border-color: color-mix(in srgb, var(--fg) 60%, transparent);
+  border-color: color-mix(in srgb, var(--fg) 50%, transparent);
+  border-bottom-color: var(--accent);
   color: var(--fg);
 }
 .rs-variant-tab--add {
+  border: 1px dashed var(--accent);
+  border-radius: 4px;
   color: var(--accent);
-  border-style: dashed;
+  margin-bottom: 4px;
   opacity: 0.65;
 }
 .rs-variant-tab--add:hover { opacity: 1; }
@@ -1028,7 +1171,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 }
 .rs-variant-remove:hover { opacity: 1; color: #e03030; }
 
-.rs-add-variant-wrap { display: flex; align-items: center; gap: 4px; }
+.rs-add-variant-wrap { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
 
 .rs-autopropose {
   display: flex;
@@ -1153,4 +1296,98 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   padding: 3px 10px; cursor: pointer;
 }
 .rs-remove-no:hover { border-color: var(--fg); color: var(--fg); }
+</style>
+
+<style>
+.wiz-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.wiz-panel {
+  background: var(--bg, #111);
+  border: 1px solid var(--accent, gold);
+  border-radius: 6px;
+  padding: 20px 24px 24px;
+  width: min(400px, 90vw);
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+}
+.wiz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.wiz-title {
+  font: 700 14px/1 'Oswald', sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent, gold);
+}
+.wiz-close {
+  background: none;
+  border: none;
+  color: var(--muted, #888);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.wiz-close:hover { color: var(--fg, #eee); }
+.wiz-step-label {
+  font: 10px/1 'JetBrains Mono', monospace;
+  color: var(--muted, #888);
+  margin-bottom: 6px;
+}
+.wiz-car-name {
+  font: 600 15px/1.2 'Oswald', sans-serif;
+  color: var(--fg, #eee);
+  margin: 0 0 14px;
+}
+.wiz-select-label {
+  display: block;
+  font: 10px/1 'JetBrains Mono', monospace;
+  color: var(--muted, #888);
+  margin-bottom: 6px;
+}
+.wiz-select {
+  width: 100%;
+  padding: 6px 8px;
+  font: 12px/1 'JetBrains Mono', monospace;
+  background: var(--bg, #111);
+  color: var(--fg, #eee);
+  border: 1px solid var(--muted, #888);
+  border-radius: 3px;
+  margin-bottom: 18px;
+}
+.wiz-loading {
+  font: 11px/1 'JetBrains Mono', monospace;
+  color: var(--muted, #888);
+  padding: 16px 0;
+}
+.wiz-nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.wiz-btn {
+  font: 700 11px/1 'Oswald', sans-serif;
+  letter-spacing: .05em;
+  padding: 5px 14px;
+  border-radius: 3px;
+  border: 1px solid var(--muted, #888);
+  background: none;
+  color: var(--fg, #eee);
+  cursor: pointer;
+}
+.wiz-btn--primary {
+  border-color: var(--accent, gold);
+  background: var(--accent, gold);
+  color: #000;
+}
+.wiz-btn--primary:hover { opacity: .85; }
 </style>

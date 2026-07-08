@@ -75,7 +75,7 @@ function scrollToCard(cardId: string) {
   if (!el) return
   const from = window.scrollY
   const to   = el.getBoundingClientRect().top + window.scrollY
-  const dur  = 250
+  const dur  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--scroll-dur')) || 250
   const t0   = performance.now()
   function step(now: number) {
     const p = Math.min((now - t0) / dur, 1)

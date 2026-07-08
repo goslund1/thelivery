@@ -37,6 +37,7 @@ export interface ThemeEffects {
   glassColor?:   string   // base color for glass panels; defaults to --panel
   pickerOpacity: number   // 0–100
   pickerColor?:  string   // base color for picker panel; defaults to --panel
+  scrollDur:     number   // ms — card-jump scroll animation duration
 }
 
 export interface ThemeData {
@@ -84,11 +85,12 @@ function deepClone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v))
 }
 
-const EFFECTS_DEFAULTS: ThemeEffects = { glassOpacity: 82, pickerOpacity: 18 }
+const EFFECTS_DEFAULTS: ThemeEffects = { glassOpacity: 82, pickerOpacity: 18, scrollDur: 250 }
 
 function applyEffects(effects: ThemeEffects) {
   const root = document.documentElement
   root.style.setProperty('--glass-opacity', `${effects.glassOpacity}%`)
+  root.style.setProperty('--scroll-dur', `${effects.scrollDur ?? 250}ms`)
   if (effects.glassColor) {
     root.style.setProperty('--glass-bg', `color-mix(in srgb, ${effects.glassColor} ${effects.glassOpacity}%, transparent)`)
   } else {
@@ -192,6 +194,12 @@ export const useThemeStore = defineStore('theme', () => {
     current.value.effects.pickerOpacity = value
   }
 
+  function setScrollDur(value: number) {
+    if (!current.value) return
+    current.value.effects.scrollDur = value
+    applyEffects(current.value.effects)
+  }
+
   function setEffectColor(key: 'glassColor' | 'pickerColor', value: string) {
     if (!current.value) return
     current.value.effects[key] = value
@@ -238,6 +246,6 @@ export const useThemeStore = defineStore('theme', () => {
 
   return {
     current, saved, loading, saving, error, isDirty,
-    load, setColor, setTuningColor, setGlassOpacity, setPickerOpacity, setEffectColor, setAmbiance, reset, save,
+    load, setColor, setTuningColor, setGlassOpacity, setPickerOpacity, setScrollDur, setEffectColor, setAmbiance, reset, save,
   }
 })

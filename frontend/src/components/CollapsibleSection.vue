@@ -6,7 +6,7 @@ const props = defineProps<{ sectionKey: string; label: string; domId?: string }>
 const open = defineModel<boolean>('open', { default: false })
 const filters = useFilterStore()
 
-watch(() => filters.sectionExpanded[props.sectionKey], (v) => (open.value = v))
+watch(() => filters.sectionExpanded[props.sectionKey], (v) => (open.value = v), { immediate: true })
 
 function onToggle(e: Event) {
   open.value = (e.target as HTMLDetailsElement).open
@@ -33,7 +33,9 @@ function onSummaryClick(e: Event) {
     @toggle="onToggle"
   >
     <summary title="Click to expand or collapse" @click="onSummaryClick">
-      <span class="section-label">{{ label }}</span> <span class="chev"></span>
+      <span class="section-label">{{ label }}</span>
+      <slot name="action" />
+      <span class="chev"></span>
     </summary>
     <slot />
   </details>

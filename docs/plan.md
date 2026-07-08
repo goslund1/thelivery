@@ -16,6 +16,22 @@ Foundation built on Smokin (3-car test case: 599D, FD Corvette #777, Austin Heal
 - `+` button consolidation — single button, expands to Car/Tune choice when both are valid
 - Gallery `activeCarId` prop + image filtering wired (`Gallery.vue`, `CardView.vue`)
 
+**Tab mode design (settled):**
+- **Cars mode** — auto-triggered when slideshow images span multiple distinct carIds. Tab order: lead image's car first, then by photo count descending. Each tab = that car's tune. Smokin is the canonical example (599D → Corvette → Austin Healey).
+- **Tunes mode** — single car, multiple named tune variants (Race, Rally, Drift, etc.). Triggered manually via the `+` → Tune choice.
+- Both modes share the same tab strip UI. Mode is implicit in the data shape: distinct carIds = cars mode, same/no carId with multiple variants = tunes mode.
+- Tab mode can also be manually forced via the `+` button regardless of auto-detection.
+
+**Figure image near recipe (pending):**
+- In cars mode: each tab shows a small figure image of that car (lead image for that carId) near the tune section — anchors the tune visually.
+- In tunes mode: same car image across all tabs.
+- Recipe sections in general could benefit from a figure image slot regardless of tabs.
+
+**Authoring gap / scraped tune defaults (pending):**
+- Secondary cars in a mashup (e.g. Corvette, Austin Healey in Smokin) have no tune data yet and no authoring UI to add one from within the card.
+- Short-term bridge: seed the DB with community/scraped tune data per car as defaults. If no personal tune exists for a variant's car, fall back to scraped data so the tab isn't empty.
+- Longer term: "Add tune for this car" affordance inside the empty tab in edit mode.
+
 **Still needs shakedown:**
 - Verify gallery filters correctly when switching tabs (end-to-end on Smokin)
 - Fill in tune/spec data per variant and confirm save/restore round-trip

@@ -568,6 +568,21 @@ function hasChangedInTab(tabId: string) {
 }
 const changedRows = computed(() => localRows.value.filter(r => isChanged(r)))
 const TAB_LABEL: Record<string, string> = Object.fromEntries(CANONICAL_TABS.map(t => [t.id, t.label]))
+
+const TAB_COLOR_MAP: Record<string, string> = {
+  tires:        'var(--tabc-tires)',
+  gearing:      'var(--tabc-gearing)',
+  alignment:    'var(--tabc-alignment)',
+  arb:          'var(--tabc-arb)',
+  springs:      'var(--tabc-springs)',
+  damping:      'var(--tabc-damping)',
+  aero:         'var(--tabc-aero)',
+  brakes:       'var(--tabc-brakes)',
+  differential: 'var(--tabc-differential)',
+}
+const activeTabColor = computed(() =>
+  stacked.value ? 'var(--panel-edge)' : (TAB_COLOR_MAP[activeTabId.value] ?? 'var(--highlight)')
+)
 const tweakColCount = ref(5)
 let tweakResizeObserver: ResizeObserver | null = null
 
@@ -1106,7 +1121,7 @@ async function submitSuggestion() {
       </div>
     </details>
 
-  <div class="ta" ref="taRef" @keydown="onTaKeydown">
+  <div class="ta" ref="taRef" @keydown="onTaKeydown" :class="{ 'ta--stacked': stacked }" :style="{ '--active-tab-color': activeTabColor }">
 
     <!-- Preset bar (edit mode only) -->
     <div v-if="ui.isEditing" class="ta-preset-bar">
@@ -1150,6 +1165,7 @@ async function submitSuggestion() {
       <button
         v-for="tab in activeTabs" :key="tab.id"
         :class="['ta-tab-btn', 'ta-tab--' + tab.id, { active: !stacked && tab.id === activeTabId }]"
+        :style="{ '--tabc': 'var(--tabc-' + tab.id + ')' }"
         @click="onTabClick(tab.id)"
       >
         {{ tab.label }}
@@ -1625,39 +1641,61 @@ async function submitSuggestion() {
 
 .ta-tabbar {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   overflow-x: auto;
-  padding-bottom: 10px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--panel-edge);
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: 4px solid var(--active-tab-color, var(--panel-edge));
   scrollbar-width: thin;
+  align-items: flex-end;
 }
 .ta-tab-btn {
   flex-shrink: 0;
   position: relative;
   padding: 5px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--panel-edge);
-  background: color-mix(in srgb, var(--panel) 60%, transparent);
-  color: var(--muted);
+  border-radius: 4px 4px 0 0;
+  border: 1px solid color-mix(in srgb, var(--tabc, var(--panel-edge)) 40%, transparent);
+  border-bottom: none;
+  background: color-mix(in srgb, var(--tabc, var(--panel)) 10%, var(--panel-well));
+  color: color-mix(in srgb, var(--tabc, var(--muted)) 75%, var(--muted));
   font-size: 11px;
   cursor: pointer;
   white-space: nowrap;
   transition: color 0.12s, background 0.12s, border-color 0.12s;
+  margin-bottom: -2px;
 }
-.ta-tab-btn:hover { color: var(--fg); border-color: var(--tabc, var(--muted)); }
-.ta-tab-btn.active { background: var(--tabc, var(--highlight)); border-color: var(--tabc, var(--highlight)); color: #fff; font-weight: 600; }
+.ta-tab-btn:hover {
+  color: var(--tabc, var(--fg));
+  border-color: color-mix(in srgb, var(--tabc, var(--muted)) 65%, transparent);
+  background: color-mix(in srgb, var(--tabc, var(--panel)) 22%, var(--panel-well));
+}
+.ta-tab-btn.active {
+  background: var(--tabc, var(--highlight));
+  border-color: var(--tabc, var(--highlight));
+  border-bottom: 4px solid var(--panel-well);
+  color: #fff;
+  font-weight: 600;
+}
 .ta-tab-dot {
   position: absolute;
-  top: 2px; right: 2px;
+  top: 3px; right: 3px;
   width: 5px; height: 5px;
   border-radius: 50%;
-  background: var(--highlight);
+  background: color-mix(in srgb, var(--tabc, var(--highlight)) 90%, #fff);
 }
 .ta-tab-btn.active .ta-tab-dot { background: #fff; }
-.ta-tab-btn--stack { margin-left: auto; color: var(--highlight); border-color: color-mix(in srgb, var(--highlight) 40%, transparent); }
+/* Stack/inline toggle stays as a pill button, not a folder tab */
+.ta-tab-btn--stack {
+  margin-left: auto;
+  margin-bottom: 2px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--highlight) 40%, transparent);
+  background: color-mix(in srgb, var(--panel) 60%, transparent);
+  color: var(--highlight);
+}
 .ta-tab-btn--stack:hover:not(.ta-suppress-hover) { color: #fff; border-color: var(--highlight); background: color-mix(in srgb, var(--highlight) 10%, transparent); }
 .ta-tab-btn--stack.ta-suppress-hover:hover { color: var(--highlight); border-color: color-mix(in srgb, var(--highlight) 40%, transparent); background: color-mix(in srgb, var(--panel) 60%, transparent); }
+.ta-tab-btn--stack.active { background: var(--highlight); border-color: var(--highlight); color: #fff; }
 .ta-tab-btn--stack.active.ta-suppress-hover:hover { background: var(--highlight); border-color: var(--highlight); color: #fff; }
 
 .ta-stack-header {
@@ -1867,6 +1905,17 @@ async function submitSuggestion() {
   display: flex;
   overflow: hidden;
 }
+/* Secondary group title bars (gi > 0) are inside .ta-group — add the colored top rule there */
+.ta-group .ta-section-title-bar {
+  border-top: 4px solid var(--tabc, var(--highlight));
+}
+/* In stacked mode the first title bar follows .ta-stack-header — give it the line too, thinner */
+.ta-stack-header + .ta-section-title-bar {
+  border-top: 2px solid var(--tabc, var(--highlight));
+}
+.ta--stacked .ta-group .ta-section-title-bar {
+  border-top-width: 2px;
+}
 /* Left zone: spans label/val/end columns, tab color bg, holds section title */
 .ta-title-label-zone {
   width: min(var(--col-left-zone), 40%);
@@ -1878,10 +1927,10 @@ async function submitSuggestion() {
   justify-content: center;
   padding: 4px 8px;
 }
-/* Right zone: slider track area, panel-edge bg, holds controls or is empty */
+/* Right zone: slider track area, barely-there section color tint, holds controls or is empty */
 .ta-title-slider-zone {
   flex: 1;
-  background: var(--panel-edge);
+  background: color-mix(in srgb, var(--tabc, var(--highlight)) 10%, var(--panel-edge));
   display: flex;
   align-items: center;
   justify-content: flex-end;

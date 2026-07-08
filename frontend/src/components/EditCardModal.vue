@@ -30,7 +30,6 @@ const tagInput    = ref('')
 
 const saving      = ref(false)
 const error       = ref('')
-const confirmDelete = ref(false)
 
 // Text sections and recipe are handled live by their components;
 // snapshots let Cancel revert any changes made inside the modal.
@@ -93,7 +92,6 @@ function populate() {
   if (insp)   inspSnapshot.value   = JSON.stringify(insp)
   if (notes)  notesSnapshot.value  = JSON.stringify(notes)
   if (recipe) recipeSnapshot.value = JSON.stringify(recipe)
-  confirmDelete.value = false
   error.value = ''
 }
 
@@ -282,7 +280,7 @@ async function onDelete() {
       <div class="nc-footer">
         <p v-if="error" class="nc-error">{{ error }}</p>
         <div class="nc-actions ec-actions">
-          <button class="ec-btn-delete" type="button" @click="confirmDelete = true">Delete Card</button>
+          <button class="ec-btn-delete" type="button" @click="onDelete">Delete Card</button>
           <div class="ec-right">
             <button class="nc-btn-cancel" type="button" @click="onCancel">Cancel</button>
             <button class="nc-btn-create" type="button" :disabled="saving" @click="onSave">
@@ -295,21 +293,6 @@ async function onDelete() {
     </div>
   </div>
 
-  <Teleport to="body">
-    <div v-if="confirmDelete" class="conf-overlay open" @click.self="confirmDelete = false">
-      <div class="conf-panel">
-        <div class="conf-head">
-          <span>Delete Card</span>
-          <button class="conf-close" @click="confirmDelete = false">×</button>
-        </div>
-        <p class="conf-body"><strong style="color:var(--fg)">{{ card.name }}</strong> will be permanently deleted. This cannot be undone.</p>
-        <div class="conf-actions">
-          <button class="conf-btn conf-btn--discard" type="button" @click="onDelete">Yes, Delete It</button>
-          <button class="conf-btn conf-btn--neutral" type="button" @click="confirmDelete = false">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </Teleport>
 </template>
 
 <style scoped>

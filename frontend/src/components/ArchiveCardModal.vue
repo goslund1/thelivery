@@ -37,6 +37,7 @@ function cancel() {
   display: flex;
   align-items: center;
   justify-content: center;
+  overscroll-behavior: contain;
 }
 
 .archive-dialog {

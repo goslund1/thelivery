@@ -15,8 +15,8 @@ function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
 
-type Tab = 'users' | 'admin' | 'export'
-const tab = ref<Tab>('admin')
+type Tab = 'tools' | 'export'
+const tab = ref<Tab>('tools')
 
 function close() {
   modal.closeAdminPanel()
@@ -24,54 +24,7 @@ function close() {
   trashResult.value = null
 }
 
-// ── Create User ──────────────────────────────────────────────────────────────
-const newUsername    = ref('')
-const newUserPw      = ref('')
-const newUserConfirm = ref('')
-const userError      = ref('')
-const userSuccess    = ref('')
-const userBusy       = ref(false)
-
-async function submitCreateUser() {
-  userError.value = ''
-  userSuccess.value = ''
-  if (!newUsername.value.trim()) { userError.value = 'Username is required.'; return }
-  if (newUserPw.value !== newUserConfirm.value) { userError.value = 'Passwords do not match.'; return }
-  if (newUserPw.value.length < 8) { userError.value = 'Password must be at least 8 characters.'; return }
-  userBusy.value = true
-  try {
-    const res = await api.createUser(newUsername.value.trim(), newUserPw.value)
-    userSuccess.value = `User '${res.username}' created.`
-    newUsername.value = ''; newUserPw.value = ''; newUserConfirm.value = ''
-  } catch (e) {
-    userError.value = errMsg(e).includes('already exists') ? 'That username is already taken.' : 'Failed to create user.'
-  } finally {
-    userBusy.value = false
-  }
-}
-
-// ── Suggestions ──────────────────────────────────────────────────────────────
-type Suggestion = { id: number; cardId: string; title: string; credit: string | null; adjustments: object[]; submittedAt: string; ip: string; status: 'pending' | 'liked' }
-const suggestions      = ref<Suggestion[]>([])
-const suggestionsBusy  = ref(false)
-const suggestionsError = ref<string | null>(null)
-
-async function loadSuggestions() {
-  suggestionsBusy.value = true
-  suggestionsError.value = null
-  try { suggestions.value = await api.adminListSuggestions() }
-  catch (e) { suggestionsError.value = `Failed: ${errMsg(e)}` }
-  finally { suggestionsBusy.value = false }
-}
-
-async function dismissSuggestion(id: number) {
-  try {
-    await api.adminDismissSuggestion(id)
-    suggestions.value = suggestions.value.filter(s => s.id !== id)
-  } catch (e) { suggestionsError.value = `Failed: ${errMsg(e)}` }
-}
-
-// ── Admin stats / orphans / seed ─────────────────────────────────────────────
+// ── Tools: stats / orphans / trash / seed ────────────────────────────────────
 type AdminStats = { cardCount: number; imageCount: number; fileCount: number; uploadsDirBytes: number; dbBytes: number }
 const adminStats     = ref<AdminStats | null>(null)
 const adminStatsBusy = ref(false)
@@ -108,7 +61,7 @@ async function repairFigurePaths() {
     const res = await api.adminRepairFigurePaths()
     await useCardsStore().load()
     repairResult.value = res.repaired > 0 || res.cleared > 0
-      ? `Repaired ${res.repaired}${res.cleared ? `, cleared ${res.cleared} (no images on card)` : ''}.`
+      ? `Repaired ${res.repaired}${res.cleared ? `, cleared ${res.cleared}` : ''}.`
       : 'All figure paths OK.'
   } catch (e) { adminError.value = `Repair failed: ${errMsg(e)}` }
   finally { repairBusy.value = false }
@@ -157,7 +110,7 @@ async function reloadSeed() {
   finally { reloadBusy.value = false }
 }
 
-// ── Trash ────────────────────────────────────────────────────────────────────
+// ── Trash ─────────────────────────────────────────────────────────────────────
 type TrashEntry = {
   id: number | null
   trashFilename: string
@@ -187,26 +140,19 @@ async function loadTrash() {
 
 function toggleTrashSelect(id: number) {
   const s = new Set(trashSelected.value)
-  if (s.has(id)) s.delete(id)
-  else s.add(id)
+  s.has(id) ? s.delete(id) : s.add(id)
   trashSelected.value = s
 }
 
 function toggleSelectAll() {
   const ids = trashEntries.value.filter(e => e.id !== null).map(e => e.id as number)
-  if (trashSelected.value.size === ids.length) {
-    trashSelected.value = new Set()
-  } else {
-    trashSelected.value = new Set(ids)
-  }
+  trashSelected.value = trashSelected.value.size === ids.length ? new Set() : new Set(ids)
 }
 
 async function deleteTrashSelected() {
   const ids = [...trashSelected.value]
   if (!ids.length) return
-  trashBusy.value = true
-  trashResult.value = null
-  adminError.value = null
+  trashBusy.value = true; trashResult.value = null; adminError.value = null
   try {
     const res = await api.adminDeleteTrash({ ids })
     trashResult.value = `Permanently deleted ${res.deleted} file${res.deleted !== 1 ? 's' : ''}.`
@@ -217,9 +163,7 @@ async function deleteTrashSelected() {
 }
 
 async function deleteAllTrash() {
-  trashBusy.value = true
-  trashResult.value = null
-  adminError.value = null
+  trashBusy.value = true; trashResult.value = null; adminError.value = null
   try {
     const res = await api.adminDeleteTrash({ all: true })
     trashResult.value = `Permanently deleted ${res.deleted} file${res.deleted !== 1 ? 's' : ''}.`
@@ -233,9 +177,7 @@ async function deleteAllTrash() {
 async function restoreTrashSelected() {
   const ids = [...trashSelected.value]
   if (!ids.length) return
-  trashBusy.value = true
-  trashResult.value = null
-  adminError.value = null
+  trashBusy.value = true; trashResult.value = null; adminError.value = null
   try {
     const res = await api.adminRestoreTrash(ids)
     trashResult.value = `Restored ${res.restored} image${res.restored !== 1 ? 's' : ''} — reassign via Photo Detail.`
@@ -245,8 +187,8 @@ async function restoreTrashSelected() {
   finally { trashBusy.value = false }
 }
 
-function onTabAdmin() {
-  tab.value = 'admin'
+function onTabTools() {
+  tab.value = 'tools'
   orphanScan.value = null
   orphanResult.value = null
   exportResult.value = null
@@ -254,11 +196,10 @@ function onTabAdmin() {
   trashResult.value = null
   adminError.value = null
   loadAdminStats()
-  loadSuggestions()
   loadTrash()
 }
 
-// ── Export Card (category + adjustment row migration + YAML) ─────────────────
+// ── Export: YAML + legacy card repair ────────────────────────────────────────
 const CATEGORY_ALIASES: Record<string, string> = {
   'Platform & Handling':     'Platform and Handling',
   'Tires & Rims':            'Tires and Wheels',
@@ -268,57 +209,44 @@ const CATEGORY_ALIASES: Record<string, string> = {
 
 interface LegacyRow { name: string; description: string }
 type AnyRow = AdjustmentRow | LegacyRow
-
-function isLegacyRow(row: AnyRow): row is LegacyRow {
-  return 'name' in row && !('tab' in row)
-}
-
+function isLegacyRow(row: AnyRow): row is LegacyRow { return 'name' in row && !('tab' in row) }
 function getRecipe(card: Card): ForzaRecipeSection | undefined {
   return card.sections.find((s): s is ForzaRecipeSection => s.type === 'forza_recipe')
 }
 
 interface MigrateStatus { card: Card; needsCategories: boolean; legacyCount: number }
 const migrateStatus = computed<MigrateStatus[]>(() =>
-  cards.cards
-    .filter(c => !c.isLegend)
-    .map(c => {
-      const r = getRecipe(c)
-      if (!r) return { card: c, needsCategories: false, legacyCount: 0 }
-      return {
-        card: c,
-        needsCategories: r.upgrades.some(u => !!CATEGORY_ALIASES[u.category]),
-        legacyCount: (r.adjustments as AnyRow[]).filter(isLegacyRow).length,
-      }
-    })
+  cards.cards.filter(c => !c.isLegend).map(c => {
+    const r = getRecipe(c)
+    if (!r) return { card: c, needsCategories: false, legacyCount: 0 }
+    return {
+      card: c,
+      needsCategories: r.upgrades.some(u => !!CATEGORY_ALIASES[u.category]),
+      legacyCount: (r.adjustments as AnyRow[]).filter(isLegacyRow).length,
+    }
+  })
 )
 
 const catBusy   = ref(false)
 const catResult = ref<string | null>(null)
 
 async function fixAllCategories() {
-  catBusy.value = true
-  catResult.value = null
+  catBusy.value = true; catResult.value = null
   let fixed = 0
   try {
     for (const { card, needsCategories } of migrateStatus.value) {
       if (!needsCategories) continue
       const storeCard = cards.byId(card.id)!
       const recipe = getRecipe(storeCard)!
-      recipe.upgrades = recipe.upgrades.map(u => ({
-        ...u, category: CATEGORY_ALIASES[u.category] ?? u.category,
-      }))
+      recipe.upgrades = recipe.upgrades.map(u => ({ ...u, category: CATEGORY_ALIASES[u.category] ?? u.category }))
       await cards.save(card.id)
       fixed++
     }
     catResult.value = fixed ? `Fixed ${fixed} card${fixed !== 1 ? 's' : ''}.` : 'Nothing to fix.'
-  } catch (e) {
-    catResult.value = `Error: ${errMsg(e)}`
-  } finally {
-    catBusy.value = false
-  }
+  } catch (e) { catResult.value = `Error: ${errMsg(e)}` }
+  finally { catBusy.value = false }
 }
 
-// Adjustment row migration
 const adjCardId  = ref<string | null>(null)
 const adjRowIdx  = ref(0)
 const adjResults = ref<Map<number, AdjustmentRow[] | 'skip'>>(new Map())
@@ -338,77 +266,28 @@ const TAB_DEFAULTS: Record<string, Pick<AdjustmentRow, 'unit' | 'min' | 'max' | 
   gearing:      { unit: '',    min: 0,   max: 10,   stock: 3,   step: 0.01},
 }
 
-const adjDraft = ref<AdjustmentRow>({
-  tab: 'arb', group: '', key: '', label: '', unit: '',
-  min: 0, max: 0, stock: 0, value: 0, step: 1,
-})
-
+const adjDraft = ref<AdjustmentRow>({ tab: 'arb', group: '', key: '', label: '', unit: '', min: 0, max: 0, stock: 0, value: 0, step: 1 })
 const adjLegacyRows = computed<LegacyRow[]>(() => {
   if (!adjCardId.value) return []
   const card = cards.byId(adjCardId.value)
   const r = card ? getRecipe(card) : undefined
   return r ? (r.adjustments as AnyRow[]).filter(isLegacyRow) : []
 })
-
 const adjCurrentRow   = computed(() => adjLegacyRows.value[adjRowIdx.value])
-const adjCurrentSaved = computed<AdjustmentRow[]>(() => {
-  const r = adjResults.value.get(adjRowIdx.value)
-  return Array.isArray(r) ? r : []
-})
-const adjAllHandled = computed(() => adjResults.value.size >= adjLegacyRows.value.length)
+const adjCurrentSaved = computed<AdjustmentRow[]>(() => { const r = adjResults.value.get(adjRowIdx.value); return Array.isArray(r) ? r : [] })
+const adjAllHandled   = computed(() => adjResults.value.size >= adjLegacyRows.value.length)
 
-function openAdjCard(cardId: string) {
-  adjCardId.value = cardId
-  adjRowIdx.value = 0
-  adjResults.value = new Map()
-  adjResult.value = null
-  applyTabDefaults()
-}
-
-function applyTabDefaults() {
-  const d = TAB_DEFAULTS[adjDraft.value.tab]
-  if (!d) return
-  adjDraft.value = { ...adjDraft.value, ...d, value: d.stock }
-}
-
-function onAdjTabChange() {
-  adjDraft.value.group = ''
-  adjDraft.value.label = ''
-  applyTabDefaults()
-}
-
-function adjAutoKey(): string {
-  const t = adjDraft.value.tab
-  const g = adjDraft.value.group.replace(/\s+/g, '')
-  const l = adjDraft.value.label.replace(/\s+/g, '')
-  return t + g + l
-}
-
-function saveRow() {
-  const existing = adjCurrentSaved.value
-  adjResults.value.set(adjRowIdx.value, [...existing, { ...adjDraft.value, key: adjAutoKey() }])
-  adjDraft.value.label = ''
-}
-
-function nextRow() {
-  if (adjRowIdx.value < adjLegacyRows.value.length - 1) {
-    adjRowIdx.value++
-    applyTabDefaults()
-  }
-}
-
-function skipRow() {
-  adjResults.value.set(adjRowIdx.value, 'skip')
-  if (adjRowIdx.value < adjLegacyRows.value.length - 1) {
-    adjRowIdx.value++
-    applyTabDefaults()
-  }
-}
+function openAdjCard(cardId: string) { adjCardId.value = cardId; adjRowIdx.value = 0; adjResults.value = new Map(); adjResult.value = null; applyTabDefaults() }
+function applyTabDefaults() { const d = TAB_DEFAULTS[adjDraft.value.tab]; if (d) adjDraft.value = { ...adjDraft.value, ...d, value: d.stock } }
+function onAdjTabChange() { adjDraft.value.group = ''; adjDraft.value.label = ''; applyTabDefaults() }
+function adjAutoKey() { return adjDraft.value.tab + adjDraft.value.group.replace(/\s+/g, '') + adjDraft.value.label.replace(/\s+/g, '') }
+function saveRow() { adjResults.value.set(adjRowIdx.value, [...adjCurrentSaved.value, { ...adjDraft.value, key: adjAutoKey() }]); adjDraft.value.label = '' }
+function nextRow() { if (adjRowIdx.value < adjLegacyRows.value.length - 1) { adjRowIdx.value++; applyTabDefaults() } }
+function skipRow() { adjResults.value.set(adjRowIdx.value, 'skip'); if (adjRowIdx.value < adjLegacyRows.value.length - 1) { adjRowIdx.value++; applyTabDefaults() } }
 
 async function commitAdjMigration() {
   if (!adjCardId.value) return
-  adjBusy.value = true
-  adjResult.value = null
+  adjBusy.value = true; adjResult.value = null
   try {
     const storeCard = cards.byId(adjCardId.value)!
     const recipe = getRecipe(storeCard)!
@@ -416,13 +295,8 @@ async function commitAdjMigration() {
     const newAdj: AdjustmentRow[] = []
     let legacyIdx = 0
     for (const row of rows) {
-      if (isLegacyRow(row)) {
-        const result = adjResults.value.get(legacyIdx)
-        if (Array.isArray(result)) newAdj.push(...result)
-        legacyIdx++
-      } else {
-        newAdj.push(row)
-      }
+      if (isLegacyRow(row)) { const result = adjResults.value.get(legacyIdx); if (Array.isArray(result)) newAdj.push(...result); legacyIdx++ }
+      else newAdj.push(row)
     }
     recipe.adjustments = newAdj
     await cards.save(adjCardId.value)
@@ -430,83 +304,57 @@ async function commitAdjMigration() {
     const skipped = [...adjResults.value.values()].filter(v => v === 'skip').length
     adjResult.value = `Saved ${saved} row${saved !== 1 ? 's' : ''}${skipped ? `, skipped ${skipped}` : ''}.`
     adjCardId.value = null
-  } catch (e) {
-    adjResult.value = `Error: ${errMsg(e)}`
-  } finally {
-    adjBusy.value = false
-  }
+  } catch (e) { adjResult.value = `Error: ${errMsg(e)}` }
+  finally { adjBusy.value = false }
 }
 
-function onTabExport() {
-  tab.value = 'export'
-  adjCardId.value = null
-  catResult.value = null
-  adjResult.value = null
-}
+function onTabExport() { tab.value = 'export'; adjCardId.value = null; catResult.value = null; adjResult.value = null }
 
-// YAML export / import
+// YAML
 function downloadCardYaml(card: Card) {
   const text = cardToYaml(card)
   const blob = new Blob([text], { type: 'text/yaml' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
-  const slug = card.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
   a.href = url
-  a.download = `${slug || 'card'}.yaml`
+  a.download = `${card.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'card'}.yaml`
   a.click()
   URL.revokeObjectURL(url)
 }
 
-const importError    = ref<string | null>(null)
-const importPreview  = ref<Omit<Card, 'id' | 'catalogNumber'> | null>(null)
-const importBusy     = ref(false)
-const importResult   = ref<string | null>(null)
-const importFileRef  = ref<HTMLInputElement | null>(null)
+const importError   = ref<string | null>(null)
+const importPreview = ref<Omit<Card, 'id' | 'catalogNumber'> | null>(null)
+const importBusy    = ref(false)
+const importResult  = ref<string | null>(null)
+const importFileRef = ref<HTMLInputElement | null>(null)
 
 function onImportFile(e: Event) {
-  importError.value = null
-  importPreview.value = null
-  importResult.value = null
+  importError.value = null; importPreview.value = null; importResult.value = null
   const file = (e.target as HTMLInputElement).files?.[0]
   if (!file) return
   file.text().then(text => {
     const result = yamlToCard(text)
-    if (!result.ok) {
-      importError.value = result.error
-    } else {
-      importPreview.value = result.card
-    }
+    if (!result.ok) importError.value = result.error
+    else importPreview.value = result.card
   })
 }
 
 async function confirmImport() {
   if (!importPreview.value) return
-  importBusy.value = true
-  importResult.value = null
+  importBusy.value = true; importResult.value = null
   try {
     const maxNum = Math.max(0, ...cards.cards.map(c => c.catalogNumber))
-    const newCard: Card = {
-      ...importPreview.value,
-      id: crypto.randomUUID(),
-      catalogNumber: maxNum + 1,
-    }
+    const newCard: Card = { ...importPreview.value, id: crypto.randomUUID(), catalogNumber: maxNum + 1 }
     await api.createCard(newCard)
     await cards.load()
     importResult.value = `Imported "${newCard.name}" as card #${newCard.catalogNumber}.`
     importPreview.value = null
     if (importFileRef.value) importFileRef.value.value = ''
-  } catch (e) {
-    importResult.value = `Error: ${errMsg(e)}`
-  } finally {
-    importBusy.value = false
-  }
+  } catch (e) { importResult.value = `Error: ${errMsg(e)}` }
+  finally { importBusy.value = false }
 }
 
-function cancelImport() {
-  importPreview.value = null
-  importError.value = null
-  if (importFileRef.value) importFileRef.value.value = ''
-}
+function cancelImport() { importPreview.value = null; importError.value = null; if (importFileRef.value) importFileRef.value.value = '' }
 </script>
 
 <template>
@@ -518,27 +366,16 @@ function cancelImport() {
       </div>
 
       <div class="settings-tabs">
-        <button :class="{ active: tab === 'users' }" @click="tab = 'users'">Users</button>
-        <button :class="{ active: tab === 'admin' }" @click="onTabAdmin">Admin</button>
+        <button :class="{ active: tab === 'tools' }" @click="onTabTools">Tools</button>
         <button :class="{ active: tab === 'export' }" @click="onTabExport">Export Card</button>
       </div>
 
-      <!-- Create User -->
-      <form v-if="tab === 'users'" class="settings-form" @submit.prevent="submitCreateUser">
-        <input v-model="newUsername"    type="text"     placeholder="Username"         autocomplete="off" />
-        <input v-model="newUserPw"      type="password" placeholder="Password"         autocomplete="new-password" />
-        <input v-model="newUserConfirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
-        <p v-if="userError"   class="settings-error">{{ userError }}</p>
-        <p v-if="userSuccess" class="settings-ok">{{ userSuccess }}</p>
-        <button type="submit" :disabled="userBusy">{{ userBusy ? 'Creating…' : 'Create User' }}</button>
-      </form>
-
-      <!-- Admin -->
-      <div v-if="tab === 'admin'" class="ap-sections">
+      <!-- Tools -->
+      <div v-if="tab === 'tools'" class="ap-sections">
         <p v-if="adminError" class="settings-error">{{ adminError }}</p>
 
         <div class="admin-section">
-          <div class="admin-section-head">Tools</div>
+          <div class="admin-section-head">Image Tools</div>
           <div class="admin-row">
             <button class="admin-btn" @click="modal.openImageMigration(); close()">
               Image Migration
@@ -570,12 +407,9 @@ function cancelImport() {
             <button class="admin-btn" :disabled="orphanBusy" @click="scanOrphans">
               {{ orphanBusy && !orphanScan ? 'Scanning…' : 'Scan' }}
             </button>
-            <button
-              v-if="orphanScan && orphanScan.count > 0"
-              class="admin-btn"
-              :disabled="orphanBusy"
-              @click="deleteOrphans"
-            >{{ orphanBusy ? 'Sweeping…' : `Move ${orphanScan.count} to Trash` }}</button>
+            <button v-if="orphanScan && orphanScan.count > 0" class="admin-btn" :disabled="orphanBusy" @click="deleteOrphans">
+              {{ orphanBusy ? 'Sweeping…' : `Move ${orphanScan.count} to Trash` }}
+            </button>
           </div>
           <p v-if="orphanScan && orphanScan.count === 0" class="admin-ok">No orphans found.</p>
           <p v-if="orphanResult" class="admin-ok">{{ orphanResult }}</p>
@@ -599,27 +433,12 @@ function cancelImport() {
               <div v-if="trashExpanded" class="trash-list">
                 <div class="trash-select-row">
                   <label class="trash-check-label">
-                    <input
-                      type="checkbox"
-                      :checked="trashSelected.size === trashEntries.filter(e => e.id !== null).length && trashEntries.some(e => e.id !== null)"
-                      @change="toggleSelectAll"
-                    />
+                    <input type="checkbox" :checked="trashSelected.size === trashEntries.filter(e => e.id !== null).length && trashEntries.some(e => e.id !== null)" @change="toggleSelectAll" />
                     <span>Select all</span>
                   </label>
                 </div>
-                <div
-                  v-for="entry in trashEntries"
-                  :key="entry.trashFilename"
-                  class="trash-item"
-                  :class="{ 'trash-item--selected': entry.id !== null && trashSelected.has(entry.id) }"
-                >
-                  <input
-                    v-if="entry.id !== null"
-                    type="checkbox"
-                    :checked="trashSelected.has(entry.id)"
-                    class="trash-item-check"
-                    @change="toggleTrashSelect(entry.id)"
-                  />
+                <div v-for="entry in trashEntries" :key="entry.trashFilename" class="trash-item" :class="{ 'trash-item--selected': entry.id !== null && trashSelected.has(entry.id) }">
+                  <input v-if="entry.id !== null" type="checkbox" :checked="trashSelected.has(entry.id)" class="trash-item-check" @change="toggleTrashSelect(entry.id)" />
                   <div v-else class="trash-item-check-placeholder" />
                   <div class="trash-item-info">
                     <span class="trash-item-name" :title="entry.originalPath ?? entry.trashFilename">
@@ -650,136 +469,23 @@ function cancelImport() {
         </div>
 
         <div class="admin-section">
-          <div class="admin-section-head">Export Seed</div>
-          <p class="admin-muted">Write current DB cards to the server's seed file. Run this locally before pushing.</p>
-          <button class="admin-btn" :disabled="exportBusy" @click="exportSeed">
-            {{ exportBusy ? 'Exporting…' : 'Export to Seed File' }}
-          </button>
-          <p v-if="exportResult" class="admin-ok">{{ exportResult }}</p>
-        </div>
-
-        <div class="admin-section">
-          <div class="admin-section-head">Tune Suggestions <span v-if="suggestions.length" class="admin-badge">{{ suggestions.length }}</span></div>
-          <p v-if="suggestionsError" class="settings-error">{{ suggestionsError }}</p>
-          <div v-if="suggestionsBusy" class="admin-muted">Loading…</div>
-          <div v-else-if="!suggestions.length" class="admin-muted">No suggestions yet.</div>
-          <div v-else class="admin-suggestions">
-            <div v-for="s in suggestions" :key="s.id" class="admin-suggestion">
-              <div class="admin-suggestion-head">
-                <span class="admin-suggestion-title">{{ s.title }}</span>
-                <span class="admin-suggestion-meta">{{ s.cardId }} · {{ s.submittedAt.slice(0,10) }}</span>
-              </div>
-              <div v-if="s.credit" class="admin-suggestion-credit">{{ s.credit }}</div>
-              <button class="admin-btn admin-btn-red admin-suggestion-dismiss" @click="dismissSuggestion(s.id)">Dismiss</button>
-            </div>
+          <div class="admin-section-head">Seed</div>
+          <p class="admin-muted">Export writes current DB to the seed file. Reload applies the seed file to the live DB.</p>
+          <div class="admin-row">
+            <button class="admin-btn" :disabled="exportBusy" @click="exportSeed">
+              {{ exportBusy ? 'Exporting…' : 'Export Seed' }}
+            </button>
+            <button class="admin-btn" :disabled="reloadBusy" @click="reloadSeed">
+              {{ reloadBusy ? 'Reloading…' : 'Reload from Seed' }}
+            </button>
           </div>
-        </div>
-
-        <div class="admin-section">
-          <div class="admin-section-head">Reload from Seed</div>
-          <p class="admin-muted">Apply the deployed seed file to the live DB — upserts all cards, removes deleted ones. Run this on production after a deploy.</p>
-          <button class="admin-btn" :disabled="reloadBusy" @click="reloadSeed">
-            {{ reloadBusy ? 'Reloading…' : 'Reload from Seed' }}
-          </button>
+          <p v-if="exportResult" class="admin-ok">{{ exportResult }}</p>
           <p v-if="reloadResult" class="admin-ok">{{ reloadResult }}</p>
         </div>
       </div>
 
       <!-- Export Card -->
       <div v-if="tab === 'export'" class="ap-sections">
-
-        <div class="admin-section">
-          <div class="admin-section-head">Upgrade Category Names</div>
-          <p class="admin-muted">Rename legacy category strings to canonical values.</p>
-          <div class="mig-card-list">
-            <div v-for="s in migrateStatus" :key="s.card.id" class="mig-card-row">
-              <span class="mig-card-name">{{ s.card.name }}</span>
-              <span v-if="s.needsCategories" class="mig-badge mig-badge--warn">⚠ needs fix</span>
-              <span v-else class="mig-badge mig-badge--ok">✓</span>
-            </div>
-            <div v-if="migrateStatus.every(s => !s.needsCategories)" class="admin-muted">All canonical.</div>
-          </div>
-          <div v-if="migrateStatus.some(s => s.needsCategories)" class="admin-row">
-            <button class="admin-btn" :disabled="catBusy" @click="fixAllCategories">
-              {{ catBusy ? 'Fixing…' : 'Fix All' }}
-            </button>
-          </div>
-          <p v-if="catResult" class="admin-ok">{{ catResult }}</p>
-        </div>
-
-        <div class="admin-section">
-          <div class="admin-section-head">Adjustment Rows</div>
-          <p class="admin-muted">Convert free-text rows to structured slider format.</p>
-          <template v-if="!adjCardId">
-            <div class="mig-card-list">
-              <div v-for="s in migrateStatus.filter(s => s.legacyCount > 0)" :key="s.card.id" class="mig-card-row">
-                <span class="mig-card-name">{{ s.card.name }}</span>
-                <span class="mig-badge mig-badge--warn">⚠ {{ s.legacyCount }} row{{ s.legacyCount !== 1 ? 's' : '' }}</span>
-                <button class="admin-btn mig-btn-sm" @click="openAdjCard(s.card.id)">Migrate →</button>
-              </div>
-              <div v-if="migrateStatus.every(s => s.legacyCount === 0)" class="admin-muted">All rows structured.</div>
-            </div>
-            <p v-if="adjResult" class="admin-ok">{{ adjResult }}</p>
-          </template>
-          <template v-else>
-            <div class="mig-form-header">
-              <span class="mig-form-title">{{ cards.byId(adjCardId)?.name }}</span>
-              <span class="mig-form-progress">Row {{ adjRowIdx + 1 }} / {{ adjLegacyRows.length }}</span>
-              <button class="admin-btn mig-btn-sm" @click="adjCardId = null">← Back</button>
-            </div>
-            <div v-if="adjCurrentRow" class="mig-source-row">
-              <div class="mig-source-label">{{ adjCurrentRow.name }}</div>
-              <div class="mig-source-desc">{{ adjCurrentRow.description }}</div>
-            </div>
-            <div v-if="adjResults.has(adjRowIdx)" class="mig-handled">
-              <span v-if="adjResults.get(adjRowIdx) === 'skip'" class="mig-badge mig-badge--skip">Skipped</span>
-              <template v-else>
-                <span v-for="(r, i) in adjCurrentSaved" :key="i" class="mig-badge mig-badge--ok">
-                  {{ r.group }} {{ r.label }}
-                </span>
-              </template>
-            </div>
-            <div v-if="!adjAllHandled" class="mig-form">
-              <div class="mig-field-row">
-                <label class="mig-label">Tab</label>
-                <select v-model="adjDraft.tab" class="mig-select" @change="onAdjTabChange">
-                  <option v-for="t in TABS" :key="t" :value="t">{{ t }}</option>
-                </select>
-              </div>
-              <div class="mig-field-row">
-                <label class="mig-label">Group</label>
-                <input v-model="adjDraft.group" class="mig-input" placeholder="e.g. Front Anti-Roll Bar" />
-              </div>
-              <div class="mig-field-row">
-                <label class="mig-label">Label</label>
-                <input v-model="adjDraft.label" class="mig-input" placeholder="e.g. Front" />
-              </div>
-              <div class="mig-field-row">
-                <label class="mig-label">Unit</label>
-                <input v-model="adjDraft.unit" class="mig-input mig-input--short" placeholder="° or psi or blank" />
-              </div>
-              <div class="mig-nums-row">
-                <div class="mig-num"><label class="mig-label">Min</label><input v-model.number="adjDraft.min" type="number" class="mig-input mig-input--num" /></div>
-                <div class="mig-num"><label class="mig-label">Max</label><input v-model.number="adjDraft.max" type="number" class="mig-input mig-input--num" /></div>
-                <div class="mig-num"><label class="mig-label">Stock</label><input v-model.number="adjDraft.stock" type="number" class="mig-input mig-input--num" /></div>
-                <div class="mig-num"><label class="mig-label">Value</label><input v-model.number="adjDraft.value" type="number" class="mig-input mig-input--num" /></div>
-                <div class="mig-num"><label class="mig-label">Step</label><input v-model.number="adjDraft.step" type="number" class="mig-input mig-input--num" /></div>
-              </div>
-              <div class="admin-row">
-                <button class="admin-btn" @click="saveRow">Save Row</button>
-                <button class="admin-btn" :disabled="adjCurrentSaved.length === 0" @click="nextRow">Next →</button>
-                <button class="admin-btn" @click="skipRow">Skip</button>
-              </div>
-            </div>
-            <div v-if="adjAllHandled" class="mig-commit">
-              <p class="admin-muted">All rows handled. Commit to save the card.</p>
-              <button class="admin-btn" :disabled="adjBusy" @click="commitAdjMigration">
-                {{ adjBusy ? 'Saving…' : 'Commit Migration' }}
-              </button>
-              <p v-if="adjResult" class="admin-ok">{{ adjResult }}</p>
-            </div>
-          </template>
-        </div>
 
         <div class="admin-section">
           <div class="admin-section-head">Download YAML</div>
@@ -810,13 +516,93 @@ function cancelImport() {
               <template v-if="importPreview.collections.length"> · {{ importPreview.collections.join(', ') }}</template>
             </div>
             <div class="admin-row" style="margin-top: 10px;">
-              <button class="admin-btn" :disabled="importBusy" @click="confirmImport">
-                {{ importBusy ? 'Importing…' : 'Import as New Card' }}
-              </button>
+              <button class="admin-btn" :disabled="importBusy" @click="confirmImport">{{ importBusy ? 'Importing…' : 'Import as New Card' }}</button>
               <button class="admin-btn" @click="cancelImport">Cancel</button>
             </div>
           </div>
           <p v-if="importResult" class="admin-ok">{{ importResult }}</p>
+        </div>
+
+        <!-- Legacy repair — buried at bottom since mostly done -->
+        <div class="admin-section legacy-section">
+          <div class="admin-section-head">Legacy Repair</div>
+          <p class="admin-muted">One-time tools for fixing data from the original import. Mostly done.</p>
+
+          <div class="admin-section" style="margin-top:8px;">
+            <div class="admin-section-head" style="font-size:9px;">Upgrade Category Names</div>
+            <div class="mig-card-list">
+              <div v-for="s in migrateStatus" :key="s.card.id" class="mig-card-row">
+                <span class="mig-card-name">{{ s.card.name }}</span>
+                <span v-if="s.needsCategories" class="mig-badge mig-badge--warn">⚠ needs fix</span>
+                <span v-else class="mig-badge mig-badge--ok">✓</span>
+              </div>
+              <div v-if="migrateStatus.every(s => !s.needsCategories)" class="admin-muted">All canonical.</div>
+            </div>
+            <div v-if="migrateStatus.some(s => s.needsCategories)" class="admin-row">
+              <button class="admin-btn" :disabled="catBusy" @click="fixAllCategories">{{ catBusy ? 'Fixing…' : 'Fix All' }}</button>
+            </div>
+            <p v-if="catResult" class="admin-ok">{{ catResult }}</p>
+          </div>
+
+          <div class="admin-section" style="margin-top:12px;">
+            <div class="admin-section-head" style="font-size:9px;">Adjustment Rows</div>
+            <template v-if="!adjCardId">
+              <div class="mig-card-list">
+                <div v-for="s in migrateStatus.filter(s => s.legacyCount > 0)" :key="s.card.id" class="mig-card-row">
+                  <span class="mig-card-name">{{ s.card.name }}</span>
+                  <span class="mig-badge mig-badge--warn">⚠ {{ s.legacyCount }} row{{ s.legacyCount !== 1 ? 's' : '' }}</span>
+                  <button class="admin-btn mig-btn-sm" @click="openAdjCard(s.card.id)">Migrate →</button>
+                </div>
+                <div v-if="migrateStatus.every(s => s.legacyCount === 0)" class="admin-muted">All rows structured.</div>
+              </div>
+              <p v-if="adjResult" class="admin-ok">{{ adjResult }}</p>
+            </template>
+            <template v-else>
+              <div class="mig-form-header">
+                <span class="mig-form-title">{{ cards.byId(adjCardId)?.name }}</span>
+                <span class="mig-form-progress">Row {{ adjRowIdx + 1 }} / {{ adjLegacyRows.length }}</span>
+                <button class="admin-btn mig-btn-sm" @click="adjCardId = null">← Back</button>
+              </div>
+              <div v-if="adjCurrentRow" class="mig-source-row">
+                <div class="mig-source-label">{{ adjCurrentRow.name }}</div>
+                <div class="mig-source-desc">{{ adjCurrentRow.description }}</div>
+              </div>
+              <div v-if="adjResults.has(adjRowIdx)" class="mig-handled">
+                <span v-if="adjResults.get(adjRowIdx) === 'skip'" class="mig-badge mig-badge--skip">Skipped</span>
+                <template v-else>
+                  <span v-for="(r, i) in adjCurrentSaved" :key="i" class="mig-badge mig-badge--ok">{{ r.group }} {{ r.label }}</span>
+                </template>
+              </div>
+              <div v-if="!adjAllHandled" class="mig-form">
+                <div class="mig-field-row">
+                  <label class="mig-label">Tab</label>
+                  <select v-model="adjDraft.tab" class="mig-select" @change="onAdjTabChange">
+                    <option v-for="t in TABS" :key="t" :value="t">{{ t }}</option>
+                  </select>
+                </div>
+                <div class="mig-field-row"><label class="mig-label">Group</label><input v-model="adjDraft.group" class="mig-input" placeholder="e.g. Front Anti-Roll Bar" /></div>
+                <div class="mig-field-row"><label class="mig-label">Label</label><input v-model="adjDraft.label" class="mig-input" placeholder="e.g. Front" /></div>
+                <div class="mig-field-row"><label class="mig-label">Unit</label><input v-model="adjDraft.unit" class="mig-input mig-input--short" placeholder="° or psi or blank" /></div>
+                <div class="mig-nums-row">
+                  <div class="mig-num"><label class="mig-label">Min</label><input v-model.number="adjDraft.min" type="number" class="mig-input mig-input--num" /></div>
+                  <div class="mig-num"><label class="mig-label">Max</label><input v-model.number="adjDraft.max" type="number" class="mig-input mig-input--num" /></div>
+                  <div class="mig-num"><label class="mig-label">Stock</label><input v-model.number="adjDraft.stock" type="number" class="mig-input mig-input--num" /></div>
+                  <div class="mig-num"><label class="mig-label">Value</label><input v-model.number="adjDraft.value" type="number" class="mig-input mig-input--num" /></div>
+                  <div class="mig-num"><label class="mig-label">Step</label><input v-model.number="adjDraft.step" type="number" class="mig-input mig-input--num" /></div>
+                </div>
+                <div class="admin-row">
+                  <button class="admin-btn" @click="saveRow">Save Row</button>
+                  <button class="admin-btn" :disabled="adjCurrentSaved.length === 0" @click="nextRow">Next →</button>
+                  <button class="admin-btn" @click="skipRow">Skip</button>
+                </div>
+              </div>
+              <div v-if="adjAllHandled" class="mig-commit">
+                <p class="admin-muted">All rows handled. Commit to save the card.</p>
+                <button class="admin-btn" :disabled="adjBusy" @click="commitAdjMigration">{{ adjBusy ? 'Saving…' : 'Commit Migration' }}</button>
+                <p v-if="adjResult" class="admin-ok">{{ adjResult }}</p>
+              </div>
+            </template>
+          </div>
         </div>
 
       </div>
@@ -826,7 +612,8 @@ function cancelImport() {
 
 <style scoped>
 .admin-panel-modal {
-  max-width: 480px;
+  width: 480px;
+  max-width: 96vw;
   max-height: 88vh;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -856,40 +643,8 @@ function cancelImport() {
 .settings-tabs button:hover { color: var(--fg); }
 .settings-tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-.settings-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 4px 2px 2px;
-}
-.settings-form input {
-  padding: 9px 11px;
-  border-radius: 4px;
-  border: 1px solid var(--panel-edge);
-  background: var(--panel-well);
-  color: var(--fg);
-  font-family: inherit;
-  font-size: 14px;
-}
-.settings-form input:focus { outline: none; border-color: var(--accent); }
-.settings-form button[type='submit'] {
-  margin-top: 4px;
-  padding: 9px 12px;
-  border-radius: 4px;
-  border: 1px solid var(--build-it-border);
-  background: var(--build-it-bg);
-  color: #fff;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.settings-form button[type='submit']:hover:not(:disabled) { background: var(--build-it-bg-hover); }
-.settings-form button[type='submit']:disabled { opacity: 0.6; cursor: default; }
-
 .settings-error { color: var(--danger-bright); font-size: 13px; margin: 0; }
-.settings-ok    { color: var(--accent);         font-size: 13px; margin: 0; }
+.settings-ok    { color: var(--accent);         font-size: 11px; margin: 0; }
 
 .ap-sections { display: flex; flex-direction: column; gap: 20px; padding: 4px 2px 2px; }
 .admin-section { display: flex; flex-direction: column; gap: 8px; }
@@ -924,35 +679,18 @@ function cancelImport() {
 }
 .admin-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .admin-btn:disabled { opacity: 0.5; cursor: default; }
-.admin-btn-red {
-  border-color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 35%, transparent);
-  color: var(--danger-bright);
-}
-.admin-btn-red:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger) 60%, transparent);
-  border-color: var(--danger-bright);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--danger-bright) 50%, transparent);
-}
+.admin-btn-red { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 35%, transparent); color: var(--danger-bright); }
+.admin-btn-red:hover:not(:disabled) { background: color-mix(in srgb, var(--danger) 60%, transparent); border-color: var(--danger-bright); box-shadow: 0 0 12px color-mix(in srgb, var(--danger-bright) 50%, transparent); }
 .admin-btn-link { background: none; border-color: transparent; padding: 2px 6px; font-size: 10px; color: var(--accent); }
-.admin-btn-link:hover:not(:disabled) { border-color: var(--accent); background: none; color: var(--accent); }
-.admin-badge {
-  display: inline-block;
-  background: var(--highlight);
-  color: #fff;
-  font-size: 9px;
-  border-radius: 100px;
-  padding: 1px 6px;
-  margin-left: 6px;
-  vertical-align: middle;
+.admin-btn-link:hover:not(:disabled) { border-color: var(--accent); background: none; }
+.admin-badge { display: inline-block; background: var(--highlight); color: #fff; font-size: 9px; border-radius: 100px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
+
+.legacy-section {
+  padding-top: 16px;
+  border-top: 1px dashed var(--panel-edge);
+  opacity: 0.7;
 }
-.admin-suggestions { display: flex; flex-direction: column; gap: 8px; }
-.admin-suggestion { border: 1px solid var(--panel-edge); border-radius: 5px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
-.admin-suggestion-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.admin-suggestion-title { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; color: var(--fg); }
-.admin-suggestion-meta  { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); white-space: nowrap; }
-.admin-suggestion-credit { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); }
-.admin-suggestion-dismiss { align-self: flex-start; margin-top: 4px; }
+.legacy-section:hover { opacity: 1; }
 
 .mig-card-list { display: flex; flex-direction: column; gap: 4px; }
 .mig-card-row { display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }

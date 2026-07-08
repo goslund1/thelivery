@@ -5,20 +5,22 @@ import { useModalStore } from '../stores/modal'
 import { useAuthStore } from '../stores/auth'
 import { api } from '../api'
 
-const ui   = useUiStore()
+const ui    = useUiStore()
 const modal = useModalStore()
 const auth  = useAuthStore()
 
-const currentPw  = ref('')
-const newPw      = ref('')
-const confirmPw  = ref('')
-const pwError    = ref('')
-const pwSuccess  = ref('')
-const pwBusy     = ref(false)
+function errMsg(e: unknown) { return e instanceof Error ? e.message : String(e) }
+
+// Change password
+const currentPw = ref('')
+const newPw     = ref('')
+const confirmPw = ref('')
+const pwError   = ref('')
+const pwSuccess = ref('')
+const pwBusy    = ref(false)
 
 async function submitChangePassword() {
-  pwError.value = ''
-  pwSuccess.value = ''
+  pwError.value = ''; pwSuccess.value = ''
   if (newPw.value !== confirmPw.value) { pwError.value = 'New passwords do not match.'; return }
   if (newPw.value.length < 8) { pwError.value = 'Password must be at least 8 characters.'; return }
   pwBusy.value = true
@@ -27,17 +29,41 @@ async function submitChangePassword() {
     pwSuccess.value = 'Password updated.'
     currentPw.value = ''; newPw.value = ''; confirmPw.value = ''
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    pwError.value = msg.includes('incorrect') ? 'Current password is incorrect.' : 'Failed to update password.'
-  } finally {
-    pwBusy.value = false
-  }
+    pwError.value = errMsg(e).includes('incorrect') ? 'Current password is incorrect.' : 'Failed to update password.'
+  } finally { pwBusy.value = false }
+}
+
+// Create user (admin only)
+const newUsername    = ref('')
+const newUserPw      = ref('')
+const newUserConfirm = ref('')
+const userError      = ref('')
+const userSuccess    = ref('')
+const userBusy       = ref(false)
+const showCreateUser = ref(false)
+
+async function submitCreateUser() {
+  userError.value = ''; userSuccess.value = ''
+  if (!newUsername.value.trim()) { userError.value = 'Username is required.'; return }
+  if (newUserPw.value !== newUserConfirm.value) { userError.value = 'Passwords do not match.'; return }
+  if (newUserPw.value.length < 8) { userError.value = 'Password must be at least 8 characters.'; return }
+  userBusy.value = true
+  try {
+    const res = await api.createUser(newUsername.value.trim(), newUserPw.value)
+    userSuccess.value = `User '${res.username}' created.`
+    newUsername.value = ''; newUserPw.value = ''; newUserConfirm.value = ''
+    showCreateUser.value = false
+  } catch (e) {
+    userError.value = errMsg(e).includes('already exists') ? 'That username is already taken.' : 'Failed to create user.'
+  } finally { userBusy.value = false }
 }
 
 function close() {
   modal.closeSettings()
   pwError.value = ''; pwSuccess.value = ''
   currentPw.value = ''; newPw.value = ''; confirmPw.value = ''
+  userError.value = ''; userSuccess.value = ''
+  showCreateUser.value = false
 }
 
 function logout() {
@@ -48,7 +74,7 @@ function logout() {
 
 function openAdmin() {
   modal.closeSettings()
-  modal.openAdminPanel()
+  setTimeout(() => modal.openAdminPanel(), 0)
 }
 </script>
 
@@ -60,6 +86,7 @@ function openAdmin() {
         <button class="image-picker-close" aria-label="Close" @click="close()">×</button>
       </div>
 
+      <!-- Change password -->
       <form class="settings-form" @submit.prevent="submitChangePassword">
         <input v-model="currentPw"  type="password" placeholder="Current password"     autocomplete="current-password" />
         <input v-model="newPw"      type="password" placeholder="New password"         autocomplete="new-password" />
@@ -68,6 +95,23 @@ function openAdmin() {
         <p v-if="pwSuccess" class="settings-ok">{{ pwSuccess }}</p>
         <button type="submit" :disabled="pwBusy">{{ pwBusy ? 'Saving…' : 'Update Password' }}</button>
       </form>
+
+      <!-- Create user (admin only) -->
+      <template v-if="auth.isAuthenticated">
+        <div class="create-user-section">
+          <button class="section-toggle" @click="showCreateUser = !showCreateUser">
+            Add User {{ showCreateUser ? '▲' : '▼' }}
+          </button>
+          <form v-if="showCreateUser" class="settings-form create-user-form" @submit.prevent="submitCreateUser">
+            <input v-model="newUsername"    type="text"     placeholder="Username"         autocomplete="off" />
+            <input v-model="newUserPw"      type="password" placeholder="Password"         autocomplete="new-password" />
+            <input v-model="newUserConfirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
+            <p v-if="userError"   class="settings-error">{{ userError }}</p>
+            <p v-if="userSuccess" class="settings-ok">{{ userSuccess }}</p>
+            <button type="submit" :disabled="userBusy">{{ userBusy ? 'Creating…' : 'Create User' }}</button>
+          </form>
+        </div>
+      </template>
 
       <div class="settings-footer">
         <button v-if="auth.isAuthenticated" class="admin-link-btn" @click="openAdmin">Admin Panel →</button>
@@ -119,6 +163,27 @@ function openAdmin() {
 
 .settings-error { color: var(--danger-bright); font-size: 13px; margin: 0; }
 .settings-ok    { color: var(--accent);         font-size: 13px; margin: 0; }
+
+.create-user-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-edge);
+}
+.create-user-form { margin-top: 10px; }
+
+.section-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.section-toggle:hover { color: var(--accent); }
 
 .settings-footer {
   margin-top: 20px;

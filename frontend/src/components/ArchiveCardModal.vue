@@ -32,7 +32,7 @@ function cancel() {
 .archive-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1100;
+  z-index: 1200;
   background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;

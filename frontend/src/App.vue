@@ -24,6 +24,7 @@ import SuggestionViewer from './components/SuggestionViewer.vue'
 import EditCardModal from './components/EditCardModal.vue'
 import ImageMigrationModal from './components/ImageMigrationModal.vue'
 import AdminPanel from './components/AdminPanel.vue'
+import ArchiveCardModal from './components/ArchiveCardModal.vue'
 
 const store = useCardsStore()
 const ui = useUiStore()
@@ -100,5 +101,6 @@ onBeforeUnmount(() => {
   <EditCardModal v-if="modal.promotedCard" :card="modal.promotedCard" @close="modal.closePromotedCard()" />
   <ImageMigrationModal />
   <AdminPanel />
+  <ArchiveCardModal />
   <CustomTip />
 </template>

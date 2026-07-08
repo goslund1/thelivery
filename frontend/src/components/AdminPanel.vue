@@ -187,6 +187,47 @@ async function restoreTrashSelected() {
   finally { trashBusy.value = false }
 }
 
+// ── Deleted cards ─────────────────────────────────────────────────────────────
+type DeletedCard = { id: string; name: string; deletedAt: string }
+const deletedCards     = ref<DeletedCard[]>([])
+const deletedCardsBusy = ref(false)
+const deletedCardsResult = ref<string | null>(null)
+
+async function loadDeletedCards() {
+  deletedCardsBusy.value = true
+  try {
+    const res = await api.adminListDeletedCards()
+    deletedCards.value = res.cards
+  } catch (_e) { /* non-fatal */ }
+  finally { deletedCardsBusy.value = false }
+}
+
+async function restoreCard(id: string) {
+  deletedCardsBusy.value = true
+  deletedCardsResult.value = null
+  adminError.value = null
+  try {
+    await api.adminRestoreCard(id)
+    deletedCardsResult.value = 'Card restored.'
+    await cards.load()
+    await loadDeletedCards()
+  } catch (e) { adminError.value = `Restore failed: ${errMsg(e)}` }
+  finally { deletedCardsBusy.value = false }
+}
+
+async function purgeCard(id: string, name: string) {
+  if (!confirm(`Permanently delete "${name}"? This cannot be undone.`)) return
+  deletedCardsBusy.value = true
+  deletedCardsResult.value = null
+  adminError.value = null
+  try {
+    await api.adminPurgeCard(id)
+    deletedCardsResult.value = `"${name}" permanently deleted.`
+    await loadDeletedCards()
+  } catch (e) { adminError.value = `Delete failed: ${errMsg(e)}` }
+  finally { deletedCardsBusy.value = false }
+}
+
 function onTabTools() {
   tab.value = 'tools'
   orphanScan.value = null
@@ -197,6 +238,7 @@ function onTabTools() {
   adminError.value = null
   loadAdminStats()
   loadTrash()
+  loadDeletedCards()
 }
 
 // ── Export: YAML + legacy card repair ────────────────────────────────────────
@@ -465,6 +507,30 @@ function cancelImport() { importPreview.value = null; importError.value = null; 
               </div>
             </template>
             <p v-if="trashResult" class="admin-ok">{{ trashResult }}</p>
+          </template>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-section-head">
+            Deleted Cards
+            <span v-if="deletedCards.length" class="admin-badge">{{ deletedCards.length }}</span>
+          </div>
+          <div v-if="deletedCardsBusy && !deletedCards.length" class="admin-muted">Loading…</div>
+          <template v-else>
+            <p v-if="!deletedCards.length" class="admin-muted">No archived cards.</p>
+            <div v-else class="deleted-card-list">
+              <div v-for="c in deletedCards" :key="c.id" class="deleted-card-row">
+                <div class="deleted-card-info">
+                  <span class="deleted-card-name">{{ c.name }}</span>
+                  <span class="deleted-card-date">{{ c.deletedAt.slice(0, 10) }}</span>
+                </div>
+                <div class="admin-row">
+                  <button class="admin-btn mig-btn-sm" :disabled="deletedCardsBusy" @click="restoreCard(c.id)">Restore</button>
+                  <button class="admin-btn admin-btn-red mig-btn-sm" :disabled="deletedCardsBusy" @click="purgeCard(c.id, c.name)">Delete</button>
+                </div>
+              </div>
+            </div>
+            <p v-if="deletedCardsResult" class="admin-ok">{{ deletedCardsResult }}</p>
           </template>
         </div>
 
@@ -743,4 +809,11 @@ function cancelImport() { importPreview.value = null; importError.value = null; 
 .trash-reason--user_delete { background: color-mix(in srgb, var(--highlight) 15%, transparent); color: var(--highlight); }
 .trash-reason--unknown     { background: color-mix(in srgb, var(--danger) 12%, transparent);    color: var(--danger-bright); }
 .trash-card-id { opacity: 0.6; font-size: 9px; }
+
+.deleted-card-list { display: flex; flex-direction: column; gap: 6px; }
+.deleted-card-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--panel-edge); }
+.deleted-card-row:last-child { border-bottom: none; }
+.deleted-card-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.deleted-card-name { font: 12px/1.3 'JetBrains Mono', monospace; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deleted-card-date { font: 10px/1 'JetBrains Mono', monospace; color: var(--muted); }
 </style>

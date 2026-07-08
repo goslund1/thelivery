@@ -108,6 +108,27 @@ export const useModalStore = defineStore('modal', () => {
   function openAdminPanel() { adminPanelOpen.value = true }
   function closeAdminPanel() { adminPanelOpen.value = false }
 
+  // ── Archive card confirm ─────────────────────────────────────────────────────
+  const archiveCardPending = ref(false)
+  const archiveCardName = ref('')
+  let _archiveResolve: ((confirmed: boolean) => void) | null = null
+
+  function promptArchiveCard(name: string): Promise<boolean> {
+    archiveCardName.value = name
+    archiveCardPending.value = true
+    return new Promise(resolve => { _archiveResolve = resolve })
+  }
+  function confirmArchiveCard() {
+    archiveCardPending.value = false
+    _archiveResolve?.(true)
+    _archiveResolve = null
+  }
+  function cancelArchiveCard() {
+    archiveCardPending.value = false
+    _archiveResolve?.(false)
+    _archiveResolve = null
+  }
+
   // Close whichever modal is frontmost. Returns true if anything was closed.
   // Priority order mirrors visual z-order: innermost/topmost first.
   function closeTopModal(): boolean {
@@ -139,6 +160,7 @@ export const useModalStore = defineStore('modal', () => {
     promotedCard, openPromotedCard, closePromotedCard,
     imageMigrationOpen, openImageMigration, closeImageMigration,
     adminPanelOpen, openAdminPanel, closeAdminPanel,
+    archiveCardPending, archiveCardName, promptArchiveCard, confirmArchiveCard, cancelArchiveCard,
     closeTopModal,
   }
 })

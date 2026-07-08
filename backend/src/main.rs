@@ -351,6 +351,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/liveries/:id/assess-color", post(admin_assess_livery_color))
         .route("/api/admin/images/migrate", post(admin_migrate_images))
         .route("/api/admin/repair-figure-paths", post(admin_repair_figure_paths))
+        .route("/api/admin/deleted-cards", get(admin_list_deleted_cards))
+        .route("/api/admin/deleted-cards/:id/restore", post(admin_restore_card))
+        .route("/api/admin/deleted-cards/:id", delete(admin_purge_card))
         .route("/api/cars", get(list_cars).post(create_car))
         .route("/api/tune-types", get(list_tune_types).post(create_tune_type))
         .route("/api/liveries", get(list_liveries).post(create_livery))
@@ -1220,7 +1223,7 @@ async fn admin_export_seed(
     _auth: AuthUser,
     State(st): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
-    let rows = sqlx::query("SELECT body FROM cards ORDER BY catalog_number")
+    let rows = sqlx::query("SELECT body FROM cards WHERE deleted_at IS NULL ORDER BY catalog_number")
         .fetch_all(&st.pool).await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     let cards: Vec<Value> = rows.iter()
@@ -1235,7 +1238,7 @@ async fn admin_export_seed(
 }
 
 async fn list_cards(State(st): State<AppState>) -> Result<Json<Vec<Value>>, ApiError> {
-    let rows = sqlx::query("SELECT body FROM cards ORDER BY catalog_number")
+    let rows = sqlx::query("SELECT body FROM cards WHERE deleted_at IS NULL ORDER BY catalog_number")
         .fetch_all(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
@@ -1387,7 +1390,57 @@ async fn delete_card(
     _auth: AuthUser,
     Path(id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
-    sqlx::query("DELETE FROM cards WHERE id = ?")
+    sqlx::query("UPDATE cards SET deleted_at = datetime('now') WHERE id = ?")
+        .bind(&id)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn admin_list_deleted_cards(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+) -> Result<Json<Value>, ApiError> {
+    let rows = sqlx::query(
+        "SELECT id, body, deleted_at FROM cards WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC"
+    )
+    .fetch_all(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    let entries: Vec<Value> = rows.iter().map(|r| {
+        let body: String = r.get("body");
+        let deleted_at: String = r.get("deleted_at");
+        let name = serde_json::from_str::<Value>(&body)
+            .ok()
+            .and_then(|v| v.get("name").and_then(|n| n.as_str()).map(|s| s.to_string()))
+            .unwrap_or_default();
+        json!({ "id": r.get::<String, _>("id"), "name": name, "deletedAt": deleted_at })
+    }).collect();
+
+    Ok(Json(json!({ "cards": entries })))
+}
+
+async fn admin_restore_card(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<Value>, ApiError> {
+    sqlx::query("UPDATE cards SET deleted_at = NULL WHERE id = ?")
+        .bind(&id)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(json!({ "ok": true })))
+}
+
+async fn admin_purge_card(
+    _auth: AuthUser,
+    State(st): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<StatusCode, ApiError> {
+    sqlx::query("DELETE FROM cards WHERE id = ? AND deleted_at IS NOT NULL")
         .bind(&id)
         .execute(&st.pool)
         .await

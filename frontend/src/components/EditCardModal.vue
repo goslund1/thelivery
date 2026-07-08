@@ -201,6 +201,8 @@ function onCancel() {
 }
 
 async function onDelete() {
+  const confirmed = await modal.promptArchiveCard(props.card.name)
+  if (!confirmed) return
   await store.deleteCard(props.card.id)
   emit('close')
 }

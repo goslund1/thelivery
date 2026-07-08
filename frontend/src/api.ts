@@ -133,6 +133,21 @@ export const api = {
       json<{ repaired: number; cleared: number }>
     ),
 
+  adminListDeletedCards: () =>
+    fetch('/api/admin/deleted-cards', { headers: authHeaders() }).then(
+      json<{ cards: Array<{ id: string; name: string; deletedAt: string }> }>
+    ),
+
+  adminRestoreCard: (id: string) =>
+    fetch(`/api/admin/deleted-cards/${id}/restore`, { method: 'POST', headers: authHeaders() }).then(
+      json<{ ok: boolean }>
+    ),
+
+  adminPurgeCard: (id: string) =>
+    fetch(`/api/admin/deleted-cards/${id}`, { method: 'DELETE', headers: authHeaders() }).then(
+      r => { if (!r.ok) throw new ApiError(r.status, `purge failed: ${r.status}`) }
+    ),
+
   adminExportSeed: () =>
     fetch('/api/admin/export-seed', { method: 'POST', headers: authHeaders() }).then(
       json<{ exported: number }>

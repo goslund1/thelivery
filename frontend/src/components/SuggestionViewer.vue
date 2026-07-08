@@ -6,12 +6,14 @@ import { useCardsStore } from '../stores/cards'
 import { useCarsStore } from '../stores/cars'
 import { useModalStore } from '../stores/modal'
 import TuningAdjustments from './TuningAdjustments.vue'
+import { useScrollLock } from '../composables/useScrollLock'
 
 const emit = defineEmits<{ close: [] }>()
 
 const cardsStore = useCardsStore()
 const carsStore  = useCarsStore()
 const modal      = useModalStore()
+const { lockScroll, unlockScroll } = useScrollLock()
 const promoBusy  = ref(false)
 const promoError = ref<string | null>(null)
 
@@ -166,7 +168,7 @@ function onOverlay(e: MouseEvent) {
 <template>
   <Teleport to="body">
     <div class="sv-backdrop" @click="onOverlay">
-      <div class="sv-modal">
+      <div class="sv-modal" @mouseenter="lockScroll" @mouseleave="unlockScroll">
 
         <!-- Header -->
         <div class="sv-header">

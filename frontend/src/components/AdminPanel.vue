@@ -6,6 +6,7 @@ import { api } from '../api'
 import type { Card, ForzaRecipeSection, AdjustmentRow } from '../types'
 import { cardToYaml, yamlToCard } from '../utils/cardYaml'
 import { useAssessFailures } from '../composables/useAssessFailures'
+import { useScrollLock } from '../composables/useScrollLock'
 
 const { failedAssess } = useAssessFailures()
 const modal = useModalStore()
@@ -18,8 +19,7 @@ function errMsg(e: unknown): string {
 type Tab = 'tools' | 'export'
 const tab = ref<Tab>('tools')
 
-function lockScroll()   { document.body.style.overflow = 'hidden' }
-function unlockScroll() { document.body.style.overflow = '' }
+const { lockScroll, unlockScroll } = useScrollLock()
 
 function close() {
   modal.closeAdminPanel()

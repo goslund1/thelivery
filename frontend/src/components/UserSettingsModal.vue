@@ -4,14 +4,14 @@ import { useUiStore } from '../stores/ui'
 import { useModalStore } from '../stores/modal'
 import { useAuthStore } from '../stores/auth'
 import { api } from '../api'
+import { useScrollLock } from '../composables/useScrollLock'
 
 const ui    = useUiStore()
 const modal = useModalStore()
 const auth  = useAuthStore()
+const { lockScroll, unlockScroll } = useScrollLock()
 
 function errMsg(e: unknown) { return e instanceof Error ? e.message : String(e) }
-function lockScroll()   { document.body.style.overflow = 'hidden' }
-function unlockScroll() { document.body.style.overflow = '' }
 
 // Change password
 const showChangePw = ref(false)

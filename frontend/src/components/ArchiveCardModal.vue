@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { useModalStore } from '../stores/modal'
+import { useScrollLock } from '../composables/useScrollLock'
 
 const modal = useModalStore()
-
-function lockScroll()   { document.body.style.overflow = 'hidden' }
-function unlockScroll() { document.body.style.overflow = '' }
+const { lockScroll, unlockScroll } = useScrollLock()
 
 function confirm() {
   modal.confirmArchiveCard()

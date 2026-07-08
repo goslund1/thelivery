@@ -70,6 +70,26 @@ const card = computed(() =>
   current.value ? cardsStore.byId(current.value.cardId) : null
 )
 
+function scrollToCard(cardId: string) {
+  const el = document.getElementById(`card-${cardId}`)
+  if (!el) return
+  const from = window.scrollY
+  const to   = el.getBoundingClientRect().top + window.scrollY
+  const dur  = 250
+  const t0   = performance.now()
+  function step(now: number) {
+    const p = Math.min((now - t0) / dur, 1)
+    const e = p < 0.5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2
+    window.scrollTo(0, from + (to - from) * e)
+    if (p < 1) requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
+}
+
+watch(current, (s) => {
+  if (s) scrollToCard(s.cardId)
+})
+
 const car = computed(() => {
   const c = card.value
   if (!c?.carId) return null

@@ -82,7 +82,7 @@ function openAdmin() {
 
 <template>
   <div v-if="modal.settingsOpen" class="image-picker open" @click.self="close()">
-    <div class="image-picker-panel settings-panel">
+    <div class="image-picker-panel settings-panel" @wheel.stop>
       <div class="image-picker-head">
         <span>Account — {{ auth.username }}</span>
         <button class="image-picker-close" aria-label="Close" @click="close()">×</button>

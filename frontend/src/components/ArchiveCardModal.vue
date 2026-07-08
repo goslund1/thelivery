@@ -14,7 +14,7 @@ function cancel() {
 
 <template>
   <div v-if="modal.archiveCardPending" class="archive-backdrop" @click.self="cancel">
-    <div class="archive-dialog">
+    <div class="archive-dialog" @wheel.stop>
       <div class="archive-title">Remove "{{ modal.archiveCardName }}" from gallery?</div>
       <p class="archive-body">
         This card will be hidden from the gallery but <strong>not permanently deleted</strong>.

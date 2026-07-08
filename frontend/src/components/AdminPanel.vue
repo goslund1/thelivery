@@ -402,7 +402,7 @@ function cancelImport() { importPreview.value = null; importError.value = null; 
 
 <template>
   <div v-if="modal.adminPanelOpen" class="image-picker open" @click.self="close()">
-    <div class="image-picker-panel admin-panel-modal">
+    <div class="image-picker-panel admin-panel-modal" @wheel.stop>
       <div class="image-picker-head">
         <span>Admin</span>
         <button class="image-picker-close" aria-label="Close" @click="close()">×</button>

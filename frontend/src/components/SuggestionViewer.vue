@@ -165,8 +165,8 @@ function onOverlay(e: MouseEvent) {
 
 <template>
   <Teleport to="body">
-    <!-- TODO: remove legacy class sv-backdrop when float_ system is complete — note: sv-backdrop is both backdrop and scroll container, so float_suggestions_panel sits here -->
-    <div class="sv-backdrop float_suggestions_panel" @click="onOverlay">
+    <!-- TODO: remove legacy class sv-backdrop when float_ system is complete -->
+    <div class="sv-backdrop float_suggestions_backdrop" @click="onOverlay" @wheel.self.prevent>
       <!-- TODO: remove legacy class sv-modal when float_ system is complete -->
       <div class="sv-modal">
 
@@ -204,44 +204,42 @@ function onOverlay(e: MouseEvent) {
           </select>
         </div>
 
-        <!-- Body -->
-        <div class="sv-body">
+        <!-- Fixed info bar: meta + actions stay visible while tuning widget scrolls -->
+        <div v-if="current" class="sv-infobar">
+          <div class="sv-meta">
+            <span class="sv-meta-title">{{ current.title }}</span>
+            <span v-if="current.credit" class="sv-meta-credit">by {{ current.credit }}</span>
+            <span class="sv-meta-date">{{ fmtDate(current.submittedAt) }}</span>
+          </div>
+          <div class="sv-actions">
+            <button
+              class="sv-btn sv-btn--like"
+              :class="{ active: current.status === 'liked' }"
+              :disabled="actionBusy || promoBusy"
+              @click="onLike"
+            >{{ current.status === 'liked' ? '★ Liked' : '☆ Like' }}</button>
+            <button
+              class="sv-btn sv-btn--promote"
+              :disabled="actionBusy || promoBusy"
+              @click="onPromote"
+            >{{ promoBusy ? '…' : 'Promote' }}</button>
+            <button
+              class="sv-btn sv-btn--dismiss"
+              :disabled="actionBusy || promoBusy"
+              @click="onDismiss"
+            >Dismiss</button>
+          </div>
+          <p v-if="promoError" class="sv-promo-error">{{ promoError }}</p>
+        </div>
+
+        <!-- Scrollable tuning area — float_suggestions_panel so scroll guard targets this -->
+        <div class="sv-body float_suggestions_panel">
           <div v-if="loading" class="sv-state">Loading…</div>
           <div v-else-if="error" class="sv-state sv-state--error">{{ error }}</div>
           <div v-else-if="!visible.length" class="sv-state sv-state--empty">
             No {{ activeTab }} suggestions.
           </div>
-
           <template v-else-if="current">
-            <!-- Suggestion meta -->
-            <div class="sv-meta">
-              <span class="sv-meta-title">{{ current.title }}</span>
-              <span v-if="current.credit" class="sv-meta-credit">by {{ current.credit }}</span>
-              <span class="sv-meta-date">{{ fmtDate(current.submittedAt) }}</span>
-            </div>
-
-            <!-- Actions -->
-            <div class="sv-actions">
-              <button
-                class="sv-btn sv-btn--like"
-                :class="{ active: current.status === 'liked' }"
-                :disabled="actionBusy || promoBusy"
-                @click="onLike"
-              >{{ current.status === 'liked' ? '★ Liked' : '☆ Like' }}</button>
-              <button
-                class="sv-btn sv-btn--promote"
-                :disabled="actionBusy || promoBusy"
-                @click="onPromote"
-              >{{ promoBusy ? '…' : 'Promote' }}</button>
-              <button
-                class="sv-btn sv-btn--dismiss"
-                :disabled="actionBusy || promoBusy"
-                @click="onDismiss"
-              >Dismiss</button>
-            </div>
-            <p v-if="promoError" class="sv-promo-error">{{ promoError }}</p>
-
-            <!-- Tuning widget — read-only, diffed against card's current values -->
             <TuningAdjustments
               v-if="current.adjustments.length"
               :adjustments="current.adjustments"
@@ -271,6 +269,8 @@ function onOverlay(e: MouseEvent) {
   align-items: flex-start;
   justify-content: center;
   padding: 24px 16px 40px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .sv-modal {
   background: var(--glass-bg);
@@ -282,6 +282,7 @@ function onOverlay(e: MouseEvent) {
   width: 100%;
   max-width: 860px;
   min-height: 300px;
+  max-height: calc(100vh - 64px);
   display: flex;
   flex-direction: column;
 }
@@ -389,9 +390,20 @@ function onOverlay(e: MouseEvent) {
   cursor: pointer;
 }
 
-/* Body */
+/* Fixed info bar — meta + actions, never scrolls */
+.sv-infobar {
+  padding: 12px 20px 10px;
+  border-bottom: 1px solid var(--panel-edge);
+  flex-shrink: 0;
+}
+.sv-infobar .sv-actions {
+  margin-bottom: 0;
+}
+
+/* Scrollable tuning area */
 .sv-body {
   flex: 1;
+  min-height: 0;
   padding: 16px 20px 24px;
   overflow-y: auto;
 }
@@ -405,7 +417,7 @@ function onOverlay(e: MouseEvent) {
 .sv-state--error { color: #e05c5c; }
 .sv-state--empty { }
 
-/* Meta + actions */
+/* Meta */
 .sv-meta {
   display: flex;
   align-items: baseline;

@@ -18,6 +18,9 @@ function findScrollable(from: Element, boundary: Element): Element | null {
     if (el === boundary) break
     el = el.parentElement
   }
+  // Also check the boundary itself — handles cases where the panel element
+  // is its own scroll container (e.g. sv-backdrop in SuggestionViewer).
+  if (boundary.scrollHeight > boundary.clientHeight) return boundary
   return null
 }
 
@@ -25,9 +28,19 @@ export function useScrollGuard() {
   function onWheel(e: WheelEvent) {
     const panel = findFloatPanel(e.target as Element)
     if (!panel) return
-    e.preventDefault()
+
     const scrollable = findScrollable(e.target as Element, panel)
-    if (scrollable) scrollable.scrollTop += e.deltaY
+    if (!scrollable) {
+      // Nothing to scroll inside the panel — block so it doesn't reach the body.
+      e.preventDefault()
+      return
+    }
+
+    // Scrollable element found: let native scroll handle it (preserves trackpad
+    // momentum/inertia). Only block at the edges so overscroll doesn't chain to body.
+    const atTop    = scrollable.scrollTop <= 0 && e.deltaY < 0
+    const atBottom = scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 1 && e.deltaY > 0
+    if (atTop || atBottom) e.preventDefault()
   }
 
   onMounted(() => document.addEventListener('wheel', onWheel, { passive: false }))

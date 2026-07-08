@@ -12,6 +12,7 @@ const auth  = useAuthStore()
 function errMsg(e: unknown) { return e instanceof Error ? e.message : String(e) }
 
 // Change password
+const showChangePw = ref(false)
 const currentPw = ref('')
 const newPw     = ref('')
 const confirmPw = ref('')
@@ -63,6 +64,7 @@ function close() {
   pwError.value = ''; pwSuccess.value = ''
   currentPw.value = ''; newPw.value = ''; confirmPw.value = ''
   userError.value = ''; userSuccess.value = ''
+  showChangePw.value = false
   showCreateUser.value = false
 }
 
@@ -87,14 +89,19 @@ function openAdmin() {
       </div>
 
       <!-- Change password -->
-      <form class="settings-form" @submit.prevent="submitChangePassword">
-        <input v-model="currentPw"  type="password" placeholder="Current password"     autocomplete="current-password" />
-        <input v-model="newPw"      type="password" placeholder="New password"         autocomplete="new-password" />
-        <input v-model="confirmPw"  type="password" placeholder="Confirm new password" autocomplete="new-password" />
-        <p v-if="pwError"   class="settings-error">{{ pwError }}</p>
-        <p v-if="pwSuccess" class="settings-ok">{{ pwSuccess }}</p>
-        <button type="submit" :disabled="pwBusy">{{ pwBusy ? 'Saving…' : 'Update Password' }}</button>
-      </form>
+      <div class="create-user-section" style="margin-top:0; padding-top:0; border-top:none;">
+        <button class="section-toggle" @click="showChangePw = !showChangePw">
+          Change Password {{ showChangePw ? '▲' : '▼' }}
+        </button>
+        <form v-if="showChangePw" class="settings-form create-user-form" @submit.prevent="submitChangePassword">
+          <input v-model="currentPw"  type="password" placeholder="Current password"     autocomplete="current-password" />
+          <input v-model="newPw"      type="password" placeholder="New password"         autocomplete="new-password" />
+          <input v-model="confirmPw"  type="password" placeholder="Confirm new password" autocomplete="new-password" />
+          <p v-if="pwError"   class="settings-error">{{ pwError }}</p>
+          <p v-if="pwSuccess" class="settings-ok">{{ pwSuccess }}</p>
+          <button type="submit" :disabled="pwBusy">{{ pwBusy ? 'Saving…' : 'Update Password' }}</button>
+        </form>
+      </div>
 
       <!-- Create user (admin only) -->
       <template v-if="auth.isAuthenticated">

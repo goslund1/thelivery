@@ -270,7 +270,6 @@ function onOverlay(e: MouseEvent) {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  overflow-y: auto;
   padding: 24px 16px 40px;
 }
 .sv-modal {

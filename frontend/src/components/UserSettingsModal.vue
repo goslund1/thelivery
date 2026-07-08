@@ -133,8 +133,6 @@ function openAdmin() {
 .settings-panel {
   max-width: 320px;
   max-height: 88vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .settings-form {

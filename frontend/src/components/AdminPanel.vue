@@ -690,8 +690,6 @@ function cancelImport() { importPreview.value = null; importError.value = null; 
   width: 480px;
   max-width: 96vw;
   max-height: 88vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .settings-tabs {

@@ -15,14 +15,14 @@ function cancel() {
 <template>
   <div v-if="modal.archiveCardPending" class="archive-backdrop" @click.self="cancel">
     <div class="archive-dialog">
-      <div class="archive-title">Archive "{{ modal.archiveCardName }}"?</div>
+      <div class="archive-title">Remove "{{ modal.archiveCardName }}" from gallery?</div>
       <p class="archive-body">
-        This card will be removed from the gallery. You can restore it any time from
-        <strong>Admin Panel → Tools → Deleted Cards</strong>.
+        This card will be hidden from the gallery but <strong>not permanently deleted</strong>.
+        You can restore it any time from <strong>Admin Panel → Tools → Deleted Cards</strong>.
       </p>
       <div class="archive-actions">
         <button class="archive-btn archive-btn--cancel" @click="cancel">Cancel</button>
-        <button class="archive-btn archive-btn--confirm" @click="confirm">Archive Card</button>
+        <button class="archive-btn archive-btn--confirm" @click="confirm">Remove from Gallery</button>
       </div>
     </div>
   </div>

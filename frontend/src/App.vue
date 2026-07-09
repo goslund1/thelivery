@@ -46,7 +46,13 @@ const visibleCards = computed(() =>
 
 function scrollToCardId(id: string) {
   const idx = visibleCards.value.findIndex(c => c.id === id)
-  if (idx >= 0) scrollerRef.value?.scrollToItem(idx)
+  if (idx < 0) return
+  scrollerRef.value?.scrollToItem(idx)
+  // Estimated position may be off for unmeasured cards — refine once rendered
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const el = document.getElementById(`card-${id}`)
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 20 })
+  }))
 }
 provide('scrollToCardId', scrollToCardId)
 
@@ -95,7 +101,8 @@ onBeforeUnmount(() => {
       v-else
       ref="scrollerRef"
       :items="visibleCards"
-      :min-item-size="400"
+      :min-item-size="1200"
+      :buffer="800"
       key-field="id"
       :page-mode="true"
     >

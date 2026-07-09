@@ -197,7 +197,7 @@ function onToggleAll() {
     </div>
 
     <!-- Theme flyout -->
-    <div class="bug-flyout theme-flyout" :class="{ open: open === 'theme' }" :style="flyoutStyle" v-scroll-contain>
+    <div class="bug-flyout theme-flyout drawer_theme_panel" :class="{ open: open === 'theme' }" :style="flyoutStyle">
       <button v-for="t in ui.THEMES" :key="t" class="theme-option" :class="{ active: ui.theme === t }" @click="pickTheme(t)">
         <span v-html="themeIcons[t]"></span> {{ themeLabels[t] }}
       </button>
@@ -210,14 +210,14 @@ function onToggleAll() {
     </div>
 
     <!-- Text-size flyout -->
-    <div class="bug-flyout text-size-flyout" :class="{ open: open === 'text' }" :style="flyoutStyle" v-scroll-contain>
+    <div class="bug-flyout text-size-flyout drawer_text_panel" :class="{ open: open === 'text' }" :style="flyoutStyle">
       <button v-for="d in deltas" :key="d" class="text-size-option" :class="{ active: ui.textDelta === d }" @click="pickDelta(d)">
         {{ deltaLabel(d) }}
       </button>
     </div>
 
     <!-- Menu flyout (filters) -->
-    <div class="bug-flyout" :class="{ open: open === 'menu' }" :style="flyoutStyle" v-scroll-contain>
+    <div class="bug-flyout drawer_menu_panel" :class="{ open: open === 'menu' }" :style="flyoutStyle">
       <slot name="menu" />
     </div>
   </div>

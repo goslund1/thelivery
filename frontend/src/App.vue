@@ -9,6 +9,7 @@ import { useThemeStore } from './stores/theme'
 import SideBug from './components/SideBug.vue'
 import Filters from './components/Filters.vue'
 import CardView from './components/CardView.vue'
+import CardShell from './components/CardShell.vue'
 import EditBar from './components/EditBar.vue'
 import Lightbox from './components/Lightbox.vue'
 import ChipPicker from './components/ChipPicker.vue'
@@ -77,12 +78,12 @@ onBeforeUnmount(() => {
     <p v-if="store.loading">Loading…</p>
     <p v-else-if="store.error">Failed to load: {{ store.error }}</p>
     <template v-else>
-      <CardView
-        v-for="c in store.cards"
-        :key="c.id"
-        :card="c"
-        v-show="c.isLegend ? ui.isEditing : filters.isCardVisible(c)"
-      />
+      <CardShell v-for="c in store.cards" :key="c.id">
+        <CardView
+          :card="c"
+          v-show="c.isLegend ? ui.isEditing : filters.isCardVisible(c)"
+        />
+      </CardShell>
     </template>
   </div>
 

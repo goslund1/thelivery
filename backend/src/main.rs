@@ -24,7 +24,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use argon2::password_hash::rand_core::{OsRng, RngCore};
 use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
@@ -53,11 +53,11 @@ struct AppState {
     seed_path: PathBuf,
     db_path: PathBuf,
     jwt_secret: Arc<Vec<u8>>,
-    rate_limits: Arc<tokio::sync::Mutex<HashMap<String, Vec<Instant>>>>,
 }
 
-const SUGGESTION_RATE_LIMIT: usize = 3;
-const SUGGESTION_RATE_WINDOW: Duration = Duration::from_secs(3600);
+const SUGGESTION_HOURLY_LIMIT: i64 = 15;   // hard cap per hour
+const SUGGESTION_BURST_WARN: i64 = 3;      // warn after this many in 5 min
+const SUGGESTION_BURST_BLOCK: i64 = 4;     // block after this many in 5 min
 const SUGGESTION_TITLE_MAX: usize = 60;
 
 // Patterns that indicate directed hostility or hate — not general profanity.
@@ -70,6 +70,24 @@ const BLOCKED_PATTERNS: &[&str] = &[
 fn is_title_blocked(title: &str) -> bool {
     let lower = title.to_lowercase();
     BLOCKED_PATTERNS.iter().any(|p| lower.contains(p))
+}
+
+// Anonymize an IP for storage: masks the host portion so individuals can't be
+// identified while still being useful for rate-limiting by subnet.
+// IPv4: last octet zeroed (e.g. 1.2.3.4 → 1.2.3.0)
+// IPv6: last 80 bits zeroed (keeps /48 prefix)
+fn anonymize_ip(ip: &str) -> String {
+    match ip.parse::<std::net::IpAddr>() {
+        Ok(std::net::IpAddr::V4(v4)) => {
+            let [a, b, c, _] = v4.octets();
+            format!("{a}.{b}.{c}.0")
+        }
+        Ok(std::net::IpAddr::V6(v6)) => {
+            let s = v6.segments();
+            format!("{:x}:{:x}:{:x}::", s[0], s[1], s[2])
+        }
+        Err(_) => "unknown".to_string(),
+    }
 }
 
 type ApiError = (StatusCode, String);
@@ -317,7 +335,6 @@ async fn main() -> anyhow::Result<()> {
         seed_path: PathBuf::from(&seed_path),
         db_path: PathBuf::from(&db_path),
         jwt_secret: load_jwt_secret(),
-        rate_limits: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
     };
 
     // Serve the built SPA: real files (index.html at "/", hashed assets) are
@@ -399,22 +416,32 @@ async fn submit_suggestion(
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
     Json(req): Json<SubmitSuggestionReq>,
 ) -> Result<Json<Value>, ApiError> {
-    let ip = addr.ip().to_string();
+    let ip_hash = anonymize_ip(&addr.ip().to_string());
 
-    // Rate limit: 3 per hour per IP.
-    // Sweep the whole map on each request so IPs that never return don't accumulate forever.
-    {
-        let mut limits = st.rate_limits.lock().await;
-        let now = Instant::now();
-        limits.retain(|_, entries| {
-            entries.retain(|t| now.duration_since(*t) < SUGGESTION_RATE_WINDOW);
-            !entries.is_empty()
-        });
-        let entries = limits.entry(ip.clone()).or_default();
-        if entries.len() >= SUGGESTION_RATE_LIMIT {
-            return Err(err(StatusCode::TOO_MANY_REQUESTS, "Too many suggestions — try again later"));
-        }
-        entries.push(now);
+    // DB-based rate limiting — persists across restarts.
+    // Two tiers: hourly hard cap, and a burst cap with a warning before blocking.
+    let count_hour: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM suggestion_rate_log WHERE ip_hash = ? AND submitted_at > datetime('now', '-1 hour')"
+    )
+    .bind(&ip_hash)
+    .fetch_one(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    if count_hour >= SUGGESTION_HOURLY_LIMIT {
+        return Err(err(StatusCode::TOO_MANY_REQUESTS, "Hourly suggestion limit reached — try again later"));
+    }
+
+    let count_burst: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM suggestion_rate_log WHERE ip_hash = ? AND submitted_at > datetime('now', '-5 minutes')"
+    )
+    .bind(&ip_hash)
+    .fetch_one(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    if count_burst >= SUGGESTION_BURST_BLOCK {
+        return Err(err(StatusCode::TOO_MANY_REQUESTS, "Slow down — too many suggestions in a short period"));
     }
 
     // Validate title
@@ -439,12 +466,20 @@ async fn submit_suggestion(
     .bind(&title)
     .bind(&credit)
     .bind(&adjustments)
-    .bind(&ip)
+    .bind(&ip_hash)
     .execute(&st.pool)
     .await
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
-    Ok(Json(json!({ "ok": true })))
+    sqlx::query("INSERT INTO suggestion_rate_log (ip_hash) VALUES (?)")
+        .bind(&ip_hash)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    // Warn if they've just hit the burst threshold (this submission was accepted).
+    let slowdown = count_burst + 1 >= SUGGESTION_BURST_WARN;
+    Ok(Json(json!({ "ok": true, "slowdown": slowdown })))
 }
 
 async fn admin_list_suggestions(

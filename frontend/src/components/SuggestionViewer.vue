@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, inject, onMounted, onUnmounted, watch } from 'vue'
 import type { AdjustmentRow } from '../types'
 import { api } from '../api'
 import { useCardsStore } from '../stores/cards'
@@ -8,6 +8,8 @@ import { useModalStore } from '../stores/modal'
 import TuningAdjustments from './TuningAdjustments.vue'
 
 const emit = defineEmits<{ close: [] }>()
+
+const scrollToCardId = inject<(id: string) => void>('scrollToCardId')
 
 const cardsStore = useCardsStore()
 const carsStore  = useCarsStore()
@@ -71,19 +73,7 @@ const card = computed(() =>
 )
 
 function scrollToCard(cardId: string) {
-  const el = document.getElementById(`card-${cardId}`)
-  if (!el) return
-  const from = window.scrollY
-  const to   = el.getBoundingClientRect().top + window.scrollY
-  const dur  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--scroll-dur')) || 250
-  const t0   = performance.now()
-  function step(now: number) {
-    const p = Math.min((now - t0) / dur, 1)
-    const e = p < 0.5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2
-    window.scrollTo(0, from + (to - from) * e)
-    if (p < 1) requestAnimationFrame(step)
-  }
-  requestAnimationFrame(step)
+  scrollToCardId?.(cardId)
 }
 
 watch(current, (s) => {

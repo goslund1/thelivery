@@ -54,7 +54,26 @@ Foundation built on Smokin (3-car test case: 599D, FD Corvette #777, Austin Heal
 
 ---
 
-### 2. Mobile layout
+### 2. Virtual scroll (do before catalog exceeds ~30 cards)
+
+60+ FH5 cards waiting to be added, plus ongoing FH6 production. At that scale, rendering every card in the DOM causes:
+- DOM bloat (50 full card trees with gallery, sliders, Teleported panels)
+- Memory pressure (50 IntersectionObservers, slideshow timers, Pinia watchers)
+- Slow initial paint
+
+**Solution: `vue-virtual-scroller`** — wraps the `v-for` in `App.vue`, renders only ~3–5 viewport-visible cards at a time, mounts/unmounts as you scroll.
+
+**Good news:** The existing slideshow already uses IntersectionObserver to pause off-screen — the mental model is the same. Virtualization makes it structural rather than managed.
+
+**Things to sort out when implementing:**
+- Card heights are variable (different image counts, section states) — use `DynamicScroller` not `RecycleScroller`
+- The `nearestVisibleCard()` utility in SideBug needs updating (DOM query won't find off-screen cards)
+- SuggestionViewer `scrollToCard()` needs updating (same reason)
+- Expand/collapse all in filters — cards not in DOM won't respond; need store-driven open state (already mostly there)
+
+---
+
+### 3. Mobile layout
 Narrow-screen pass for the full catalog. Known gaps:
 - Theme builder flyout — doesn't fit on small screens
 - General card layout on narrow viewports

@@ -233,6 +233,10 @@
     gap:32px;
   }
 
+  .card-gap {
+    padding-bottom: 32px;
+  }
+
   .card{
     background:var(--panel);
     border:1px solid var(--panel-edge);

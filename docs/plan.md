@@ -81,6 +81,7 @@ Narrow-screen pass for the full catalog. Known gaps:
 
 ### Pre-launch checklist
 - **Lock CORS to production domain** — currently `CorsLayer::permissive()` in `backend/src/main.rs`. Change to `CorsLayer::new().allow_origin("https://thelivery.silverleaf.services")` before public launch.
+- **Update README.md** — significantly out of date: still references `/api/liveries` (now `/api/cards`), `seed/liveries.json` (now `seed/cards.json`), "single-user, no auth" (JWT auth exists), and is missing most current endpoints. Rewrite the API table and data description to match reality before the repo goes public.
 
 ### Backfill pass (another round coming)
 - Card data was brought in line once. The next structural change is the Cars→Tunes hierarchy refactor (active item 2) which will reshape card body data again. Hold off on a full backfill pass until that data model stabilizes — otherwise it's two passes.

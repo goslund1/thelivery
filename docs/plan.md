@@ -12,7 +12,7 @@ CarTabs wizard and tab strip UI are built. The following gaps remain before the 
 
 - ~~**Figure image near recipe**~~ — done. Lead image for the active carId appears before the tune name (48px tall, hover shows 200px preview, click opens lightbox). Tune name falls back to `'YY Model` when empty in multi-car mode. Share code is click-to-copy in view mode.
 - **Discipline preset values** — the wizard walks through applying a preset per car, but the presets themselves have no actual base slider values yet. The names (Race / Rally / Drift / Street / etc.) exist; the values don't. These need to be filled in with Jason's established starting points before the wizard is useful.
-- **NewCardModal multi-car detection** — NewCardModal has a single `newCarId` ref, no variant detection. The same auto-propose pattern from RecipeSection's edit-mode banner needs to be wired into the import flow. When a second batch of images arrives with a mismatched carId, a passive button appears (non-interrupting). Resolution on click or on Save: Yes tabs → discipline picker per car → defaults seeded; No tabs → single tune or none.
+- ~~**NewCardModal multi-car detection**~~ — done. After a successful photo import, modal pauses and shows "Done / + Add another car" instead of auto-closing. Each additional round creates a new livery on the same card. RecipeSection's auto-propose banner handles tab setup once 2+ carIds are present in the photos.
 - **Shakedown pass** — fill in tune/spec data per variant on Smokin, confirm save/restore round-trip, view-mode tab strip experience for visitors, edge cases (remove variant, single-car cards unaffected, save/discard).
 
 ---

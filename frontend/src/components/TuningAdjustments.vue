@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { AdjustmentRow, UpgradeCategory } from '../types'
+import { getStackedRef } from './stackedState'
 import { useUiStore } from '../stores/ui'
 import { MarkDirtyKey } from '../keys'
 import { api } from '../api'
@@ -458,7 +459,11 @@ watch(activeTabs, tabs => {
   if (!tabs.some(t => t.id === activeTabId.value) && tabs.length) activeTabId.value = tabs[0].id
 }, { immediate: true })
 
-const stacked = ref(false)
+// Shared per-card ref from module singleton — see stackedState.ts.
+// All concurrent TuningAdjustments instances for the same cardId share the exact
+// same Ref<boolean>, so toggling stacked on any instance immediately updates the
+// others (fixes pool assigning two slots to the same card simultaneously).
+const stacked = props.cardId ? getStackedRef(props.cardId) : ref(false)
 const suppressStackHover = ref(false)
 const taRef = ref<HTMLElement | null>(null)
 const taNonstockRef = ref<HTMLElement | null>(null)
@@ -521,6 +526,10 @@ function switchToTabView(sectionId: string) {
     const rect = el.getBoundingClientRect()
     window.scrollTo({ top: Math.max(0, window.scrollY + rect.top - 8), behavior: 'smooth' })
   })
+}
+
+function toggleStacked() {
+  stacked.value = !stacked.value
 }
 
 function onTabClick(tabId: string) {
@@ -1171,7 +1180,7 @@ async function submitSuggestion() {
         {{ tab.label }}
         <span v-if="hasChangedInTab(tab.id)" class="ta-tab-dot"></span>
       </button>
-      <button class="ta-tab-btn ta-tab-btn--stack" :class="{ active: stacked, 'ta-suppress-hover': suppressStackHover }" @click="stacked = !stacked; suppressStackHover = true"
+      <button class="ta-tab-btn ta-tab-btn--stack" :class="{ active: stacked, 'ta-suppress-hover': suppressStackHover }" @click="toggleStacked(); suppressStackHover = true"
         @mouseleave="suppressStackHover = false">
         {{ stacked ? 'View As Tabs' : 'View Inline' }}
       </button>
@@ -1643,6 +1652,7 @@ async function submitSuggestion() {
   display: flex;
   gap: 4px;
   overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: 0;
   margin-bottom: 0;
   border-bottom: 4px solid var(--active-tab-color, var(--panel-edge));

@@ -10,6 +10,7 @@ watch(() => filters.sectionExpanded[props.sectionKey], (v) => (open.value = v), 
 
 function onToggle(e: Event) {
   open.value = (e.target as HTMLDetailsElement).open
+  nextTick(() => window.dispatchEvent(new Event('scroll')))
 }
 
 // Capture summary position before the native toggle, compensate after.

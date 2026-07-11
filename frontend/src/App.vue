@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, computed, ref, provide } from 'vue'
-import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
-import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { useScrollGuard } from './composables/useScrollGuard'
+import { useCardVisibility } from './composables/useCardVisibility'
 import { useCardsStore } from './stores/cards'
 import { useUiStore } from './stores/ui'
 import { useFilterStore } from './stores/filters'
@@ -38,21 +37,17 @@ const filters = useFilterStore()
 const modal = useModalStore()
 const theme = useThemeStore()
 
-const scrollerRef = ref<{ scrollToItem: (idx: number) => void } | null>(null)
-
 const visibleCards = computed(() =>
   store.cards.filter(c => c.isLegend ? ui.isEditing : filters.isCardVisible(c))
 )
 
+const { visible: cardVisible, setSentinel } = useCardVisibility(visibleCards)
+
 function scrollToCardId(id: string) {
-  const idx = visibleCards.value.findIndex(c => c.id === id)
-  if (idx < 0) return
-  scrollerRef.value?.scrollToItem(idx)
-  // Estimated position may be off for unmeasured cards — refine once rendered
-  requestAnimationFrame(() => requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
     const el = document.getElementById(`card-${id}`)
     if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 20 })
-  }))
+  })
 }
 provide('scrollToCardId', scrollToCardId)
 
@@ -97,29 +92,21 @@ onBeforeUnmount(() => {
   <div class="catalog">
     <p v-if="store.loading">Loading…</p>
     <p v-else-if="store.error">Failed to load: {{ store.error }}</p>
-    <DynamicScroller
-      v-else
-      ref="scrollerRef"
-      :items="visibleCards"
-      :min-item-size="1200"
-      :buffer="800"
-      key-field="id"
-      :page-mode="true"
-    >
-      <template #default="{ item, active }">
-        <DynamicScrollerItem
-          :item="item"
-          :active="active"
-          :size-dependencies="[item.sections, item.images]"
-        >
-          <div class="card-gap">
-            <CardShell :key="item.id">
-              <CardView :card="item" />
-            </CardShell>
-          </div>
-        </DynamicScrollerItem>
-      </template>
-    </DynamicScroller>
+    <template v-else>
+      <div
+        v-for="card in visibleCards"
+        :key="card.id"
+        :data-card-id="card.id"
+        :ref="el => setSentinel(card.id, el as HTMLElement | null)"
+        class="card-gap"
+      >
+        <KeepAlive>
+          <CardShell v-if="cardVisible[card.id]">
+            <CardView :card="card" />
+          </CardShell>
+        </KeepAlive>
+      </div>
+    </template>
   </div>
 
   <footer class="catalog-credits">

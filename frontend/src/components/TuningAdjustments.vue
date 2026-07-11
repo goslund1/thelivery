@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { AdjustmentRow, UpgradeCategory } from '../types'
-import { getStackedRef } from './stackedState'
 import { useUiStore } from '../stores/ui'
 import { MarkDirtyKey } from '../keys'
 import { api } from '../api'
@@ -459,11 +458,7 @@ watch(activeTabs, tabs => {
   if (!tabs.some(t => t.id === activeTabId.value) && tabs.length) activeTabId.value = tabs[0].id
 }, { immediate: true })
 
-// Shared per-card ref from module singleton — see stackedState.ts.
-// All concurrent TuningAdjustments instances for the same cardId share the exact
-// same Ref<boolean>, so toggling stacked on any instance immediately updates the
-// others (fixes pool assigning two slots to the same card simultaneously).
-const stacked = props.cardId ? getStackedRef(props.cardId) : ref(false)
+const stacked = ref(false)
 const suppressStackHover = ref(false)
 const taRef = ref<HTMLElement | null>(null)
 const taNonstockRef = ref<HTMLElement | null>(null)

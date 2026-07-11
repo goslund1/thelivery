@@ -12,7 +12,6 @@ import EditableText from './EditableText.vue'
 import UpgradesPicker from './UpgradesPicker.vue'
 import TuningAdjustments from './TuningAdjustments.vue'
 import CarPicker from './CarPicker.vue'
-import { getActiveVariantIndex } from './variantState'
 import rawUpgrades from '../data/fh_upgrades.json'
 import { impliedUpgrades, applyImpliedUpgrades, applySpringsChoice, type ImpliedUpgradesResult } from '../constants/tuning'
 import { formatShareCode } from '../utils/shareCode'
@@ -81,7 +80,7 @@ const isMultiTune = computed(() => hasVariants.value && !isMultiCar.value)
 // "+ Add tune" is available when all current variants share the same car (or no variants yet).
 const canAddTune = computed(() => !isMultiCar.value)
 
-const activeVariantIndex = getActiveVariantIndex(props.cardId ?? '')
+const activeVariantIndex = ref(0)
 
 function applyVariant(idx: number) {
   const v = local.variants?.[idx]

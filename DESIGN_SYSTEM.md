@@ -80,6 +80,21 @@ about where it lives and how it's saved.
 - **`normalize_bodies()` is idempotent on purpose** — it's the seam that
   migrates old-shape rows. New shape changes to the card body should extend
   this function rather than relying on a one-time manual fix.
+- **`overflow-x: auto` implies `overflow-y: auto`** — CSS spec: the two
+  overflow axes cannot have one `auto` and the other `visible`. Setting
+  `overflow-x: auto` on any element unexpectedly makes it a vertical scroll
+  container, causing trackpad bounce. Always pair with `overflow-y: hidden`
+  when horizontal-only scroll is intended.
+- **`pointer-events: none` also kills `:hover`** — using it to make a control
+  non-interactive also silently removes all hover feedback. Use `opacity` +
+  `cursor: default` when the element should still look interactive but
+  do nothing, or accept that hover is gone when you use `pointer-events: none`.
+- **Virtual scroll: components aren't destroyed when off-screen** —
+  `DynamicScroller` uses `visibility: hidden` and `transform: translateY()`,
+  not mount/unmount. Slots ARE recycled and can be assigned to a different
+  item or duplicated simultaneously. Any display-mode state (open/closed, active
+  tab, stacked/unstacked) must live in a module-level singleton (`Ref` keyed by
+  cardId), not in `<script setup>`. See `stackedState.ts` for the pattern.
 
 ## 6. Persistence precedent — check before adding a new mechanism
 

@@ -6,74 +6,69 @@ Living to-do file for thelivery. Update this when items are started, completed, 
 
 ## Active — ordered by priority
 
-### 1. Multi-car mashup shakedown
-Foundation built on Smokin (3-car test case: 599D, FD Corvette #777, Austin Healey Sprite).
+### 1. Finish CarTabs implementation (in progress)
+CarTabs wizard and tab strip UI are built. The following gaps remain before the mashup feature is shippable:
 
-**Shipped:**
-- Tab strip UI in `RecipeSection.vue` — renders when `variants.length >= 2`
-- Auto-propose banner in edit mode — detects distinct carIds across card images, offers one-click tab setup
-- Auto-propose builds all N variant tabs directly (sorted by photo count), current recipe data on the anchor tab
-- `+` button consolidation — single button, expands to Car/Tune choice when both are valid
-- Gallery `activeCarId` prop + image filtering wired (`Gallery.vue`, `CardView.vue`)
+- **Figure image near recipe** — each car tab should show a small figure image (lead image for that carId) near the tune section to anchor the tune visually. See `feedback_mashup_no_gallery_filter.md` — this is a figure image slot, not gallery filtering.
+- **Discipline preset values** — the wizard walks through applying a preset per car, but the presets themselves have no actual base slider values yet. The names (Race / Rally / Drift / Street / etc.) exist; the values don't. These need to be filled in with Jason's established starting points before the wizard is useful.
+- **NewCardModal multi-car detection** — NewCardModal has a single `newCarId` ref, no variant detection. The same auto-propose pattern from RecipeSection's edit-mode banner needs to be wired into the import flow. When a second batch of images arrives with a mismatched carId, a passive button appears (non-interrupting). Resolution on click or on Save: Yes tabs → discipline picker per car → defaults seeded; No tabs → single tune or none.
+- **Shakedown pass** — fill in tune/spec data per variant on Smokin, confirm save/restore round-trip, view-mode tab strip experience for visitors, edge cases (remove variant, single-car cards unaffected, save/discard).
 
-**Tab mode design (settled):**
-- **Cars mode** — auto-triggered when slideshow images span multiple distinct carIds. Tab order: lead image's car first, then by photo count descending. Each tab = that car's tune. Smokin is the canonical example (599D → Corvette → Austin Healey).
-- **Tunes mode** — single car, multiple named tune variants (Race, Rally, Drift, etc.). Triggered manually via the `+` → Tune choice.
-- Both modes share the same tab strip UI. Mode is implicit in the data shape: distinct carIds = cars mode, same/no carId with multiple variants = tunes mode.
-- Tab mode can also be manually forced via the `+` button regardless of auto-detection.
+---
 
-**Figure image near recipe (pending):**
-- In cars mode: each tab shows a small figure image of that car (lead image for that carId) near the tune section — anchors the tune visually.
-- In tunes mode: same car image across all tabs.
-- Recipe sections in general could benefit from a figure image slot regardless of tabs.
+### 2. Car → Tunes hierarchy (design revision — supersedes either/or mode)
+The original "cars mode vs tunes mode" design (implicit from data shape, flat `variants[]` array) is replaced with a proper two-level hierarchy:
 
-**Authoring gap / discipline presets (pending):**
-- Secondary cars in a mashup (e.g. Corvette, Austin Healey in Smokin) have no tune data yet and no authoring UI to add one from within the card.
-- Solution: discipline preset dropdown (Race / Rally / Drift / Street / etc.) on an empty variant tab that seeds base slider values from Jason's established starting points per discipline. Same concept as the existing upgrade presets but for adjustments. Then nudge sliders to the specific car's quirks and done.
-- "Add tune for this car" affordance in the empty tab opens the discipline dropdown first, then the full slider editor.
-- The upgrade presets system (`localStorage`, save/apply/delete) is the reference pattern to follow.
-- **The existing preset list needs actual base values populated** — currently the discipline names exist but default slider values are not filled in.
+```
+Card
+  └─ Car (0 to many, identified by carId)
+       └─ Tune (1 to many per car, named: Race / Rally / Drift / etc.)
+            └─ Slider tab group (Alignment, Gearing, Aero, etc.)
+```
 
-**New card creation UX flow for multi-car detection (pending):**
-- When a second batch of images is submitted with a carId that doesn't match the lead car, a passive button appears in NewCardModal signalling unresolved multi-car content. Non-interrupting — user keeps adding cars until done.
-- Resolution is triggered either by clicking the button voluntarily, or by Save redirecting there if unresolved variants exist.
-- At resolution, two paths:
-  - **Yes tabs** — discipline dropdown per variant (from established profiles) seeds base slider values → tabs get defaults → finish creation
-  - **No tabs** — single tune for the lead car or no tune at all → proceed as normal
-- This mirrors the auto-propose banner already in RecipeSection (edit mode) but lives in the new card creation flow (NewCardModal) and is passive rather than inline.
+**Why this is better:** Every car can have multiple tunes. A single-car card with one tune is just the degenerate case (1 car, 1 tune). A Smokin-style mashup is 3 cars × N tunes each. The either/or framing was an artificial constraint.
+
+**Data model change required:**
+- Current: flat `variants[]` array on the recipe, mode inferred from whether carIds are distinct
+- New: `cars[]` where each car entry has its own `tunes[]` array. Each tune carries a name + the full recipe payload (upgrades, adjustments, specs, share code). The existing slider tab groups (Alignment, Gearing, etc.) sit inside each tune — unchanged structurally, just nested one level deeper.
+
+**TuneTabs — new module, parallel to CarTabs:**
+- CarTabs is the UI for navigating between cars on a card. TuneTabs is the UI for navigating between tunes within a single car.
+- Both use the same folder-tab visual pattern. TuneTabs is a new but similar module — same tab strip component, scoped to a car context rather than the card.
+- CarTabs wizard (already built) handles the car-level setup. A TuneTabs authoring flow handles adding/naming tune variants per car — triggered from within a car tab, not at the card level.
+- A single-car card with one tune renders no tab strips at all (current default behavior, unchanged).
+
+**Implementation order:**
+1. Finish item 1 (current CarTabs shakedown) first — validate the car-level layer before adding tune nesting
+2. Design the `cars[]` data shape and migration path from the current `variants[]` flat array
+3. Build TuneTabs UI and authoring flow as a parallel module to CarTabs
+
+**Backend migration note:**
+The `variants[]` array lives in the card's JSON body, so no new SQL migration is needed. However, `normalize_bodies()` in `backend/src/main.rs` will need a new step to reshape existing `variants[]` flat arrays into the `cars[]` nested structure. Smokin is currently the only card with variants, so the migration surface is small — but it must go through `normalize_bodies()` (idempotent, runs on startup) rather than a one-time manual DB patch. See CLAUDE.md → "Seeding" for the normalize_bodies pattern.
 
 **Deferred — community tune scrape + compare:**
-- Scraping Forza tune share codes to compare community tuning approaches vs. in-house builds would be interesting analytical tooling.
-- Park until app is live and primary content is established. Not a data quality tool, more a research/learning one.
-
-**Still needs shakedown:**
-- Verify gallery filters correctly when switching tabs (end-to-end on Smokin)
-- Fill in tune/spec data per variant and confirm save/restore round-trip
-- View-mode tab strip experience for visitors (not just edit mode)
-- Edge cases: removing a variant, single-car cards unaffected, save/discard behavior
+- Park until app is live and primary content is established.
 
 ---
 
-### 2. Virtual scroll (do before catalog exceeds ~30 cards)
+### 3. AI low-balance alert — discuss and plan
+Before the catalog scales up and image imports become frequent, we need a proactive warning when Anthropic credit is running low — not just a toast when it's already gone.
 
-60+ FH5 cards waiting to be added, plus ongoing FH6 production. At that scale, rendering every card in the DOM causes:
-- DOM bloat (50 full card trees with gallery, sliders, Teleported panels)
-- Memory pressure (50 IntersectionObservers, slideshow timers, Pinia watchers)
-- Slow initial paint
+**Questions to answer before building:**
+- Does the Anthropic API expose a balance or usage endpoint queryable with an API key? If yes, the backend can poll it on a schedule and fire an alert at a threshold. If no, the only trigger is catching a 429/quota error in the assess endpoint.
+- What's the notification target? Options: email (needs SMTP or a mail API), push (needs a webhook service like Pushover or ntfy), or both via a `NOTIFY_WEBHOOK` env var the backend POSTs to.
+- What threshold triggers the alert — a fixed dollar amount, a percentage of last top-up, or just "first time we hit a 429"?
 
-**Solution: `vue-virtual-scroller`** — wraps the `v-for` in `App.vue`, renders only ~3–5 viewport-visible cards at a time, mounts/unmounts as you scroll.
+**Rough shape once answers are settled:**
+- `NOTIFY_WEBHOOK` env var in the systemd unit
+- Backend fires a POST on quota error AND (if balance API exists) on a scheduled low-balance check
+- No frontend changes needed
 
-**Good news:** The existing slideshow already uses IntersectionObserver to pause off-screen — the mental model is the same. Virtualization makes it structural rather than managed.
-
-**Things to sort out when implementing:**
-- Card heights are variable (different image counts, section states) — use `DynamicScroller` not `RecycleScroller`
-- The `nearestVisibleCard()` utility in SideBug needs updating (DOM query won't find off-screen cards)
-- SuggestionViewer `scrollToCard()` needs updating (same reason)
-- Expand/collapse all in filters — cards not in DOM won't respond; need store-driven open state (already mostly there)
+See Maintenance → AI billing notification for context.
 
 ---
 
-### 3. Mobile layout
+### 4. Mobile layout
 Narrow-screen pass for the full catalog. Known gaps:
 - Theme builder flyout — doesn't fit on small screens
 - General card layout on narrow viewports
@@ -87,16 +82,22 @@ Narrow-screen pass for the full catalog. Known gaps:
 - **Lock CORS to production domain** — currently `CorsLayer::permissive()` in `backend/src/main.rs`. Change to `CorsLayer::new().allow_origin("https://thelivery.silverleaf.services")` before public launch.
 
 ### Backfill pass (another round coming)
-- Card data was brought in line once. Expect another round after card accent, tuning gate, and other structural changes land.
+- Card data was brought in line once. The next structural change is the Cars→Tunes hierarchy refactor (active item 2) which will reshape card body data again. Hold off on a full backfill pass until that data model stabilizes — otherwise it's two passes.
 - Done in-app via EditCardModal; revisit when the dust settles.
 
+### AI billing notification (planned, lower priority)
+- See active item 3 for the discussion and planning work needed before this gets built.
+- When `assess-color` hits a 429 or quota error, the toast already surfaces it in-app. What's missing is a *proactive* low-balance alert before hitting zero.
+- Implementation shape is roughly settled (NOTIFY_WEBHOOK env var, POST on quota error + optional scheduled balance check) but key questions remain — see active item 3.
+
 ### Deferred
-- **`car_colors`** — factory color options per car. Requires scraping Forza wikis. No ETA.
+- **`car_colors`** — factory *stock* color options per car model (e.g. "this Corvette comes in Arctic White, Rapid Blue..."). Requires scraping Forza wikis. Not to be confused with `primary_color`/`secondary_color` on the `liveries` table, which is the AI livery color assessment already wired into the import flow. No ETA on car_colors.
 
 ---
 
 ## Recently completed
 
+- Virtual scroll (`vue-virtual-scroller` / `DynamicScroller`) — shipped, but cost two full sessions of bug hunting (sessions 16-17). Two failure modes discovered: slot recycling resets `<script setup>` state when a slot is reassigned to a different item, and the pool can assign the same item to two slots simultaneously (one visible, one hidden), causing state desync when visibility swaps. Solution: all per-card display state must live in a module-level singleton (`Ref` keyed by cardId), not inside `<script setup>`. See `stackedState.ts` for the pattern; full explanation in `CLAUDE.md` → "Virtual scroll" section — 2026-07-09/10
 - Settings/Admin UI reorganization: Account panel (change password + Add User gated behind toggles, Admin Panel → button, Sign Out); separate Admin panel with Tools tab (image tools, stats, orphans, trash, seed) + Export Card tab (YAML download/import, legacy repair at bottom); Tune Suggestions stays in Filters flyout only — 2026-07-07
 - figurePath patching in migration flow: ImageMigrationModal snapshots old paths and patches TextSection.figurePath after migrate; Repair Figure Paths endpoint matches by sequence number before falling back to lead image — 2026-07-07
 - Trash compactor: orphans scan moves to trash instead of hard-delete; user-deleted images move to trash on card save; GET/DELETE /api/admin/trash + POST /api/admin/trash/restore; trash_log table (migration 0012); reason badges, select/restore/delete — 2026-07-06

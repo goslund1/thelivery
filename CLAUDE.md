@@ -152,8 +152,70 @@ Legacy class names (e.g. `image-picker`, `ch-backdrop`) are kept alongside the n
 ### Custom tooltips (`composables/tooltip.ts` + `CustomTip.vue`)
 - One shared tooltip element + a global `v-tip` directive. It drawer-slides open (width 0 → content width), snaps shut before reopening for a new target, and closes on scroll — all via imperative DOM + `requestAnimationFrame`, ported from the original. `v-tip` takes a string or a `() => string` (evaluated on each hover for live state like favorited/theme/expand).
 
+### Virtual scroll (`vue-virtual-scroller`)
+
+The catalog uses `DynamicScroller` (page-mode) from `vue-virtual-scroller` v2. Key behaviors to understand:
+
+**Items stay mounted, never unmounted.** The scroller uses `position: absolute; transform: translateY()` to position items and `visibility: hidden; pointer-events: none` to hide off-screen ones. Components are NOT destroyed when they scroll out of view.
+
+**BUT slots ARE recycled.** When the pool recalculates (e.g., a card height changes dramatically), vue-virtual-scroller may reassign a slot to a different item. In `App.vue`, `<CardShell :key="item.id">` detects this reassignment and forces Vue to destroy and recreate the full component tree. Any `ref()` inside `TuningAdjustments` or other deep children is re-initialized to its default value.
+
+**The pool can also assign the same item to two slots simultaneously.** When height estimates are significantly off (common with tall cards — multi-variant, lots of images), the pool may miscalculate and render two live instances of the same card at once. One is visible, one is `visibility:hidden`. If the card's height then changes (e.g., View Inline expands it), the pool recalculates and may **swap which slot is "active"** — the previously-hidden instance (with default/stale state) becomes visible. This looks like a "fast open/close" toggle.
+
+**`<script setup>` is per-instance — never use it for shared state.** Everything inside `<script setup>` runs inside `setup()` per component mount. A `const _store = {}` declared there is recreated fresh for every instance. It is NOT module-level, even if it looks like it. This trips up the "shared store" pattern badly — two concurrent instances each have their own private copy.
+
+**Pattern for state that must survive recycling AND stay in sync across concurrent instances** — put shared state in a dedicated `.ts` module (like `suggestState.ts` or `stackedState.ts`) so it is a true module singleton. Use a shared `Ref<boolean>` per `cardId` so Vue's reactivity propagates changes to all live instances immediately:
+
+```ts
+// stackedState.ts (module singleton — initialized once, shared across all imports)
+import { ref } from 'vue'
+import type { Ref } from 'vue'
+
+const _stackedRefs: Record<string, Ref<boolean>> = {}
+
+export function getStackedRef(cardId: string): Ref<boolean> {
+  if (!_stackedRefs[cardId]) _stackedRefs[cardId] = ref(false)
+  return _stackedRefs[cardId]
+}
+```
+
+```ts
+// In <script setup> of the component:
+import { getStackedRef } from './stackedState'
+const stacked = props.cardId ? getStackedRef(props.cardId) : ref(false)
+```
+
+All instances for the same `cardId` literally share the same `Ref<boolean>` object. When one instance sets `stacked.value = true`, all others — including any hidden duplicate — reflect that value immediately via Vue's reactivity. Whichever slot the pool surfaces is already in the correct state. `TuningAdjustments` uses this pattern via `stackedState.ts`.
+
+**Apply this pattern proactively** for any display-mode state (open/closed, active tab, stacked/unstacked) in components rendered inside the virtual scroll. The taller the card, the higher the risk of duplicate slots. Multi-variant cards (Smokin's 3 car tabs) are the most likely to hit this.
+
+**`scrollToCardId()`** — provided from `App.vue` and injected wherever needed. Calls `scrollerRef.scrollToItem(idx)` for a first-pass jump, then a double-rAF to find the real element via `getElementById` and correct the position.
+
+**`size-dependencies`** — `DynamicScrollerItem` accepts `:size-dependencies` to re-measure when card data changes. Currently set to `[item.sections, item.images]`. If card height can change for other reasons, add the relevant prop here.
+
+### CSS overflow-x: auto implies overflow-y: auto
+
+Setting `overflow-x: auto` on an element implicitly promotes `overflow-y` from `visible` to `auto` (CSS spec: the two overflow axes cannot have one `auto` and the other `visible`). This makes the element a vertical scroll container unexpectedly, causing bounce/swipe behavior on trackpads. Always pair with an explicit `overflow-y: hidden` when horizontal-only scroll is intended.
+
 ### vue-tsc gotcha
 String template refs (`ref="x"`) aren't counted as "used" by `vue-tsc`'s unused-locals check. When a composable needs an element ref, create it in the component and **pass it into the composable** (so it's read in script) — see `Gallery.vue` passing `stageRef`/`barRef`/`toggleRef` into `useSlideshow`.
+
+### Imports must be at the top of `<script setup>`
+An import placed after `defineProps`/`defineEmits` silently breaks Vite HMR for that file — code changes on disk have no visible effect even after a hard refresh, because the server is handing out a stale transform. The fix: move the import to the top, then restart the dev server (`npm run dev`).
+
+### `e.preventDefault()` on `mousedown` blocks focus
+Calling `e.preventDefault()` on a `mousedown` event blocks the element from receiving keyboard focus — not just the default interaction you intended to suppress. Whenever you use this pattern (suppressing a range input's jump-to-position, blocking a drag-start, etc.), manually call `.focus({ preventScroll: true })` on the element that should own keyboard events next. See `onSliderMouseDown` in `TuningAdjustments.vue` for the reference implementation.
+
+### `focusedKey` ≠ DOM focus (TuningAdjustments)
+In `TuningAdjustments.vue`, `focusedKey` is a reactive ref that drives the visual highlight ring. It has nothing to do with `document.activeElement`. Setting `focusedKey` without also ensuring a DOM element inside that row has focus produces a highlighted row that ignores all keyboard events — arrow keys fall through to the browser's scroll behavior.
+
+### Props are a separate reactive graph from the Pinia store
+When a parent passes a deep-cloned reactive object as props (e.g. `RecipeSection` receiving a `local` recipe copy), **never bypass those props to read the same data from a store**. The clone and the store diverge immediately on first edit — the store still holds the pre-edit value. Read from props; flush to store explicitly. This is why `TuningAdjustments` reads `upgrades` and `coreSpecs` from props, not from `cards.byId()`.
+
+### Multi-column layout decision framework
+- **CSS grid** — when items in different columns share a common baseline or you want aligned rows across columns.
+- **CSS `columns`** — when each column should be independently tall. Use `break-inside: avoid` to keep blocks intact; `break-before: column` to force a new column at a specific block. Works only when all blocks are similar in height — `column-fill: balance` will still break a block that exceeds the target column height.
+- **Explicit column divs + JS height balancing** — when blocks vary wildly in height (one may be 3× taller than another) or you need a guaranteed no-break. Assign blocks to the shortest column with a greedy algorithm; each column is an independent `flex-direction: column` container. See `tweakColumns` computed in `TuningAdjustments.vue` and `.up-picker` in `UpgradesPicker.vue` for both patterns.
 
 ## Images
 

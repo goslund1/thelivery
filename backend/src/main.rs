@@ -850,7 +850,7 @@ async fn upsert(pool: &SqlitePool, body: &Value) -> Result<(), sqlx::Error> {
     let body_str = body.to_string();
     sqlx::query(
         "INSERT INTO cards (id, catalog_number, body) VALUES (?, ?, ?)
-         ON CONFLICT(id) DO UPDATE SET catalog_number = excluded.catalog_number, body = excluded.body",
+         ON CONFLICT(id) DO UPDATE SET catalog_number = excluded.catalog_number, body = excluded.body, deleted_at = NULL",
     )
     .bind(&id)
     .bind(catalog_number)
@@ -1186,7 +1186,14 @@ async fn admin_scan_orphans(
         })
         .collect();
 
-    Ok(Json(json!({ "count": orphan_paths.len(), "paths": orphan_paths })))
+    let db_orphan_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM images WHERE card_id NOT IN (SELECT id FROM cards WHERE deleted_at IS NULL)"
+    )
+    .fetch_one(&st.pool)
+    .await
+    .unwrap_or(0);
+
+    Ok(Json(json!({ "count": orphan_paths.len(), "paths": orphan_paths, "dbOrphanCount": db_orphan_count })))
 }
 
 async fn admin_delete_orphans(
@@ -1225,7 +1232,16 @@ async fn admin_delete_orphans(
         }
     }
 
-    Ok(Json(json!({ "moved": moved })))
+    // Also delete image rows whose card_id references a non-existent (and non-trashed) card.
+    let db_orphans_deleted = sqlx::query(
+        "DELETE FROM images WHERE card_id NOT IN (SELECT id FROM cards WHERE deleted_at IS NULL)"
+    )
+    .execute(&st.pool)
+    .await
+    .map(|r| r.rows_affected())
+    .unwrap_or(0);
+
+    Ok(Json(json!({ "moved": moved, "dbOrphansDeleted": db_orphans_deleted })))
 }
 
 async fn admin_reload_seed(

@@ -2,6 +2,13 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Card } from '../types'
 
+export interface PoolImage {
+  id?: number
+  path: string
+  thumbPath?: string
+  stagePath?: string
+}
+
 export const useModalStore = defineStore('modal', () => {
   // ── Lightbox ────────────────────────────────────────────────────────────────
   const lightboxSrc = ref<string | null>(null)
@@ -43,11 +50,28 @@ export const useModalStore = defineStore('modal', () => {
   function closeChipPicker() { chipPicker.value = null }
 
   // ── Image picker / gallery manager ──────────────────────────────────────────
-  const imagePicker = ref<{ cardId: string; sectionKey?: string } | null>(null)
+  const imagePicker = ref<{
+    cardId: string | null
+    sectionKey?: string
+    onPick?: (path: string, img?: PoolImage) => void
+    // Getter for the pending pool in new-card creation mode. Using a function avoids
+    // Vue's nested-ref auto-unwrapping, while still letting the gallery computed track
+    // the underlying reactive ref when the getter is called inside the computed.
+    getPool?: () => PoolImage[]
+  } | null>(null)
   function openImagePicker(cardId: string, sectionKey: string) {
     imagePicker.value = { cardId, sectionKey }
   }
   function openGalleryManager(cardId: string) { imagePicker.value = { cardId } }
+  // Figure-picker for new-card creation: getPool returns the modal's pendingPool contents,
+  // onPick is called with the chosen path. For edit-mode figure picks, omit getPool.
+  function openFigurePicker(
+    cardId: string | null,
+    getPool: (() => PoolImage[]) | null,
+    onPick: (path: string, img?: PoolImage) => void,
+  ) {
+    imagePicker.value = { cardId, sectionKey: 'figure', onPick, getPool: getPool ?? undefined }
+  }
   function closeImagePicker() { imagePicker.value = null }
 
   // ── Login modal ─────────────────────────────────────────────────────────────
@@ -74,7 +98,8 @@ export const useModalStore = defineStore('modal', () => {
 
   // ── New card modal ──────────────────────────────────────────────────────────
   const newCardOpen = ref(false)
-  function openNewCard() { newCardOpen.value = true }
+  const newCardOpenCount = ref(0)
+  function openNewCard() { newCardOpen.value = true; newCardOpenCount.value++ }
   function closeNewCard() { newCardOpen.value = false }
 
   // ── Factoid panel ───────────────────────────────────────────────────────────
@@ -150,10 +175,10 @@ export const useModalStore = defineStore('modal', () => {
     lightboxSrc, lightboxOriginalSrc, lightboxImages, lightboxIndex,
     openLightbox, closeLightbox, navigateLightbox,
     chipPicker, openChipPicker, closeChipPicker,
-    imagePicker, openImagePicker, openGalleryManager, closeImagePicker,
+    imagePicker, openImagePicker, openGalleryManager, openFigurePicker, closeImagePicker,
     loginOpen, openLogin, closeLogin, onLoginSuccess,
     settingsOpen, openSettings, closeSettings,
-    newCardOpen, openNewCard, closeNewCard,
+    newCardOpen, newCardOpenCount, openNewCard, closeNewCard,
     factoidPanelOpen, openFactoidPanel, closeFactoidPanel,
     historyCardId, openHistory, closeHistory,
     suggestionViewerOpen, pendingSuggestionCount, openSuggestionViewer, closeSuggestionViewer,

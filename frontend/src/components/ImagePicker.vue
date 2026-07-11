@@ -11,34 +11,72 @@ const modal = useModalStore()
 const store = useCardsStore()
 
 const ctx = computed(() => modal.imagePicker)
-const card = computed(() => (ctx.value ? store.byId(ctx.value.cardId) : undefined))
-const gallery = computed(() => [...(card.value?.images ?? [])].sort((a, b) => a.order - b.order))
+const card = computed(() => (ctx.value?.cardId ? store.byId(ctx.value.cardId) : undefined))
+const gallery = computed(() => {
+  const c = ctx.value
+  // New-card creation: use the pending pool getter. Calling getPool() inside the computed
+  // tracks the underlying pendingPool ref, so gallery recomputes when images are pushed.
+  if (c?.getPool) {
+    const pool = c.getPool()
+    return pool.map((img, i) => ({
+      id: img.id ?? -(i + 1),
+      path: img.path,
+      thumbPath: img.thumbPath,
+      stagePath: img.stagePath,
+      order: i,
+      included: false,
+      carId: undefined as string | undefined,
+    }))
+  }
+  return [...(card.value?.images ?? [])].sort((a, b) => a.order - b.order)
+})
 const isManage = computed(() => !!ctx.value && !ctx.value.sectionKey)
 
 // ── Pick mode ────────────────────────────────────────────────────────────────
+const pickUploading = ref(false)
+
 function pick(path: string) {
   const c = ctx.value
   if (!c?.sectionKey) return
-  store.setFigure(c.cardId, c.sectionKey, path)
-  ui.markCardDirty(c.cardId)
+  if (c.onPick) {
+    c.onPick(path)
+  } else {
+    store.setFigure(c.cardId!, c.sectionKey, path)
+    ui.markCardDirty(c.cardId!)
+  }
   modal.closeImagePicker()
 }
 
 async function onPickUpload(e: Event) {
   const c = ctx.value
   const file = (e.target as HTMLInputElement).files?.[0]
+  ;(e.target as HTMLInputElement).value = ''
   if (!c?.sectionKey || !file) return
   const cv = card.value
-  const result = await api.uploadImage(file, {
-    name: cv?.name ?? '',
-    subtitle: cv?.subtitle ?? '',
-    collections: cv?.collections ?? [],
-    id: c.cardId,
-  })
-  store.setFigure(c.cardId, c.sectionKey, result.path)
-  store.addImageToPool(c.cardId, result.path, result.thumbPath, result.stagePath, false, result.id)
-  ui.markCardDirty(c.cardId)
-  modal.closeImagePicker()
+  pickUploading.value = true
+  try {
+    const result = await api.uploadImage(file, {
+      name: cv?.name ?? '',
+      subtitle: cv?.subtitle ?? '',
+      collections: cv?.collections ?? [],
+      id: c.cardId ?? undefined,
+    }, undefined, undefined, 'refimg')
+    if (c.onPick) {
+      // Pass the full image data as second arg so pool-mode callers can push to pendingPool.
+      c.onPick(result.path, { id: result.id, path: result.path, thumbPath: result.thumbPath, stagePath: result.stagePath })
+      if (!c.getPool && c.cardId) {
+        store.addImageToPool(c.cardId, result.path, result.thumbPath, result.stagePath, false, result.id)
+        ui.markCardDirty(c.cardId)
+      }
+    } else {
+      store.setFigure(c.cardId!, c.sectionKey, result.path)
+      store.addImageToPool(c.cardId!, result.path, result.thumbPath, result.stagePath, false, result.id)
+      ui.markCardDirty(c.cardId!)
+    }
+    modal.closeImagePicker()
+  } finally {
+    pickUploading.value = false
+  }
 }
 
 // ── Manage mode — selection ───────────────────────────────────────────────────
@@ -95,21 +133,21 @@ const pendingBatchDelete = ref(false)
 
 function doSetLead(imageId: number) {
   const c = ctx.value
-  if (!c) return
+  if (!c?.cardId) return
   store.setLeadImage(c.cardId, imageId)
   ui.markCardDirty(c.cardId)
 }
 
 function doToggleIncluded(imageId: number) {
   const c = ctx.value
-  if (!c) return
+  if (!c?.cardId) return
   store.toggleImageIncluded(c.cardId, imageId)
   ui.markCardDirty(c.cardId)
 }
 
 function doRemove(imageId: number) {
   const c = ctx.value
-  if (!c) return
+  if (!c?.cardId) return
   store.removeImage(c.cardId, imageId)
   ui.markCardDirty(c.cardId)
   pendingDeleteId.value = null
@@ -125,7 +163,7 @@ function clearSelection() {
 
 function deleteSelected() {
   const c = ctx.value
-  if (!c || selectedIds.value.size === 0) return
+  if (!c?.cardId || selectedIds.value.size === 0) return
   for (const id of selectedIds.value) store.removeImage(c.cardId, id)
   ui.markCardDirty(c.cardId)
   selectedIds.value = new Set()
@@ -144,21 +182,21 @@ function nextDetail() { if (detailIdx.value != null && detailIdx.value < gallery
 
 function onDetailAlt(imageId: number, alt: string) {
   const c = ctx.value
-  if (c) { store.setImageMeta(c.cardId, imageId, { alt }); ui.markCardDirty(c.cardId) }
+  if (c?.cardId) { store.setImageMeta(c.cardId, imageId, { alt }); ui.markCardDirty(c.cardId) }
 }
 function onDetailCarId(imageId: number, carId: string | null) {
   const c = ctx.value
-  if (c) { store.setImageMeta(c.cardId, imageId, { carId }); ui.markCardDirty(c.cardId) }
+  if (c?.cardId) { store.setImageMeta(c.cardId, imageId, { carId }); ui.markCardDirty(c.cardId) }
 }
 
 function onDetailLiveryId(imageId: number, liveryId: number | null) {
   const c = ctx.value
-  if (c) { store.setImageMeta(c.cardId, imageId, { liveryId }); ui.markCardDirty(c.cardId) }
+  if (c?.cardId) { store.setImageMeta(c.cardId, imageId, { liveryId }); ui.markCardDirty(c.cardId) }
 }
 
 function onTriggerMultiCar(carId: string) {
   const c = ctx.value
-  if (c) ui.triggerMultiCar(c.cardId, carId)
+  if (c?.cardId) ui.triggerMultiCar(c.cardId, carId)
 }
 
 // carIds of all other gallery images excluding the current detail image.
@@ -184,7 +222,7 @@ const orderChanged = computed(() => {
 function undoReorder() {
   const c = ctx.value
   const snap = orderSnapshot.value
-  if (!c || !snap) return
+  if (!c?.cardId || !snap) return
   store.restoreImageOrders(c.cardId, snap)
   ui.markCardDirty(c.cardId)
 }
@@ -200,7 +238,7 @@ function onMgrDragOver(i: number) {
 
 function onMgrDrop(i: number) {
   const c = ctx.value
-  if (c && dragFromIdx.value >= 0 && dragFromIdx.value !== i) {
+  if (c?.cardId && dragFromIdx.value >= 0 && dragFromIdx.value !== i) {
     store.reorderImages(c.cardId, dragFromIdx.value, i)
     ui.markCardDirty(c.cardId)
   }
@@ -222,7 +260,7 @@ const SUPPORTED = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 async function onManageUpload(e: Event) {
   const c = ctx.value
   const cv = card.value
-  if (!c || !cv) return
+  if (!c?.cardId || !cv) return
   const all = Array.from((e.target as HTMLInputElement).files ?? [])
   if (manageUploadRef.value) manageUploadRef.value.value = ''
   const files = all.filter(f => SUPPORTED.has(f.type) || (!f.name.match(/\.(heic|heif|avif)$/i) && f.type.startsWith('image/')))
@@ -251,15 +289,16 @@ async function onManageUpload(e: Event) {
       <!-- ── Pick mode ─────────────────────────────────────────────────────── -->
       <template v-if="!isManage">
         <div class="image-picker-head">
-          <span>Choose a feature image</span>
+          <span>{{ ctx?.onPick ? 'Choose a figure image' : 'Choose a feature image' }}</span>
           <button class="image-picker-close" aria-label="Close" @click="modal.closeImagePicker()">×</button>
         </div>
         <div class="image-picker-grid">
-          <img v-for="img in gallery" :key="img.id" :src="img.path" @click="pick(img.path)" />
+          <img v-for="img in gallery" :key="img.id" :src="img.thumbPath ?? img.path" @click="pick(img.path)" />
+          <div v-if="!gallery.length" class="image-picker-empty">No images in pool yet</div>
         </div>
-        <label class="image-picker-upload">
-          Or upload a new image…
-          <input type="file" accept="image/*" @change="onPickUpload" />
+        <label class="image-picker-upload" :class="{ 'ip-uploading': pickUploading }">
+          {{ pickUploading ? 'Uploading…' : 'Or upload a new image…' }}
+          <input type="file" accept="image/*" :disabled="pickUploading" @change="onPickUpload" />
         </label>
       </template>
 
@@ -369,7 +408,7 @@ async function onManageUpload(e: Event) {
     v-if="detailImage"
     :image="detailImage"
     :card-car-id="card?.carId"
-    :card-id="ctx?.cardId"
+    :card-id="ctx?.cardId ?? undefined"
     :other-tagged-car-ids="otherTaggedCarIds"
     :position="detailIdx! + 1"
     :total="gallery.length"

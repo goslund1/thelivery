@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, nextTick, watch, onUnmounted } from 'vue'
 import { useCardsStore } from '../stores/cards'
-import { useModalStore } from '../stores/modal'
+import { useModalStore, type PoolImage } from '../stores/modal'
 import { useLiveriesStore } from '../stores/liveries'
 import { api } from '../api'
 import type { ForzaRecipeSection } from '../types'
@@ -27,57 +27,64 @@ const notesBody = ref('')
 // Section figure images — uploaded immediately, paths stored here
 const inspirationFigurePath = ref<string | null>(null)
 const notesFigurePath = ref<string | null>(null)
-const figureSaving = ref(false)
-const figureError = ref('')
 
-// Inline folder-name prompt (shown when card name is empty and user tries to upload a figure)
-const folderPromptOpen = ref(false)
-const folderPromptValue = ref('')
-let folderPromptResolve: ((v: string | null) => void) | null = null
+async function openFigurePicker(section: 'insp' | 'notes') {
+  // Ensure a card exists in the DB so uploads have a card_id for proper association.
+  let cardId = importedCard.value?.id ?? null
+  if (!cardId) {
+    saving.value = true
+    error.value = ''
+    try {
+      const card = await store.createNewCard({
+        name: name.value.trim() || 'New Card',
+        subtitle: subtitle.value.trim(),
+        collections: selectedCollections.value,
+        tags: selectedTags.value,
+        inspirationBody: inspirationBody.value.trim(),
+        notesBody: notesBody.value.trim(),
+        tuneName: recipe.value.tuneName.trim(),
+        shareCode: recipe.value.shareCode.trim(),
+        coreSpecs: { ...recipe.value.coreSpecs },
+        upgrades: JSON.parse(JSON.stringify(recipe.value.upgrades)),
+        adjustments: JSON.parse(JSON.stringify(recipe.value.adjustments)),
+        carId: newCarId.value ?? undefined,
+      })
+      await store.save(card.id)
+      importedCard.value = { id: card.id, name: card.name, subtitle: card.subtitle, collections: card.collections }
+      cardId = card.id
+    } catch (e) {
+      error.value = (e as Error).message
+      return
+    } finally {
+      saving.value = false
+    }
+  }
 
-async function promptFolderName(): Promise<string | null> {
-  return new Promise(resolve => {
-    folderPromptValue.value = ''
-    folderPromptOpen.value = true
-    folderPromptResolve = resolve
-  })
-}
-function confirmFolderName() {
-  const v = folderPromptValue.value.trim()
-  folderPromptOpen.value = false
-  folderPromptResolve?.(v || null)
-  folderPromptResolve = null
-}
-function cancelFolderName() {
-  folderPromptOpen.value = false
-  folderPromptResolve?.(null)
-  folderPromptResolve = null
-}
+  // Auto-upload any staged files that haven't been uploaded yet so they appear in the pool.
+  // This is how staged-but-not-yet-imported photos become available to figure pickers.
+  const toUpload = staged.value.filter(s => !s.poolResult)
+  if (toUpload.length > 0) {
+    saving.value = true
+    const cardCtx = importedCard.value!
+    await Promise.all(toUpload.map(async s => {
+      try {
+        const result = await api.uploadImage(s.file, {
+          name: cardCtx.name, subtitle: store.byId(cardCtx.id)?.subtitle ?? '',
+          collections: cardCtx.collections, id: cardCtx.id,
+        }, undefined, undefined, 'refimg')
+        s.poolResult = { id: result.id!, path: result.path, thumbPath: result.thumbPath, stagePath: result.stagePath }
+        pendingPool.value.push({ id: result.id, path: result.path, thumbPath: result.thumbPath, stagePath: result.stagePath })
+        store.addImageToPool(cardCtx.id, result.path, result.thumbPath, result.stagePath, false, result.id)
+      } catch {}
+    }))
+    saving.value = false
+  }
 
-async function onFigureFilePick(section: 'insp' | 'notes', e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  ;(e.target as HTMLInputElement).value = ''
-  if (!file) return
-
-  const cardName = name.value.trim()
-  const uploadCtxName = cardName || await promptFolderName()
-  if (!uploadCtxName) return
-
-  figureSaving.value = true
-  figureError.value = ''
-  try {
-    const { path } = await api.uploadImage(file, {
-      name: uploadCtxName,
-      subtitle: subtitle.value.trim(),
-      collections: selectedCollections.value,
-    })
+  modal.openFigurePicker(cardId, () => pendingPool.value, (path, img) => {
     if (section === 'insp') inspirationFigurePath.value = path
     else notesFigurePath.value = path
-  } catch (err) {
-    figureError.value = (err as Error).message
-  } finally {
-    figureSaving.value = false
-  }
+    if (img) pendingPool.value.push(img)
+  })
 }
 
 // Recipe — ref so reassignment on modal-open triggers RecipeSection's props watcher for a clean reset
@@ -101,6 +108,9 @@ const imageRole = ref<'gallery' | 'refimg'>('gallery')
 
 // Set after first successful import; subsequent rounds add to this card instead of creating a new one.
 const importedCard = ref<{ id: string; name: string; subtitle: string; collections: string[] } | null>(null)
+// Accumulates every upload (figure picks + batch) for the current new-card session.
+// Passed to figure pickers so they show the full pool regardless of upload order.
+const pendingPool = ref<PoolImage[]>([])
 const showAddAnotherCar = ref(false)
 
 // Livery name for batch import (required when photos are staged, default must be changed)
@@ -121,7 +131,8 @@ let importFadeTimer: ReturnType<typeof setTimeout> | null = null
 const sectionOpen = reactive({ insp: true, notes: true, recipe: true })
 
 // Upload staging (gallery images)
-interface Staged { file: File; url: string }
+// poolResult is set after the file has been auto-uploaded for pool access
+interface Staged { file: File; url: string; poolResult?: { id: number; path: string; thumbPath?: string; stagePath?: string } }
 const staged = ref<Staged[]>([])
 const activeStaged = ref(0)
 const isDragOver = ref(false)
@@ -152,9 +163,13 @@ const canCreateTag = computed(() => {
   return !existingTags.value.some(t => t.toLowerCase() === q.toLowerCase())
 })
 
-watch(() => modal.newCardOpen, async (open) => {
+watch(() => modal.newCardOpen, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
-  if (!open) return
+})
+
+// Fires every time the modal is explicitly opened, even if it was already open.
+watch(() => modal.newCardOpenCount, async () => {
+  if (!modal.newCardOpen) return
   name.value = ''
   subtitle.value = ''
   selectedCollections.value = []
@@ -165,8 +180,6 @@ watch(() => modal.newCardOpen, async (open) => {
   notesBody.value = ''
   inspirationFigurePath.value = null
   notesFigurePath.value = null
-  figureSaving.value = false
-  figureError.value = ''
   recipe.value = blankRecipe()
   recipeResetToken.value++
   newCarId.value = null
@@ -178,6 +191,7 @@ watch(() => modal.newCardOpen, async (open) => {
   assessColors.value = null
   importFading.value = false
   importedCard.value = null
+  pendingPool.value = []
   showAddAnotherCar.value = false
   if (importFadeTimer) { clearTimeout(importFadeTimer); importFadeTimer = null }
   staged.value.forEach(s => URL.revokeObjectURL(s.url))
@@ -278,15 +292,37 @@ async function onDone() {
 
 // Create
 async function onCreate() {
-  if (!name.value.trim()) { error.value = 'Name is required.'; return }
+  if (!name.value.trim() && !importedCard.value) { error.value = 'Name is required.'; return }
   if (staged.value.length > 0 && !newCarId.value && imageRole.value !== 'refimg') { error.value = 'Select a car or +IMG before importing photos.'; return }
   if (staged.value.length > 0 && !liveryNameValid.value) { error.value = 'Enter a unique livery name (not the default).'; return }
   saving.value = true
   error.value = ''
   try {
     let cardCtx: { id: string; name: string; subtitle: string; collections: string[] }
-
     if (importedCard.value) {
+      // Card was pre-created by the figure picker — update it with the final form data.
+      const existing = store.byId(importedCard.value.id)
+      if (existing) {
+        existing.name = name.value.trim() || existing.name
+        existing.subtitle = subtitle.value.trim()
+        existing.collections = selectedCollections.value
+        existing.tags = selectedTags.value
+        const insp = existing.sections.find(s => s.key === 'inspiration')
+        if (insp && insp.type === 'text') { insp.body = inspirationBody.value.trim(); insp.figurePath = inspirationFigurePath.value ?? undefined }
+        const notes = existing.sections.find(s => s.key === 'notes')
+        if (notes && notes.type === 'text') { notes.body = notesBody.value.trim(); notes.figurePath = notesFigurePath.value ?? undefined }
+        const rec = existing.sections.find(s => s.type === 'forza_recipe')
+        if (rec && rec.type === 'forza_recipe') {
+          rec.tuneName = recipe.value.tuneName.trim()
+          rec.shareCode = recipe.value.shareCode.trim()
+          rec.coreSpecs = { ...recipe.value.coreSpecs }
+          rec.upgrades = JSON.parse(JSON.stringify(recipe.value.upgrades))
+          rec.adjustments = JSON.parse(JSON.stringify(recipe.value.adjustments))
+        }
+        existing.carId = newCarId.value ?? undefined
+        await store.save(existing.id)
+        importedCard.value = { id: existing.id, name: existing.name, subtitle: existing.subtitle, collections: existing.collections }
+      }
       cardCtx = importedCard.value
     } else {
       const card = await store.createNewCard({
@@ -324,21 +360,29 @@ async function onCreate() {
 
     // For gallery imports: create a livery to attach to every upload.
     // For refimg imports: no livery needed.
+    // Skip livery creation if all staged files were already auto-uploaded for the pool.
     const isRefImg = imageRole.value === 'refimg'
+    const hasNewUploads = staged.value.some(s => !s.poolResult)
     let liveryId: number | undefined
-    if (!isRefImg) {
-      const livery = await liveriesStore.create({ carId: newCarId.value!, name: liveryName.value.trim() })
+    if (!isRefImg && hasNewUploads && newCarId.value && liveryNameValid.value) {
+      const livery = await liveriesStore.create({ carId: newCarId.value, name: liveryName.value.trim() })
       liveryId = livery.id
     }
 
     // Switch to import log view.
     importing.value = true
-    importLog.value = staged.value.map(s => ({ label: s.file.name, progress: 0, status: 'uploading' as const }))
-    assessStatus.value = isRefImg ? 'idle' : 'pending'
+    importLog.value = staged.value.map(s => ({ label: s.file.name, progress: s.poolResult ? 100 : 0, status: s.poolResult ? 'done' as const : 'uploading' as const }))
+    assessStatus.value = liveryId ? 'pending' : 'idle'
 
     let firstDone = false
-    const uploads = staged.value.map((s, i) =>
-      api.uploadImageWithProgress(
+    const uploads = staged.value.map((s, i) => {
+      // Already uploaded for pool — mark done immediately, skip re-upload.
+      if (s.poolResult) {
+        importLog.value[i].progress = 100
+        importLog.value[i].status = 'done'
+        return Promise.resolve()
+      }
+      return api.uploadImageWithProgress(
         s.file,
         { name: cardCtx.name, subtitle: cardCtx.subtitle, collections: cardCtx.collections, id: cardCtx.id },
         { fileIndex: i, carId: newCarId.value ?? undefined, liveryId, imageRole: imageRole.value },
@@ -346,9 +390,8 @@ async function onCreate() {
       ).then(result => {
         importLog.value[i].progress = 100
         importLog.value[i].status = 'done'
-        // RefImg images default to excluded from slideshow.
+        pendingPool.value.push({ id: result.id, path: result.path, thumbPath: result.thumbPath, stagePath: result.stagePath })
         store.addImageToPool(cardCtx.id, result.path, result.thumbPath, result.stagePath, !isRefImg, result.id)
-        // Trigger color assess once, after first successful gallery upload with a livery attached.
         if (!firstDone && liveryId) {
           firstDone = true
           api.assessLiveryColor(liveryId)
@@ -356,7 +399,7 @@ async function onCreate() {
             .catch(() => { assessStatus.value = 'error' })
         }
       }).catch(() => { importLog.value[i].status = 'error' })
-    )
+    })
 
     await Promise.all(uploads)
     await store.save(cardCtx.id)
@@ -386,7 +429,15 @@ async function onCreate() {
 
 function onLiveryFocus() { if (liveryName.value === 'Livery Name') liveryName.value = '' }
 function onLiveryBlur() { if (!liveryName.value.trim()) liveryName.value = 'Livery Name' }
-function onCancel() { modal.closeNewCard() }
+async function onCancel() {
+  pendingPool.value = []
+  if (importedCard.value) {
+    const id = importedCard.value.id
+    importedCard.value = null
+    await store.deleteCard(id).catch(() => {})
+  }
+  modal.closeNewCard()
+}
 function onOverlay(e: MouseEvent) { if (e.target === e.currentTarget) onCancel() }
 onUnmounted(() => { document.body.style.overflow = '' })
 </script>
@@ -550,10 +601,10 @@ onUnmounted(() => { document.body.style.overflow = '' })
               @click="modal.openLightbox(inspirationFigurePath!)"
             />
             <span v-else class="gutter-figure-empty">Select image</span>
-            <label class="change-image-btn" :class="{ 'nc-figure-saving': figureSaving }">
+            <button class="change-image-btn" type="button" @click="openFigurePicker('insp')">
               {{ inspirationFigurePath ? 'Change Image' : 'Select Image' }}
-              <input type="file" style="display:none" accept="image/*" :disabled="figureSaving" @change="onFigureFilePick('insp', $event)" />
-            </label>
+            </button>
+
           </div>
           <textarea
             class="nc-textarea anecdote-text"
@@ -575,10 +626,9 @@ onUnmounted(() => { document.body.style.overflow = '' })
               @click="modal.openLightbox(notesFigurePath!)"
             />
             <span v-else class="gutter-figure-empty">Select image</span>
-            <label class="change-image-btn" :class="{ 'nc-figure-saving': figureSaving }">
+            <button class="change-image-btn" type="button" @click="openFigurePicker('notes')">
               {{ notesFigurePath ? 'Change Image' : 'Select Image' }}
-              <input type="file" style="display:none" accept="image/*" :disabled="figureSaving" @change="onFigureFilePick('notes', $event)" />
-            </label>
+            </button>
           </div>
           <textarea
             class="nc-textarea gutter-text"
@@ -639,7 +689,6 @@ onUnmounted(() => { document.body.style.overflow = '' })
           </div>
         </template>
         <template v-else>
-          <p v-if="figureError" class="nc-error">{{ figureError }}</p>
           <p v-if="error" class="nc-error">{{ error }}</p>
           <div class="nc-actions">
             <button class="nc-btn-cancel" type="button" @click="onCancel">Cancel</button>
@@ -650,24 +699,6 @@ onUnmounted(() => { document.body.style.overflow = '' })
         </template>
       </div>
 
-      <!-- Inline folder-name prompt (shown when no card name is set at figure upload time) -->
-      <div v-if="folderPromptOpen" class="nc-folder-prompt" @click.self="cancelFolderName">
-        <div class="nc-folder-prompt-inner">
-          <p class="nc-folder-prompt-label">Enter a folder name for this image</p>
-          <p class="nc-folder-prompt-sub">Or enter the Livery Name above first and it'll be used automatically.</p>
-          <input
-            class="nc-folder-prompt-input"
-            v-model="folderPromptValue"
-            placeholder="e.g. Dragon Livery"
-            @keydown.enter="confirmFolderName"
-            @keydown.escape="cancelFolderName"
-          />
-          <div class="nc-folder-prompt-btns">
-            <button class="nc-btn-cancel" type="button" @click="cancelFolderName">Cancel</button>
-            <button class="nc-btn-create" type="button" @click="confirmFolderName">Use This Name →</button>
-          </div>
-        </div>
-      </div>
 
     </div>
   </div>

@@ -5,6 +5,7 @@ import { api } from '../api'
 import { useUiStore } from '../stores/ui'
 import { useFilterStore } from '../stores/filters'
 import { useCardsStore } from '../stores/cards'
+import { useModalStore } from '../stores/modal'
 import { useCarsStore } from '../stores/cars'
 import { useTunesStore } from '../stores/tunes'
 import { MarkDirtyKey } from '../keys'
@@ -20,6 +21,7 @@ const props = defineProps<{
   recipe: ForzaRecipeSection
   cardId?: string
   carId?: string | null
+  images?: import('../types').CardImage[]
   initialKitOpen?: boolean
   resetToken?: number
 }>()
@@ -29,6 +31,7 @@ const emit = defineEmits<{
   'update:activeCarId': [carId: string | null]
 }>()
 const ui = useUiStore()
+const modal = useModalStore()
 const filters = useFilterStore()
 const carsStore = useCarsStore()
 const tunesStore = useTunesStore()
@@ -39,6 +42,25 @@ const effectiveCarId = computed(() =>
   hasVariants.value ? (local.variants?.[activeVariantIndex.value]?.carId ?? null) : (props.carId ?? null)
 )
 const linkedCar = computed(() => effectiveCarId.value ? carsStore.byId(effectiveCarId.value) : undefined)
+
+const variantFigureImage = computed(() => {
+  if (!isMultiCar.value || !effectiveCarId.value || !props.images?.length) return null
+  return props.images
+    .filter(img => img.carId === effectiveCarId.value)
+    .sort((a, b) => a.order - b.order)[0] ?? null
+})
+const variantFigurePath = computed(() => {
+  const img = variantFigureImage.value
+  return img ? (img.thumbPath ?? img.path) : null
+})
+
+const tuneDisplayName = computed(() => {
+  if (local.tuneName) return local.tuneName
+  if (!isMultiCar.value || !linkedCar.value) return ''
+  const car = linkedCar.value
+  const yr = car.year ? `'${String(car.year).slice(-2)} ` : ''
+  return `${yr}${car.model}`
+})
 
 function onVariantCarIdUpdate(id: string | null) {
   if (hasVariants.value && local.variants?.[activeVariantIndex.value]) {
@@ -548,6 +570,17 @@ function onSpecChange(key: string, e: Event) {
   markDirty()
 }
 
+const codeCopied = ref(false)
+let codeCopiedTimer: ReturnType<typeof setTimeout> | null = null
+function copyShareCode() {
+  if (!local.shareCode) return
+  navigator.clipboard.writeText(local.shareCode).then(() => {
+    codeCopied.value = true
+    if (codeCopiedTimer) clearTimeout(codeCopiedTimer)
+    codeCopiedTimer = setTimeout(() => { codeCopied.value = false }, 1500)
+  })
+}
+
 function onShareCodeInput(e: Event) {
   const input = e.target as HTMLInputElement
   const formatted = formatShareCode(input.value)
@@ -713,7 +746,13 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
     </div>
 
     <div class="tune-header">
-      <EditableText tag="p" class="tune-name" :modelValue="local.tuneName" @update:modelValue="v => { local.tuneName = v; flush() }" />
+      <div class="tune-name-group">
+        <div v-if="variantFigurePath" class="rs-variant-figure-wrap">
+          <img class="rs-variant-figure" :src="variantFigurePath" :alt="linkedCar?.model ?? ''" @click="modal.openLightbox(variantFigurePath, variantFigureImage!.path)" />
+          <img class="rs-variant-preview" :src="variantFigurePath" :alt="linkedCar?.model ?? ''" aria-hidden="true" />
+        </div>
+        <EditableText tag="p" class="tune-name" :modelValue="ui.isEditing ? local.tuneName : tuneDisplayName" @update:modelValue="v => { local.tuneName = v; flush() }" />
+      </div>
       <div class="plate">
         SHARE CODE:
         <input
@@ -725,7 +764,11 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
           maxlength="11"
           spellcheck="false"
         />
-        <b v-else>{{ local.shareCode || '—' }}</b>
+        <b
+          v-else
+          :class="{ 'share-code-copyable': local.shareCode, 'share-code-copied': codeCopied }"
+          @click="copyShareCode"
+        >{{ codeCopied ? 'Copied!' : (local.shareCode || '—') }}</b>
       </div>
       <!-- Car identity — uses variant's carId in multi-car mode -->
       <div v-if="ui.isEditing" class="rs-car-row">
@@ -1114,11 +1157,12 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 
 /* ── Multi-car variant tab strip ──────────────────────────────────────────── */
 .rs-variant-tabs {
+  --tune-header-bg: var(--panel);
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 4px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   border-bottom: 1px solid var(--accent);
 }
 .rs-variant-tab-wrap {
@@ -1141,9 +1185,9 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   margin-bottom: -1px;
 }
 .rs-variant-tab--active {
-  background: var(--panel);
+  background: var(--tune-header-bg);
   border-color: var(--accent);
-  border-bottom-color: var(--panel);
+  border-bottom-color: var(--tune-header-bg);
   color: var(--accent);
 }
 .rs-variant-tab:not(.rs-variant-tab--active):hover {
@@ -1391,4 +1435,54 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   color: #000;
 }
 .wiz-btn--primary:hover { opacity: .85; }
+
+.share-code-copyable {
+  cursor: pointer;
+}
+.share-code-copyable:hover {
+  color: var(--accent, gold);
+}
+.share-code-copied {
+  color: var(--accent, gold);
+}
+
+.tune-header {
+  background: var(--panel);
+  border-radius: 3px;
+  padding: 12px;
+  margin: 0;
+  align-items: center;
+}
+
+.tune-name-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rs-variant-figure-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.rs-variant-figure {
+  display: block;
+  height: 48px;
+  width: auto;
+  object-fit: cover;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.rs-variant-preview {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  width: 200px;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  pointer-events: none;
+  z-index: 10;
+}
+.rs-variant-figure-wrap:hover .rs-variant-preview {
+  display: block;
+}
 </style>

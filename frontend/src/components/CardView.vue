@@ -122,6 +122,7 @@ watch(() => ui.pendingMultiCarTrigger, (trigger) => {
         :recipe="section"
         :card-id="card.id"
         :car-id="card.carId"
+        :images="card.images"
         :reset-token="recipeResetToken"
         @update:recipe="updated => Object.assign(section, updated)"
         @update:car-id="id => { cardsStore.setCarId(card.id, id); ui.markCardDirty(card.id) }"

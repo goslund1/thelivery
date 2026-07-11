@@ -338,10 +338,13 @@ function getAdjustments(): AdjustmentRow[] {
   return [...active, ...sentinels]
 }
 
-function applyPresetValues(values: Record<string, number>) {
+function applyPresetValues(values: Record<string, number>, kind: string = 'build') {
   localRows.value = localRows.value.map(r => {
     const updated = { ...r }
-    if (r.key in values) { updated.value = values[r.key]; updated.stock = values[r.key] }
+    if (r.key in values) {
+      updated.value = values[r.key]
+      if (kind === 'baseline') updated.stock = values[r.key]
+    }
     if ((r.key + ':min') in values) updated.min = values[r.key + ':min']
     if ((r.key + ':max') in values) updated.max = values[r.key + ':max']
     return updated
@@ -934,7 +937,7 @@ function executeApplyPreset() {
     const updated = { ...r }
     if (r.key in preset.values) {
       updated.value = preset.values[r.key]
-      updated.stock = preset.values[r.key]
+      if (preset.kind === 'baseline') updated.stock = preset.values[r.key]
     }
     if ((r.key + ':min') in preset.values) updated.min = preset.values[r.key + ':min']
     if ((r.key + ':max') in preset.values) updated.max = preset.values[r.key + ':max']

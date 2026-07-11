@@ -177,7 +177,7 @@ function acceptAutoPropose() {
 }
 
 // ── Car Tabs setup wizard ─────────────────────────────────────────────────────
-type TuningPreset = { id: number; name: string; values: Record<string, number> }
+type TuningPreset = { id: number; name: string; values: Record<string, number>; kind: string }
 const showSetupWizard   = ref(false)
 const wizardStep        = ref(0)
 const wizardNonAnchorIds = ref<string[]>([])
@@ -378,7 +378,7 @@ watch(activeVariantIndex, async (idx, prevIdx) => {
     const preset = wizardPresets.value.find(p => p.id === v.pendingPresetId)
     if (preset && taRef.value) {
       await nextTick()
-      taRef.value.applyPresetValues(preset.values)
+      taRef.value.applyPresetValues(preset.values, preset.kind)
       delete v.pendingPresetId
       flush()
       markDirty()

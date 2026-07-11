@@ -75,7 +75,9 @@ async function openFigurePicker(section: 'insp' | 'notes') {
         s.poolResult = { id: result.id!, path: result.path, thumbPath: result.thumbPath, stagePath: result.stagePath }
         pendingPool.value.push({ id: result.id, path: result.path, thumbPath: result.thumbPath, stagePath: result.stagePath })
         store.addImageToPool(cardCtx.id, result.path, result.thumbPath, result.stagePath, false, result.id)
-      } catch {}
+      } catch (e) {
+        console.warn('[figure-picker] pre-upload failed:', e)
+      }
     }))
     saving.value = false
   }
@@ -294,7 +296,7 @@ async function onDone() {
 async function onCreate() {
   if (!name.value.trim() && !importedCard.value) { error.value = 'Name is required.'; return }
   if (staged.value.length > 0 && !newCarId.value && imageRole.value !== 'refimg') { error.value = 'Select a car or +IMG before importing photos.'; return }
-  if (staged.value.length > 0 && !liveryNameValid.value) { error.value = 'Enter a unique livery name (not the default).'; return }
+  if (staged.value.length > 0 && !liveryNameValid.value && imageRole.value !== 'refimg') { error.value = 'Enter a unique livery name (not the default).'; return }
   saving.value = true
   error.value = ''
   try {
@@ -705,11 +707,6 @@ onUnmounted(() => { document.body.style.overflow = '' })
 </template>
 
 <style scoped>
-.nc-figure-saving {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
 /* Textarea within gutter-layout — fills the text column */
 .gutter-layout .nc-textarea {
   flex: 1;
@@ -856,64 +853,5 @@ onUnmounted(() => { document.body.style.overflow = '' })
   gap: 8px;
 }
 
-/* Folder-name prompt — fixed to viewport, not the modal card */
-.nc-folder-prompt {
-  position: fixed;
-  inset: 0;
-  z-index: 1300;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.nc-folder-prompt-inner {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  padding: 22px 24px 20px;
-  max-width: 360px;
-  width: 90vw;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.nc-folder-prompt-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--fg);
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--glass-border);
-}
-.nc-folder-prompt-sub {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1.6;
-}
-.nc-folder-prompt-input {
-  width: 100%;
-  box-sizing: border-box;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
-  border: 1px solid var(--glass-border);
-  border-radius: 4px;
-  color: var(--fg);
-  padding: 9px 12px;
-}
-.nc-folder-prompt-input:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-.nc-folder-prompt-btns {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
+
 </style>

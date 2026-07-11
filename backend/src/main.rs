@@ -938,9 +938,9 @@ async fn sync_card_images(pool: &SqlitePool, card_id: &str, body: &mut Value) ->
 
             if let Some(existing_id) = existing {
                 sqlx::query(
-                    "UPDATE images SET alt_text = ?, sort_order = ?, car_id = ? WHERE id = ?",
+                    "UPDATE images SET alt_text = ?, sort_order = ?, car_id = ?, livery_id = COALESCE(?, livery_id), included = COALESCE(?, included) WHERE id = ?",
                 )
-                .bind(&alt).bind(order).bind(&car_id).bind(existing_id)
+                .bind(&alt).bind(order).bind(&car_id).bind(livery_id).bind(included).bind(existing_id)
                 .execute(pool).await?;
                 existing_id
             } else {

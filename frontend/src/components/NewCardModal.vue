@@ -98,6 +98,10 @@ const recipe = ref<ForzaRecipeSection>(blankRecipe())
 const recipeResetToken = ref(0)
 const newCarId = ref<string | null>(null)
 
+// Set after first successful import; subsequent rounds add to this card instead of creating a new one.
+const importedCard = ref<{ id: string; name: string; subtitle: string; collections: string[] } | null>(null)
+const showAddAnotherCar = ref(false)
+
 // Livery name for batch import (required when photos are staged, default must be changed)
 const liveryName = ref('Livery Name')
 const liveryNameValid = computed(() =>
@@ -171,6 +175,8 @@ watch(() => modal.newCardOpen, async (open) => {
   assessStatus.value = 'idle'
   assessColors.value = null
   importFading.value = false
+  importedCard.value = null
+  showAddAnotherCar.value = false
   if (importFadeTimer) { clearTimeout(importFadeTimer); importFadeTimer = null }
   staged.value.forEach(s => URL.revokeObjectURL(s.url))
   staged.value = []
@@ -246,6 +252,27 @@ function setFeature(i: number) {
   activeStaged.value = 0
 }
 
+function startAnotherCar() {
+  staged.value.forEach(s => URL.revokeObjectURL(s.url))
+  staged.value = []
+  activeStaged.value = 0
+  newCarId.value = null
+  liveryName.value = 'Livery Name'
+  importing.value = false
+  importLog.value = []
+  assessStatus.value = 'idle'
+  assessColors.value = null
+  importFading.value = false
+  showAddAnotherCar.value = false
+  if (importFadeTimer) { clearTimeout(importFadeTimer); importFadeTimer = null }
+}
+
+async function onDone() {
+  modal.closeNewCard()
+  await nextTick()
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+}
+
 // Create
 async function onCreate() {
   if (!name.value.trim()) { error.value = 'Name is required.'; return }
@@ -254,28 +281,36 @@ async function onCreate() {
   saving.value = true
   error.value = ''
   try {
-    const card = await store.createNewCard({
-      name: name.value.trim(),
-      subtitle: subtitle.value.trim(),
-      collections: selectedCollections.value,
-      tags: selectedTags.value,
-      inspirationBody: inspirationBody.value.trim(),
-      inspirationFigurePath: inspirationFigurePath.value ?? undefined,
-      notesBody: notesBody.value.trim(),
-      notesFigurePath: notesFigurePath.value ?? undefined,
-      tuneName: recipe.value.tuneName.trim(),
-      shareCode: recipe.value.shareCode.trim(),
-      coreSpecs: { ...recipe.value.coreSpecs },
-      upgrades: JSON.parse(JSON.stringify(recipe.value.upgrades)),
-      adjustments: JSON.parse(JSON.stringify(recipe.value.adjustments)),
-      carId: newCarId.value ?? undefined,
-    })
-    for (const s of card.sections) {
-      if (s.key === 'inspiration') s.defaultOpen = sectionOpen.insp ? undefined : false
-      else if (s.key === 'notes') s.defaultOpen = sectionOpen.notes ? undefined : false
-      else if (s.type === 'forza_recipe') s.defaultOpen = sectionOpen.recipe ? undefined : false
+    let cardCtx: { id: string; name: string; subtitle: string; collections: string[] }
+
+    if (importedCard.value) {
+      cardCtx = importedCard.value
+    } else {
+      const card = await store.createNewCard({
+        name: name.value.trim(),
+        subtitle: subtitle.value.trim(),
+        collections: selectedCollections.value,
+        tags: selectedTags.value,
+        inspirationBody: inspirationBody.value.trim(),
+        inspirationFigurePath: inspirationFigurePath.value ?? undefined,
+        notesBody: notesBody.value.trim(),
+        notesFigurePath: notesFigurePath.value ?? undefined,
+        tuneName: recipe.value.tuneName.trim(),
+        shareCode: recipe.value.shareCode.trim(),
+        coreSpecs: { ...recipe.value.coreSpecs },
+        upgrades: JSON.parse(JSON.stringify(recipe.value.upgrades)),
+        adjustments: JSON.parse(JSON.stringify(recipe.value.adjustments)),
+        carId: newCarId.value ?? undefined,
+      })
+      for (const s of card.sections) {
+        if (s.key === 'inspiration') s.defaultOpen = sectionOpen.insp ? undefined : false
+        else if (s.key === 'notes') s.defaultOpen = sectionOpen.notes ? undefined : false
+        else if (s.type === 'forza_recipe') s.defaultOpen = sectionOpen.recipe ? undefined : false
+      }
+      await store.save(card.id)
+      cardCtx = { id: card.id, name: card.name, subtitle: card.subtitle, collections: card.collections }
+      importedCard.value = cardCtx
     }
-    await store.save(card.id)
 
     if (staged.value.length === 0) {
       modal.closeNewCard()
@@ -297,13 +332,13 @@ async function onCreate() {
     const uploads = staged.value.map((s, i) =>
       api.uploadImageWithProgress(
         s.file,
-        { name: card.name, subtitle: card.subtitle, collections: card.collections, id: card.id },
+        { name: cardCtx.name, subtitle: cardCtx.subtitle, collections: cardCtx.collections, id: cardCtx.id },
         { fileIndex: i, carId: newCarId.value ?? undefined, liveryId },
         (pct) => { importLog.value[i].progress = pct },
       ).then(result => {
         importLog.value[i].progress = 100
         importLog.value[i].status = 'done'
-        store.addImageToPool(card.id, result.path, result.thumbPath, result.stagePath, true, result.id)
+        store.addImageToPool(cardCtx.id, result.path, result.thumbPath, result.stagePath, true, result.id)
         // Trigger assess once, after first successful upload with a livery attached.
         if (!firstDone && liveryId) {
           firstDone = true
@@ -315,7 +350,7 @@ async function onCreate() {
     )
 
     await Promise.all(uploads)
-    await store.save(card.id)
+    await store.save(cardCtx.id)
 
     // Wait for assess to settle (it may still be in flight).
     const waitForAssess = () => new Promise<void>(resolve => {
@@ -324,14 +359,12 @@ async function onCreate() {
     })
     await waitForAssess()
 
-    // All done — fade log then close.
+    // All done — fade log, then offer "add another car" instead of auto-closing.
     importFadeTimer = setTimeout(() => {
       importFading.value = true
-      importFadeTimer = setTimeout(async () => {
-        staged.value.forEach(s => URL.revokeObjectURL(s.url))
-        modal.closeNewCard()
-        await nextTick()
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+      importFadeTimer = setTimeout(() => {
+        importing.value = false
+        showAddAnotherCar.value = true
       }, 700)
     }, 2000)
   } catch (e) {
@@ -548,7 +581,16 @@ onUnmounted(() => { document.body.style.overflow = '' })
 
       <!-- Footer -->
       <div class="nc-footer">
-        <template v-if="importing">
+        <template v-if="showAddAnotherCar">
+          <div class="nc-post-import">
+            <span class="nc-post-import-msg">Import complete ✓</span>
+            <div class="nc-post-import-actions">
+              <button class="nc-btn-cancel" type="button" @click="onDone">Done</button>
+              <button class="nc-btn-create" type="button" @click="startAnotherCar">+ Add another car</button>
+            </div>
+          </div>
+        </template>
+        <template v-else-if="importing">
           <!-- Import progress log -->
           <div class="nc-import-log" :class="{ 'nc-import-log--fading': importFading }">
             <div
@@ -710,6 +752,24 @@ onUnmounted(() => { document.body.style.overflow = '' })
 .nc-import-row--done .nc-import-status { color: var(--accent); }
 .nc-import-row--error .nc-import-label,
 .nc-import-row--error .nc-import-status { color: #c94444; }
+
+/* Post-import — done / add another car */
+.nc-post-import {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0 4px;
+}
+.nc-post-import-msg {
+  font: 11px/1 'JetBrains Mono', monospace;
+  color: var(--accent);
+  letter-spacing: .06em;
+}
+.nc-post-import-actions {
+  display: flex;
+  gap: 8px;
+}
 
 /* Folder-name prompt — fixed to viewport, not the modal card */
 .nc-folder-prompt {

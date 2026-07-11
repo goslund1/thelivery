@@ -214,6 +214,7 @@ export const api = {
     card: { name: string; subtitle: string; collections: string[]; id?: string },
     fileIndex?: number,
     carId?: string,
+    imageRole?: string,
   ) => {
     const fd = new FormData()
     fd.append('cardName', card.name)
@@ -222,18 +223,19 @@ export const api = {
     if (card.id) fd.append('cardId', card.id)
     if (carId) fd.append('carId', carId)
     if (fileIndex !== undefined) fd.append('fileIndex', String(fileIndex))
+    if (imageRole) fd.append('imageRole', imageRole)
     fd.append('file', file)
     return fetch('/api/images', { method: 'POST', headers: authHeaders(), body: fd }).then(
-      json<{ id?: number; path: string; thumbPath?: string; stagePath?: string; carId?: string | null }>,
+      json<{ id?: number; path: string; thumbPath?: string; stagePath?: string; carId?: string | null; imageRole?: string }>,
     )
   },
 
   uploadImageWithProgress: (
     file: File,
     card: { name: string; subtitle: string; collections: string[]; id?: string },
-    options: { fileIndex?: number; carId?: string; liveryId?: number },
+    options: { fileIndex?: number; carId?: string; liveryId?: number; imageRole?: string },
     onProgress: (pct: number) => void,
-  ): Promise<{ id?: number; path: string; thumbPath?: string; stagePath?: string; carId?: string | null }> => {
+  ): Promise<{ id?: number; path: string; thumbPath?: string; stagePath?: string; carId?: string | null; imageRole?: string }> => {
     return new Promise((resolve, reject) => {
       const fd = new FormData()
       fd.append('cardName', card.name)
@@ -243,6 +245,7 @@ export const api = {
       if (options.carId) fd.append('carId', options.carId)
       if (options.liveryId !== undefined) fd.append('liveryId', String(options.liveryId))
       if (options.fileIndex !== undefined) fd.append('fileIndex', String(options.fileIndex))
+      if (options.imageRole) fd.append('imageRole', options.imageRole)
       fd.append('file', file)
       const xhr = new XMLHttpRequest()
       xhr.open('POST', '/api/images')

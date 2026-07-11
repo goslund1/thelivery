@@ -97,6 +97,7 @@ function blankRecipe(): ForzaRecipeSection {
 const recipe = ref<ForzaRecipeSection>(blankRecipe())
 const recipeResetToken = ref(0)
 const newCarId = ref<string | null>(null)
+const imageRole = ref<'gallery' | 'refimg'>('gallery')
 
 // Set after first successful import; subsequent rounds add to this card instead of creating a new one.
 const importedCard = ref<{ id: string; name: string; subtitle: string; collections: string[] } | null>(null)
@@ -169,6 +170,7 @@ watch(() => modal.newCardOpen, async (open) => {
   recipe.value = blankRecipe()
   recipeResetToken.value++
   newCarId.value = null
+  imageRole.value = 'gallery'
   liveryName.value = 'Livery Name'
   importing.value = false
   importLog.value = []
@@ -257,6 +259,7 @@ function startAnotherCar() {
   staged.value = []
   activeStaged.value = 0
   newCarId.value = null
+  imageRole.value = 'gallery'
   liveryName.value = 'Livery Name'
   importing.value = false
   importLog.value = []
@@ -276,7 +279,7 @@ async function onDone() {
 // Create
 async function onCreate() {
   if (!name.value.trim()) { error.value = 'Name is required.'; return }
-  if (staged.value.length > 0 && !newCarId.value) { error.value = 'Select a car before importing photos.'; return }
+  if (staged.value.length > 0 && !newCarId.value && imageRole.value !== 'refimg') { error.value = 'Select a car or +IMG before importing photos.'; return }
   if (staged.value.length > 0 && !liveryNameValid.value) { error.value = 'Enter a unique livery name (not the default).'; return }
   saving.value = true
   error.value = ''
@@ -319,27 +322,33 @@ async function onCreate() {
       return
     }
 
-    // Create livery first so we have an ID to attach to every upload.
-    const livery = await liveriesStore.create({ carId: newCarId.value!, name: liveryName.value.trim() })
-    const liveryId = livery.id
+    // For gallery imports: create a livery to attach to every upload.
+    // For refimg imports: no livery needed.
+    const isRefImg = imageRole.value === 'refimg'
+    let liveryId: number | undefined
+    if (!isRefImg) {
+      const livery = await liveriesStore.create({ carId: newCarId.value!, name: liveryName.value.trim() })
+      liveryId = livery.id
+    }
 
     // Switch to import log view.
     importing.value = true
     importLog.value = staged.value.map(s => ({ label: s.file.name, progress: 0, status: 'uploading' as const }))
-    assessStatus.value = 'pending'
+    assessStatus.value = isRefImg ? 'idle' : 'pending'
 
     let firstDone = false
     const uploads = staged.value.map((s, i) =>
       api.uploadImageWithProgress(
         s.file,
         { name: cardCtx.name, subtitle: cardCtx.subtitle, collections: cardCtx.collections, id: cardCtx.id },
-        { fileIndex: i, carId: newCarId.value ?? undefined, liveryId },
+        { fileIndex: i, carId: newCarId.value ?? undefined, liveryId, imageRole: imageRole.value },
         (pct) => { importLog.value[i].progress = pct },
       ).then(result => {
         importLog.value[i].progress = 100
         importLog.value[i].status = 'done'
-        store.addImageToPool(cardCtx.id, result.path, result.thumbPath, result.stagePath, true, result.id)
-        // Trigger assess once, after first successful upload with a livery attached.
+        // RefImg images default to excluded from slideshow.
+        store.addImageToPool(cardCtx.id, result.path, result.thumbPath, result.stagePath, !isRefImg, result.id)
+        // Trigger color assess once, after first successful gallery upload with a livery attached.
         if (!firstDone && liveryId) {
           firstDone = true
           api.assessLiveryColor(liveryId)
@@ -477,9 +486,22 @@ onUnmounted(() => { document.body.style.overflow = '' })
       <div v-if="staged.length" class="nc-photo-setup">
         <div class="nc-setup-row">
           <span class="nc-setup-label">Car</span>
-          <CarPicker :car-id="newCarId" @update:car-id="id => { newCarId = id }" />
+          <template v-if="imageRole === 'refimg'">
+            <span class="nc-refimg-chip">
+              <span class="nc-refimg-badge">Img</span>
+              <span class="nc-refimg-label">RefImg</span>
+              <button class="nc-refimg-clear" type="button" @click="imageRole = 'gallery'">×</button>
+            </span>
+          </template>
+          <CarPicker
+            v-else
+            :car-id="newCarId"
+            :show-image-btn="true"
+            @update:car-id="id => { newCarId = id; imageRole = 'gallery' }"
+            @select-image="imageRole = 'refimg'; newCarId = null"
+          />
         </div>
-        <div class="nc-setup-row">
+        <div v-if="imageRole !== 'refimg'" class="nc-setup-row">
           <span class="nc-setup-label">Livery</span>
           <input
             class="nc-livery-input"
@@ -701,6 +723,37 @@ onUnmounted(() => { document.body.style.overflow = '' })
 }
 .nc-livery-input:focus { border-color: var(--accent); }
 .nc-livery-input--default { color: var(--muted); border-style: dashed; }
+
+.nc-refimg-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px 3px 4px;
+  border-radius: 4px;
+  border: 1px dashed var(--muted-light, #444);
+  background: color-mix(in srgb, var(--panel-well, #1a1a1a) 60%, transparent);
+}
+.nc-refimg-badge {
+  font: 700 10px/1 'Oswald', sans-serif;
+  letter-spacing: 0.08em;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: var(--muted-light, #444);
+  color: var(--text-muted, #aaa);
+}
+.nc-refimg-label {
+  font: 12px/1.2 'Oswald', sans-serif;
+  color: var(--text-primary, #e0e0e0);
+}
+.nc-refimg-clear {
+  font: 14px/1 monospace;
+  background: none;
+  border: none;
+  color: var(--text-muted, #888);
+  cursor: pointer;
+  padding: 0 2px;
+}
+.nc-refimg-clear:hover { color: var(--text-primary); }
 
 /* Import log */
 .nc-import-log {

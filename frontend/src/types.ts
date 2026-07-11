@@ -9,8 +9,9 @@ export interface CardImage {
   thumbPath?: string // 200px-wide JPEG for the thumb rail
   stagePath?: string // 1000px-wide JPEG for the slideshow stage
   order: number     // the image at order 0 is the lead/feature image
-  included?: boolean // undefined or true = in slideshow; false = in pool but hidden
-  carId?: string     // links this photo to a specific car in the registry
+  included?: boolean  // undefined or true = in slideshow; false = in pool but hidden
+  imageRole?: string  // 'gallery' (default) | 'refimg' — determines naming and default inclusion
+  carId?: string      // links this photo to a specific car in the registry
   liveryId?: number  // FK into liveries table; set once photo is tagged with a livery
   alt?: string       // descriptive alt text / caption; used for SEO and accessibility
 }

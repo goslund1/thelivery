@@ -860,7 +860,7 @@ async fn upsert(pool: &SqlitePool, body: &Value) -> Result<(), sqlx::Error> {
 /// Fetch images for a card from the authoritative images table.
 async fn fetch_images_for_card(pool: &SqlitePool, card_id: &str) -> Vec<Value> {
     let rows = sqlx::query(
-        "SELECT id, path, thumb_path, stage_path, alt_text, sort_order, car_id, livery_id \
+        "SELECT id, path, thumb_path, stage_path, alt_text, sort_order, car_id, livery_id, image_role, included \
          FROM images WHERE card_id = ? ORDER BY sort_order ASC",
     )
     .bind(card_id)
@@ -877,6 +877,8 @@ async fn fetch_images_for_card(pool: &SqlitePool, card_id: &str) -> Vec<Value> {
         "order":     r.get::<i64, _>("sort_order"),
         "carId":     r.get::<Option<String>, _>("car_id"),
         "liveryId":  r.get::<Option<i64>, _>("livery_id"),
+        "imageRole": r.get::<Option<String>, _>("image_role").unwrap_or_else(|| "gallery".into()),
+        "included":  r.get::<i64, _>("included") != 0,
     })).collect()
 }
 
@@ -911,11 +913,13 @@ async fn sync_card_images(pool: &SqlitePool, card_id: &str, body: &mut Value) ->
         let car_id  = img.get("carId").and_then(Value::as_str).map(String::from);
         let livery_id: Option<i64> = img.get("liveryId").and_then(Value::as_i64);
 
+        let included: Option<i64> = img.get("included").and_then(Value::as_bool).map(|b| b as i64);
+
         let final_id: i64 = if let Some(id) = db_id {
             sqlx::query(
-                "UPDATE images SET alt_text = ?, sort_order = ?, car_id = ?, livery_id = COALESCE(?, livery_id) WHERE id = ? AND card_id = ?",
+                "UPDATE images SET alt_text = ?, sort_order = ?, car_id = ?, livery_id = COALESCE(?, livery_id), included = COALESCE(?, included) WHERE id = ? AND card_id = ?",
             )
-            .bind(&alt).bind(order).bind(&car_id).bind(livery_id).bind(id).bind(card_id)
+            .bind(&alt).bind(order).bind(&car_id).bind(livery_id).bind(included).bind(id).bind(card_id)
             .execute(pool).await?;
             id
         } else if let Some(ref p) = path {
@@ -948,7 +952,7 @@ async fn sync_card_images(pool: &SqlitePool, card_id: &str, body: &mut Value) ->
             continue; // no id and no path — skip
         };
 
-        synced.push(json!({ "id": final_id, "alt": alt, "order": order, "carId": car_id }));
+        synced.push(json!({ "id": final_id, "alt": alt, "order": order, "carId": car_id, "included": included.map(|v| v != 0) }));
     }
 
     body["images"] = json!(synced);
@@ -1860,6 +1864,7 @@ async fn build_image_stem(
     car_id: &Option<String>,
     livery_id: Option<i64>,
     file_index: Option<u32>,
+    image_role: &str,
 ) -> String {
     let uuid_full = uuid::Uuid::new_v4().to_string();
     let uuid6 = uuid_full.replace('-', "");
@@ -1869,8 +1874,30 @@ async fn build_image_stem(
     let date: String = sqlx::query_scalar("SELECT strftime('%Y%m%d', 'now')")
         .fetch_one(pool).await.unwrap_or_else(|_| "00000000".into());
 
+    // RefImg path: no car, sequential across all refimg images for this card.
+    if image_role == "refimg" {
+        let card_slug: String = sqlx::query_scalar(
+            "SELECT json_extract(body, '$.name') FROM cards WHERE id = ?"
+        )
+        .bind(card_id)
+        .fetch_optional(pool).await.ok().flatten().unwrap_or_default();
+        let slug = slugify(&card_slug);
+
+        let existing: i64 = if !card_id.is_empty() {
+            sqlx::query_scalar(
+                "SELECT COUNT(*) FROM images WHERE card_id = ? AND image_role = 'refimg'"
+            )
+            .bind(card_id)
+            .fetch_one(pool).await.unwrap_or(0)
+        } else {
+            file_index.map(|i| i as i64).unwrap_or(0)
+        };
+        let nn = existing as u32 + 1;
+        return format!("{slug}_RefImg{nn:02}_{date}_{uuid6}");
+    }
+
     let Some(cid) = car_id else {
-        // No car — simple fallback.
+        // No car and not a refimg — simple fallback.
         return format!("img_{date}_{uuid6}");
     };
 
@@ -1953,6 +1980,7 @@ async fn upload_image(
     let mut car_id: Option<String> = None;
     let mut livery_id: Option<i64> = None;
     let mut file_index: Option<u32> = None;
+    let mut image_role = "gallery".to_string();
 
     while let Some(field) = multipart
         .next_field()
@@ -1986,6 +2014,11 @@ async fn upload_image(
                 file_index = field.text().await.ok().and_then(|s| s.parse().ok());
                 continue;
             }
+            Some("imageRole") => {
+                let v = field.text().await.unwrap_or_default();
+                if v == "refimg" { image_role = v; }
+                continue;
+            }
             _ => {}
         }
 
@@ -2011,7 +2044,7 @@ async fn upload_image(
         // Build stem from car identity when available.
         // Format: {game}_{make}_{model}_{year}_{livery}_{NNN}_{YYYYMMDD}_{uuid6}
         // Falls back to {folder}_{uuid} when no car is assigned.
-        let stem = build_image_stem(&st.pool, &card_id, &car_id, livery_id, file_index).await;
+        let stem = build_image_stem(&st.pool, &card_id, &car_id, livery_id, file_index, &image_role).await;
 
         // Generate resized variants before naming so we can embed actual dimensions.
         let (orig_w, orig_h) = (img.width(), img.height());
@@ -2034,9 +2067,10 @@ async fn upload_image(
         let stage_path = format!("/uploads/{folder}/Lowres_Assets/{stage_name}");
 
         // Insert a row into the images table when the card_id is known.
+        let img_included: i64 = if image_role == "refimg" { 0 } else { 1 };
         let db_id: Option<i64> = if !card_id.is_empty() {
             let result = sqlx::query(
-                "INSERT INTO images (card_id, path, thumb_path, stage_path, car_id, livery_id) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO images (card_id, path, thumb_path, stage_path, car_id, livery_id, image_role, included) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             )
             .bind(&card_id)
             .bind(&path)
@@ -2044,6 +2078,8 @@ async fn upload_image(
             .bind(&stage_path)
             .bind(&car_id)
             .bind(&livery_id)
+            .bind(&image_role)
+            .bind(img_included)
             .execute(&st.pool)
             .await;
             result.ok().map(|r| r.last_insert_rowid())
@@ -2417,7 +2453,7 @@ async fn admin_migrate_images(
         std::fs::create_dir_all(&lowres_dir)
             .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
-        let stem = build_image_stem(&st.pool, &card_id, &car_id, livery_id, None).await;
+        let stem = build_image_stem(&st.pool, &card_id, &car_id, livery_id, None, "gallery").await;
 
         let (orig_w, orig_h) = (img.width(), img.height());
         let thumb = img.thumbnail(200, u32::MAX);

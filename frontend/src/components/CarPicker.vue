@@ -13,6 +13,7 @@
     <template v-else-if="!searching">
       <button class="cp-add-btn" @click="startSearch('FH5')">+ FH5</button>
       <button class="cp-add-btn" @click="startSearch('FH6')">+ FH6</button>
+      <button v-if="showImageBtn" class="cp-add-btn cp-add-btn--img" @click="emit('select-image')">+IMG</button>
     </template>
 
     <!-- Search state: input row + drum reel -->
@@ -78,8 +79,11 @@ const N_ABOVE = 3
 const N_BELOW = 4
 const DRUM_H  = (N_ABOVE + 1 + N_BELOW) * ITEM_H  // 224px
 
-const props = defineProps<{ carId?: string | null }>()
-const emit = defineEmits<{ (e: 'update:carId', id: string | null): void }>()
+const props = defineProps<{ carId?: string | null; showImageBtn?: boolean }>()
+const emit = defineEmits<{
+  (e: 'update:carId', id: string | null): void
+  (e: 'select-image'): void
+}>()
 
 const carsStore = useCarsStore()
 carsStore.load()
@@ -193,6 +197,9 @@ watch(() => props.carId, () => {
 .cp-add-btn:hover {
   border-color: var(--accent, #c9aa71);
   color: var(--accent, #c9aa71);
+}
+.cp-add-btn--img {
+  border-style: dashed;
 }
 
 /* game badge */

@@ -7,6 +7,7 @@ Living to-do file for thelivery. Update this when items are started, completed, 
 ## Active — ordered by priority
 
 ### 1. Finish CarTabs implementation (in progress)
+See `docs/plan-cartabs-tunetabs.md` for the full action plan covering steps 1–4.
 CarTabs wizard and tab strip UI are built. The following gaps remain before the mashup feature is shippable:
 
 - **Figure image near recipe** — each car tab should show a small figure image (lead image for that carId) near the tune section to anchor the tune visually. See `feedback_mashup_no_gallery_filter.md` — this is a figure image slot, not gallery filtering.

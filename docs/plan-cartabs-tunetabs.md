@@ -16,7 +16,7 @@ This document is the handoff for the next session. Read it top to bottom before 
 - Gallery `activeCarId` filtering wired
 
 ### What's NOT built yet
-- **Figure image near recipe** — each car tab should show a small figure image (lead image for that car's `carId`) near the tune section. Not implemented anywhere. See design decision below.
+- ~~**Figure image near recipe**~~ — done (session 19). Lead image for active carId appears before the tune name at 48px, hover preview, click opens lightbox. Tune name falls back to `'YY Model` when empty.
 - **TuneTabs** — multiple tune variants per car. Not yet built. See full section below.
 - **NewCardModal multi-car detection** — lower priority, not blocking this work.
 
@@ -164,7 +164,7 @@ cars?: CardCar[]             // replaces variants[]
 ## Reference
 
 - `docs/plan.md` — active item 1 (CarTabs shakedown) and item 2 (Cars→Tunes hierarchy)
-- `CLAUDE.md` → "Virtual scroll" section — read before touching any state in components rendered inside DynamicScroller
-- `stackedState.ts` — the module singleton pattern for per-card display state; TuneTabs `activeTuneIndex` should follow this pattern
+- `CLAUDE.md` → "Card list rendering" section — all cards are always mounted (plain v-for, no virtual scroll), so per-card display state lives normally in `<script setup>` as plain `ref()`. No module singletons needed.
+- TuneTabs `activeTuneIndex` is a plain `ref(0)` in RecipeSection's `<script setup>` — same as `activeVariantIndex` after the session 19 refactor.
 - `feedback_mashup_no_gallery_filter.md` in memory — figure image, not gallery filter
 - `feedback_research_before_coding.md` in memory — for any new UI patterns, look it up first

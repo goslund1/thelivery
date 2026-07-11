@@ -1163,6 +1163,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   align-items: flex-end;
   gap: 4px;
   margin-bottom: 0;
+  padding-top: 5px;
   border-bottom: 1px solid var(--accent);
 }
 .rs-variant-tab-wrap {

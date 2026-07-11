@@ -758,6 +758,7 @@
 
   .section summary:hover{
     color:var(--fg);
+    background:color-mix(in srgb, var(--panel) 90%, var(--fg));
   }
 
   /* The rotation reference is this exact square — width and height are

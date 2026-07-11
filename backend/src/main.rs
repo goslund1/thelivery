@@ -539,12 +539,16 @@ async fn admin_like_suggestion(
 struct CreatePresetReq {
     name: String,
     values: Value,
+    #[serde(default = "default_preset_kind")]
+    kind: String,
 }
+
+fn default_preset_kind() -> String { "build".to_string() }
 
 async fn list_tuning_presets(
     State(st): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
-    let rows = sqlx::query("SELECT id, name, body, created_at FROM tuning_presets ORDER BY created_at ASC")
+    let rows = sqlx::query("SELECT id, name, body, kind, created_at FROM tuning_presets ORDER BY created_at ASC")
         .fetch_all(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
@@ -553,6 +557,7 @@ async fn list_tuning_presets(
         "id":        r.get::<i64, _>("id"),
         "name":      r.get::<String, _>("name"),
         "values":    serde_json::from_str::<Value>(&r.get::<String, _>("body")).unwrap_or(json!({})),
+        "kind":      r.get::<String, _>("kind"),
         "createdAt": r.get::<String, _>("created_at"),
     })).collect();
 
@@ -569,10 +574,12 @@ async fn create_tuning_preset(
         return Err(err(StatusCode::UNPROCESSABLE_ENTITY, "Name is required"));
     }
     let body = req.values.to_string();
+    let kind = if req.kind == "baseline" { "baseline" } else { "build" };
 
-    let result = sqlx::query("INSERT INTO tuning_presets (name, body) VALUES (?, ?)")
+    let result = sqlx::query("INSERT INTO tuning_presets (name, body, kind) VALUES (?, ?, ?)")
         .bind(&name)
         .bind(&body)
+        .bind(kind)
         .execute(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
@@ -583,7 +590,7 @@ async fn create_tuning_preset(
         .fetch_one(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-    Ok(Json(json!({ "id": id, "name": name, "values": req.values, "createdAt": created_at })))
+    Ok(Json(json!({ "id": id, "name": name, "values": req.values, "kind": kind, "createdAt": created_at })))
 }
 
 async fn delete_tuning_preset(

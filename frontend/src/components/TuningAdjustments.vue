@@ -328,7 +328,6 @@ watch([transmissionTier, viewTransmissionTier], () => {
 // Returns the current serialized adjustments — called by the parent at save/flush time.
 function getAdjustments(): AdjustmentRow[] {
   const active = localRows.value
-    .filter(r => !r.locked)
     .map(({ locked, lockReason, _axis, _headerUnit, _bipolar, _centerMark, ...r }) => r)
   const sentinels = Object.entries(sliderBoundsMode.value)
     .filter(([, isStatic]) => isStatic)
@@ -341,7 +340,6 @@ function getAdjustments(): AdjustmentRow[] {
 
 function applyPresetValues(values: Record<string, number>) {
   localRows.value = localRows.value.map(r => {
-    if (r.locked) return r
     const updated = { ...r }
     if (r.key in values) { updated.value = values[r.key]; updated.stock = values[r.key] }
     if ((r.key + ':min') in values) updated.min = values[r.key + ':min']
@@ -349,7 +347,23 @@ function applyPresetValues(values: Record<string, number>) {
     return updated
   })
   endDisplay.value = {}
+  applyImpliedTransmission(values)
   flush()
+}
+
+// Infer and auto-add the required transmission when applying a preset that has gear values.
+// Mirrors the onTransChoice() flow: sets viewTransmissionId + gearCount + emits implied-upgrades.
+function applyImpliedTransmission(values: Record<string, number>) {
+  const gearKeys = Object.keys(values).filter(k => /^gear\d+$/.test(k))
+  if (!gearKeys.length) return
+  if (transmissionTier.value === 'race' || transmissionTier.value === 'drift') return
+  const maxGear = gearKeys.reduce((max, k) => Math.max(max, parseInt(k.slice(4))), 0)
+  const trans = FH_TRANSMISSIONS.find(t => t.tier === 'race' && t.gears === maxGear)
+    ?? FH_TRANSMISSIONS.find(t => t.tier === 'race')!
+  autoAddedPart.value = trans.name
+  viewTransmissionId.value = trans.name
+  gearCount.value = trans.gears
+  emit('implied-upgrades', { toAdd: [{ category: 'Drivetrain', part: trans.name }], needsSpringsDialog: false })
 }
 
 defineExpose({ getAdjustments, applyPresetValues })
@@ -887,11 +901,12 @@ function onTaKeydown(e: KeyboardEvent) {
 
 // ── Tuning presets ────────────────────────────────────────────────────────────
 
-type TuningPreset = { id: number; name: string; values: Record<string, number>; createdAt: string }
+type TuningPreset = { id: number; name: string; values: Record<string, number>; kind: string; createdAt: string }
 
 const presets = ref<TuningPreset[]>([])
 const selectedPresetId = ref<number | null>(null)
 const presetNameInput = ref('')
+const presetKind = ref<'build' | 'baseline'>('build')
 const presetNameOpen = ref(false)
 const presetBusy = ref(false)
 const presetError = ref<string | null>(null)
@@ -916,17 +931,17 @@ function executeApplyPreset() {
   presetError.value = null
   const savedY = window.scrollY
   localRows.value = localRows.value.map(r => {
-    if (r.locked) return r
     const updated = { ...r }
     if (r.key in preset.values) {
       updated.value = preset.values[r.key]
       updated.stock = preset.values[r.key]
     }
-    if ((r.key + ':min') in preset.values)    updated.min   = preset.values[r.key + ':min']
-    if ((r.key + ':max') in preset.values)    updated.max   = preset.values[r.key + ':max']
+    if ((r.key + ':min') in preset.values) updated.min = preset.values[r.key + ':min']
+    if ((r.key + ':max') in preset.values) updated.max = preset.values[r.key + ':max']
     return updated
   })
   endDisplay.value = {}
+  applyImpliedTransmission(preset.values)
   flush()
   requestAnimationFrame(() => window.scrollTo({ top: savedY, behavior: 'instant' }))
 }
@@ -939,16 +954,16 @@ async function saveAsPreset() {
   try {
     const values: Record<string, number> = {}
     for (const r of localRows.value) {
-      if (r.locked) continue
       values[r.key]          = r.value
       values[r.key + ':min'] = r.min
       values[r.key + ':max'] = r.max
     }
-    const created = await api.createTuningPreset({ name, values })
+    const created = await api.createTuningPreset({ name, values, kind: presetKind.value })
     presets.value.push(created)
     selectedPresetId.value = created.id
     presetNameOpen.value = false
     presetNameInput.value = ''
+    presetKind.value = 'build'
   } catch (e: unknown) { presetError.value = e instanceof Error ? e.message : String(e) }
   finally { presetBusy.value = false }
 }
@@ -1135,7 +1150,7 @@ async function submitSuggestion() {
         :disabled="!presets.length"
       >
         <option :value="null" disabled>{{ presets.length ? 'Select preset…' : 'No presets saved' }}</option>
-        <option v-for="p in presets" :key="p.id" :value="p.id">{{ p.name }}</option>
+        <option v-for="p in presets" :key="p.id" :value="p.id">{{ p.kind === 'baseline' ? '◆ ' : '' }}{{ p.name }}</option>
       </select>
       <button
         class="ta-btn-lwb ta-preset-btn"
@@ -1156,8 +1171,12 @@ async function submitSuggestion() {
             @keyup.enter="saveAsPreset"
             @keyup.escape="presetNameOpen = false"
           />
+          <label class="ta-preset-kind-toggle" title="Baseline presets encode car-specific stock settings">
+            <input type="checkbox" :checked="presetKind === 'baseline'" @change="presetKind = ($event.target as HTMLInputElement).checked ? 'baseline' : 'build'" />
+            Baseline
+          </label>
           <button class="ta-btn-lwb ta-preset-btn" :disabled="presetBusy" @click="saveAsPreset">{{ presetBusy ? '…' : 'Save' }}</button>
-          <button class="ta-btn-lwb ta-preset-btn" @click="presetNameOpen = false">✕</button>
+          <button class="ta-btn-lwb ta-preset-btn" @click="presetNameOpen = false; presetKind = 'build'">✕</button>
         </template>
         <button v-else class="ta-btn-lwb ta-preset-btn" @click="presetNameOpen = true">Save Current As Preset</button>
       </div>
@@ -1531,6 +1550,18 @@ async function submitSuggestion() {
   outline: none;
   width: 160px;
 }
+.ta-preset-kind-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-family: 'Oswald', sans-serif;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+.ta-preset-kind-toggle input { accent-color: var(--accent); cursor: pointer; }
 .ta-toggle-btn, .ta-stock-btn {
   font-size: 11px;
   padding: 5px 10px;

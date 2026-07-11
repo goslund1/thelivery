@@ -182,15 +182,15 @@ export const api = {
 
   listTuningPresets: () =>
     fetch('/api/tuning-presets').then(
-      json<{ id: number; name: string; values: Record<string, number>; createdAt: string }[]>
+      json<{ id: number; name: string; values: Record<string, number>; kind: string; createdAt: string }[]>
     ),
 
-  createTuningPreset: (payload: { name: string; values: Record<string, number> }) =>
+  createTuningPreset: (payload: { name: string; values: Record<string, number>; kind?: string }) =>
     fetch('/api/tuning-presets', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...authHeaders() },
       body: JSON.stringify(payload),
-    }).then(json<{ id: number; name: string; values: Record<string, number>; createdAt: string }>),
+    }).then(json<{ id: number; name: string; values: Record<string, number>; kind: string; createdAt: string }>),
 
   deleteTuningPreset: (id: number) =>
     fetch(`/api/tuning-presets/${id}`, { method: 'DELETE', headers: authHeaders() }).then(

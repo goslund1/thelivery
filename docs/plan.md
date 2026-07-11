@@ -6,7 +6,16 @@ Living to-do file for thelivery. Update this when items are started, completed, 
 
 ## Active — ordered by priority
 
-### 1. Finish CarTabs implementation (in progress)
+### 1. New card flow — guided import UX (in progress)
+
+The new card modal currently shows everything at once like a static form. The goal is a guided wizard feel matching the migration tool's panel-style step-through. Two sub-items remain:
+
+- **Import panel**: when photos are staged and the user hits "Import →", a focused panel should float over the modal showing thumbnail grid + car/+IMG selection + livery name + progress log. Mirrors ImageMigrationModal's guided-per-card experience. This is the natural container for the card-name-first → photos → car/refimg → import sequence.
+- **Figure section pickers** (inspiration/notes): currently bare `<input type="file">`. Should show the card's image pool (gallery + refimg images already uploaded) via `ImagePicker`, with "upload new" triggering the RefImg pipeline. Currently figure images uploaded here bypass the structured pipeline entirely.
+
+---
+
+### 2. Finish CarTabs implementation (in progress)
 See `docs/plan-cartabs-tunetabs.md` for the full action plan covering steps 1–4.
 CarTabs wizard and tab strip UI are built. The following gaps remain before the mashup feature is shippable:
 
@@ -99,6 +108,8 @@ Narrow-screen pass for the full catalog. Known gaps:
 
 ## Recently completed
 
+- **RefImg pipeline** (migration 0015): `image_role` + `included` columns on images table; `included` now persists across page reloads (was ephemeral). RefImg images get structured filenames `{card_slug}_RefImg{NN}_{date}_{uuid6}`, default to excluded from slideshow, skip livery creation + color assess. CarPicker gets `+IMG` button (`showImageBtn` prop, dashed style) that emits `select-image` — no car search. NewCardModal tracks `imageRole`, shows RefImg chip, passes role to uploads. `sync_card_images` now syncs `included` back to DB on card save. — 2026-07-11
+- **NewCardModal car/recipe parity**: `RecipeSection` gets `forceEdit` prop so all edit-mode fields (CarPicker, spec table, upgrades, preset bar) appear in NewCardModal without requiring global edit mode. — 2026-07-11
 - Replaced `vue-virtual-scroller` with plain `v-for` (all filtered cards always mounted). Virtual scroll's slot-pool model is incompatible with stateful Vue components — two failure modes (slot recycling + concurrent duplicate slots) required module-level singleton workarounds that added permanent complexity. At catalog scale the memory cost of mounting all cards is negligible. `useCardVisibility.ts` (IntersectionObserver + KeepAlive) left in place for when the catalog is large enough to need lazy mounting. See `CLAUDE.md` → "Card list rendering" — 2026-07-10
 - Settings/Admin UI reorganization: Account panel (change password + Add User gated behind toggles, Admin Panel → button, Sign Out); separate Admin panel with Tools tab (image tools, stats, orphans, trash, seed) + Export Card tab (YAML download/import, legacy repair at bottom); Tune Suggestions stays in Filters flyout only — 2026-07-07
 - figurePath patching in migration flow: ImageMigrationModal snapshots old paths and patches TextSection.figurePath after migrate; Repair Figure Paths endpoint matches by sequence number before falling back to lead image — 2026-07-07

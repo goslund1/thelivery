@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, computed, ref, provide } from 'vue'
 import { useScrollGuard } from './composables/useScrollGuard'
-import { useCardVisibility } from './composables/useCardVisibility'
 import { useCardsStore } from './stores/cards'
 import { useUiStore } from './stores/ui'
 import { useFilterStore } from './stores/filters'
@@ -40,8 +39,6 @@ const theme = useThemeStore()
 const visibleCards = computed(() =>
   store.cards.filter(c => c.isLegend ? ui.isEditing : filters.isCardVisible(c))
 )
-
-const { visible: cardVisible, setSentinel } = useCardVisibility(visibleCards)
 
 function scrollToCardId(id: string) {
   requestAnimationFrame(() => {
@@ -96,15 +93,11 @@ onBeforeUnmount(() => {
       <div
         v-for="card in visibleCards"
         :key="card.id"
-        :data-card-id="card.id"
-        :ref="el => setSentinel(card.id, el as HTMLElement | null)"
         class="card-gap"
       >
-        <KeepAlive>
-          <CardShell v-if="cardVisible[card.id]">
-            <CardView :card="card" />
-          </CardShell>
-        </KeepAlive>
+        <CardShell>
+          <CardView :card="card" />
+        </CardShell>
       </div>
     </template>
   </div>

@@ -1,19 +1,34 @@
-import { ref, onMounted, onBeforeUnmount, watch, type Ref } from 'vue'
+import { ref, onBeforeUnmount, watch, type Ref } from 'vue'
 import type { Card } from '../types'
+
+const ESTIMATED_CARD_HEIGHT = 1400
 
 export function useCardVisibility(cards: Ref<Card[]>) {
   const visible = ref<Record<string, boolean>>({})
-  const sentinels = ref<Record<string, HTMLElement | null>>({})
-  let observer: IntersectionObserver | null = null
+  const heights = ref<Record<string, number>>({})
+  const sentinels: Record<string, HTMLElement> = {}
+  const resizeObservers: Record<string, ResizeObserver> = {}
+  let intersectionObserver: IntersectionObserver | null = null
 
   function setSentinel(id: string, el: HTMLElement | null) {
-    sentinels.value[id] = el
-    if (el && observer) observer.observe(el)
+    if (!el) return
+    sentinels[id] = el
+
+    if (intersectionObserver) intersectionObserver.observe(el)
+
+    if (!resizeObservers[id]) {
+      const ro = new ResizeObserver(entries => {
+        const h = entries[0]?.contentRect.height
+        if (h && h > 0) heights.value[id] = h
+      })
+      ro.observe(el)
+      resizeObservers[id] = ro
+    }
   }
 
-  function setup() {
-    observer?.disconnect()
-    observer = new IntersectionObserver(
+  function setupIntersection() {
+    intersectionObserver?.disconnect()
+    intersectionObserver = new IntersectionObserver(
       entries => {
         for (const entry of entries) {
           const id = (entry.target as HTMLElement).dataset.cardId
@@ -22,21 +37,27 @@ export function useCardVisibility(cards: Ref<Card[]>) {
       },
       { rootMargin: '600px 0px' }
     )
-    for (const el of Object.values(sentinels.value)) {
-      if (el) observer.observe(el)
+    for (const el of Object.values(sentinels)) {
+      intersectionObserver.observe(el)
     }
   }
 
-  onMounted(setup)
-  onBeforeUnmount(() => observer?.disconnect())
+  onBeforeUnmount(() => {
+    intersectionObserver?.disconnect()
+    for (const ro of Object.values(resizeObservers)) ro.disconnect()
+  })
 
-  // Re-run when the card list changes so newly added sentinels get observed
   watch(cards, () => {
     for (const card of cards.value) {
       if (!(card.id in visible.value)) visible.value[card.id] = false
     }
-    setup()
+    setupIntersection()
   }, { immediate: true })
 
-  return { visible, setSentinel }
+  function placeholderStyle(id: string): Record<string, string> {
+    const h = heights.value[id] ?? ESTIMATED_CARD_HEIGHT
+    return { minHeight: `${h}px` }
+  }
+
+  return { visible, placeholderStyle, setSentinel }
 }

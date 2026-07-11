@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, computed, ref, provide } from 'vue'
+import { onMounted, onBeforeUnmount, computed, provide } from 'vue'
 import { useScrollGuard } from './composables/useScrollGuard'
 import { useCardsStore } from './stores/cards'
 import { useUiStore } from './stores/ui'

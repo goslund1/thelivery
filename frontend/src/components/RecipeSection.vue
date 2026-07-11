@@ -24,6 +24,7 @@ const props = defineProps<{
   images?: import('../types').CardImage[]
   initialKitOpen?: boolean
   resetToken?: number
+  forceEdit?: boolean
 }>()
 const emit = defineEmits<{
   'update:recipe': [recipe: ForzaRecipeSection]
@@ -31,6 +32,7 @@ const emit = defineEmits<{
   'update:activeCarId': [carId: string | null]
 }>()
 const ui = useUiStore()
+const isEditing = computed(() => ui.isEditing || !!props.forceEdit)
 const modal = useModalStore()
 const filters = useFilterStore()
 const carsStore = useCarsStore()
@@ -148,7 +150,7 @@ const autoProposeCarIds = computed<string[]>(() => {
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id)
 })
 const autoProposesDismissed = ref(false)
-const showAutoPropose = computed(() => ui.isEditing && autoProposeCarIds.value.length >= 2 && !autoProposesDismissed.value)
+const showAutoPropose = computed(() => isEditing.value && autoProposeCarIds.value.length >= 2 && !autoProposesDismissed.value)
 
 function acceptAutoPropose() {
   const ids = autoProposeCarIds.value
@@ -427,14 +429,14 @@ function flush() {
 function onImpliedUpgrades(result: ImpliedUpgradesResult) {
   if (result.toAdd.length) {
     applyImpliedUpgrades(local.upgrades, result.toAdd)
-    if (ui.isEditing) flush()
+    if (isEditing.value) flush()
   }
 }
 
 function onRemoveUpgrade(part: string) {
   for (const cat of local.upgrades) {
     const idx = cat.parts.indexOf(part)
-    if (idx !== -1) { cat.parts.splice(idx, 1); if (ui.isEditing) flush(); break }
+    if (idx !== -1) { cat.parts.splice(idx, 1); if (isEditing.value) flush(); break }
   }
 }
 
@@ -447,7 +449,7 @@ function onSpringsChoice(tier: 'Race' | 'Rally' | 'Drift') {
 // show the auto-populate indicator.
 const SPRINGS_TABS = new Set(['alignment', 'springs', 'damping'])
 const impliedPartNames = computed<Set<string>>(() => {
-  if (!ui.isEditing) return new Set()
+  if (!isEditing.value) return new Set()
   const result = impliedUpgrades(local.adjustments, [])
   const names = new Set<string>(result.toAdd.map(x => x.part))
   if (local.adjustments.some(r => SPRINGS_TABS.has(r.tab) && r.value !== r.stock)) {
@@ -661,7 +663,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   <div class="section-body">
 
     <!-- Variant tab strip — renders for 2+ variants in view mode, or always in edit mode -->
-    <div v-if="ui.isEditing || (local.variants?.length ?? 0) >= 2" class="rs-variant-tabs">
+    <div v-if="isEditing || (local.variants?.length ?? 0) >= 2" class="rs-variant-tabs">
       <template v-if="hasVariants">
         <div
           v-for="(v, i) in local.variants"
@@ -683,7 +685,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
             <span v-if="v.isSuggested" class="rs-tab-suggested-badge">Suggested</span>
           </button>
           <button
-            v-if="ui.isEditing && !v.isSuggested"
+            v-if="isEditing && !v.isSuggested"
             class="rs-variant-remove"
             type="button"
             :title="`Remove ${variantLabel(v)}`"
@@ -700,7 +702,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
       </div>
 
       <!-- Add variant button (edit mode only) -->
-      <div v-if="ui.isEditing" class="rs-add-variant-wrap">
+      <div v-if="isEditing" class="rs-add-variant-wrap">
         <template v-if="!showAddVariantPicker && !showAddVariantChoice">
           <button
             class="rs-variant-tab rs-variant-tab--add"
@@ -751,12 +753,12 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
           <img class="rs-variant-figure" :src="variantFigurePath" :alt="linkedCar?.model ?? ''" @click="modal.openLightbox(variantFigurePath, variantFigureImage!.path)" />
           <img class="rs-variant-preview" :src="variantFigurePath" :alt="linkedCar?.model ?? ''" aria-hidden="true" />
         </div>
-        <EditableText tag="p" class="tune-name" :modelValue="ui.isEditing ? local.tuneName : tuneDisplayName" @update:modelValue="v => { local.tuneName = v; flush() }" />
+        <EditableText tag="p" class="tune-name" :modelValue="isEditing ? local.tuneName : tuneDisplayName" @update:modelValue="v => { local.tuneName = v; flush() }" />
       </div>
       <div class="plate">
         SHARE CODE:
         <input
-          v-if="ui.isEditing"
+          v-if="isEditing"
           class="share-code-input"
           :value="local.shareCode"
           @input="onShareCodeInput"
@@ -771,7 +773,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         >{{ codeCopied ? 'Copied!' : (local.shareCode || '—') }}</b>
       </div>
       <!-- Car identity — uses variant's carId in multi-car mode -->
-      <div v-if="ui.isEditing" class="rs-car-row">
+      <div v-if="isEditing" class="rs-car-row">
         <CarPicker :car-id="effectiveCarId" @update:car-id="onVariantCarIdUpdate" />
       </div>
       <div v-else-if="linkedCar" class="rs-car-badge">
@@ -780,14 +782,14 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
       </div>
     </div>
 
-    <table v-if="ui.isEditing || hasNonStockSpecs" class="recipe-table">
+    <table v-if="isEditing || hasNonStockSpecs" class="recipe-table">
       <tbody>
         <tr>
           <th v-for="k in CORE_SPEC_KEYS" :key="k">{{ k }}</th>
         </tr>
         <tr>
           <td v-for="k in CORE_SPEC_KEYS" :key="k">
-            <template v-if="ui.isEditing">
+            <template v-if="isEditing">
               <select
                 v-if="SPEC_OPTIONS[k]"
                 class="spec-select"
@@ -815,7 +817,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
       </summary>
 
       <!-- Preset bar: spans the full section width, only visible in edit mode -->
-      <div v-if="ui.isEditing" class="kit-preset-bar" ref="presetBarEl">
+      <div v-if="isEditing" class="kit-preset-bar" ref="presetBarEl">
         <button class="kit-preset-trigger" type="button" @click="showPresetMenu = !showPresetMenu">
           {{ activeName || '— no preset —' }}
         </button>
@@ -846,8 +848,8 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
         </div>
       </div>
 
-      <div class="kit-body" :class="{ 'kit-body--grid': ui.isEditing || showStock }">
-        <UpgradesPicker v-if="ui.isEditing" :upgrades="local.upgrades" :show-stock="showStock" :implied-parts="impliedPartNames" />
+      <div class="kit-body" :class="{ 'kit-body--grid': isEditing || showStock }">
+        <UpgradesPicker v-if="isEditing" :upgrades="local.upgrades" :show-stock="showStock" :implied-parts="impliedPartNames" />
         <template v-else-if="showStock">
           <!-- Show Stock: full list, Engine pinned left, other cats balanced across cols 2-3 -->
           <div class="upgrades-grid">

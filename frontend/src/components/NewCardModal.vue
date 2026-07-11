@@ -572,6 +572,7 @@ onUnmounted(() => { document.body.style.overflow = '' })
         <RecipeSection
           :recipe="recipe"
           :initial-kit-open="true"
+          :force-edit="true"
           :car-id="newCarId"
           :reset-token="recipeResetToken"
           @update:recipe="updated => Object.assign(recipe, updated)"

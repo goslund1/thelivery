@@ -135,7 +135,7 @@ Legacy class names (e.g. `image-picker`, `ch-backdrop`) are kept alongside the n
 - **Edit-only affordances** (chip add/remove, lead-star, change-image, contenteditable styling) are `display:none` until `body.editing-mode` — so render them in markup always; the `ui.isEditing` watcher toggles the body class.
 
 ### Component tree
-`App.vue` → `SideBug` (+ `Filters` slot), `EditBar`, and a `v-for` of `CardView`, plus global modals (`Lightbox`, `ChipPicker`, `ImagePicker`, `ExitConfirmModal`, `CustomTip`).
+`App.vue` → `SideBug` (+ `Filters` slot), `EditBar`, and a `v-for` of `CardShell`/`CardView` (all filtered cards always mounted — see Card list rendering below), plus global modals (`Lightbox`, `ChipPicker`, `ImagePicker`, `ExitConfirmModal`, `CustomTip`).
 `CardView` → `CardMeta`, `Gallery`, `TagCloud`, then a `CollapsibleSection` per `card.sections` entry, dispatched by type to `TextSection` / `RecipeSection`. Reusable: `EditableText`.
 
 ### Edit mode + per-card persistence
@@ -152,46 +152,17 @@ Legacy class names (e.g. `image-picker`, `ch-backdrop`) are kept alongside the n
 ### Custom tooltips (`composables/tooltip.ts` + `CustomTip.vue`)
 - One shared tooltip element + a global `v-tip` directive. It drawer-slides open (width 0 → content width), snaps shut before reopening for a new target, and closes on scroll — all via imperative DOM + `requestAnimationFrame`, ported from the original. `v-tip` takes a string or a `() => string` (evaluated on each hover for live state like favorited/theme/expand).
 
-### Virtual scroll (`vue-virtual-scroller`)
+### Card list rendering
 
-The catalog uses `DynamicScroller` (page-mode) from `vue-virtual-scroller` v2. Key behaviors to understand:
+All filtered cards are always mounted — a plain `v-for` over `visibleCards` with no lazy mounting or virtual scroll. `visibleCards` (the Pinia filter computed) already bounds what's shown; at current catalog scale the memory cost is negligible.
 
-**Items stay mounted, never unmounted.** The scroller uses `position: absolute; transform: translateY()` to position items and `visibility: hidden; pointer-events: none` to hide off-screen ones. Components are NOT destroyed when they scroll out of view.
+**Why not virtual scroll:** `vue-virtual-scroller` (used previously) pools and recycles component slots as if they're stateless DOM nodes. Vue components aren't. Two failure modes emerged: slot recycling resets `<script setup>` state, and the pool can assign the same card to two concurrent slots (triggered by card height changes), causing display state to snap back when the pool swaps which slot is active. Both required module-level singleton workarounds (`stackedState.ts`, `variantState.ts`) that added permanent complexity to `TuningAdjustments` and `RecipeSection`.
 
-**BUT slots ARE recycled.** When the pool recalculates (e.g., a card height changes dramatically), vue-virtual-scroller may reassign a slot to a different item. In `App.vue`, `<CardShell :key="item.id">` detects this reassignment and forces Vue to destroy and recreate the full component tree. Any `ref()` inside `TuningAdjustments` or other deep children is re-initialized to its default value.
+**`<script setup>` is per-instance.** Everything inside `<script setup>` runs inside `setup()` per component mount — `const x = ref(0)` is recreated fresh for each mount. With all cards always mounted, each card has exactly one instance and this is never a problem.
 
-**The pool can also assign the same item to two slots simultaneously.** When height estimates are significantly off (common with tall cards — multi-variant, lots of images), the pool may miscalculate and render two live instances of the same card at once. One is visible, one is `visibility:hidden`. If the card's height then changes (e.g., View Inline expands it), the pool recalculates and may **swap which slot is "active"** — the previously-hidden instance (with default/stale state) becomes visible. This looks like a "fast open/close" toggle.
+**`scrollToCardId()`** — provided from `App.vue` and injected wherever needed. Uses `getElementById` + `getBoundingClientRect()` in a `requestAnimationFrame` to scroll to the card's current position.
 
-**`<script setup>` is per-instance — never use it for shared state.** Everything inside `<script setup>` runs inside `setup()` per component mount. A `const _store = {}` declared there is recreated fresh for every instance. It is NOT module-level, even if it looks like it. This trips up the "shared store" pattern badly — two concurrent instances each have their own private copy.
-
-**Pattern for state that must survive recycling AND stay in sync across concurrent instances** — put shared state in a dedicated `.ts` module (like `suggestState.ts` or `stackedState.ts`) so it is a true module singleton. Use a shared `Ref<boolean>` per `cardId` so Vue's reactivity propagates changes to all live instances immediately:
-
-```ts
-// stackedState.ts (module singleton — initialized once, shared across all imports)
-import { ref } from 'vue'
-import type { Ref } from 'vue'
-
-const _stackedRefs: Record<string, Ref<boolean>> = {}
-
-export function getStackedRef(cardId: string): Ref<boolean> {
-  if (!_stackedRefs[cardId]) _stackedRefs[cardId] = ref(false)
-  return _stackedRefs[cardId]
-}
-```
-
-```ts
-// In <script setup> of the component:
-import { getStackedRef } from './stackedState'
-const stacked = props.cardId ? getStackedRef(props.cardId) : ref(false)
-```
-
-All instances for the same `cardId` literally share the same `Ref<boolean>` object. When one instance sets `stacked.value = true`, all others — including any hidden duplicate — reflect that value immediately via Vue's reactivity. Whichever slot the pool surfaces is already in the correct state. `TuningAdjustments` uses this pattern via `stackedState.ts`.
-
-**Apply this pattern proactively** for any display-mode state (open/closed, active tab, stacked/unstacked) in components rendered inside the virtual scroll. The taller the card, the higher the risk of duplicate slots. Multi-variant cards (Smokin's 3 car tabs) are the most likely to hit this.
-
-**`scrollToCardId()`** — provided from `App.vue` and injected wherever needed. Calls `scrollerRef.scrollToItem(idx)` for a first-pass jump, then a double-rAF to find the real element via `getElementById` and correct the position.
-
-**`size-dependencies`** — `DynamicScrollerItem` accepts `:size-dependencies` to re-measure when card data changes. Currently set to `[item.sections, item.images]`. If card height can change for other reasons, add the relevant prop here.
+**If the catalog grows to hundreds of cards:** the right tool is CSS `content-visibility: auto` (browser-native — skips paint for off-screen elements, preserves layout, keeps component state intact) combined with `contain-intrinsic-size` for the initial height estimate. A `useCardVisibility.ts` composable (IntersectionObserver + KeepAlive) also exists in `composables/` as a foundation for lazy mounting if needed. Do not re-introduce `vue-virtual-scroller`.
 
 ### CSS overflow-x: auto implies overflow-y: auto
 

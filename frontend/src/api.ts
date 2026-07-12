@@ -1,7 +1,7 @@
 // Thin API client for the Rust backend. Uses relative URLs (dev server proxies
 // /api and /uploads to :8787; in prod they are same-origin). Mutating calls send
 // the JWT as a Bearer header; reads are public.
-import type { Card } from './types'
+import type { Card, UpgradeCategory } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -182,15 +182,15 @@ export const api = {
 
   listTuningPresets: () =>
     fetch('/api/tuning-presets').then(
-      json<{ id: number; name: string; values: Record<string, number>; kind: string; createdAt: string }[]>
+      json<{ id: number; name: string; values: Record<string, number>; kind: 'build' | 'baseline'; upgrades: UpgradeCategory[]; baselineId: number | null; createdAt: string }[]>
     ),
 
-  createTuningPreset: (payload: { name: string; values: Record<string, number>; kind?: string }) =>
+  createTuningPreset: (payload: { name: string; values: Record<string, number>; kind?: string; upgrades?: UpgradeCategory[]; baselineId?: number | null }) =>
     fetch('/api/tuning-presets', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...authHeaders() },
       body: JSON.stringify(payload),
-    }).then(json<{ id: number; name: string; values: Record<string, number>; kind: string; createdAt: string }>),
+    }).then(json<{ id: number; name: string; values: Record<string, number>; kind: 'build' | 'baseline'; upgrades: UpgradeCategory[]; baselineId: number | null; createdAt: string }>),
 
   deleteTuningPreset: (id: number) =>
     fetch(`/api/tuning-presets/${id}`, { method: 'DELETE', headers: authHeaders() }).then(

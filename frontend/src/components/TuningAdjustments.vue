@@ -904,7 +904,15 @@ function onTaKeydown(e: KeyboardEvent) {
 
 // ── Tuning presets ────────────────────────────────────────────────────────────
 
-type TuningPreset = { id: number; name: string; values: Record<string, number>; kind: string; createdAt: string }
+type TuningPreset = {
+  id: number
+  name: string
+  values: Record<string, number>
+  kind: 'build' | 'baseline'
+  upgrades: UpgradeCategory[]
+  baselineId: number | null
+  createdAt: string
+}
 
 const presets = ref<TuningPreset[]>([])
 const selectedPresetId = ref<number | null>(null)
@@ -915,6 +923,11 @@ const presetBusy = ref(false)
 const presetError = ref<string | null>(null)
 const deleteConfirmOpen = ref(false)
 const applyConfirmOpen  = ref(false)
+const activeBaselineId = ref<number | null>(null)
+
+const baselinePresets = computed(() => presets.value.filter(p => p.kind === 'baseline'))
+const buildPresets    = computed(() => presets.value.filter(p => p.kind === 'build'))
+const activeBaseline  = computed(() => presets.value.find(p => p.id === activeBaselineId.value) ?? null)
 
 async function loadPresets() {
   try { presets.value = await api.listTuningPresets() }
@@ -945,6 +958,19 @@ function executeApplyPreset() {
   })
   endDisplay.value = {}
   applyImpliedTransmission(preset.values)
+
+  if (preset.kind === 'baseline') {
+    activeBaselineId.value = preset.id
+    if (preset.upgrades?.length) {
+      emit('implied-upgrades', {
+        toAdd: preset.upgrades.flatMap(cat => cat.parts.map(part => ({ category: cat.category, part }))),
+        needsSpringsDialog: false,
+      })
+    }
+  } else if (preset.baselineId) {
+    activeBaselineId.value = preset.baselineId
+  }
+
   flush()
   requestAnimationFrame(() => window.scrollTo({ top: savedY, behavior: 'instant' }))
 }
@@ -961,7 +987,9 @@ async function saveAsPreset() {
       values[r.key + ':min'] = r.min
       values[r.key + ':max'] = r.max
     }
-    const created = await api.createTuningPreset({ name, values, kind: presetKind.value })
+    const upgrades = presetKind.value === 'baseline' ? (props.upgrades ?? []) : undefined
+    const baselineId = presetKind.value === 'build' ? activeBaselineId.value : undefined
+    const created = await api.createTuningPreset({ name, values, kind: presetKind.value, upgrades, baselineId })
     presets.value.push(created)
     selectedPresetId.value = created.id
     presetNameOpen.value = false
@@ -1147,13 +1175,21 @@ async function submitSuggestion() {
 
     <!-- Preset bar (edit mode only) -->
     <div v-if="ui.isEditing" class="ta-preset-bar">
+      <div v-if="activeBaseline" class="ta-baseline-label" :title="'Active baseline: ' + activeBaseline.name">
+        ◆ {{ activeBaseline.name }}
+      </div>
       <select
         v-model="selectedPresetId"
         class="ta-preset-select"
         :disabled="!presets.length"
       >
         <option :value="null" disabled>{{ presets.length ? 'Select preset…' : 'No presets saved' }}</option>
-        <option v-for="p in presets" :key="p.id" :value="p.id">{{ p.kind === 'baseline' ? '◆ ' : '' }}{{ p.name }}</option>
+        <optgroup v-if="baselinePresets.length" label="Baselines">
+          <option v-for="p in baselinePresets" :key="p.id" :value="p.id">◆ {{ p.name }}</option>
+        </optgroup>
+        <optgroup v-if="buildPresets.length" label="Builds">
+          <option v-for="p in buildPresets" :key="p.id" :value="p.id">{{ p.name }}</option>
+        </optgroup>
       </select>
       <button
         class="ta-btn-lwb ta-preset-btn"
@@ -1529,6 +1565,15 @@ async function submitSuggestion() {
   min-width: 140px;
 }
 .ta-preset-select option { background: var(--panel); color: var(--fg); }
+.ta-preset-select optgroup { color: var(--muted); font-size: 9px; letter-spacing: 0.08em; }
+.ta-baseline-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  opacity: 0.85;
+  white-space: nowrap;
+}
 .ta-preset-btn { font-size: 9px; padding: 3px 8px; }
 .ta-preset-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
 .ta-preset-btn--delete { color: color-mix(in srgb, #cc0000 70%, var(--muted)); border-color: color-mix(in srgb, #cc0000 30%, transparent); }

@@ -47,9 +47,9 @@ interface Card {
 
 interface CardImage {
   id: number          // images table PK — stable across file moves; negative temp while pre-upload
-  path: string        // resolved server-side from images table on every read
-  thumbPath?: string
-  stagePath?: string
+  path: string        // resolved server-side by inject_images() — see Images section
+  thumbPath?: string  // same — card body stores only { id, alt, order, carId }
+  stagePath?: string  // same
   alt?: string
   order: number
   carId?: string | null

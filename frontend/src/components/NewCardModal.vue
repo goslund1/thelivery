@@ -72,10 +72,10 @@ async function openFigurePicker(section: 'insp' | 'notes') {
         const result = await api.uploadImage(s.file, {
           name: cardCtx.name, subtitle: store.byId(cardCtx.id)?.subtitle ?? '',
           collections: cardCtx.collections, id: cardCtx.id,
-        }, undefined, undefined, 'refimg')
+        }, undefined, undefined, imageRole.value)
         s.poolResult = { id: result.id!, path: result.path, thumbPath: result.thumbPath, stagePath: result.stagePath }
         pendingPool.value.push({ id: result.id, path: result.path, thumbPath: result.thumbPath, stagePath: result.stagePath })
-        store.addImageToPool(cardCtx.id, result.path, result.thumbPath, result.stagePath, false, result.id)
+        store.addImageToPool(cardCtx.id, result.path, result.thumbPath, result.stagePath, imageRole.value !== 'refimg', result.id)
       } catch (e) {
         console.warn('[figure-picker] pre-upload failed:', e)
       }

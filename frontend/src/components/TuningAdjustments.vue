@@ -40,6 +40,8 @@ interface CanonicalRow {
   lockReason?: string
   bipolar?: boolean
   centerMark?: boolean
+  defaultMin?: number
+  defaultMax?: number
 }
 interface CanonicalGroup {
   title: string
@@ -57,71 +59,73 @@ interface CanonicalTab {
 const CANONICAL_TABS: CanonicalTab[] = [
   { id: 'tires', label: 'Tires', groups: [
     { title: 'Tire Pressure', axis: ['Low', 'High'], headerUnit: 'PSI', rows: [
-      { key: 'tiresFront', label: 'Front', unit: '', step: 0.5 },
-      { key: 'tiresRear',  label: 'Rear',  unit: '', step: 0.5 },
+      { key: 'tiresFront', label: 'Front', unit: '', step: 0.5, defaultMin: 15, defaultMax: 55 },
+      { key: 'tiresRear',  label: 'Rear',  unit: '', step: 0.5, defaultMin: 15, defaultMax: 55 },
     ]},
   ]},
   { id: 'gearing', label: 'Gearing' },
   { id: 'alignment', label: 'Alignment', groups: [
     { title: 'Camber', axis: ['Negative', 'Positive'], rows: [
-      { key: 'camberFront', label: 'Front', unit: '°', step: 0.1, bipolar: true },
-      { key: 'camberRear',  label: 'Rear',  unit: '°', step: 0.1, bipolar: true },
+      { key: 'camberFront', label: 'Front', unit: '°', step: 0.1, bipolar: true, defaultMin: -5, defaultMax: 5 },
+      { key: 'camberRear',  label: 'Rear',  unit: '°', step: 0.1, bipolar: true, defaultMin: -5, defaultMax: 5 },
     ]},
     { title: 'Toe', axis: ['Negative', 'Positive'], rows: [
-      { key: 'toeFront', label: 'Front', unit: '°', step: 0.1, bipolar: true },
-      { key: 'toeRear',  label: 'Rear',  unit: '°', step: 0.1, bipolar: true },
+      { key: 'toeFront', label: 'Front', unit: '°', step: 0.1, bipolar: true, defaultMin: -5, defaultMax: 5 },
+      { key: 'toeRear',  label: 'Rear',  unit: '°', step: 0.1, bipolar: true, defaultMin: -5, defaultMax: 5 },
     ]},
     { title: 'Caster', axis: ['Less', 'More'], rows: [
-      { key: 'casterFront', label: 'Front', unit: '°', step: 0.1 },
+      { key: 'casterFront', label: 'Front', unit: '°', step: 0.1, defaultMin: 1, defaultMax: 7 },
     ]},
   ]},
   { id: 'arb', label: 'Antiroll Bars', groups: [
     { title: 'Antiroll Bars', axis: ['Soft', 'Stiff'], rows: [
-      { key: 'arbFront', label: 'Front', unit: '', step: 0.01 },
-      { key: 'arbRear',  label: 'Rear',  unit: '', step: 0.01 },
+      { key: 'arbFront', label: 'Front', unit: '', step: 0.01, defaultMin: 1, defaultMax: 65 },
+      { key: 'arbRear',  label: 'Rear',  unit: '', step: 0.01, defaultMin: 1, defaultMax: 65 },
     ]},
   ]},
   { id: 'springs', label: 'Springs', groups: [
+    // Variable — min/max depend on car weight; starting defaults match a typical GT car.
     { title: 'Springs', axis: ['Soft', 'Stiff'], headerUnit: 'LB/IN', rows: [
-      { key: 'springFront', label: 'Front', unit: '', step: 0.5 },
-      { key: 'springRear',  label: 'Rear',  unit: '', step: 0.5 },
+      { key: 'springFront', label: 'Front', unit: '', step: 0.5, defaultMin: 246, defaultMax: 1230 },
+      { key: 'springRear',  label: 'Rear',  unit: '', step: 0.5, defaultMin: 246, defaultMax: 1230 },
     ]},
     { title: 'Ride Height', axis: ['Low', 'High'], headerUnit: 'IN', rows: [
-      { key: 'rideFront', label: 'Front', unit: '', step: 0.1 },
-      { key: 'rideRear',  label: 'Rear',  unit: '', step: 0.1 },
+      { key: 'rideFront', label: 'Front', unit: '', step: 0.1, defaultMin: 2.4, defaultMax: 6.0 },
+      { key: 'rideRear',  label: 'Rear',  unit: '', step: 0.1, defaultMin: 2.4, defaultMax: 6.0 },
     ]},
   ]},
   { id: 'damping', label: 'Damping', groups: [
     { title: 'Rebound Stiffness', axis: ['Soft', 'Stiff'], rows: [
-      { key: 'reboundFront', label: 'Front', unit: '', step: 0.1 },
-      { key: 'reboundRear',  label: 'Rear',  unit: '', step: 0.1 },
+      { key: 'reboundFront', label: 'Front', unit: '', step: 0.1, defaultMin: 1, defaultMax: 20 },
+      { key: 'reboundRear',  label: 'Rear',  unit: '', step: 0.1, defaultMin: 1, defaultMax: 20 },
     ]},
     { title: 'Bump Stiffness', axis: ['Soft', 'Stiff'], rows: [
-      { key: 'bumpFront', label: 'Front', unit: '', step: 0.1 },
-      { key: 'bumpRear',  label: 'Rear',  unit: '', step: 0.1 },
+      { key: 'bumpFront', label: 'Front', unit: '', step: 0.1, defaultMin: 1, defaultMax: 20 },
+      { key: 'bumpRear',  label: 'Rear',  unit: '', step: 0.1, defaultMin: 1, defaultMax: 20 },
     ]},
   ]},
   { id: 'aero', label: 'Aero', groups: [
+    // Variable — min/max depend on the car's aero package.
     { title: 'Downforce', axis: ['Speed', 'Cornering'], rows: [
-      { key: 'aeroFront', label: 'Front', unit: '', step: 1 },
-      { key: 'aeroRear',  label: 'Rear',  unit: '', step: 1 },
+      { key: 'aeroFront', label: 'Front', unit: '', step: 1, defaultMin: 0, defaultMax: 700 },
+      { key: 'aeroRear',  label: 'Rear',  unit: '', step: 1, defaultMin: 0, defaultMax: 700 },
     ]},
   ]},
   { id: 'brakes', label: 'Brake', groups: [
-    { title: 'Balance',  axis: ['Rear', 'Front'],  rows: [{ key: 'brakeBalance',  label: 'Balance',  unit: '%', step: 1, centerMark: true }] },
-    { title: 'Pressure', axis: ['Low',  'High'],   rows: [{ key: 'brakePressure', label: 'Pressure', unit: '%', step: 1, centerMark: true }] },
+    { title: 'Balance',  axis: ['Rear', 'Front'],  rows: [{ key: 'brakeBalance',  label: 'Balance',  unit: '%', step: 1, centerMark: true, defaultMin: 0, defaultMax: 100 }] },
+    { title: 'Pressure', axis: ['Low',  'High'],   rows: [{ key: 'brakePressure', label: 'Pressure', unit: '%', step: 1, centerMark: true, defaultMin: 0, defaultMax: 200 }] },
   ]},
   { id: 'differential', label: 'Differential', groups: [
     { title: 'Front', axis: ['Low', 'High'], rows: [
-      { key: 'diffFrontAccel', label: 'Acceleration', unit: '%', step: 1 },
-      { key: 'diffFrontDecel', label: 'Deceleration', unit: '%', step: 1 },
+      { key: 'diffFrontAccel', label: 'Acceleration', unit: '%', step: 1, defaultMin: 0, defaultMax: 100 },
+      { key: 'diffFrontDecel', label: 'Deceleration', unit: '%', step: 1, defaultMin: 0, defaultMax: 100 },
     ]},
     { title: 'Rear', axis: ['Low', 'High'], rows: [
-      { key: 'diffRearAccel', label: 'Acceleration', unit: '%', step: 1 },
-      { key: 'diffRearDecel', label: 'Deceleration', unit: '%', step: 1 },
+      { key: 'diffRearAccel', label: 'Acceleration', unit: '%', step: 1, defaultMin: 0, defaultMax: 100 },
+      { key: 'diffRearDecel', label: 'Deceleration', unit: '%', step: 1, defaultMin: 0, defaultMax: 100 },
     ]},
     { title: 'Center', axis: ['Front', 'Rear'], rows: [
-      { key: 'centerBalance', label: 'Balance', unit: '%', step: 1, centerMark: true },
+      { key: 'centerBalance', label: 'Balance', unit: '%', step: 1, centerMark: true, defaultMin: 0, defaultMax: 100 },
     ]},
   ]},
 ]
@@ -284,8 +288,8 @@ function buildLocalRows(): LocalRow[] {
           label: def.label,
           unit:  def.unit,
           step:  def.step,
-          min:   stored?.min   ?? 0,
-          max:   stored?.max   ?? 100,
+          min:   stored?.min   ?? def.defaultMin ?? 0,
+          max:   stored?.max   ?? def.defaultMax ?? 100,
           // When a baseline is provided (suggestion viewer), diff against the card's
           // current value rather than the true stock value.
           stock: baseline?.value ?? stored?.stock ?? 0,

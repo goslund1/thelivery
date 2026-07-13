@@ -368,7 +368,7 @@ function cancelFolderImport() {
       v-if="ui.isEditing"
       class="thumb-add-panel"
       :title="poolSorted.length > 0 ? 'Manage photos' : 'Add photos'"
-      @click="poolSorted.length > 0 ? modal.openGalleryManager(card.id) : folderInputRef?.click()"
+      @click="poolSorted.length > 0 ? modal.openGalleryManager(card.id, props.activeCarId) : folderInputRef?.click()"
     >
       <span class="thumb-add-icon">
         <span v-if="uploadProgress" class="thumb-add-progress">{{ uploadProgress.done }}/{{ uploadProgress.total }}</span>

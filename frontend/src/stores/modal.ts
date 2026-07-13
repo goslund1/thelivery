@@ -52,6 +52,7 @@ export const useModalStore = defineStore('modal', () => {
   // ── Image picker / gallery manager ──────────────────────────────────────────
   const imagePicker = ref<{
     cardId: string | null
+    initialCarId?: string | null
     sectionKey?: string
     onPick?: (path: string, img?: PoolImage) => void
     // Getter for the pending pool in new-card creation mode. Using a function avoids
@@ -65,7 +66,7 @@ export const useModalStore = defineStore('modal', () => {
   function openImagePicker(cardId: string, sectionKey: string) {
     imagePicker.value = { cardId, sectionKey }
   }
-  function openGalleryManager(cardId: string) { imagePicker.value = { cardId } }
+  function openGalleryManager(cardId: string, initialCarId?: string | null) { imagePicker.value = { cardId, initialCarId } }
   // Open the Photo Manager in manage mode for a card that may not exist yet.
   function openManagePhotos(cardId: string | null, ensureCard?: (carId: string | null) => Promise<string>) {
     imagePicker.value = { cardId, ensureCard }

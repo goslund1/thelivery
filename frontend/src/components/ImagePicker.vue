@@ -32,8 +32,8 @@ const uploadLog = ref<UploadEntry[]>([])
 
 watch(ctx, (c) => {
   if (c) {
-    // Init session from card's existing carId, if any
-    const carId = store.byId(c.cardId ?? '')?.carId ?? null
+    // Prefer explicit initialCarId (e.g. active car tab), fall back to card.carId
+    const carId = c.initialCarId ?? store.byId(c.cardId ?? '')?.carId ?? null
     sessionCarId.value = carId
     sessionCarName.value = carId ? (carsStore.byId(carId)?.model ?? carId) : ''
     sessionImageRole.value = 'gallery'

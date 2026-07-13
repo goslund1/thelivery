@@ -307,19 +307,25 @@ initTabModes()
 const localRows = ref<LocalRow[]>(buildLocalRows())
 const endDisplay = ref<Record<string, string>>({})
 
+// Set while the props.adjustments watcher is running so the gearCount watcher
+// (flush: 'sync') can distinguish an incoming-prop gear change from a user action.
+let _inPropUpdate = false
+
 watch(() => props.adjustments, () => {
+  _inPropUpdate = true
   gearCount.value = storedGearCount()
   initTabModes()
   localRows.value = buildLocalRows()
   endDisplay.value = {}
   suggestCollapsed.value = false
+  _inPropUpdate = false
 }, { deep: false })
 
 watch(gearCount, () => {
   const nonGear = localRows.value.filter(r => r.tab !== 'gearing')
   localRows.value = [...nonGear, ...buildGearRows()]
-  flush()
-})
+  if (!_inPropUpdate) flush()
+}, { flush: 'sync' })
 
 watch([transmissionTier, viewTransmissionTier], () => {
   const nonGear = localRows.value.filter(r => r.tab !== 'gearing')

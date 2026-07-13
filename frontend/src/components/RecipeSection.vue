@@ -757,7 +757,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
           <img class="rs-variant-figure" :src="variantFigurePath" :alt="linkedCar?.model ?? ''" @click="modal.openLightbox(variantFigurePath, variantFigureImage!.path)" />
           <img class="rs-variant-preview" :src="variantFigurePath" :alt="linkedCar?.model ?? ''" aria-hidden="true" />
         </div>
-        <EditableText tag="p" class="tune-name" :modelValue="isEditing ? local.tuneName : tuneDisplayName" @update:modelValue="v => { local.tuneName = v; flush() }" />
+        <EditableText tag="p" class="tune-name" :modelValue="isEditing ? local.tuneName : tuneDisplayName" :placeholder="isEditing ? tuneDisplayName : undefined" @update:modelValue="v => { local.tuneName = v; flush() }" />
       </div>
       <div class="plate">
         SHARE CODE:

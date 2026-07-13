@@ -7,7 +7,7 @@ import { MarkDirtyKey, CardIdKey } from '../keys'
 // string. Content is written to the DOM imperatively (not via template
 // interpolation) so typing never resets the caret. Replaces the original app's
 // contentEditable fields + input-event dirty tracking.
-const props = defineProps<{ modelValue: string; tag?: string }>()
+const props = defineProps<{ modelValue: string; tag?: string; placeholder?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
 const ui = useUiStore()
 const markDirty = inject(MarkDirtyKey, () => {})
@@ -49,8 +49,17 @@ watch(
     ref="el"
     :contenteditable="ui.isEditing"
     class="editable"
+    :data-placeholder="placeholder"
     @input="onInput"
     @focus="onFocus"
     @blur="onBlur"
   />
 </template>
+
+<style scoped>
+.editable[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  pointer-events: none;
+}
+</style>

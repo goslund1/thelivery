@@ -37,18 +37,22 @@ This document is the handoff for the next session. Read it top to bottom before 
 
 Run these manually on the Smokin card (dev server: `cd backend && cargo run` + `cd frontend && npm run dev`).
 
-### Test checklist
-- [ ] View mode: tab strip visible with 3 tabs (599D, Corvette, Austin Healey)
-- [ ] View mode: switching tabs updates the recipe section content
-- [ ] Edit mode: all tabs editable, dirty tracking works per-card (not per-tab)
-- [ ] Edit mode: save → reload → tab data round-trips correctly for all 3 variants
-- [ ] Edit mode: remove Corvette tab → confirm dialog → tab gone, 599D becomes active
-- [ ] Edit mode: remove until 1 tab → tab strip collapses, card looks like single-car card
-- [ ] Single-car card (any other card): no tab strip in view or edit mode
-- [ ] Discard: edits to variant data revert correctly on exit without save
-- [ ] Wizard: auto-propose banner appears when card images span 2+ carIds and no variants exist
-- [ ] Wizard: confirm → tabs created with correct car names and preset labels
-- [ ] Discipline preset values: currently empty — note which presets need real values, fill them in during this pass if possible (Jason to supply starting slider values per discipline)
+### Test checklist — completed 2026-07-12 (dummy data)
+- [x] View mode: tab strip visible with 3 tabs (599D, Corvette, Austin Healey)
+- [x] View mode: switching tabs updates the recipe section content
+- [x] Edit mode: all tabs editable, dirty tracking works per-card (not per-tab)
+- [x] Edit mode: save → reload → tab data round-trips correctly for all 3 variants
+- [x] Edit mode: remove Corvette tab → confirm dialog → tab gone, 599D becomes active
+- [x] Edit mode: remove until 1 tab → tab strip collapses, card looks like single-car card
+- [x] Single-car card (any other card): no tab strip in view or edit mode
+- [x] Discard: edits to variant data revert correctly on exit without save
+- [x] Wizard: auto-propose banner / wizard covered in prior sessions (not re-run this pass)
+- [x] Race condition guard: demonstrated with 3s fetch delay — anchor sliders unaffected, pendingPresetId deferred (see audit-2026-07-12.md)
+- [ ] **Discipline preset values** — STILL EMPTY. Presets exist (Race/Rally/Drift/Street/etc.) but have no base slider values. Jason needs to supply starting-point values per discipline before the wizard is useful in practice.
+
+**Bugs found and fixed during shakedown:**
+1. Spurious Springs dialog on tab switch → `_inPropUpdate` + `flush:'sync'` in TuningAdjustments (commit 5eaae18)
+2. Tune name invisible in edit mode when empty → placeholder prop on EditableText (commit 5eaae18)
 
 ---
 

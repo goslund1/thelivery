@@ -375,9 +375,11 @@ watch(activeVariantIndex, async (idx, prevIdx) => {
     if (!wizardPresets.value.length) {
       try { wizardPresets.value = await api.listTuningPresets() } catch { return }
     }
+    if (activeVariantIndex.value !== idx) return  // user switched tabs during load
     const preset = wizardPresets.value.find(p => p.id === v.pendingPresetId)
     if (preset && taRef.value) {
       await nextTick()
+      if (activeVariantIndex.value !== idx) return  // user switched tabs during tick
       taRef.value.applyPresetValues(preset.values, preset.kind)
       delete v.pendingPresetId
       flush()
@@ -398,8 +400,9 @@ onMounted(() => {
 // restore, cancel/discard). Watching the token instead of props.recipe directly
 // means our own flush → store update → prop change cycle never triggers a re-sync.
 watch(() => props.resetToken, () => {
+  activeVariantIndex.value = 0
   Object.assign(local, cloneRecipe(props.recipe))
-  if (isMultiCar.value) applyVariant(activeVariantIndex.value)
+  if (isMultiCar.value) applyVariant(0)
 })
 
 function flush() {
@@ -421,6 +424,7 @@ function flush() {
     clone.adjustments = liveAdj
     if (hasVariants.value && clone.variants?.[activeVariantIndex.value]) {
       clone.variants[activeVariantIndex.value].adjustments = liveAdj
+      local.variants![activeVariantIndex.value].adjustments = liveAdj
     }
   }
   emit('update:recipe', clone)

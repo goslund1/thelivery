@@ -8,6 +8,8 @@ Living to-do file for thelivery. Update this when items are started, completed, 
 
 ### 1. Photo Manager overlay — unified import and pool management
 
+**In progress — core built 2026-07-13 (commit 3b4cee4). Remaining: Gallery entry point carId pre-fill, figure-pick upload using session car, multi-car detection on [change].**
+
 **Design spec (settled 2026-07-12)**
 
 All photo-related actions across the app converge on one modal overlay: the Photo Manager. It replaces the scattered upload paths in NewCardModal, Gallery folder import, and the figure picker's bare file inputs, and expands ImagePicker into the full management surface.

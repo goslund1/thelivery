@@ -99,7 +99,11 @@ const gallery = computed(() => {
   }
   return [...(card.value?.images ?? [])].sort((a, b) => a.order - b.order)
 })
-const isManage = computed(() => !!ctx.value && !ctx.value.sectionKey)
+// lastWasManage persists the mode during the CSS fade-out (when ctx becomes null)
+// so the template doesn't flash pick-mode content while the backdrop fades out.
+const lastWasManage = ref(true)
+watch(ctx, (c) => { if (c) lastWasManage.value = !c.sectionKey })
+const isManage = computed(() => ctx.value ? !ctx.value.sectionKey : lastWasManage.value)
 
 // ── Pick mode ────────────────────────────────────────────────────────────────
 const pickUploading = ref(false)

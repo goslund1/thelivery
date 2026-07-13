@@ -6,12 +6,52 @@ Living to-do file for thelivery. Update this when items are started, completed, 
 
 ## Active — ordered by priority
 
-### 1. New card flow — guided import UX (in progress)
+### 1. Photo Manager overlay — unified import and pool management
 
-The new card modal currently shows everything at once like a static form. The goal is a guided wizard feel matching the migration tool's panel-style step-through. Two sub-items remain:
+**Design spec (settled 2026-07-12)**
 
-- **Import panel**: when photos are staged and the user hits "Import →", a focused panel should float over the modal showing thumbnail grid + car/+IMG selection + livery name + progress log. Mirrors ImageMigrationModal's guided-per-card experience. This is the natural container for the card-name-first → photos → car/refimg → import sequence.
-- **Figure section pickers** (inspiration/notes): currently bare `<input type="file">`. Should show the card's image pool (gallery + refimg images already uploaded) via `ImagePicker`, with "upload new" triggering the RefImg pipeline. Currently figure images uploaded here bypass the structured pipeline entirely.
+All photo-related actions across the app converge on one modal overlay: the Photo Manager. It replaces the scattered upload paths in NewCardModal, Gallery folder import, and the figure picker's bare file inputs, and expands ImagePicker into the full management surface.
+
+#### What it is
+
+A single overlay (expands the existing `ImagePicker` component) with three areas:
+
+**Main area — image pool grid**
+All images associated with the card, regardless of role. Thumbnails support drag-to-reorder, included/excluded toggle (slideshow visibility), per-image delete, and click-to-open PhotoDetail. This is what ImagePicker already renders — no structural change needed, just needs to stay the center of the overlay.
+
+**Top bar — game + role chips**
+`FH5` · `FH6` · `+IMG` chips live here. These set the carId context for the current upload session:
+- **FH5 / FH6**: opens that game's car list (CarPicker disambiguation). Once a car is selected, carId is set for the session. All subsequent uploads in this overlay session auto-tag to that car without re-prompting.
+- **+IMG**: bypasses the make/model path entirely. Marks incoming files as `image_role = 'refimg'`, `included = false`. No carId required.
+- **Session carId pill**: once a car is selected, the chip area collapses to a pill showing the car name with a [change] button. Tapping [change] re-opens the full CarPicker. If the user picks a *different* car, multi-car detection fires and the CarTabs wizard is offered (same as today).
+- **Existing card with carId already set**: the pill is pre-populated on open. The user can proceed with the same car or hit [change] to start a new vehicle round.
+
+**Side panel — import progress**
+Appears while files are uploading; collapses when idle. Shows per-file progress rows (filename + progress bar + status), mirroring ImageMigrationModal's log style. Fades out or collapses to a summary when all uploads complete.
+
+#### Modes
+
+- **Pick mode**: opened from a figure section (inspiration / design notes). Clicking a thumbnail picks it as the figure image and closes the overlay. "Upload new" drops into the same pool flow — file lands in the pool, auto-selected as the figure pick.
+- **Manage mode**: opened from the gallery edit button or a "Manage photos" action. Full management — reorder, toggle, delete, batch select, upload more. No figure selection.
+
+#### Entry points → all open the same overlay
+
+| Trigger | Mode | carId pre-fill |
+|---|---|---|
+| Figure picker (inspiration / notes) | Pick | card's carId if set |
+| Gallery "add photos" / folder drop (edit mode) | Manage | card's carId if set |
+| "Manage photos" button | Manage | card's carId if set |
+| New card — first photo action | Manage | none (chips required) |
+
+#### NewCardModal changes
+
+- The staged-file holding area and "Import →" batch button are removed. Photo management moves entirely into the Photo Manager overlay, opened the first time the user takes a photo action.
+- The final action button becomes **"Create Card"** — it commits the card metadata and saves. Photos are already in the pool by this point.
+- The `imageRole` local ref and the figure-picker pre-upload workaround (`openFigurePicker` auto-upload that was hardcoding `'refimg'`) are no longer needed once the overlay owns all upload paths.
+
+#### Key invariant
+
+**CarPicker disambiguation always happens inside the overlay, at upload time, not before.** No pre-form setup required. The session carId persists for the duration of the overlay session so repeated uploads to the same car need only one disambiguation step.
 
 ---
 

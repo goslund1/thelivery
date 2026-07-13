@@ -62,7 +62,7 @@ See `docs/plan-cartabs-tunetabs.md` for the full action plan covering steps 1–
 CarTabs wizard and tab strip UI are built. The following gaps remain before the mashup feature is shippable:
 
 - ~~**Figure image near recipe**~~ — done. Lead image for the active carId appears before the tune name (48px tall, hover shows 200px preview, click opens lightbox). Tune name falls back to `'YY Model` when empty in multi-car mode. Share code is click-to-copy in view mode.
-- **Discipline preset values** — the wizard walks through applying a preset per car, but the presets themselves have no actual base slider values yet. The names (Race / Rally / Drift / Street / etc.) exist; the values don't. These need to be filled in with Jason's established starting points before the wizard is useful.
+- **Discipline preset values** — dummy values unblock the refactor; real Jason values deferred. Wizard is exercisable once dummy values are seeded.
 - ~~**NewCardModal multi-car detection**~~ — done. After a successful photo import, modal pauses and shows "Done / + Add another car" instead of auto-closing. Each additional round creates a new livery on the same card. RecipeSection's auto-propose banner handles tab setup once 2+ carIds are present in the photos.
 - ~~**Shakedown pass**~~ — done. Two bugs found and fixed: (1) spurious Springs dialog on tab switch (`_inPropUpdate` + `flush:'sync'` in TuningAdjustments); (2) tune-name invisible when empty in edit mode (placeholder prop on EditableText). Save/restore round-trip, discard, tab deletion, single-car cards unaffected — all confirmed. — 2026-07-12
 
@@ -91,9 +91,9 @@ Card
 - A single-car card with one tune renders no tab strips at all (current default behavior, unchanged).
 
 **Implementation order:**
-1. Finish item 1 (current CarTabs shakedown) first — validate the car-level layer before adding tune nesting
-2. Design the `cars[]` data shape and migration path from the current `variants[]` flat array
-3. Build TuneTabs UI and authoring flow as a parallel module to CarTabs
+1. ~~Finish item 1 (current CarTabs shakedown) first~~ — done
+2. ~~Design the `cars[]` data shape and migration path~~ — done 2026-07-13 (Step 3 complete)
+3. Build TuneTabs UI and authoring flow as a parallel module to CarTabs (Step 4 — next)
 
 **Backend migration note:**
 The `variants[]` array lives in the card's JSON body, so no new SQL migration is needed. However, `normalize_bodies()` in `backend/src/main.rs` will need a new step to reshape existing `variants[]` flat arrays into the `cars[]` nested structure. Smokin is currently the only card with variants, so the migration surface is small — but it must go through `normalize_bodies()` (idempotent, runs on startup) rather than a one-time manual DB patch. See CLAUDE.md → "Seeding" for the normalize_bodies pattern.

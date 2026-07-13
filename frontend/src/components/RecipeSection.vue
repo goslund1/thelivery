@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import type { CardVariant, ForzaRecipeSection, Tune, UpgradeCategory } from '../types'
+import type { CardCar, ForzaRecipeSection, Tune, UpgradeCategory } from '../types'
 import { api } from '../api'
 import { useUiStore } from '../stores/ui'
 import { useFilterStore } from '../stores/filters'
@@ -39,14 +39,14 @@ const carsStore = useCarsStore()
 const tunesStore = useTunesStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
-// Active variant owns the car identity when variants exist; single slot uses the card-level carId.
+// Active car owns the car identity when cars[] exists; single slot uses the card-level carId.
 const effectiveCarId = computed(() =>
-  hasVariants.value ? (local.variants?.[activeVariantIndex.value]?.carId ?? null) : (props.carId ?? null)
+  hasCars.value ? (local.cars?.[activeCarIndex.value]?.carId ?? null) : (props.carId ?? null)
 )
 const linkedCar = computed(() => effectiveCarId.value ? carsStore.byId(effectiveCarId.value) : undefined)
 
 const variantFigureImage = computed(() => {
-  if (!isMultiCar.value || !effectiveCarId.value || !props.images?.length) return null
+  if (!hasCars.value || !effectiveCarId.value || !props.images?.length) return null
   return props.images
     .filter(img => img.carId === effectiveCarId.value)
     .sort((a, b) => a.order - b.order)[0] ?? null
@@ -58,15 +58,15 @@ const variantFigurePath = computed(() => {
 
 const tuneDisplayName = computed(() => {
   if (local.tuneName) return local.tuneName
-  if (!isMultiCar.value || !linkedCar.value) return ''
+  if (!hasCars.value || !linkedCar.value) return ''
   const car = linkedCar.value
   const yr = car.year ? `'${String(car.year).slice(-2)} ` : ''
   return `${yr}${car.model}`
 })
 
 function onVariantCarIdUpdate(id: string | null) {
-  if (hasVariants.value && local.variants?.[activeVariantIndex.value]) {
-    local.variants[activeVariantIndex.value].carId = id ?? ''
+  if (hasCars.value && local.cars?.[activeCarIndex.value]) {
+    local.cars[activeCarIndex.value].carId = id ?? ''
     emit('update:activeCarId', id)
     markDirty()
     flush()
@@ -90,56 +90,47 @@ for (const k of CORE_SPEC_KEYS) {
   if (local.coreSpecs[k] == null) local.coreSpecs[k] = ''
 }
 
-// ── Multi-car / multi-tune variant support ────────────────────────────────────
-// hasVariants: 1+ variant slots exist (tab strip is active)
-// isMultiCar:  variants exist AND at least one has a different carId
-// isMultiTune: variants exist AND all share the same carId
-const hasVariants = computed(() => (local.variants?.length ?? 0) >= 1)
-const isMultiCar  = computed(() => {
-  if (!hasVariants.value) return false
-  const first = local.variants![0].carId
-  return local.variants!.some(v => v.carId !== first)
-})
-const isMultiTune = computed(() => hasVariants.value && !isMultiCar.value)
-// "+ Add tune" is available when all current variants share the same car (or no variants yet).
-const canAddTune = computed(() => !isMultiCar.value)
+// ── Multi-car support ─────────────────────────────────────────────────────────
+// hasCars:    cars[] has 1+ entries (tab strip active)
+// isMultiCar: cars[] has 2+ entries (distinct cars)
+// canAddTune: no cars[] yet, or only 1 car (TuneTabs, Step 4)
+const hasCars     = computed(() => (local.cars?.length ?? 0) >= 1)
+const isMultiCar  = computed(() => (local.cars?.length ?? 0) >= 2)
+const canAddTune  = computed(() => !isMultiCar.value)
 
-const activeVariantIndex = ref(0)
+const activeCarIndex = ref(0)
 
 function applyVariant(idx: number) {
-  const v = local.variants?.[idx]
-  if (!v) return
-  local.tuneName = v.tuneName
-  local.shareCode = v.shareCode
-  for (const k of Object.keys(v.coreSpecs)) local.coreSpecs[k] = v.coreSpecs[k]
-  local.upgrades = v.upgrades
-  local.adjustments = v.adjustments
+  const car = local.cars?.[idx]
+  const tune = car?.tunes[0]
+  if (!tune) return
+  local.tuneName = tune.tuneName
+  local.shareCode = tune.shareCode
+  for (const k of Object.keys(tune.coreSpecs)) local.coreSpecs[k] = tune.coreSpecs[k]
+  local.upgrades = tune.upgrades
+  local.adjustments = tune.adjustments
 }
 
-function variantLabel(v: CardVariant): string {
-  if (isMultiTune.value) {
-    return v.tuneName || v.tuneType || 'Tune'
-  }
-  const car = carsStore.byId(v.carId)
-  if (!car) return v.carId || '(no car)'
-  return `${car.year ? car.year + ' ' : ''}${car.make} ${car.model}`
+function carLabel(car: CardCar): string {
+  const c = carsStore.byId(car.carId)
+  if (!c) return car.carId || '(no car)'
+  return `${c.year ? c.year + ' ' : ''}${c.make} ${c.model}`
 }
 
-function variantShortLabel(v: CardVariant): string {
-  if (isMultiTune.value) return variantLabel(v)
-  const car = carsStore.byId(v.carId)
-  if (!car) return v.carId || '(no car)'
-  return car.model
+function carShortLabel(car: CardCar): string {
+  const c = carsStore.byId(car.carId)
+  if (!c) return car.carId || '(no car)'
+  return c.model
 }
 
 // ── Edit-mode variant management ──────────────────────────────────────────────
 const showAddVariantPicker = ref(false)
 const showAddVariantChoice = ref(false)
 
-// Auto-propose tabs when card images span 2+ distinct cars and no variants exist yet
+// Auto-propose tabs when card images span 2+ distinct cars and no cars[] exist yet
 const cardsStore = useCardsStore()
 const autoProposeCarIds = computed<string[]>(() => {
-  if (hasVariants.value || !props.cardId) return []
+  if (hasCars.value || !props.cardId) return []
   const card = cardsStore.cards.find(c => c.id === props.cardId)
   if (!card) return []
   const counts = new Map<string, number>()
@@ -157,20 +148,22 @@ function acceptAutoPropose() {
   const currentCarId = props.carId ?? ''
   const matchIdx = ids.indexOf(currentCarId)
   const anchorIdx = matchIdx >= 0 ? matchIdx : 0
-  local.variants = ids.map((id, i) => {
+  local.cars = ids.map((id, i) => {
     if (i === anchorIdx) {
       return {
         carId: id,
-        tuneName: local.tuneName,
-        shareCode: local.shareCode,
-        coreSpecs: { ...local.coreSpecs },
-        upgrades: [...local.upgrades],
-        adjustments: [...local.adjustments],
+        tunes: [{
+          tuneName: local.tuneName,
+          shareCode: local.shareCode,
+          coreSpecs: { ...local.coreSpecs },
+          upgrades: [...local.upgrades],
+          adjustments: [...local.adjustments],
+        }],
       }
     }
-    return makeEmptyVariant(id)
+    return makeEmptyCar(id)
   })
-  activeVariantIndex.value = anchorIdx
+  activeCarIndex.value = anchorIdx
   autoProposesDismissed.value = true
   markDirty()
   flush()
@@ -206,23 +199,25 @@ async function beginSetupWizard() {
 function finishWizard() {
   const ids = wizardAllIds.value
   const anchorIdx = wizardAnchorIdx.value
-  local.variants = ids.map((id, i) => {
+  local.cars = ids.map((id, i) => {
     if (i === anchorIdx) {
       return {
         carId: id,
-        tuneName: local.tuneName,
-        shareCode: local.shareCode,
-        coreSpecs: { ...local.coreSpecs },
-        upgrades: [...local.upgrades],
-        adjustments: [...local.adjustments],
-      }
+        tunes: [{
+          tuneName: local.tuneName,
+          shareCode: local.shareCode,
+          coreSpecs: { ...local.coreSpecs },
+          upgrades: [...local.upgrades],
+          adjustments: [...local.adjustments],
+        }],
+      } as CardCar
     }
-    const v = makeEmptyVariant(id)
+    const car = makeEmptyCar(id)
     const presetId = wizardSelections.value[id]
-    if (presetId != null) v.pendingPresetId = presetId
-    return v
+    if (presetId != null) car.tunes[0].pendingPresetId = presetId
+    return car
   })
-  activeVariantIndex.value = anchorIdx
+  activeCarIndex.value = anchorIdx
   autoProposesDismissed.value = true
   showSetupWizard.value = false
   markDirty()
@@ -235,73 +230,75 @@ function wizardCarLabel(carId: string): string {
 }
 const pendingRemoveIdx = ref<number | null>(null)
 
-function variantIsEmpty(v: CardVariant): boolean {
-  return !v.tuneName.trim() && !v.shareCode.trim()
-    && v.upgrades.every(c => c.parts.length === 0)
-    && v.adjustments.length === 0
+function carIsEmpty(car: CardCar): boolean {
+  const t = car.tunes[0]
+  if (!t) return true
+  return !t.tuneName.trim() && !t.shareCode.trim()
+    && t.upgrades.every(c => c.parts.length === 0)
+    && t.adjustments.length === 0
 }
 
-function makeEmptyVariant(carId: string): CardVariant {
+function makeEmptyCar(carId: string): CardCar {
   return {
     carId,
-    tuneName: '',
-    shareCode: '',
-    coreSpecs: Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, ''])),
-    upgrades: [],
-    adjustments: [],
+    tunes: [{
+      tuneName: '',
+      shareCode: '',
+      coreSpecs: Object.fromEntries(CORE_SPEC_KEYS.map(k => [k, ''])),
+      upgrades: [],
+      adjustments: [],
+    }],
   }
 }
 
-function addVariant(carId: string | null) {
+function addCar(carId: string | null) {
   if (!carId) { showAddVariantPicker.value = false; return }
   showAddVariantPicker.value = false
-  if (!hasVariants.value) {
-    // Promote: current recipe fields → variant[0], new slot → variant[1]
-    local.variants = [
+  if (!hasCars.value) {
+    // Promote: current recipe fields → cars[0], new car → cars[1]
+    local.cars = [
       {
         carId: props.carId ?? '',
-        tuneName: local.tuneName,
-        shareCode: local.shareCode,
-        coreSpecs: { ...local.coreSpecs },
-        upgrades: [...local.upgrades],
-        adjustments: [...local.adjustments],
+        tunes: [{
+          tuneName: local.tuneName,
+          shareCode: local.shareCode,
+          coreSpecs: { ...local.coreSpecs },
+          upgrades: [...local.upgrades],
+          adjustments: [...local.adjustments],
+        }],
       },
-      makeEmptyVariant(carId),
+      makeEmptyCar(carId),
     ]
-    activeVariantIndex.value = 1
+    activeCarIndex.value = 1
     applyVariant(1)
   } else {
-    local.variants = [...(local.variants ?? []), makeEmptyVariant(carId)]
-    const newIdx = local.variants.length - 1
-    activeVariantIndex.value = newIdx
+    local.cars = [...(local.cars ?? []), makeEmptyCar(carId)]
+    const newIdx = local.cars.length - 1
+    activeCarIndex.value = newIdx
     applyVariant(newIdx)
   }
   markDirty()
   flush()
 }
 
-// Add a tune slot for the same car as the current context.
-function addTuneVariant() {
-  const tuneCarId = local.variants?.[0]?.carId ?? props.carId ?? ''
-  addVariant(tuneCarId)
-}
+// Stub for Step 4 — adds a tune to the active car (TuneTabs not yet built).
+function addTuneVariant() { /* TuneTabs: Step 4 */ }
 
-function removeVariant(idx: number) {
+function removeCar(idx: number) {
   pendingRemoveIdx.value = null
-  if (!local.variants) return
-  if (local.variants.length <= 1) {
-    // Last tab — demote to single slot. Root fields are already in sync via
-    // applyVariant, so we just clear the variants array.
-    local.variants = undefined
-    activeVariantIndex.value = 0
+  if (!local.cars) return
+  if (local.cars.length <= 1) {
+    // Last car tab — demote to single slot. Root fields already in sync via applyVariant.
+    local.cars = undefined
+    activeCarIndex.value = 0
     emit('update:activeCarId', null)
   } else {
-    local.variants.splice(idx, 1)
-    if (activeVariantIndex.value >= local.variants.length) {
-      activeVariantIndex.value = local.variants.length - 1
+    local.cars.splice(idx, 1)
+    if (activeCarIndex.value >= local.cars.length) {
+      activeCarIndex.value = local.cars.length - 1
     }
-    applyVariant(activeVariantIndex.value)
-    emit('update:activeCarId', local.variants[activeVariantIndex.value]?.carId ?? null)
+    applyVariant(activeCarIndex.value)
+    emit('update:activeCarId', local.cars[activeCarIndex.value]?.carId ?? null)
   }
   markDirty()
   flush()
@@ -318,16 +315,15 @@ function acceptTuneImport(tune: Tune) {
   pendingTuneImport.value = null
   pendingVariantCarId.value = null
   if (!carId) return
-  addVariant(carId)
-  // Pre-populate the newly added variant with the selected tune's data.
-  const newIdx = (local.variants?.length ?? 1) - 1
-  const v = local.variants?.[newIdx]
-  if (!v) return
-  v.tuneName = tune.officialName ?? ''
-  v.shareCode = tune.shareCode ?? ''
-  try { if (tune.coreSpecs) Object.assign(v.coreSpecs, JSON.parse(tune.coreSpecs)) } catch {}
-  try { if (tune.upgrades) v.upgrades = JSON.parse(tune.upgrades) } catch {}
-  try { if (tune.adjustments) v.adjustments = JSON.parse(tune.adjustments) } catch {}
+  addCar(carId)
+  const newIdx = (local.cars?.length ?? 1) - 1
+  const t = local.cars?.[newIdx]?.tunes[0]
+  if (!t) return
+  t.tuneName = tune.officialName ?? ''
+  t.shareCode = tune.shareCode ?? ''
+  try { if (tune.coreSpecs) Object.assign(t.coreSpecs, JSON.parse(tune.coreSpecs)) } catch {}
+  try { if (tune.upgrades) t.upgrades = JSON.parse(tune.upgrades) } catch {}
+  try { if (tune.adjustments) t.adjustments = JSON.parse(tune.adjustments) } catch {}
   applyVariant(newIdx)
   markDirty()
   flush()
@@ -337,18 +333,17 @@ function dismissTuneImport() {
   const carId = pendingVariantCarId.value
   pendingTuneImport.value = null
   pendingVariantCarId.value = null
-  if (carId) addVariant(carId)
+  if (carId) addCar(carId)
 }
 
 // Called by CardView when the multi-car interrupt fires via ui store.
-// Looks up existing tunes for the car; if found, shows an import offer first.
 async function addVariantWithLookup(carId: string) {
   const tunes = await tunesStore.loadForCar(carId)
   if (tunes.length) {
     pendingVariantCarId.value = carId
     pendingTuneImport.value = { carId, tunes }
   } else {
-    addVariant(carId)
+    addCar(carId)
   }
 }
 
@@ -359,29 +354,29 @@ defineExpose({ addVariantWithLookup, acceptAutoPropose, beginSetupWizard })
 // stale data from the previous variant.
 let suppressFlush = false
 
-watch(activeVariantIndex, async (idx, prevIdx) => {
-  // Snapshot the outgoing variant's live TA state before switching
-  if (prevIdx !== undefined && local.variants?.[prevIdx] && taRef.value) {
-    local.variants[prevIdx].adjustments = taRef.value.getAdjustments()
+watch(activeCarIndex, async (idx, prevIdx) => {
+  // Snapshot the outgoing car's live TA state before switching
+  if (prevIdx !== undefined && local.cars?.[prevIdx] && taRef.value) {
+    local.cars[prevIdx].tunes[0].adjustments = taRef.value.getAdjustments()
   }
   suppressFlush = true
   applyVariant(idx)
   suppressFlush = false
-  emit('update:activeCarId', local.variants?.[idx]?.carId ?? null)
+  emit('update:activeCarId', local.cars?.[idx]?.carId ?? null)
 
-  // Auto-apply a pending preset the first time this variant tab is opened
-  const v = local.variants?.[idx]
-  if (v?.pendingPresetId != null) {
+  // Auto-apply a pending preset the first time this car tab is opened
+  const tune = local.cars?.[idx]?.tunes[0]
+  if (tune?.pendingPresetId != null) {
     if (!wizardPresets.value.length) {
       try { wizardPresets.value = await api.listTuningPresets() } catch { return }
     }
-    if (activeVariantIndex.value !== idx) return  // user switched tabs during load
-    const preset = wizardPresets.value.find(p => p.id === v.pendingPresetId)
+    if (activeCarIndex.value !== idx) return  // user switched tabs during load
+    const preset = wizardPresets.value.find(p => p.id === tune.pendingPresetId)
     if (preset && taRef.value) {
       await nextTick()
-      if (activeVariantIndex.value !== idx) return  // user switched tabs during tick
+      if (activeCarIndex.value !== idx) return  // user switched tabs during tick
       taRef.value.applyPresetValues(preset.values, preset.kind)
-      delete v.pendingPresetId
+      delete tune.pendingPresetId
       flush()
       markDirty()
     }
@@ -389,10 +384,10 @@ watch(activeVariantIndex, async (idx, prevIdx) => {
 })
 
 onMounted(() => {
-  if (hasVariants.value) {
-    const idx = activeVariantIndex.value
+  if (hasCars.value) {
+    const idx = activeCarIndex.value
     applyVariant(idx)
-    emit('update:activeCarId', local.variants?.[idx]?.carId ?? null)
+    emit('update:activeCarId', local.cars?.[idx]?.carId ?? null)
   }
 })
 
@@ -400,31 +395,33 @@ onMounted(() => {
 // restore, cancel/discard). Watching the token instead of props.recipe directly
 // means our own flush → store update → prop change cycle never triggers a re-sync.
 watch(() => props.resetToken, () => {
-  activeVariantIndex.value = 0
+  activeCarIndex.value = 0
   Object.assign(local, cloneRecipe(props.recipe))
-  if (isMultiCar.value) applyVariant(0)
+  if (hasCars.value) applyVariant(0)
 })
 
 function flush() {
-  // Keep active variant in sync with local fields before cloning
-  if (hasVariants.value && local.variants?.[activeVariantIndex.value]) {
-    const v = local.variants[activeVariantIndex.value]
-    v.tuneName = local.tuneName
-    v.shareCode = local.shareCode
-    Object.assign(v.coreSpecs, local.coreSpecs)
-    v.upgrades = local.upgrades
-    v.adjustments = local.adjustments
+  // Keep active car/tune in sync with local fields before cloning
+  if (hasCars.value && local.cars?.[activeCarIndex.value]) {
+    const tune = local.cars[activeCarIndex.value].tunes[0]
+    if (tune) {
+      tune.tuneName = local.tuneName
+      tune.shareCode = local.shareCode
+      Object.assign(tune.coreSpecs, local.coreSpecs)
+      tune.upgrades = local.upgrades
+      tune.adjustments = local.adjustments
+    }
   }
   const clone = JSON.parse(JSON.stringify(local)) as ForzaRecipeSection
-  // JSON.stringify drops undefined properties — explicitly restore so CardView's
-  // Object.assign actually clears section.variants when variants are demoted.
-  if (!local.variants) clone.variants = undefined
+  // JSON.stringify drops undefined — restore explicitly so CardView's Object.assign
+  // clears section.cars when demoted back to single-slot.
+  if (!local.cars) clone.cars = undefined
   if (taRef.value) {
     const liveAdj = taRef.value.getAdjustments()
     clone.adjustments = liveAdj
-    if (hasVariants.value && clone.variants?.[activeVariantIndex.value]) {
-      clone.variants[activeVariantIndex.value].adjustments = liveAdj
-      local.variants![activeVariantIndex.value].adjustments = liveAdj
+    if (hasCars.value && clone.cars?.[activeCarIndex.value]) {
+      clone.cars[activeCarIndex.value].tunes[0].adjustments = liveAdj
+      local.cars![activeCarIndex.value].tunes[0].adjustments = liveAdj
     }
   }
   emit('update:recipe', clone)
@@ -666,34 +663,34 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 <template>
   <div class="section-body">
 
-    <!-- Variant tab strip — renders for 2+ variants in view mode, or always in edit mode -->
-    <div v-if="isEditing || (local.variants?.length ?? 0) >= 2" class="rs-variant-tabs">
-      <template v-if="hasVariants">
+    <!-- Car tab strip — renders for 2+ cars in view mode, or always in edit mode -->
+    <div v-if="isEditing || (local.cars?.length ?? 0) >= 2" class="rs-variant-tabs">
+      <template v-if="hasCars">
         <div
-          v-for="(v, i) in local.variants"
-          :key="(v.carId || '') + i"
+          v-for="(car, i) in local.cars"
+          :key="(car.carId || '') + i"
           class="rs-variant-tab-wrap"
-          :class="{ 'rs-variant-tab-wrap--active': activeVariantIndex === i }"
+          :class="{ 'rs-variant-tab-wrap--active': activeCarIndex === i }"
         >
           <button
             class="rs-variant-tab"
             :class="{
-              'rs-variant-tab--active': activeVariantIndex === i,
-              'rs-variant-tab--suggested': v.isSuggested,
+              'rs-variant-tab--active': activeCarIndex === i,
+              'rs-variant-tab--suggested': car.tunes[0]?.isSuggested,
             }"
             type="button"
-            :title="variantLabel(v)"
-            @click="activeVariantIndex = i"
+            :title="carLabel(car)"
+            @click="activeCarIndex = i"
           >
-            {{ variantShortLabel(v) }}
-            <span v-if="v.isSuggested" class="rs-tab-suggested-badge">Suggested</span>
+            {{ carShortLabel(car) }}
+            <span v-if="car.tunes[0]?.isSuggested" class="rs-tab-suggested-badge">Suggested</span>
           </button>
           <button
-            v-if="isEditing && !v.isSuggested"
+            v-if="isEditing && !car.tunes[0]?.isSuggested"
             class="rs-variant-remove"
             type="button"
-            :title="`Remove ${variantLabel(v)}`"
-            @click.stop="variantIsEmpty(v) ? removeVariant(i) : (pendingRemoveIdx = i)"
+            :title="`Remove ${carLabel(car)}`"
+            @click.stop="carIsEmpty(car) ? removeCar(i) : (pendingRemoveIdx = i)"
           >×</button>
         </div>
       </template>
@@ -720,7 +717,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
           <button class="rs-add-picker-cancel" type="button" @click="showAddVariantChoice = false">×</button>
         </template>
         <div v-else class="rs-add-picker-inline">
-          <CarPicker :car-id="null" @update:car-id="addVariant" />
+          <CarPicker :car-id="null" @update:car-id="addCar" />
           <button class="rs-add-picker-cancel" type="button" @click="showAddVariantPicker = false">×</button>
         </div>
       </div>
@@ -746,8 +743,8 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 
     <!-- Remove variant confirm -->
     <div v-if="pendingRemoveIdx !== null" class="rs-remove-confirm">
-      <span>Remove <strong>{{ variantLabel(local.variants![pendingRemoveIdx]) }}</strong> and its data?</span>
-      <button type="button" class="rs-remove-yes" @click="removeVariant(pendingRemoveIdx!)">Remove</button>
+      <span>Remove <strong>{{ carLabel(local.cars![pendingRemoveIdx]) }}</strong> and its data?</span>
+      <button type="button" class="rs-remove-yes" @click="removeCar(pendingRemoveIdx!)">Remove</button>
       <button type="button" class="rs-remove-no" @click="pendingRemoveIdx = null">Cancel</button>
     </div>
 

@@ -1016,6 +1016,10 @@ async fn normalize_bodies(pool: &SqlitePool) -> anyhow::Result<()> {
                 }
             }
         }
+        // Step 4: migrate variants[] → cars[].tunes[] in any forza_recipe section.
+        if migrate_variants_to_cars(&mut v) {
+            changed = true;
+        }
         if changed {
             upsert(pool, &v).await?;
             migrated += 1;
@@ -1051,6 +1055,52 @@ fn ensure_standard_sections(v: &mut Value) -> bool {
         added = true;
     }
     added
+}
+
+// Reshape any forza_recipe section that still uses the old flat variants[] array
+// into the new cars[].tunes[] hierarchy. Idempotent — skips sections that already
+// have cars[] or have no variants[].
+fn migrate_variants_to_cars(v: &mut Value) -> bool {
+    let sections = match v.get_mut("sections").and_then(Value::as_array_mut) {
+        Some(s) => s,
+        None => return false,
+    };
+    let mut changed = false;
+    for section in sections.iter_mut() {
+        let is_recipe = section.get("type").and_then(Value::as_str) == Some("forza_recipe");
+        if !is_recipe { continue; }
+        // Skip if already migrated (has cars key) or nothing to migrate.
+        if section.get("cars").is_some() { continue; }
+        let variants = match section.get("variants").and_then(Value::as_array) {
+            Some(arr) if !arr.is_empty() => arr.clone(),
+            _ => continue,
+        };
+        // Each variant becomes a CardCar with one CardTune inside.
+        let cars: Vec<Value> = variants.iter().map(|var| {
+            json!({
+                "carId":     var.get("carId").cloned().unwrap_or(json!("")),
+                "carName":   var.get("carName").cloned(),
+                "liveryId":  var.get("liveryId").cloned(),
+                "liveryName":var.get("liveryName").cloned(),
+                "tunes": [{
+                    "tuneName":      var.get("tuneName").cloned().unwrap_or(json!("")),
+                    "tuneType":      var.get("tuneType").cloned(),
+                    "shareCode":     var.get("shareCode").cloned().unwrap_or(json!("")),
+                    "coreSpecs":     var.get("coreSpecs").cloned().unwrap_or(json!({})),
+                    "upgrades":      var.get("upgrades").cloned().unwrap_or(json!([])),
+                    "adjustments":   var.get("adjustments").cloned().unwrap_or(json!([])),
+                    "isSuggested":   var.get("isSuggested").cloned(),
+                    "pendingPresetId": var.get("pendingPresetId").cloned(),
+                }]
+            })
+        }).collect();
+        if let Some(obj) = section.as_object_mut() {
+            obj.insert("cars".to_string(), json!(cars));
+            obj.remove("variants");
+            changed = true;
+        }
+    }
+    changed
 }
 
 fn text_section(key: &str, label: &str, src: &Value) -> Value {

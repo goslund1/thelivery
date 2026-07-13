@@ -44,33 +44,43 @@ export interface AdjustmentRow {
   step: number
 }
 
-// One car/livery/tune slot in a multi-car or multi-tune card.
-// liveryId + tuneId are DB refs (populated once linked; 0 = not yet linked).
-// Inline data fields are the fallback for unlinked variants and the resolved
-// display cache once linked — step 8 wires store resolution.
-export interface CardVariant {
-  // DB refs (authoritative once set)
-  liveryId?: number
-  tuneId?: number
-  // Identity (from livery.car_id, resolved at load time)
-  carId: string
-  carName?: string
-  liveryName?: string
-  // Tune display (from tunes row, resolved at load time)
+// Tune data within a single car slot.
+export interface CardTune {
   tuneName: string
   tuneType?: string
   shareCode: string
-  // Inline tune data (stored in card JSON until linked, then resolved from store)
   coreSpecs: Record<string, string>
   upgrades: UpgradeCategory[]
   adjustments: AdjustmentRow[]
-  // Suggested tune flag — tab is read-only, colored to show deviation
   isSuggested?: boolean
-  // Set by the Car Tabs wizard — auto-applied the first time this variant tab is opened
   pendingPresetId?: number
 }
 
-// Deprecated alias — use CardVariant.
+// One car slot in a multi-car card. Each car has 1+ tunes (TuneTabs, Step 4).
+export interface CardCar {
+  carId: string
+  carName?: string
+  liveryId?: number
+  liveryName?: string
+  tunes: CardTune[]
+}
+
+// Deprecated — replaced by CardCar + CardTune. Kept until all variants[] are migrated.
+export interface CardVariant {
+  liveryId?: number
+  tuneId?: number
+  carId: string
+  carName?: string
+  liveryName?: string
+  tuneName: string
+  tuneType?: string
+  shareCode: string
+  coreSpecs: Record<string, string>
+  upgrades: UpgradeCategory[]
+  adjustments: AdjustmentRow[]
+  isSuggested?: boolean
+  pendingPresetId?: number
+}
 export type CarVariant = CardVariant
 
 // The Forza tune/build-parts section.
@@ -85,7 +95,8 @@ export interface ForzaRecipeSection {
   coreSpecs: Record<string, string>
   upgrades: UpgradeCategory[]
   adjustments: AdjustmentRow[]
-  variants?: CardVariant[]  // present only on multi-car/multi-tune cards (2+ entries)
+  cars?: CardCar[]      // multi-car or multi-tune cards (replaces variants[])
+  variants?: CardVariant[]  // deprecated — migrated to cars[] at startup
 }
 
 // ── Identity entity types (match API responses from /api/liveries, /api/tunes) ──

@@ -133,7 +133,7 @@ async function onPickUpload(e: Event) {
       subtitle: cv?.subtitle ?? '',
       collections: cv?.collections ?? [],
       id: c.cardId ?? undefined,
-    }, undefined, undefined, 'refimg')
+    }, undefined, sessionCarId.value ?? undefined)
     if (c.onPick) {
       // Pass the full image data as second arg so pool-mode callers can push to pendingPool.
       c.onPick(result.path, { id: result.id, path: result.path, thumbPath: result.thumbPath, stagePath: result.stagePath })

@@ -5,6 +5,7 @@ import { api } from '../api'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
 import { useModalStore } from '../stores/modal'
+import { errMsg } from '../utils/errMsg'
 
 const props = defineProps<{ cardId: string }>()
 const cards = useCardsStore()
@@ -24,7 +25,7 @@ async function loadVersions() {
   try {
     versions.value = await api.listCardHistory(props.cardId)
   } catch (e) {
-    loadError.value = (e as Error).message
+    loadError.value = errMsg(e)
   } finally {
     loading.value = false
   }

@@ -6,14 +6,11 @@ import { api } from '../api'
 import type { Card, ForzaRecipeSection, AdjustmentRow } from '../types'
 import { cardToYaml, yamlToCard } from '../utils/cardYaml'
 import { useAssessFailures } from '../composables/useAssessFailures'
+import { errMsg } from '../utils/errMsg'
 
 const { failedAssess } = useAssessFailures()
 const modal = useModalStore()
 const cards = useCardsStore()
-
-function errMsg(e: unknown): string {
-  return e instanceof Error ? e.message : String(e)
-}
 
 type Tab = 'tools' | 'export'
 const tab = ref<Tab>('tools')

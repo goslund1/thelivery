@@ -9,6 +9,7 @@ import TextSection from './TextSection.vue'
 import RecipeSection from './RecipeSection.vue'
 import SubtitleEditor from './SubtitleEditor.vue'
 import { formatShareCode } from '../utils/shareCode'
+import { errMsg } from '../utils/errMsg'
 
 const props = defineProps<{ card: Card }>()
 const emit = defineEmits<{ close: [] }>()
@@ -159,7 +160,7 @@ async function onSave() {
     ui.clearCardDirty(c.id)
     emit('close')
   } catch (e) {
-    error.value = (e as Error).message
+    error.value = errMsg(e)
   } finally {
     saving.value = false
   }

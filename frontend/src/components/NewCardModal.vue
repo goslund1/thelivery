@@ -4,6 +4,7 @@ import { useCardsStore } from '../stores/cards'
 import { useModalStore, type PoolImage } from '../stores/modal'
 import { useLiveriesStore } from '../stores/liveries'
 import { api } from '../api'
+import { errMsg } from '../utils/errMsg'
 import type { ForzaRecipeSection } from '../types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import RecipeSection from './RecipeSection.vue'
@@ -53,7 +54,7 @@ async function openFigurePicker(section: 'insp' | 'notes') {
       importedCard.value = { id: card.id, name: card.name, subtitle: card.subtitle, collections: card.collections }
       cardId = card.id
     } catch (e) {
-      error.value = (e as Error).message
+      error.value = errMsg(e)
       return
     } finally {
       saving.value = false
@@ -422,7 +423,7 @@ async function onCreate() {
       }, 700)
     }, 2000)
   } catch (e) {
-    error.value = (e as Error).message
+    error.value = errMsg(e)
     importing.value = false
   } finally {
     saving.value = false

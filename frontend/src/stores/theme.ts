@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Theme } from '../types'
 import { api } from '../api'
+import { errMsg } from '../utils/errMsg'
 
 export interface ThemeColors {
   base:    string
@@ -171,7 +172,7 @@ export const useThemeStore = defineStore('theme', () => {
       saved.value   = deepClone(data)
       applyAll(data)
     } catch (e) {
-      error.value = (e as Error).message
+      error.value = errMsg(e)
     } finally {
       loading.value = false
     }
@@ -238,7 +239,7 @@ export const useThemeStore = defineStore('theme', () => {
       current.value = deepClone(data)
       saved.value   = deepClone(data)
     } catch (e) {
-      error.value = (e as Error).message
+      error.value = errMsg(e)
     } finally {
       saving.value = false
     }

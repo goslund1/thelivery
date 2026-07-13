@@ -3,6 +3,7 @@ import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from '
 import type { AdjustmentRow, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
 import { MarkDirtyKey } from '../keys'
+import { errMsg } from '../utils/errMsg'
 import { api } from '../api'
 import { impliedUpgrades, type ImpliedUpgradesResult } from '../constants/tuning'
 import { activeSuggestCardId, suggestDismissedGlobal } from './suggestState'
@@ -931,7 +932,7 @@ const activeBaseline  = computed(() => presets.value.find(p => p.id === activeBa
 
 async function loadPresets() {
   try { presets.value = await api.listTuningPresets() }
-  catch (e: unknown) { presetError.value = e instanceof Error ? e.message : String(e) }
+  catch (e: unknown) { presetError.value = errMsg(e) }
 }
 
 function applyPreset() {
@@ -995,7 +996,7 @@ async function saveAsPreset() {
     presetNameOpen.value = false
     presetNameInput.value = ''
     presetKind.value = 'build'
-  } catch (e: unknown) { presetError.value = e instanceof Error ? e.message : String(e) }
+  } catch (e: unknown) { presetError.value = errMsg(e) }
   finally { presetBusy.value = false }
 }
 
@@ -1012,7 +1013,7 @@ async function confirmDeletePreset() {
     await api.deleteTuningPreset(selectedPresetId.value)
     presets.value = presets.value.filter(p => p.id !== selectedPresetId.value)
     selectedPresetId.value = presets.value[0]?.id ?? null
-  } catch (e: unknown) { presetError.value = e instanceof Error ? e.message : String(e) }
+  } catch (e: unknown) { presetError.value = errMsg(e) }
   finally { presetBusy.value = false }
 }
 
@@ -1130,7 +1131,7 @@ async function submitSuggestion() {
     askLaterPending.value = false
     if (askLaterKey.value) sessionStorage.removeItem(askLaterKey.value)
   } catch (e: unknown) {
-    suggestError.value = e instanceof Error ? e.message : 'Something went wrong.'
+    suggestError.value = errMsg(e)
   } finally {
     suggestBusy.value = false
   }

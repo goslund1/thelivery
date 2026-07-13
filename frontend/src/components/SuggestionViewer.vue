@@ -6,6 +6,7 @@ import { useCardsStore } from '../stores/cards'
 import { useCarsStore } from '../stores/cars'
 import { useModalStore } from '../stores/modal'
 import TuningAdjustments from './TuningAdjustments.vue'
+import { errMsg } from '../utils/errMsg'
 
 const emit = defineEmits<{ close: [] }>()
 
@@ -41,7 +42,7 @@ async function load() {
   try {
     suggestions.value = (await api.adminListSuggestions()) as Suggestion[]
   } catch (e) {
-    error.value = (e as Error).message
+    error.value = errMsg(e)
   } finally {
     loading.value = false
   }
@@ -162,7 +163,7 @@ async function onPromote() {
     })
     modal.openPromotedCard(promoted)
   } catch (e) {
-    promoError.value = (e as Error).message
+    promoError.value = errMsg(e)
   } finally {
     promoBusy.value = false
   }

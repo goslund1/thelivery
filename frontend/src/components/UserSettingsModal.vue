@@ -4,11 +4,10 @@ import { useUiStore } from '../stores/ui'
 import { useModalStore } from '../stores/modal'
 import { useAuthStore } from '../stores/auth'
 import { api } from '../api'
+import { errMsg } from '../utils/errMsg'
 const ui    = useUiStore()
 const modal = useModalStore()
 const auth  = useAuthStore()
-
-function errMsg(e: unknown) { return e instanceof Error ? e.message : String(e) }
 
 // Change password
 const showChangePw = ref(false)

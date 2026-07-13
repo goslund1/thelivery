@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import type { Card, TextSection, UpgradeCategory, AdjustmentRow } from '../types'
 import { api } from '../api'
 import { impliedUpgrades, applyImpliedUpgrades } from '../constants/tuning'
+import { errMsg } from '../utils/errMsg'
 
 // Holds the catalog data and all mutations. Replaces the original app's
 // DOM-as-state model: every edit updates a reactive Card object, and save()
@@ -41,7 +42,7 @@ export const useCardsStore = defineStore('cards', () => {
     try {
       cards.value = (await api.listCards()).map(ensureSections)
     } catch (e) {
-      error.value = (e as Error).message
+      error.value = errMsg(e)
     } finally {
       loading.value = false
     }

@@ -93,7 +93,7 @@ Card
 **Implementation order:**
 1. ~~Finish item 1 (current CarTabs shakedown) first~~ — done
 2. ~~Design the `cars[]` data shape and migration path~~ — done 2026-07-13 (Step 3 complete)
-3. Build TuneTabs UI and authoring flow as a parallel module to CarTabs (Step 4 — next)
+3. ~~Build TuneTabs UI and authoring flow~~ — done 2026-07-13 (Step 4 complete)
 
 **Backend migration note:**
 The `variants[]` array lives in the card's JSON body, so no new SQL migration is needed. However, `normalize_bodies()` in `backend/src/main.rs` will need a new step to reshape existing `variants[]` flat arrays into the `cars[]` nested structure. Smokin is currently the only card with variants, so the migration surface is small — but it must go through `normalize_bodies()` (idempotent, runs on startup) rather than a one-time manual DB patch. See CLAUDE.md → "Seeding" for the normalize_bodies pattern.

@@ -58,19 +58,27 @@ export const useModalStore = defineStore('modal', () => {
     // Vue's nested-ref auto-unwrapping, while still letting the gallery computed track
     // the underlying reactive ref when the getter is called inside the computed.
     getPool?: () => PoolImage[]
+    // Called by the Photo Manager overlay when the first upload needs a card_id but none exists yet.
+    // Returns the newly created card's id. Receives the session carId so the card can be pre-tagged.
+    ensureCard?: (carId: string | null) => Promise<string>
   } | null>(null)
   function openImagePicker(cardId: string, sectionKey: string) {
     imagePicker.value = { cardId, sectionKey }
   }
   function openGalleryManager(cardId: string) { imagePicker.value = { cardId } }
+  // Open the Photo Manager in manage mode for a card that may not exist yet.
+  function openManagePhotos(cardId: string | null, ensureCard?: (carId: string | null) => Promise<string>) {
+    imagePicker.value = { cardId, ensureCard }
+  }
   // Figure-picker for new-card creation: getPool returns the modal's pendingPool contents,
   // onPick is called with the chosen path. For edit-mode figure picks, omit getPool.
   function openFigurePicker(
     cardId: string | null,
     getPool: (() => PoolImage[]) | null,
     onPick: (path: string, img?: PoolImage) => void,
+    ensureCard?: (carId: string | null) => Promise<string>,
   ) {
-    imagePicker.value = { cardId, sectionKey: 'figure', onPick, getPool: getPool ?? undefined }
+    imagePicker.value = { cardId, sectionKey: 'figure', onPick, getPool: getPool ?? undefined, ensureCard }
   }
   function closeImagePicker() { imagePicker.value = null }
 
@@ -181,7 +189,7 @@ export const useModalStore = defineStore('modal', () => {
     lightboxSrc, lightboxOriginalSrc, lightboxImages, lightboxIndex,
     openLightbox, closeLightbox, navigateLightbox,
     chipPicker, openChipPicker, closeChipPicker,
-    imagePicker, openImagePicker, openGalleryManager, openFigurePicker, closeImagePicker,
+    imagePicker, openImagePicker, openGalleryManager, openManagePhotos, openFigurePicker, closeImagePicker,
     loginOpen, openLogin, closeLogin, onLoginSuccess,
     settingsOpen, openSettings, closeSettings,
     newCardOpen, newCardOpenCount, openNewCard, closeNewCard,

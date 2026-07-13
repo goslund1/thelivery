@@ -3,20 +3,89 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 import { useUiStore } from '../stores/ui'
 import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
+import { useLiveriesStore } from '../stores/liveries'
+import { useCarsStore } from '../stores/cars'
 import { api } from '../api'
 import PhotoDetail from './PhotoDetail.vue'
+import CarPicker from './CarPicker.vue'
 
 const ui = useUiStore()
 const modal = useModalStore()
 const store = useCardsStore()
+const liveriesStore = useLiveriesStore()
+const carsStore = useCarsStore()
 
 const ctx = computed(() => modal.imagePicker)
-const card = computed(() => (ctx.value?.cardId ? store.byId(ctx.value.cardId) : undefined))
+
+// ── Session state (lives for the duration of one overlay open) ────────────────
+// resolvedCardId shadows ctx.cardId when ensureCard creates the card mid-session.
+const resolvedCardId = ref<string | null>(null)
+const effectiveCardId = computed(() => resolvedCardId.value ?? ctx.value?.cardId ?? null)
+
+const sessionCarId = ref<string | null>(null)
+const sessionCarName = ref('')
+const sessionImageRole = ref<'gallery' | 'refimg'>('gallery')
+const showCarPicker = ref(false)
+
+interface UploadEntry { label: string; progress: number; status: 'uploading' | 'done' | 'error' }
+const uploadLog = ref<UploadEntry[]>([])
+
+watch(ctx, (c) => {
+  if (c) {
+    // Init session from card's existing carId, if any
+    const carId = store.byId(c.cardId ?? '')?.carId ?? null
+    sessionCarId.value = carId
+    sessionCarName.value = carId ? (carsStore.byId(carId)?.model ?? carId) : ''
+    sessionImageRole.value = 'gallery'
+    showCarPicker.value = false
+    resolvedCardId.value = null
+    uploadLog.value = []
+    // Kick off car data load if needed
+    if (!carsStore.loaded) carsStore.load()
+  }
+})
+
+function setSessionCar(id: string | null) {
+  sessionCarId.value = id
+  sessionCarName.value = id ? (carsStore.byId(id)?.model ?? id) : ''
+  showCarPicker.value = false
+}
+function clearSessionCar() {
+  sessionCarId.value = null
+  sessionCarName.value = ''
+  showCarPicker.value = false
+}
+function setRefImg() {
+  sessionImageRole.value = 'refimg'
+  sessionCarId.value = null
+  sessionCarName.value = ''
+  showCarPicker.value = false
+}
+function clearRefImg() {
+  sessionImageRole.value = 'gallery'
+}
+
+// Returns the card id to attach uploads to, creating the card lazily if needed.
+async function resolveCardId(): Promise<string | null> {
+  if (effectiveCardId.value) return effectiveCardId.value
+  const c = ctx.value
+  if (c?.ensureCard) {
+    const id = await c.ensureCard(sessionCarId.value)
+    resolvedCardId.value = id
+    return id
+  }
+  return null
+}
+
+const card = computed(() => {
+  const id = effectiveCardId.value
+  return id ? store.byId(id) : undefined
+})
+
 const gallery = computed(() => {
   const c = ctx.value
-  // New-card creation: use the pending pool getter. Calling getPool() inside the computed
-  // tracks the underlying pendingPool ref, so gallery recomputes when images are pushed.
-  if (c?.getPool) {
+  // Pending-pool path: new-card creation before the card exists in the store.
+  if (c?.getPool && !resolvedCardId.value && !c.cardId) {
     const pool = c.getPool()
     return pool.map((img, i) => ({
       id: img.id ?? -(i + 1),
@@ -252,33 +321,72 @@ function onMgrDragEnd() {
 }
 
 // ── Manage mode — upload ──────────────────────────────────────────────────────
-const uploadProgress = ref<{ done: number; total: number } | null>(null)
 const manageUploadRef = ref<HTMLInputElement | null>(null)
 
 const SUPPORTED = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp'])
 
 async function onManageUpload(e: Event) {
-  const c = ctx.value
-  const cv = card.value
-  if (!c?.cardId || !cv) return
   const all = Array.from((e.target as HTMLInputElement).files ?? [])
   if (manageUploadRef.value) manageUploadRef.value.value = ''
   const files = all.filter(f => SUPPORTED.has(f.type) || (!f.name.match(/\.(heic|heif|avif)$/i) && f.type.startsWith('image/')))
   if (!files.length) return
-  const cardCtx = { name: cv.name, subtitle: cv.subtitle, collections: cv.collections, id: c.cardId }
-  const startIndex = cv.images.length
-  uploadProgress.value = { done: 0, total: files.length }
-  for (let i = 0; i < files.length; i++) {
+
+  const cardId = await resolveCardId()
+  if (!cardId) return
+
+  const cv = store.byId(cardId)
+  const cardCtx = cv
+    ? { name: cv.name, subtitle: cv.subtitle, collections: cv.collections, id: cardId }
+    : { name: '', subtitle: '', collections: [], id: cardId }
+
+  const isRefImg = sessionImageRole.value === 'refimg'
+
+  // Create a livery once per batch when uploading gallery photos with a car context.
+  let liveryId: number | undefined
+  if (!isRefImg && sessionCarId.value) {
+    const liveryName = cv?.name?.trim() || carsStore.byId(sessionCarId.value)?.model || 'Livery'
     try {
-      const { id: dbId, path, thumbPath, stagePath } = await api.uploadImage(files[i], cardCtx, startIndex + i)
-      store.addImageToPool(c.cardId, path, thumbPath, stagePath, true, dbId)
-      ui.markCardDirty(c.cardId)
+      const livery = await liveriesStore.create({ carId: sessionCarId.value, name: liveryName })
+      liveryId = livery.id
     } catch (err) {
-      console.warn('[image-manager] upload failed:', err)
+      console.warn('[photo-manager] livery creation failed:', err)
     }
-    uploadProgress.value!.done++
   }
-  uploadProgress.value = null
+
+  const startIdx = uploadLog.value.length
+  const startImgIdx = cv?.images?.length ?? gallery.value.length
+  uploadLog.value = [
+    ...uploadLog.value,
+    ...files.map(f => ({ label: f.name, progress: 0, status: 'uploading' as const })),
+  ]
+
+  let firstUploaded = false
+  for (let i = 0; i < files.length; i++) {
+    const logIdx = startIdx + i
+    try {
+      const result = await api.uploadImageWithProgress(
+        files[i],
+        cardCtx,
+        { fileIndex: startImgIdx + i, carId: sessionCarId.value ?? undefined, liveryId, imageRole: isRefImg ? 'refimg' : undefined },
+        (pct) => { uploadLog.value[logIdx].progress = pct },
+      )
+      uploadLog.value[logIdx] = { ...uploadLog.value[logIdx], progress: 100, status: 'done' }
+      store.addImageToPool(cardId, result.path, result.thumbPath, result.stagePath, !isRefImg, result.id)
+      ui.markCardDirty(cardId)
+      if (!firstUploaded && liveryId) {
+        firstUploaded = true
+        api.assessLiveryColor(liveryId).catch(() => {})
+      }
+    } catch (err) {
+      console.warn('[photo-manager] upload failed:', err)
+      uploadLog.value[logIdx] = { ...uploadLog.value[logIdx], status: 'error' }
+    }
+  }
+
+  // Fade out completed rows after a short pause
+  setTimeout(() => {
+    uploadLog.value = uploadLog.value.filter(e => e.status !== 'done')
+  }, 3000)
 }
 </script>
 
@@ -308,6 +416,47 @@ async function onManageUpload(e: Event) {
           <span>Card Photos</span>
           <button class="image-picker-close" aria-label="Close" @click="modal.closeImagePicker()">×</button>
         </div>
+
+        <!-- ── Car / role top bar ─────────────────────────────────────────── -->
+        <div class="pm-topbar">
+          <template v-if="sessionCarId">
+            <!-- Car selected: pill + change button -->
+            <div class="pm-car-pill">
+              <span class="pm-car-name">{{ sessionCarName }}</span>
+              <button class="pm-car-change" @click="clearSessionCar">[change]</button>
+            </div>
+          </template>
+          <template v-else-if="sessionImageRole === 'refimg'">
+            <!-- RefImg mode -->
+            <div class="pm-car-pill pm-car-pill--img">
+              <span class="pm-car-name">+IMG</span>
+              <button class="pm-car-change" @click="clearRefImg">[change]</button>
+            </div>
+          </template>
+          <template v-else>
+            <!-- No car: show game chips + +IMG -->
+            <div class="pm-chips">
+              <button
+                class="pm-chip"
+                :class="{ 'pm-chip--active': showCarPicker }"
+                @click="showCarPicker = !showCarPicker"
+              >FH5</button>
+              <button
+                class="pm-chip"
+                :class="{ 'pm-chip--active': showCarPicker }"
+                @click="showCarPicker = !showCarPicker"
+              >FH6</button>
+              <button class="pm-chip pm-chip--img" @click="setRefImg">+IMG</button>
+            </div>
+            <div v-if="showCarPicker" class="pm-carpicker-wrap">
+              <CarPicker
+                :car-id="sessionCarId"
+                @update:car-id="setSessionCar"
+              />
+            </div>
+          </template>
+        </div>
+
         <div class="mgr-grid" @dragleave.self="dropIdx = -1">
           <template v-for="(img, i) in gallery" :key="img.id">
           <div v-if="dragFromIdx >= 0 && dropIdx === i && dragFromIdx !== i" class="mgr-drop-indicator" />
@@ -359,14 +508,24 @@ async function onManageUpload(e: Event) {
           </template>
         </div>
 
+        <!-- ── Upload progress log ──────────────────────────────────────────── -->
+        <div v-if="uploadLog.length" class="pm-log">
+          <div
+            v-for="(entry, i) in uploadLog"
+            :key="i"
+            class="pm-log-row"
+            :class="'pm-log-row--' + entry.status"
+            :style="{ '--prog': entry.progress + '%' }"
+          >
+            <span class="pm-log-label">{{ entry.label }}</span>
+            <span class="pm-log-status">
+              {{ entry.status === 'uploading' ? entry.progress + '%' : entry.status === 'done' ? '✓' : '✗' }}
+            </span>
+          </div>
+        </div>
+
         <div class="mgr-footer">
-          <template v-if="uploadProgress">
-            <span class="mgr-progress">Uploading {{ uploadProgress.done }}/{{ uploadProgress.total }}…</span>
-          </template>
-          <template v-else-if="gallery.length === 0">
-            <button class="mgr-action-btn mgr-add-btn" @click="modal.closeImagePicker()">Done</button>
-          </template>
-          <template v-else-if="pendingBatchDelete">
+          <template v-if="pendingBatchDelete">
             <span class="mgr-confirm-label">Delete {{ selectedIds.size }} image{{ selectedIds.size !== 1 ? 's' : '' }}?</span>
             <div class="mgr-footer-right">
               <button class="mgr-action-btn mgr-delete-btn" @click="pendingBatchDelete = false">Cancel</button>
@@ -620,10 +779,128 @@ async function onManageUpload(e: Event) {
   margin-right: 4px;
 }
 
-.mgr-progress {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--accent);
-  letter-spacing: 0.04em;
+/* ── Photo Manager top bar ───────────────────────────────────────────────── */
+.pm-topbar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0 10px;
+  border-bottom: 1px solid var(--panel-edge);
+  margin-bottom: 10px;
 }
+.pm-chips {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.pm-chip {
+  font: 700 10px/1 'Oswald', sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 3px;
+  border: 1px solid var(--panel-edge);
+  background: color-mix(in srgb, var(--panel-well) 60%, transparent);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color .12s, color .12s, background .12s;
+}
+.pm-chip:hover, .pm-chip--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.pm-chip--img {
+  border-style: dashed;
+  color: var(--muted);
+}
+.pm-chip--img:hover {
+  border-style: dashed;
+  border-color: var(--muted);
+  color: var(--fg);
+  background: color-mix(in srgb, var(--panel-well) 60%, transparent);
+}
+.pm-carpicker-wrap {
+  margin-top: 2px;
+}
+.pm-car-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  width: fit-content;
+}
+.pm-car-pill--img {
+  border-color: var(--muted);
+  background: color-mix(in srgb, var(--panel-well) 60%, transparent);
+}
+.pm-car-name {
+  font: 700 11px/1 'Oswald', sans-serif;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+.pm-car-pill--img .pm-car-name {
+  color: var(--muted);
+}
+.pm-car-change {
+  font: 10px/1 'JetBrains Mono', monospace;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color .12s;
+}
+.pm-car-change:hover { color: var(--fg); }
+
+/* ── Upload progress log ─────────────────────────────────────────────────── */
+.pm-log {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 0 4px;
+}
+.pm-log-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  font: 11px/1 'JetBrains Mono', monospace;
+  overflow: hidden;
+}
+.pm-log-row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--accent) 16%, transparent) var(--prog, 0%),
+    transparent var(--prog, 0%)
+  );
+  transition: background 0.3s ease;
+  pointer-events: none;
+}
+.pm-log-label {
+  color: var(--muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
+}
+.pm-log-status {
+  flex-shrink: 0;
+  position: relative;
+}
+.pm-log-row--uploading .pm-log-status { color: var(--muted); }
+.pm-log-row--done .pm-log-label,
+.pm-log-row--done .pm-log-status { color: var(--accent); }
+.pm-log-row--error .pm-log-label,
+.pm-log-row--error .pm-log-status { color: #c94444; }
 </style>

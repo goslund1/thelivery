@@ -34,7 +34,7 @@ function deltaLabel(d: number) {
 
 type FlyoutName = 'theme' | 'text' | 'menu' | null
 const open = ref<FlyoutName>(null)
-const themeBuilderOpen = ref(false)
+
 const bugRef = ref<HTMLElement | null>(null)
 const sideBugEl = ref<HTMLElement | null>(null)
 const hamburgerBtn = ref<HTMLElement | null>(null)
@@ -102,7 +102,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', positionSideBug))
 watch(() => store.cards.length, () => nextTick(positionSideBug))
 
 function pickTheme(t: Theme) { ui.theme = t; open.value = null }
-function openThemeBuilder() { open.value = null; themeBuilderOpen.value = true }
+function openThemeBuilder() { open.value = null; modal.openThemeBuilder() }
 function pickDelta(d: number) { ui.textDelta = d; open.value = null }
 
 function nearestVisibleCard(): Element | null {
@@ -205,8 +205,8 @@ function onToggleAll() {
     </div>
 
     <!-- Theme builder panel -->
-    <div v-if="themeBuilderOpen" class="bug-flyout bug-flyout--builder open" :style="flyoutStyle">
-      <ThemeBuilder @close="themeBuilderOpen = false" />
+    <div v-if="modal.themeBuilderOpen" class="bug-flyout bug-flyout--builder open" :style="flyoutStyle">
+      <ThemeBuilder @close="modal.closeThemeBuilder()" />
     </div>
 
     <!-- Text-size flyout -->

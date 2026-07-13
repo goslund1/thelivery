@@ -133,6 +133,11 @@ export const useModalStore = defineStore('modal', () => {
   function openAdminPanel() { adminPanelOpen.value = true }
   function closeAdminPanel() { adminPanelOpen.value = false }
 
+  // ── Theme builder ─────────────────────────────────────────────────────────────
+  const themeBuilderOpen = ref(false)
+  function openThemeBuilder() { themeBuilderOpen.value = true }
+  function closeThemeBuilder() { themeBuilderOpen.value = false }
+
   // ── Archive card confirm ─────────────────────────────────────────────────────
   const archiveCardPending = ref(false)
   const archiveCardName = ref('')
@@ -165,6 +170,7 @@ export const useModalStore = defineStore('modal', () => {
     if (suggestionViewerOpen.value)  { closeSuggestionViewer(); return true }
     if (loginOpen.value)             { closeLogin();            return true }
     if (adminPanelOpen.value)        { closeAdminPanel();       return true }
+    if (themeBuilderOpen.value)      { closeThemeBuilder();     return true }
     if (settingsOpen.value)          { closeSettings();         return true }
     if (newCardOpen.value)           { closeNewCard();          return true }
     if (factoidPanelOpen.value)      { closeFactoidPanel();     return true }
@@ -185,6 +191,7 @@ export const useModalStore = defineStore('modal', () => {
     promotedCard, openPromotedCard, closePromotedCard,
     imageMigrationOpen, openImageMigration, closeImageMigration,
     adminPanelOpen, openAdminPanel, closeAdminPanel,
+    themeBuilderOpen, openThemeBuilder, closeThemeBuilder,
     archiveCardPending, archiveCardName, promptArchiveCard, confirmArchiveCard, cancelArchiveCard,
     closeTopModal,
   }

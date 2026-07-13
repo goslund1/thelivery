@@ -6,7 +6,7 @@ import type { AdjustmentRow, UpgradeCategory } from '../types'
 
 interface SlotMapping {
   category: string
-  subcategory: string
+  subcategory: string | null
   impliedTier: string | null  // null = any tier, user corrects if needed
 }
 
@@ -15,8 +15,8 @@ export const SLIDER_UPGRADE_MAP: Record<string, SlotMapping> = {
   springs:   { category: 'Platform and Handling', subcategory: 'Springs and Dampers', impliedTier: null },
   damping:   { category: 'Platform and Handling', subcategory: 'Springs and Dampers', impliedTier: null },
   brakes:    { category: 'Platform and Handling', subcategory: 'Brakes',              impliedTier: null },
-  arb:       { category: 'Platform and Handling', subcategory: null as unknown as string, impliedTier: null }, // front/rear handled below
-  aero:      { category: 'Aero and Appearance',   subcategory: null as unknown as string, impliedTier: null }, // front/rear handled below
+  arb:       { category: 'Platform and Handling', subcategory: null, impliedTier: null }, // front/rear handled below
+  aero:      { category: 'Aero and Appearance',   subcategory: null, impliedTier: null }, // front/rear handled below
   differential: { category: 'Drivetrain',         subcategory: 'Differential',         impliedTier: null },
 }
 
@@ -105,7 +105,7 @@ export function impliedUpgrades(
     }
 
     // All other tabs: single subcategory, any tier
-    if (!hasSubcategory(upgrades, mapping.subcategory)) {
+    if (mapping.subcategory && !hasSubcategory(upgrades, mapping.subcategory)) {
       toAdd.push({ category: mapping.category, part: mapping.subcategory })
     }
   }

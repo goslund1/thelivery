@@ -38,6 +38,7 @@ watch(ctx, (c) => {
     sessionCarName.value = carId ? (carsStore.byId(carId)?.model ?? carId) : ''
     sessionImageRole.value = 'gallery'
     showCarPicker.value = false
+    prevCarId.value = null
     resolvedCardId.value = null
     uploadLog.value = []
     // Kick off car data load if needed
@@ -45,12 +46,25 @@ watch(ctx, (c) => {
   }
 })
 
+// Saved before [change] so setSessionCar can detect a car swap.
+const prevCarId = ref<string | null>(null)
+
 function setSessionCar(id: string | null) {
+  if (prevCarId.value && id && prevCarId.value !== id) {
+    // User swapped to a different car — fire multi-car detection if the pool
+    // already has images tagged to any car (including the previous one).
+    const cardId = effectiveCardId.value
+    if (cardId && gallery.value.some(img => img.carId)) {
+      ui.triggerMultiCar(cardId, id)
+    }
+  }
+  prevCarId.value = null
   sessionCarId.value = id
   sessionCarName.value = id ? (carsStore.byId(id)?.model ?? id) : ''
   showCarPicker.value = false
 }
 function clearSessionCar() {
+  prevCarId.value = sessionCarId.value
   sessionCarId.value = null
   sessionCarName.value = ''
   showCarPicker.value = false

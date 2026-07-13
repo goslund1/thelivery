@@ -8,7 +8,7 @@ Living to-do file for thelivery. Update this when items are started, completed, 
 
 ### 1. Photo Manager overlay — unified import and pool management
 
-**In progress — core built 2026-07-13 (commit 3b4cee4). Escape flash bug fixed 2026-07-13 (commit d1ed193). Remaining: ~~Gallery entry point carId pre-fill~~ done 2026-07-13, ~~figure-pick upload using session car~~ done 2026-07-13, multi-car detection on [change].**
+**In progress — core built 2026-07-13 (commit 3b4cee4). Escape flash bug fixed 2026-07-13 (commit d1ed193). Remaining: ~~Gallery entry point carId pre-fill~~ done 2026-07-13, ~~figure-pick upload using session car~~ done 2026-07-13, ~~multi-car detection on [change]~~ done 2026-07-13.**
 
 **Design spec (settled 2026-07-12)**
 

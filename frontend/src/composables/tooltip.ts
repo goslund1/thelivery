@@ -38,6 +38,34 @@ export function showTip(target: HTMLElement, text: string) {
   })
 }
 
+// Flies out to the right from the last letter of the target element's text.
+export function showTipRight(target: HTMLElement, text: string) {
+  if (!tipEl || !innerEl) return
+  innerEl.textContent = text
+
+  // Measure where the text actually ends, not the element box edge.
+  const range = document.createRange()
+  range.selectNodeContents(target)
+  const textRect = range.getBoundingClientRect()
+
+  tipEl.style.transition = 'none'
+  tipEl.style.width = '0px'
+  tipEl.style.opacity = '0'
+  tipEl.style.right = ''
+  tipEl.style.left = `${textRect.right + 10}px`
+  tipEl.style.top = `${textRect.top + textRect.height / 2 - 14}px`
+
+  requestAnimationFrame(() => {
+    const naturalWidth = (innerEl as HTMLElement).scrollWidth + 22
+    requestAnimationFrame(() => {
+      if (!tipEl) return
+      tipEl.style.transition = 'width .35s cubic-bezier(.16,1,.3,1), opacity .15s ease'
+      tipEl.style.width = `${naturalWidth}px`
+      tipEl.style.opacity = '1'
+    })
+  })
+}
+
 export function hideTip() {
   if (!tipEl) return
   tipEl.style.transition = 'width .25s cubic-bezier(.4,0,1,1), opacity .15s ease'
@@ -74,6 +102,28 @@ export const vTip: Directive<TipEl, TipValue> = {
     el._tipEnter = () => {
       const v = el._tipRaw
       showTip(el, typeof v === 'function' ? v() : (v ?? ''))
+    }
+    el._tipLeave = () => hideTip()
+    el.addEventListener('mouseenter', el._tipEnter)
+    el.addEventListener('mouseleave', el._tipLeave)
+  },
+  updated(el, binding) {
+    el._tipRaw = binding.value
+  },
+  beforeUnmount(el) {
+    if (el._tipEnter) el.removeEventListener('mouseenter', el._tipEnter)
+    if (el._tipLeave) el.removeEventListener('mouseleave', el._tipLeave)
+    hideTip()
+  },
+}
+
+// Same as v-tip but positions the tooltip above the element, centered horizontally.
+export const vTipUp: Directive<TipEl, TipValue> = {
+  mounted(el, binding) {
+    el._tipRaw = binding.value
+    el._tipEnter = () => {
+      const v = el._tipRaw
+      showTipRight(el, typeof v === 'function' ? v() : (v ?? ''))
     }
     el._tipLeave = () => hideTip()
     el.addEventListener('mouseenter', el._tipEnter)

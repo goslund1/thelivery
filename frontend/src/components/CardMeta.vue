@@ -63,7 +63,7 @@ function setAccent(color: string | undefined) {
         <button class="chip-add" data-chip-type="collection" type="button" @click="modal.openChipPicker(card.id, 'collection')">+</button>
       </p>
       <EditableText v-if="ui.isEditing" tag="h2" class="card-title" v-model="card.name" />
-      <h2 v-else class="card-title card-title--shareable" v-tip="'Click for sharing options'" @click="modal.openShare(card.id)">{{ card.name }}</h2>
+      <h2 v-else class="card-title card-title--shareable" v-tip-up="'Click for sharing options'" @click="modal.openShare(card.id)">{{ card.name }}</h2>
       <div v-if="ui.isEditing || card.liveryShareCode" class="plate livery-code-plate">
         SHARE CODE:
         <input

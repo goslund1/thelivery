@@ -371,6 +371,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/deleted-cards", get(admin_list_deleted_cards))
         .route("/api/admin/deleted-cards/:id/restore", post(admin_restore_card))
         .route("/api/admin/deleted-cards/:id", delete(admin_purge_card))
+        .route("/share/:id", get(share_card))
         .route("/api/cars", get(list_cars).post(create_car))
         .route("/api/tune-types", get(list_tune_types).post(create_tune_type))
         .route("/api/liveries", get(list_liveries).post(create_livery))
@@ -1366,6 +1367,130 @@ async fn admin_export_seed(
     std::fs::write(&st.seed_path, json_str)
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, format!("write failed: {e}")))?;
     Ok(Json(json!({ "exported": count })))
+}
+
+// --- Share page -------------------------------------------------------------
+
+/// Returns a minimal HTML page with Open Graph meta tags for link unfurls.
+/// URL shape: /share/{card-id}/{ignored-slug}
+/// The slug is for human readability and SEO — the card is looked up by id only.
+/// Real browsers are redirected to the app via <meta http-equiv="refresh">.
+async fn share_card(
+    State(st): State<AppState>,
+    Path(id): Path<String>,
+    axum::extract::OriginalUri(uri): axum::extract::OriginalUri,
+) -> axum::response::Response<String> {
+    // Strip a trailing slug segment so /share/3/smokin-mclaren-p1-gtr still works.
+    let card_id = id.split('/').next().unwrap_or(&id);
+
+    let row = sqlx::query("SELECT body FROM cards WHERE id = ? AND deleted_at IS NULL")
+        .bind(card_id)
+        .fetch_optional(&st.pool)
+        .await
+        .ok()
+        .flatten();
+
+    let Some(row) = row else {
+        return axum::response::Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header("content-type", "text/html; charset=utf-8")
+            .body("<html><body>Card not found.</body></html>".into())
+            .unwrap();
+    };
+
+    let mut body: Value = serde_json::from_str(row.get::<String, _>("body").as_str())
+        .unwrap_or(Value::Null);
+    inject_images(&st.pool, &mut body).await;
+
+    let card_name = body.get("name").and_then(Value::as_str).unwrap_or("Livery");
+    let subtitle  = body.get("subtitle").and_then(Value::as_str).unwrap_or("");
+
+    // Pull the first car name from the recipe section's cars[] hierarchy.
+    let first_car_name = body.get("sections")
+        .and_then(Value::as_array)
+        .and_then(|secs| secs.iter().find(|s| s.get("type").and_then(Value::as_str) == Some("forza_recipe")))
+        .and_then(|recipe| recipe.get("cars"))
+        .and_then(Value::as_array)
+        .and_then(|cars| cars.first())
+        .and_then(|car| car.get("carName"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+
+    // First share code from the first tune of the first car.
+    let share_code = body.get("sections")
+        .and_then(Value::as_array)
+        .and_then(|secs| secs.iter().find(|s| s.get("type").and_then(Value::as_str) == Some("forza_recipe")))
+        .and_then(|recipe| recipe.get("cars"))
+        .and_then(Value::as_array)
+        .and_then(|cars| cars.first())
+        .and_then(|car| car.get("tunes"))
+        .and_then(Value::as_array)
+        .and_then(|tunes| tunes.first())
+        .and_then(|tune| tune.get("shareCode"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+
+    // Thumbnail: first image with a thumbPath, else first image path.
+    let og_image = body.get("images")
+        .and_then(Value::as_array)
+        .and_then(|imgs| imgs.first())
+        .and_then(|img| {
+            img.get("thumbPath")
+                .or_else(|| img.get("path"))
+                .and_then(Value::as_str)
+        })
+        .unwrap_or("");
+
+    // Build a canonical URL from the request path (no query string).
+    let canonical = uri.path().to_string();
+
+    let og_title = if first_car_name.is_empty() {
+        card_name.to_string()
+    } else {
+        format!("{card_name} — {first_car_name}")
+    };
+
+    let mut description_parts = Vec::new();
+    if !subtitle.is_empty() { description_parts.push(subtitle.to_string()); }
+    if !share_code.is_empty() { description_parts.push(format!("Share code: {share_code}")); }
+    let og_description = if description_parts.is_empty() {
+        "View this livery on The Livery Catalog.".to_string()
+    } else {
+        description_parts.join(" · ")
+    };
+
+    let html = format!(
+        r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{og_title}</title>
+  <meta property="og:title" content="{og_title}">
+  <meta property="og:description" content="{og_description}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="{canonical}">
+  {og_image_tag}
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{og_title}">
+  <meta name="twitter:description" content="{og_description}">
+  <meta http-equiv="refresh" content="0;url=/">
+</head>
+<body>
+  <p>Redirecting to <a href="/">The Livery Catalog</a>…</p>
+</body>
+</html>"#,
+        og_image_tag = if og_image.is_empty() {
+            String::new()
+        } else {
+            format!(r#"<meta property="og:image" content="{og_image}">"#)
+        },
+    );
+
+    axum::response::Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", "text/html; charset=utf-8")
+        .body(html)
+        .unwrap()
 }
 
 async fn list_cards(State(st): State<AppState>) -> Result<Json<Vec<Value>>, ApiError> {

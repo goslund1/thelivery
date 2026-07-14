@@ -27,6 +27,7 @@ import EditCardModal from './components/EditCardModal.vue'
 import ImageMigrationModal from './components/ImageMigrationModal.vue'
 import AdminPanel from './components/AdminPanel.vue'
 import ArchiveCardModal from './components/ArchiveCardModal.vue'
+import ShareModal from './components/ShareModal.vue'
 
 useScrollGuard()
 
@@ -119,6 +120,7 @@ onBeforeUnmount(() => {
   <SuggestionViewer v-if="modal.suggestionViewerOpen" @close="modal.closeSuggestionViewer()" />
   <EditCardModal v-if="modal.promotedCard" :card="modal.promotedCard" @close="modal.closePromotedCard()" />
   <ImageMigrationModal />
+  <ShareModal />
   <AdminPanel />
   <ArchiveCardModal />
   <CustomTip />

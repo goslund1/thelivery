@@ -62,7 +62,8 @@ function setAccent(color: string | undefined) {
         >{{ c }}<button class="chip-remove" type="button" @click="removeCollection(c)">×</button></span>
         <button class="chip-add" data-chip-type="collection" type="button" @click="modal.openChipPicker(card.id, 'collection')">+</button>
       </p>
-      <EditableText tag="h2" class="card-title" v-model="card.name" />
+      <EditableText v-if="ui.isEditing" tag="h2" class="card-title" v-model="card.name" />
+      <h2 v-else class="card-title card-title--shareable" v-tip="'Click for sharing options'" @click="modal.openShare(card.id)">{{ card.name }}</h2>
       <div v-if="ui.isEditing || card.liveryShareCode" class="plate livery-code-plate">
         SHARE CODE:
         <input
@@ -185,4 +186,10 @@ function setAccent(color: string | undefined) {
   transition: color .12s;
 }
 .accent-clear:hover { color: var(--fg); }
+
+.card-title--shareable {
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.card-title--shareable:hover { color: var(--accent); }
 </style>

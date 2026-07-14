@@ -147,6 +147,11 @@ export const useModalStore = defineStore('modal', () => {
   function openThemeBuilder() { themeBuilderOpen.value = true }
   function closeThemeBuilder() { themeBuilderOpen.value = false }
 
+  // ── Share modal ──────────────────────────────────────────────────────────
+  const shareCardId = ref<string | null>(null)
+  function openShare(cardId: string) { shareCardId.value = cardId }
+  function closeShare() { shareCardId.value = null }
+
   // ── Archive card confirm ─────────────────────────────────────────────────────
   const archiveCardPending = ref(false)
   const archiveCardName = ref('')
@@ -182,6 +187,7 @@ export const useModalStore = defineStore('modal', () => {
     if (themeBuilderOpen.value)      { closeThemeBuilder();     return true }
     if (settingsOpen.value)          { closeSettings();         return true }
     if (newCardOpen.value)           { closeNewCard();          return true }
+    if (shareCardId.value)            { closeShare();            return true }
     if (factoidPanelOpen.value)      { closeFactoidPanel();     return true }
     return false
   }
@@ -201,6 +207,7 @@ export const useModalStore = defineStore('modal', () => {
     imageMigrationOpen, openImageMigration, closeImageMigration,
     adminPanelOpen, openAdminPanel, closeAdminPanel,
     themeBuilderOpen, openThemeBuilder, closeThemeBuilder,
+    shareCardId, openShare, closeShare,
     archiveCardPending, archiveCardName, promptArchiveCard, confirmArchiveCard, cancelArchiveCard,
     closeTopModal,
   }

@@ -62,7 +62,7 @@ See `docs/plan-cartabs-tunetabs.md` for the full action plan covering steps 1–
 CarTabs wizard and tab strip UI are built. The following gaps remain before the mashup feature is shippable:
 
 - ~~**Figure image near recipe**~~ — done. Lead image for the active carId appears before the tune name (48px tall, hover shows 200px preview, click opens lightbox). Tune name falls back to `'YY Model` when empty in multi-car mode. Share code is click-to-copy in view mode.
-- **Discipline preset values** — dummy values unblock the refactor; real Jason values deferred. Wizard is exercisable once dummy values are seeded.
+- ~~**Discipline preset values**~~ — done 2026-07-13. Race/Rally/Drift/Street baseline presets seeded. Jason to refine values when ready.
 - ~~**NewCardModal multi-car detection**~~ — done. After a successful photo import, modal pauses and shows "Done / + Add another car" instead of auto-closing. Each additional round creates a new livery on the same card. RecipeSection's auto-propose banner handles tab setup once 2+ carIds are present in the photos.
 - ~~**Shakedown pass**~~ — done. Two bugs found and fixed: (1) spurious Springs dialog on tab switch (`_inPropUpdate` + `flush:'sync'` in TuningAdjustments); (2) tune-name invisible when empty in edit mode (placeholder prop on EditableText). Save/restore round-trip, discard, tab deletion, single-car cards unaffected — all confirmed. — 2026-07-12
 
@@ -150,6 +150,7 @@ Narrow-screen pass for the full catalog. Known gaps:
 
 ## Recently completed
 
+- **CarTabs/TuneTabs shakedown + polish**: discipline baseline presets (Race/Rally/Drift/Street) seeded in DB; `+ ADD CAR` / `+ ADD TUNE` buttons styled as dashed tabs (grey→gold/pink on hover); TuneTabs shelf color = `--highlight`; spacing and gap fixes; `v-tip-up` directive for right-flying tooltip from text end; card title opens ShareModal. — 2026-07-13
 - **Social sharing foundation**: OG share page endpoint (`GET /share/:id/:slug`) added to Rust backend — returns server-rendered HTML with `og:title`, `og:description`, `og:image`, `og:url`, and Twitter card tags; real browsers get a `<meta refresh>` redirect to `/`. Card title in `CardMeta` is now a clickable element (non-edit mode only) with `v-tip="'Click for sharing options'"` that opens a `ShareModal`. Modal has a working Copy Link button (generates `/share/{id}/{card-name-car-name}` slug) and stubbed Reddit + Discord destination buttons ("Coming soon") ready for future wiring. Escape and backdrop-click close the modal via `closeTopModal`. — 2026-07-13
 
 - **CarTabs shakedown + bug fixes**: spurious Springs and Dampers dialog on tab switch fixed (`_inPropUpdate` flag + `flush:'sync'` on gearCount watcher in TuningAdjustments — prevents prop-driven gearCount change from calling checkImplied); tune-name placeholder added to EditableText (CSS `::before` + `data-placeholder` attr) so empty tuneName in edit mode shows the car model name as hint text. — 2026-07-12

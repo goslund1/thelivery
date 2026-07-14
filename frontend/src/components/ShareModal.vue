@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
 
@@ -15,25 +15,53 @@ function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
+const recipe = computed(() => {
+  const c = card.value
+  if (!c) return null
+  return c.sections.find(s => s.type === 'forza_recipe') ?? null
+})
+
+const firstCarName = computed(() => {
+  const r = recipe.value
+  return r && 'cars' in r ? ((r as any).cars?.[0]?.carName ?? '') : ''
+})
+
+const shareCode = computed(() => {
+  const r = recipe.value
+  return r && 'shareCode' in r ? ((r as any).shareCode ?? '') : ''
+})
+
 const shareUrl = computed(() => {
   const c = card.value
   if (!c) return ''
-  const recipe = c.sections.find(s => s.type === 'forza_recipe')
-  const firstCarName = recipe && 'cars' in recipe
-    ? (recipe.cars?.[0]?.carName ?? '')
-    : ''
-  const parts = [slugify(c.name), slugify(firstCarName)].filter(Boolean)
+  const parts = [slugify(c.name), slugify(firstCarName.value)].filter(Boolean)
   const slug = parts.join('-')
   return `${window.location.origin}/share/${c.id}${slug ? '/' + slug : ''}`
 })
 
 const copied = ref(false)
+const redditTitle = ref('')
+
+watch(() => modal.shareCardId, (id) => {
+  if (!id) return
+  nextTick(() => {
+    const nameParts = [card.value?.name, firstCarName.value].filter(Boolean).join(' — ')
+    const code = shareCode.value
+    redditTitle.value = code ? `${nameParts} | Share code: ${code}` : nameParts
+  })
+})
 
 async function copyLink() {
   if (!shareUrl.value) return
   await navigator.clipboard.writeText(shareUrl.value)
   copied.value = true
   setTimeout(() => { copied.value = false }, 2000)
+}
+
+function openReddit() {
+  const url = encodeURIComponent(shareUrl.value)
+  const title = encodeURIComponent(redditTitle.value)
+  window.open(`https://www.reddit.com/submit?url=${url}&title=${title}`, '_blank', 'noopener')
 }
 </script>
 
@@ -54,11 +82,22 @@ async function copyLink() {
         </div>
 
         <div class="share-destinations">
-          <button class="share-dest-btn share-dest-btn--soon" disabled>
-            <span class="share-dest-icon">📋</span>
-            <span class="share-dest-label">Reddit</span>
-            <span class="share-dest-tag">Coming soon</span>
-          </button>
+          <div class="share-reddit">
+            <div class="share-reddit-title-row">
+              <label class="share-reddit-label">Post title</label>
+            </div>
+            <input
+              v-model="redditTitle"
+              class="share-reddit-input"
+              maxlength="300"
+              placeholder="Post title…"
+            />
+            <button class="share-dest-btn share-dest-btn--reddit" @click="openReddit">
+              <span class="share-dest-icon">🔺</span>
+              <span class="share-dest-label">Post to Reddit</span>
+              <span class="share-dest-tag share-dest-tag--arrow">→</span>
+            </button>
+          </div>
           <button class="share-dest-btn share-dest-btn--soon" disabled>
             <span class="share-dest-icon">💬</span>
             <span class="share-dest-label">Discord</span>
@@ -198,5 +237,49 @@ async function copyLink() {
   color: var(--muted);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.share-dest-tag--arrow {
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.share-reddit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.share-reddit-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.share-reddit-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--panel-edge);
+  background: var(--panel-well);
+  color: var(--fg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.share-reddit-input:focus { border-color: var(--accent); }
+
+.share-dest-btn--reddit {
+  color: var(--fg);
+  transition: border-color 0.15s, background 0.15s;
+}
+.share-dest-btn--reddit:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 </style>

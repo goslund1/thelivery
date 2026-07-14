@@ -781,7 +781,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
             class="rs-variant-tab rs-variant-tab--add"
             type="button"
             @click="showAddVariantPicker = true"
-          >+</button>
+          >+ ADD CAR</button>
         </template>
         <div v-else class="rs-add-picker-inline">
           <CarPicker :car-id="null" @update:car-id="addCar" />
@@ -815,12 +815,13 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
           >×</button>
         </div>
       </template>
-      <button
-        v-if="isEditing"
-        class="rs-variant-tab rs-variant-tab--add"
-        type="button"
-        @click="addTuneVariant"
-      >+ Tune</button>
+      <div v-if="isEditing" class="rs-variant-tab-wrap">
+        <button
+          class="rs-variant-tab rs-variant-tab--add"
+          type="button"
+          @click="addTuneVariant"
+        >+ ADD TUNE</button>
+      </div>
     </div>
 
     <!-- Tune import offer (step 10) — shown when a variant is added for a car that already has tunes -->
@@ -1278,6 +1279,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 }
 .rs-tune-tabs {
   padding-top: 3px;
+  margin-top: 4px;
   border-bottom-color: color-mix(in srgb, var(--accent) 50%, transparent);
   font-size: 0.88em;
   opacity: 0.85;
@@ -1313,13 +1315,40 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   color: var(--fg);
 }
 .rs-variant-tab--add {
-  border: 1px dashed var(--accent);
-  border-radius: 4px;
-  color: var(--accent);
-  margin-bottom: 4px;
+  border: 1px dashed var(--muted);
+  border-bottom: none;
+  color: var(--muted);
+  margin-bottom: -1px;
   opacity: 0.65;
 }
-.rs-variant-tab--add:hover { opacity: 1; }
+.rs-variant-tab.rs-variant-tab--add:hover {
+  border: 1px dashed var(--accent);
+  border-bottom: none;
+  color: var(--fg);
+  opacity: 1;
+}
+.rs-tune-tabs .rs-variant-tab.rs-variant-tab--add:hover {
+  border-color: var(--highlight);
+}
+
+/* TuneTabs — hot pink accent overrides */
+.rs-tune-tabs {
+  border-bottom-color: var(--highlight);
+}
+.rs-tune-tabs .rs-variant-tab {
+  border-bottom-color: var(--highlight);
+}
+.rs-tune-tabs .rs-variant-tab--active {
+  border-color: var(--highlight);
+  border-bottom-color: var(--tune-header-bg);
+  color: var(--highlight);
+}
+.rs-tune-tabs .rs-variant-tab:not(.rs-variant-tab--active):hover {
+  border-bottom-color: var(--highlight);
+}
+.rs-tune-tabs .rs-variant-tab-wrap:has(.rs-variant-tab--add) {
+  margin-left: 6px;
+}
 .rs-variant-remove {
   background: none;
   border: none;
@@ -1333,7 +1362,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
 }
 .rs-variant-remove:hover { opacity: 1; color: #e03030; }
 
-.rs-add-variant-wrap { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.rs-add-variant-wrap { display: flex; align-items: flex-end; gap: 4px; margin-bottom: 0; }
 
 .rs-autopropose {
   display: flex;

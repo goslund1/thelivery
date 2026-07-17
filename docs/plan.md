@@ -23,7 +23,7 @@ Narrow-screen pass for the full catalog. Known gaps:
 
 ### Live data gaps (from session-36 shakedown)
 - ~~Color filters match zero cards on live~~ **RESOLVED** — the live data was fine (11/11 card-referenced liveries had colors); the real bug was the liveries store never loading outside edit flows, so the filter's liveryId→color lookup was empty for fresh visitors. Fixed by `loadAll()` on Filters mount (commit a70cce3, verified live).
-- **Set JWT_SECRET on the droplet — now confirmed missing, not just suspected.** Deploys restart the service, the fallback secret is random per boot, so **every deploy logs all users out** (bit us twice today). One-liner + restart in `/opt/thelivery/secrets.env`; Geoff pinged 2026-07-17.
+- ~~Set JWT_SECRET on the droplet~~ **RESOLVED** — was confirmed missing (every deploy rotated the fallback secret and logged all users out; bit us twice on 2026-07-17). Geoff added it to `/opt/thelivery/secrets.env` same day; verified by a token surviving a subsequent deploy restart.
 - **Orphan livery rows** — ids 26–28 "Smokin (Updated)" (plus 24 "Faker", 29 "Sold Out") have no images tagged and no card references. Harmless, but candidates for cleanup or re-linking if they were meant to replace the originals.
 - **Seed-data nits** — Smokin engine spec reads `DIRECT_TEST`; Lolita tune name is still the placeholder with share code TBD.
 
@@ -31,7 +31,7 @@ Narrow-screen pass for the full catalog. Known gaps:
 - **Lock CORS to production domain** — currently `CorsLayer::permissive()` in `backend/src/main.rs`. Change to `CorsLayer::new().allow_origin("https://thelivery.silverleaf.services")` before public launch.
 - **Remove the "Draft — layout preview" tag** from the page head in `App.vue` — do together with the CORS lock.
 - **Update README.md** — significantly out of date: still references `/api/liveries` (now `/api/cards`), `seed/liveries.json` (now `seed/cards.json`), "single-user, no auth" (JWT auth exists), and is missing most current endpoints. Rewrite the API table and data description to match reality before the repo goes public.
-- **Set JWT_SECRET on the droplet** — unverified whether `secrets.env` defines it; if absent, live logins reset on every service restart (a warning appears in the service log).
+- ~~Set JWT_SECRET on the droplet~~ **DONE 2026-07-17** — Geoff set it in `secrets.env`; verified by a token surviving a deploy restart (see Live data gaps above).
 
 ### Backfill pass (another round coming)
 - Cars→Tunes hierarchy refactor is complete (migration 0017, normalize_bodies step). Data model is now stable.

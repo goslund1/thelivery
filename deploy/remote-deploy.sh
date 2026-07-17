@@ -33,17 +33,6 @@ sudo install -m 0644 "$STAGE/seed/liveries.json" "$APP_DIR/seed/liveries.json"
 if [ -f "$STAGE/seed/users.json" ]; then
   sudo install -m 0600 "$STAGE/seed/users.json" "$APP_DIR/seed/users.json"
 fi
-
-# ONE-TIME (2026-07-17): retire the proof-of-concept database so the service
-# re-seeds from the freshly shipped seed files on restart. The old DB is kept
-# as a backup, and the guard file makes this a no-op on every later deploy.
-# Revert this block in the next commit.
-if [ ! -f "$APP_DIR/data.db.bak-20260717" ] && [ -f "$APP_DIR/data.db" ]; then
-  echo "==> ONE-TIME: backing up and retiring old data.db for reseed"
-  sudo mv "$APP_DIR/data.db" "$APP_DIR/data.db.bak-20260717"
-  sudo rm -f "$APP_DIR/data.db-wal" "$APP_DIR/data.db-shm"
-fi
-
 echo "==> Seeding images (no-clobber)"
 sudo cp -rn "$STAGE/seed-uploads/." "$APP_DIR/uploads/" 2>/dev/null || true
 

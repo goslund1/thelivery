@@ -5,8 +5,18 @@ use std::path::Path;
 pub const CANVAS_W: u32 = 1200;
 pub const CANVAS_H: u32 = 630;
 
-static FONT_POSTCARD: &[u8] = include_bytes!("../fonts/BebasNeue-Regular.ttf");
-static FONT_SIGNAL: &[u8] = include_bytes!("../fonts/Oswald-VF.ttf");
+static FONT_BEBAS_NEUE:            &[u8] = include_bytes!("../fonts/BebasNeue-Regular.ttf");
+static FONT_OSWALD:                &[u8] = include_bytes!("../fonts/Oswald-VF.ttf");
+static FONT_CINZEL:                &[u8] = include_bytes!("../fonts/Cinzel-Bold.ttf");
+static FONT_BLACK_OPS_ONE:         &[u8] = include_bytes!("../fonts/BlackOpsOne-Regular.ttf");
+static FONT_ANTON:                 &[u8] = include_bytes!("../fonts/Anton-Regular.ttf");
+static FONT_RACING_SANS_ONE:       &[u8] = include_bytes!("../fonts/RacingSansOne-Regular.ttf");
+static FONT_ORBITRON:              &[u8] = include_bytes!("../fonts/Orbitron-Bold.ttf");
+static FONT_GRADUATE:              &[u8] = include_bytes!("../fonts/Graduate-Regular.ttf");
+static FONT_RUSSO_ONE:             &[u8] = include_bytes!("../fonts/RussoOne-Regular.ttf");
+static FONT_BARLOW_CONDENSED:      &[u8] = include_bytes!("../fonts/BarlowCondensed-ExtraBold.ttf");
+static FONT_AUDIOWIDE:             &[u8] = include_bytes!("../fonts/Audiowide-Regular.ttf");
+static FONT_BIG_SHOULDERS_DISPLAY: &[u8] = include_bytes!("../fonts/BigShouldersDisplay-ExtraBold.ttf");
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -16,9 +26,28 @@ pub enum TextStyle {
     Ghost,
 }
 
+#[derive(Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum FontChoice {
+    BebasNeue,
+    Oswald,
+    Cinzel,
+    BlackOpsOne,
+    Anton,
+    RacingSansOne,
+    Orbitron,
+    Graduate,
+    RussoOne,
+    BarlowCondensed,
+    Audiowide,
+    BigShouldersDisplay,
+}
+
 #[derive(Deserialize, Clone, Debug)]
 pub struct OgTextBox {
     pub style: TextStyle,
+    #[serde(default)]
+    pub font: Option<FontChoice>,
     pub content: String,
     pub x: f32,
     pub y: f32,
@@ -69,7 +98,7 @@ pub fn compose(photo_path: &Path, config: &OgConfig) -> anyhow::Result<Vec<u8>> 
             blit_backdrop(&mut canvas, x_px, y_px, w_px as i32, h_px as i32, tb.rotate_deg, tb.shear_x);
         }
 
-        let font_data = font_for_style(&tb.style);
+        let font_data = font_for_box(&tb.style, &tb.font);
         let text_img = rasterize_text_box(font_data, &tb.content, w_px, h_px, &tb.style);
 
         // Drop shadow on POSTCARD and SIGNAL — GHOST stays intentionally delicate.
@@ -145,7 +174,7 @@ fn blit_backdrop(
 /// Renders "THE LIVERY" in Bebas Neue at small size, bottom-right corner.
 /// Placeholder until a real logo asset is embedded.
 fn render_logo(canvas: &mut RgbaImage) {
-    let logo = rasterize_text_natural(FONT_POSTCARD, "THE LIVERY", 22.0, 180);
+    let logo = rasterize_text_natural(FONT_BEBAS_NEUE, "THE LIVERY", 22.0, 180);
     let margin = 24i32;
     let x = CANVAS_W as i32 - logo.width() as i32 - margin;
     let y = CANVAS_H as i32 - logo.height() as i32 - margin;
@@ -156,10 +185,27 @@ fn render_logo(canvas: &mut RgbaImage) {
 
 // ── Font / style helpers ─────────────────────────────────────────────────────
 
-fn font_for_style(style: &TextStyle) -> &'static [u8] {
+fn font_for_box(style: &TextStyle, font: &Option<FontChoice>) -> &'static [u8] {
+    if let Some(f) = font {
+        return match f {
+            FontChoice::BebasNeue         => FONT_BEBAS_NEUE,
+            FontChoice::Oswald            => FONT_OSWALD,
+            FontChoice::Cinzel            => FONT_CINZEL,
+            FontChoice::BlackOpsOne       => FONT_BLACK_OPS_ONE,
+            FontChoice::Anton             => FONT_ANTON,
+            FontChoice::RacingSansOne     => FONT_RACING_SANS_ONE,
+            FontChoice::Orbitron          => FONT_ORBITRON,
+            FontChoice::Graduate          => FONT_GRADUATE,
+            FontChoice::RussoOne          => FONT_RUSSO_ONE,
+            FontChoice::BarlowCondensed   => FONT_BARLOW_CONDENSED,
+            FontChoice::Audiowide         => FONT_AUDIOWIDE,
+            FontChoice::BigShouldersDisplay => FONT_BIG_SHOULDERS_DISPLAY,
+        };
+    }
+    // Style defaults
     match style {
-        TextStyle::Postcard => FONT_POSTCARD,
-        _ => FONT_SIGNAL,
+        TextStyle::Postcard => FONT_BEBAS_NEUE,
+        _ => FONT_OSWALD,
     }
 }
 
@@ -366,7 +412,7 @@ mod tests {
 
     #[test]
     fn test_rasterize_no_panic() {
-        let img = rasterize_text_box(FONT_POSTCARD, "SMOKIN", 600, 113, &TextStyle::Postcard);
+        let img = rasterize_text_box(FONT_BEBAS_NEUE, "SMOKIN", 600, 113, &TextStyle::Postcard);
         assert_eq!(img.width(), 600);
         assert_eq!(img.height(), 113);
         let has_content = img.pixels().any(|p| p[3] > 0);
@@ -375,14 +421,14 @@ mod tests {
 
     #[test]
     fn test_rasterize_ghost_alpha() {
-        let img = rasterize_text_box(FONT_SIGNAL, "TEST", 300, 80, &TextStyle::Ghost);
+        let img = rasterize_text_box(FONT_OSWALD, "TEST", 300, 80, &TextStyle::Ghost);
         let max_alpha = img.pixels().map(|p| p[3]).max().unwrap_or(0);
         assert!(max_alpha <= 170, "GHOST style alpha should be capped at 170, got {max_alpha}");
     }
 
     #[test]
     fn test_rasterize_natural_no_panic() {
-        let img = rasterize_text_natural(FONT_POSTCARD, "THE LIVERY", 22.0, 180);
+        let img = rasterize_text_natural(FONT_BEBAS_NEUE, "THE LIVERY", 22.0, 180);
         assert!(img.width() > 0 && img.height() > 0);
         let has_content = img.pixels().any(|p| p[3] > 0);
         assert!(has_content, "logo text should produce visible pixels");

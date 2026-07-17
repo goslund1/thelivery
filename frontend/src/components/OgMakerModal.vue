@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
-import type { CardImage, OgTextStyle } from '../types'
+import type { CardImage, OgFont, OgTextStyle } from '../types'
 
 const modal = useModalStore()
 const store = useCardsStore()
@@ -12,6 +12,7 @@ const store = useCardsStore()
 interface TextBox {
   id: string
   style: OgTextStyle
+  font?: OgFont
   content: string
   x: number   // fraction 0–1, left edge
   y: number   // fraction 0–1, top edge
@@ -33,11 +34,27 @@ const photos       = ref<CardImage[]>([])
 const presetName   = ref('')
 const newContent   = ref('')
 const newStyle     = ref<OgTextStyle>('POSTCARD')
+const newFont      = ref<OgFont | undefined>(undefined)
 const logoVisible  = ref(false)
 const saving       = ref(false)
 const saveMsg      = ref('')
 
 const STYLES: OgTextStyle[] = ['POSTCARD', 'SIGNAL', 'GHOST']
+
+const FONTS: { value: OgFont; label: string }[] = [
+  { value: 'BEBAS_NEUE',          label: 'Bebas Neue' },
+  { value: 'OSWALD',              label: 'Oswald' },
+  { value: 'CINZEL',              label: 'Cinzel' },
+  { value: 'BLACK_OPS_ONE',       label: 'Black Ops One' },
+  { value: 'ANTON',               label: 'Anton' },
+  { value: 'RACING_SANS_ONE',     label: 'Racing Sans One' },
+  { value: 'ORBITRON',            label: 'Orbitron' },
+  { value: 'GRADUATE',            label: 'Graduate' },
+  { value: 'RUSSO_ONE',           label: 'Russo One' },
+  { value: 'BARLOW_CONDENSED',    label: 'Barlow Condensed' },
+  { value: 'AUDIOWIDE',           label: 'Audiowide' },
+  { value: 'BIG_SHOULDERS_DISPLAY', label: 'Big Shoulders' },
+]
 
 const selected = computed(() => boxes.value.find(b => b.id === selectedId.value) ?? null)
 
@@ -228,6 +245,7 @@ function addBox() {
   boxes.value.push({
     id,
     style: newStyle.value,
+    font: newFont.value,
     content: newContent.value.trim().toUpperCase(),
     x: 0.05, y: 0.72, w: 0.5, h: 0.16,
     rotateDeg: 0, shearX: 0,
@@ -370,8 +388,12 @@ function rotHandleStyle(box: TextBox) {
 
         <!-- Toolbar (selected box) -->
         <div v-if="selected" class="ogm-toolbar">
-          <select v-model="selected.style" class="ogm-select">
+          <select v-model="selected.style" class="ogm-select" @change="schedulePreview()">
             <option v-for="s in STYLES" :key="s" :value="s">{{ s }}</option>
+          </select>
+          <select v-model="selected.font" class="ogm-select" @change="schedulePreview()">
+            <option :value="undefined">— style default —</option>
+            <option v-for="f in FONTS" :key="f.value" :value="f.value">{{ f.label }}</option>
           </select>
           <input v-model="selected.content" class="ogm-text-input" @input="schedulePreview()" />
           <label class="ogm-slider-label">
@@ -395,6 +417,10 @@ function rotHandleStyle(box: TextBox) {
             placeholder="Type stamp text…"
             @keydown.enter="addBox"
           />
+          <select v-model="newFont" class="ogm-select">
+            <option :value="undefined">— font —</option>
+            <option v-for="f in FONTS" :key="f.value" :value="f.value">{{ f.label }}</option>
+          </select>
           <select v-model="newStyle" class="ogm-select">
             <option v-for="s in STYLES" :key="s" :value="s">{{ s }}</option>
           </select>

@@ -138,8 +138,23 @@ export type Section = TextSection | ForzaRecipeSection
 
 export type OgTextStyle = 'POSTCARD' | 'SIGNAL' | 'GHOST'
 
+export type OgFont =
+  | 'BEBAS_NEUE'
+  | 'OSWALD'
+  | 'CINZEL'
+  | 'BLACK_OPS_ONE'
+  | 'ANTON'
+  | 'RACING_SANS_ONE'
+  | 'ORBITRON'
+  | 'GRADUATE'
+  | 'RUSSO_ONE'
+  | 'BARLOW_CONDENSED'
+  | 'AUDIOWIDE'
+  | 'BIG_SHOULDERS_DISPLAY'
+
 export interface OgTextBox {
   style: OgTextStyle
+  font?: OgFont
   content: string
   x: number; y: number; w: number; h: number
   rotateDeg: number

@@ -15,6 +15,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:8787',
       '/uploads': 'http://localhost:8787',
+      '/share': 'http://localhost:8787',
     },
   },
 })

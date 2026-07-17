@@ -3,11 +3,13 @@ import { computed, ref, watch, nextTick } from 'vue'
 import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
+import { useAuthStore } from '../stores/auth'
 import type { OgConfig } from '../types'
 
 const modal = useModalStore()
 const store = useCardsStore()
 const ui    = useUiStore()
+const auth  = useAuthStore()
 
 const card = computed(() => {
   if (!modal.shareCardId) return null
@@ -214,8 +216,8 @@ watch(cardOverlayConfig, (cfg) => {
           </button>
         </div>
 
-        <!-- OG design section (edit mode) -->
-        <div v-if="ui.isEditing" class="share-og-section">
+        <!-- OG design section (admin only) -->
+        <div v-if="auth.isAuthenticated" class="share-og-section">
           <div class="share-og-label">Share card design</div>
 
           <!-- Card already has a saved overlay -->

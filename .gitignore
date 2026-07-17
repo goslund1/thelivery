@@ -26,6 +26,10 @@ target/
 # The retired original single-file app — kept locally, not in the repo.
 archive/
 
+# Local env files (ANTHROPIC_API_KEY, JWT_SECRET, …). Never commit.
+.env
+.env.*
+
 # User seed — contains a password hash. Never commit. Re-export after a password
 # change: sqlite3 backend/data.db "SELECT username, password_hash FROM users;"
 backend/seed/users.json

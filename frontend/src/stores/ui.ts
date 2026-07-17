@@ -76,8 +76,15 @@ export const useUiStore = defineStore('ui', () => {
     if (e instanceof ApiError && e.status === 401) {
       useAuthStore().logout()
       // Lazy import — ui.ts ↔ modal.ts are mutually dependent; dynamic import
-      // breaks the module-level cycle. Do not restructure: keeping this in the
-      // store (vs. the component) means all post-login flows stay in one place.
+      // breaks the module-level cycle. SETTLED (audit pass 4 + review 2026-07-17),
+      // do not revisit:
+      //  - The INEFFECTIVE_DYNAMIC_IMPORT build warning is expected and benign.
+      //    It says the import won't get its own chunk — chunking was never the
+      //    goal; cycle-breaking is, and that works.
+      //  - A "signal module" only fixes this direction; the reverse direction
+      //    (onLoginSuccess → enterEdit) would have to move into LoginModal.vue,
+      //    scattering post-login flows we deliberately keep in the stores.
+      // (theme.ts imports ui statically — that one was never a cycle.)
       import('./modal').then(({ useModalStore }) => useModalStore().openLogin(false))
       return true
     }
@@ -142,7 +149,7 @@ export const useUiStore = defineStore('ui', () => {
     } else if (useAuthStore().isAuthenticated) {
       enterEdit()
     } else {
-      // Same lazy-import pattern — see handleAuthError above.
+      // Same lazy-import pattern — see the SETTLED note in handleAuthError.
       import('./modal').then(({ useModalStore }) => useModalStore().openLogin(true))
     }
   }

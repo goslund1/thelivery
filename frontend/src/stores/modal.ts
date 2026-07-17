@@ -104,8 +104,9 @@ export const useModalStore = defineStore('modal', () => {
     if (loginThenEdit) {
       loginThenEdit = false
       // Lazy import — modal.ts ↔ ui.ts are mutually dependent; dynamic import
-      // breaks the module-level cycle. Do not restructure: keeping this in the
-      // store (vs. the component) means all post-login flows stay in one place.
+      // breaks the module-level cycle. Do not restructure, and the build's
+      // INEFFECTIVE_DYNAMIC_IMPORT warning is expected — full rationale in
+      // ui.ts → handleAuthError (SETTLED note).
       import('./ui').then(({ useUiStore }) => useUiStore().enterEdit())
     }
   }

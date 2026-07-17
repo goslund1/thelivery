@@ -42,3 +42,7 @@ When a parent passes a deep-cloned reactive object as props (e.g. `RecipeSection
 ## Virtual scroll slot recycling
 
 `vue-virtual-scroller` is no longer used in this codebase — it was removed due to two failure modes (slot recycling resetting component state, and duplicate concurrent pool slots). See `frontend-patterns → Card list rendering` for the full history and the correct alternative.
+
+## `ui.ts` ↔ `modal.ts` circular imports are SETTLED — do not "fix"
+
+The two stores are mutually dependent (401 → open login; login success → enter edit) and use `import('./modal')` / `import('./ui')` to break the module-level cycle. The build's `INEFFECTIVE_DYNAMIC_IMPORT` warning is **expected and benign** — it complains the import won't get its own chunk, but chunking was never the goal. Reviewed twice (audit pass 4, review 2026-07-17): a signal-module extraction only fixes one direction and would force post-login flow into `LoginModal.vue`, scattering logic the stores deliberately centralize. Full rationale in `ui.ts → handleAuthError`. (`theme.ts` was never part of the cycle and imports `ui` statically.)

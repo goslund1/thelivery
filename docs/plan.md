@@ -22,7 +22,9 @@ Narrow-screen pass for the full catalog. Known gaps:
 ## Maintenance
 
 ### Live data gaps (from session-36 shakedown)
-- **Color filters match zero cards on live** — every color chip returns an empty catalog because live liveries have no `primary_color`/`secondary_color` data. Run the AI assess-color pass against the live DB (admin action, uses API quota).
+- ~~Color filters match zero cards on live~~ **RESOLVED** — the live data was fine (11/11 card-referenced liveries had colors); the real bug was the liveries store never loading outside edit flows, so the filter's liveryId→color lookup was empty for fresh visitors. Fixed by `loadAll()` on Filters mount (commit a70cce3, verified live).
+- **Set JWT_SECRET on the droplet — now confirmed missing, not just suspected.** Deploys restart the service, the fallback secret is random per boot, so **every deploy logs all users out** (bit us twice today). One-liner + restart in `/opt/thelivery/secrets.env`; Geoff pinged 2026-07-17.
+- **Orphan livery rows** — ids 26–28 "Smokin (Updated)" (plus 24 "Faker", 29 "Sold Out") have no images tagged and no card references. Harmless, but candidates for cleanup or re-linking if they were meant to replace the originals.
 - **Seed-data nits** — Smokin engine spec reads `DIRECT_TEST`; Lolita tune name is still the placeholder with share code TBD.
 
 ### Pre-launch checklist

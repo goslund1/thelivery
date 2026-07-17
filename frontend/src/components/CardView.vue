@@ -22,7 +22,7 @@ provide(CardIdKey, props.card.id)
 // and become visible in edit mode.
 function isSectionEmpty(s: Section): boolean {
   if (s.type === 'text') return !s.body.trim() && !s.figurePath
-  if (s.type === 'forza_recipe') return !s.variants?.length
+  if (s.type === 'forza_recipe') return !s.cars?.length
     && !s.tuneName.trim() && !s.shareCode.trim()
     && s.upgrades.every(c => c.parts.length === 0) && s.adjustments.length === 0
   return false
@@ -64,7 +64,7 @@ function onBuildIt() {
 const multiCarDetected = computed(() => {
   const recipe = props.card.sections.find(s => s.type === 'forza_recipe')
   if (!recipe || recipe.type !== 'forza_recipe') return false
-  if ((recipe.variants?.length ?? 0) >= 1) return false
+  if ((recipe.cars?.length ?? 0) >= 1) return false
   const seen = new Set<string>()
   for (const img of props.card.images) { if (img.carId) seen.add(img.carId) }
   return seen.size >= 2

@@ -24,6 +24,8 @@ mod presets;
 mod share;
 mod state;
 mod suggestions;
+#[cfg(test)]
+mod testutil;
 mod theme;
 mod trash;
 

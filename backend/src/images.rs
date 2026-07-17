@@ -698,3 +698,136 @@ pub async fn admin_migrate_images(
 
     Ok(Json(json!({ "migrated": results })))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testutil::test_pool;
+
+    // ── slugify / card_folder ───────────────────────────────────────────────
+
+    #[test]
+    fn slugify_collapses_and_trims() {
+        assert_eq!(slugify("Smokin' McLaren P1 GTR!"), "smokin_mclaren_p1_gtr");
+        assert_eq!(slugify("  --already--slugged--  "), "already_slugged");
+        assert_eq!(slugify("UPPER case 123"), "upper_case_123");
+        assert_eq!(slugify(""), "");
+        assert_eq!(slugify("!!!"), "");
+    }
+
+    #[test]
+    fn card_folder_covers_all_fallbacks() {
+        assert_eq!(card_folder("Smokin", "abc123"), "smokin_abc123");
+        assert_eq!(card_folder("Smokin", ""), "smokin");
+        assert_eq!(card_folder("", "abc123"), "card_abc123");
+        assert_eq!(card_folder("!!!", ""), "misc");
+    }
+
+    // ── sync_card_images branch coverage ────────────────────────────────────
+
+    async fn insert_image(pool: &SqlitePool, card_id: &str, path: &str) -> i64 {
+        sqlx::query(
+            "INSERT INTO images (card_id, path, thumb_path, stage_path, sort_order) VALUES (?, ?, ?, ?, 0)",
+        )
+        .bind(card_id).bind(path)
+        .bind(format!("{path}.thumb")).bind(format!("{path}.stage"))
+        .execute(pool).await.unwrap().last_insert_rowid()
+    }
+
+    #[tokio::test]
+    async fn numeric_id_updates_metadata_and_strips_paths() {
+        let pool = test_pool().await;
+        let id = insert_image(&pool, "7", "/uploads/x/001.jpg").await;
+
+        let mut body = json!({ "id": "7", "images": [
+            { "id": id, "path": "/uploads/x/001.jpg", "alt": "new alt", "order": 4,
+              "carId": "fh5-a", "included": false }
+        ]});
+        sync_card_images(&pool, "7", &mut body).await.unwrap();
+
+        // DB row updated.
+        let row = sqlx::query("SELECT alt_text, sort_order, car_id, included FROM images WHERE id = ?")
+            .bind(id).fetch_one(&pool).await.unwrap();
+        assert_eq!(row.get::<String, _>("alt_text"), "new alt");
+        assert_eq!(row.get::<i64, _>("sort_order"), 4);
+        assert_eq!(row.get::<Option<String>, _>("car_id").as_deref(), Some("fh5-a"));
+        assert_eq!(row.get::<i64, _>("included"), 0);
+
+        // Body stripped to id + meta only.
+        let img = &body["images"][0];
+        assert_eq!(img["id"], id);
+        assert!(img.get("path").is_none());
+        assert!(img.get("thumbPath").is_none());
+    }
+
+    #[tokio::test]
+    async fn path_only_image_inserts_new_row() {
+        let pool = test_pool().await;
+        let mut body = json!({ "id": "7", "images": [
+            { "path": "/uploads/x/new.jpg", "thumbPath": "/uploads/x/new_t.jpg",
+              "stagePath": "/uploads/x/new_s.jpg", "order": 0, "alt": "fresh" }
+        ]});
+        sync_card_images(&pool, "7", &mut body).await.unwrap();
+
+        let img = &body["images"][0];
+        assert!(img["id"].is_i64(), "body gained the new DB id");
+        let path: String = sqlx::query_scalar("SELECT path FROM images WHERE id = ?")
+            .bind(img["id"].as_i64().unwrap())
+            .fetch_one(&pool).await.unwrap();
+        assert_eq!(path, "/uploads/x/new.jpg");
+    }
+
+    #[tokio::test]
+    async fn path_only_image_finds_existing_row_instead_of_duplicating() {
+        let pool = test_pool().await;
+        let id = insert_image(&pool, "7", "/uploads/x/001.jpg").await;
+
+        let mut body = json!({ "id": "7", "images": [
+            { "path": "/uploads/x/001.jpg", "order": 2, "alt": "updated" }
+        ]});
+        sync_card_images(&pool, "7", &mut body).await.unwrap();
+
+        assert_eq!(body["images"][0]["id"], id, "matched by path, no new row");
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM images WHERE card_id = '7'")
+            .fetch_one(&pool).await.unwrap();
+        assert_eq!(count, 1);
+        let sort: i64 = sqlx::query_scalar("SELECT sort_order FROM images WHERE id = ?")
+            .bind(id).fetch_one(&pool).await.unwrap();
+        assert_eq!(sort, 2);
+    }
+
+    #[tokio::test]
+    async fn image_with_neither_id_nor_path_is_dropped() {
+        let pool = test_pool().await;
+        let mut body = json!({ "id": "7", "images": [ { "alt": "ghost", "order": 0 } ]});
+        sync_card_images(&pool, "7", &mut body).await.unwrap();
+        assert_eq!(body["images"].as_array().unwrap().len(), 0);
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM images")
+            .fetch_one(&pool).await.unwrap();
+        assert_eq!(count, 0);
+    }
+
+    #[tokio::test]
+    async fn absent_livery_and_included_are_preserved_via_coalesce() {
+        let pool = test_pool().await;
+        let id = insert_image(&pool, "7", "/uploads/x/001.jpg").await;
+        // Real parent rows — livery_id has a FK to liveries (which FKs cars).
+        sqlx::query("INSERT INTO cars (id, game, make, model) VALUES ('fh5-a', 'FH5', 'Make', 'Model')")
+            .execute(&pool).await.unwrap();
+        let livery_id = sqlx::query(
+            "INSERT INTO liveries (car_id, serial, name) VALUES ('fh5-a', 'FH5-X-L001', 'Test Livery')",
+        )
+        .execute(&pool).await.unwrap().last_insert_rowid();
+        sqlx::query("UPDATE images SET livery_id = ?, included = 0 WHERE id = ?")
+            .bind(livery_id).bind(id).execute(&pool).await.unwrap();
+
+        // Body omits liveryId and included — the DB values must survive the sync.
+        let mut body = json!({ "id": "7", "images": [ { "id": id, "order": 0 } ]});
+        sync_card_images(&pool, "7", &mut body).await.unwrap();
+
+        let row = sqlx::query("SELECT livery_id, included FROM images WHERE id = ?")
+            .bind(id).fetch_one(&pool).await.unwrap();
+        assert_eq!(row.get::<Option<i64>, _>("livery_id"), Some(livery_id));
+        assert_eq!(row.get::<i64, _>("included"), 0);
+    }
+}

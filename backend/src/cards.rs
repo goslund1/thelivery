@@ -642,4 +642,195 @@ mod tests {
             assert!(validate_card_body(&c).is_err(), "{field} should require an array");
         }
     }
+
+    // ── normalize_card (oldest shape → sections[]) ──────────────────────────
+
+    /// A card in the original pre-sections shape: top-level inspiration /
+    /// designNotes / recipe, string image ids, isLead flag.
+    fn old_shape_card() -> Value {
+        json!({
+            "id": "3",
+            "catalogNumber": 3,
+            "name": "Old Shape",
+            "inspiration": { "body": "the muse", "figurePath": "/uploads/fig.jpg" },
+            "designNotes": { "body": "the notes" },
+            "recipe": { "tuneName": "T", "shareCode": "123 456 789",
+                        "coreSpecs": {}, "upgrades": [], "adjustments": [] },
+            "images": [
+                { "id": "a", "path": "/uploads/a.jpg", "order": 0 },
+                { "id": "b", "path": "/uploads/b.jpg", "order": 1, "isLead": true },
+                { "id": "c", "path": "/uploads/c.jpg", "order": 2 }
+            ]
+        })
+    }
+
+    #[test]
+    fn normalize_card_builds_ordered_sections() {
+        let mut c = old_shape_card();
+        normalize_card(&mut c);
+
+        assert!(c.get("inspiration").is_none(), "old top-level fields removed");
+        assert!(c.get("designNotes").is_none());
+        assert!(c.get("recipe").is_none());
+
+        let sections = c["sections"].as_array().unwrap();
+        let keys: Vec<&str> = sections.iter().map(|s| s["key"].as_str().unwrap()).collect();
+        assert_eq!(keys, ["inspiration", "notes", "recipe"]);
+        assert_eq!(sections[0]["type"], "text");
+        assert_eq!(sections[0]["body"], "the muse");
+        assert_eq!(sections[0]["figurePath"], "/uploads/fig.jpg");
+        assert_eq!(sections[2]["type"], "forza_recipe");
+        assert_eq!(sections[2]["shareCode"], "123 456 789");
+    }
+
+    #[test]
+    fn normalize_card_moves_lead_image_to_order_zero() {
+        let mut c = old_shape_card();
+        normalize_card(&mut c);
+
+        let imgs = c["images"].as_array().unwrap();
+        let ids: Vec<&str> = imgs.iter().map(|i| i["id"].as_str().unwrap()).collect();
+        assert_eq!(ids, ["b", "a", "c"], "lead image first, rest keep relative order");
+        for (i, img) in imgs.iter().enumerate() {
+            assert_eq!(img["order"], i as i64, "orders renumbered contiguously");
+            assert!(img.get("isLead").is_none(), "isLead dropped");
+        }
+    }
+
+    #[test]
+    fn normalize_card_without_recipe_yields_two_sections() {
+        let mut c = old_shape_card();
+        c.as_object_mut().unwrap().remove("recipe");
+        normalize_card(&mut c);
+        assert_eq!(c["sections"].as_array().unwrap().len(), 2);
+    }
+
+    // ── ensure_standard_sections ────────────────────────────────────────────
+
+    #[test]
+    fn ensure_sections_fills_empty_array() {
+        let mut c = json!({ "id": "1", "sections": [] });
+        assert!(ensure_standard_sections(&mut c));
+        let keys: Vec<&str> = c["sections"].as_array().unwrap()
+            .iter().map(|s| s["key"].as_str().unwrap()).collect();
+        assert_eq!(keys, ["inspiration", "notes", "recipe"]);
+    }
+
+    #[test]
+    fn ensure_sections_is_idempotent() {
+        let mut c = json!({ "id": "1", "sections": [] });
+        ensure_standard_sections(&mut c);
+        let after_first = c.clone();
+        assert!(!ensure_standard_sections(&mut c), "second run reports no change");
+        assert_eq!(c, after_first, "second run changes nothing");
+    }
+
+    #[test]
+    fn ensure_sections_adds_only_missing() {
+        let mut c = json!({ "id": "1", "sections": [
+            { "type": "text", "key": "notes", "label": "Design Notes", "body": "kept" }
+        ]});
+        assert!(ensure_standard_sections(&mut c));
+        let sections = c["sections"].as_array().unwrap();
+        assert_eq!(sections.len(), 3);
+        assert_eq!(sections[0]["body"], "kept", "existing section untouched and first");
+    }
+
+    // ── migrate_variants_to_cars ────────────────────────────────────────────
+
+    fn card_with_variants() -> Value {
+        json!({ "id": "5", "sections": [
+            { "type": "text", "key": "inspiration", "label": "Inspiration", "body": "" },
+            { "type": "forza_recipe", "key": "recipe", "label": "Tune / Build Parts",
+              "tuneName": "top", "shareCode": "111", "coreSpecs": {}, "upgrades": [], "adjustments": [],
+              "variants": [
+                  { "carId": "fh5-a", "carName": "Car A", "tuneName": "A tune", "shareCode": "222",
+                    "coreSpecs": { "Engine": "V8" }, "upgrades": [], "adjustments": [], "isSuggested": true },
+                  { "carId": "fh5-b", "tuneName": "B tune", "shareCode": "",
+                    "coreSpecs": {}, "upgrades": [], "adjustments": [] }
+              ] }
+        ]})
+    }
+
+    #[test]
+    fn variants_become_cars_with_one_tune_each() {
+        let mut c = card_with_variants();
+        assert!(migrate_variants_to_cars(&mut c));
+
+        let recipe = &c["sections"][1];
+        assert!(recipe.get("variants").is_none(), "variants removed");
+        let cars = recipe["cars"].as_array().unwrap();
+        assert_eq!(cars.len(), 2);
+        assert_eq!(cars[0]["carId"], "fh5-a");
+        assert_eq!(cars[0]["carName"], "Car A");
+        let tune = &cars[0]["tunes"][0];
+        assert_eq!(tune["tuneName"], "A tune");
+        assert_eq!(tune["shareCode"], "222");
+        assert_eq!(tune["coreSpecs"]["Engine"], "V8");
+        assert_eq!(tune["isSuggested"], true);
+        assert_eq!(cars[1]["tunes"].as_array().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn variants_migration_is_idempotent() {
+        let mut c = card_with_variants();
+        migrate_variants_to_cars(&mut c);
+        let after_first = c.clone();
+        assert!(!migrate_variants_to_cars(&mut c), "second run reports no change");
+        assert_eq!(c, after_first);
+    }
+
+    #[test]
+    fn variants_migration_skips_sections_with_cars_or_without_variants() {
+        // Already migrated: cars[] present → untouched even if variants also present.
+        let mut c = json!({ "id": "1", "sections": [
+            { "type": "forza_recipe", "key": "recipe", "cars": [{ "carId": "x", "tunes": [] }],
+              "variants": [{ "carId": "y" }] }
+        ]});
+        assert!(!migrate_variants_to_cars(&mut c));
+        assert!(c["sections"][0].get("variants").is_some(), "left as-is when cars[] exists");
+
+        // Plain card: no variants anywhere.
+        let mut c = json!({ "id": "2", "sections": [
+            { "type": "forza_recipe", "key": "recipe", "tuneName": "" }
+        ]});
+        assert!(!migrate_variants_to_cars(&mut c));
+    }
+
+    // ── normalize_bodies (end-to-end against in-memory DB) ──────────────────
+
+    #[tokio::test]
+    async fn normalize_bodies_migrates_and_is_idempotent() {
+        let pool = crate::testutil::test_pool().await;
+
+        // Seed one old-shape row (no sections, top-level fields, isLead).
+        let old = old_shape_card();
+        sqlx::query("INSERT INTO cards (id, catalog_number, body) VALUES (?, ?, ?)")
+            .bind("3").bind(3i64).bind(old.to_string())
+            .execute(&pool).await.unwrap();
+
+        normalize_bodies(&pool).await.unwrap();
+
+        let body: String = sqlx::query_scalar("SELECT body FROM cards WHERE id = '3'")
+            .fetch_one(&pool).await.unwrap();
+        let v: Value = serde_json::from_str(&body).unwrap();
+        let keys: Vec<&str> = v["sections"].as_array().unwrap()
+            .iter().map(|s| s["key"].as_str().unwrap()).collect();
+        assert_eq!(keys, ["inspiration", "notes", "recipe"]);
+        // Step 3 synced body images into the images table: the body now holds
+        // integer DB ids (paths stripped), and the lead (b.jpg) sits at sort 0.
+        assert!(v["images"][0]["id"].is_i64(), "string ids replaced by DB PKs");
+        assert!(v["images"][0].get("path").is_none(), "paths stripped from body");
+        let lead_path: String = sqlx::query_scalar(
+            "SELECT path FROM images WHERE card_id = '3' AND sort_order = 0",
+        )
+        .fetch_one(&pool).await.unwrap();
+        assert_eq!(lead_path, "/uploads/b.jpg", "lead image moved to front");
+
+        // Second run must be a no-op: stored body byte-identical.
+        normalize_bodies(&pool).await.unwrap();
+        let body2: String = sqlx::query_scalar("SELECT body FROM cards WHERE id = '3'")
+            .fetch_one(&pool).await.unwrap();
+        assert_eq!(body, body2, "normalize_bodies is idempotent");
+    }
 }

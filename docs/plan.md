@@ -6,7 +6,12 @@ Living to-do file for thelivery. Update this when items are started, completed, 
 
 ## Active — ordered by priority
 
-### 1. Chrome shakedown — live site
+### 1. Jason's first OG Maker road test
+First real first-party use of the OG Maker. Open a card, click the title → ShareModal → OG Designer. Try building a text box from scratch: pick a font, set a style (POSTCARD / SIGNAL / GHOST), type content, move/resize, save as preset, and "Save to Card." Goal: surface any UX friction in the add-box flow and validate the 12-font library with actual usage before doing any more flow work.
+
+---
+
+### 2. Chrome shakedown — live site
 End-to-end pass on https://thelivery.silverleaf.services in a real browser. Check view mode, edit mode, sharing, OG Maker, photo manager, CarTabs/TuneTabs, and theme switching. Log anything broken or visually off.
 
 ---

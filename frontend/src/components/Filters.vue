@@ -5,6 +5,7 @@ import { useCardsStore } from '../stores/cards'
 import { useAuthStore } from '../stores/auth'
 import { useModalStore } from '../stores/modal'
 import { useTuneTypesStore } from '../stores/tune-types'
+import { useLiveriesStore } from '../stores/liveries'
 import { api } from '../api'
 
 const filters = useFilterStore()
@@ -12,6 +13,7 @@ const store = useCardsStore()
 const auth = useAuthStore()
 const modal = useModalStore()
 const tuneTypes = useTuneTypesStore()
+const liveries = useLiveriesStore()
 
 async function fetchCount() {
   if (!auth.isAuthenticated) return
@@ -24,6 +26,9 @@ async function fetchCount() {
 onMounted(() => {
   fetchCount()
   tuneTypes.load()
+  // Color filtering matches via liveryId → livery colors; without the full
+  // lookup every color chip returns zero cards on a fresh visit.
+  liveries.loadAll()
 })
 watch(() => auth.isAuthenticated, fetchCount)
 

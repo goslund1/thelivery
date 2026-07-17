@@ -8,6 +8,19 @@ export const useLiveriesStore = defineStore('liveries', () => {
   const byCarId = ref<Map<string, Livery[]>>(new Map())
   // Flat lookup by livery id.
   const byId = ref<Map<number, Livery>>(new Map())
+  let loadedAll = false
+
+  // Populate byId with every livery. The color filter matches cards through
+  // liveryId → livery color, so it needs the full lookup even for cars whose
+  // liveries were never loaded on demand.
+  async function loadAll(): Promise<void> {
+    if (loadedAll) return
+    const res = await fetch('/api/liveries')
+    if (!res.ok) return
+    const rows = await res.json() as Livery[]
+    for (const l of rows) byId.value.set(l.id, l)
+    loadedAll = true
+  }
 
   async function loadForCar(carId: string): Promise<Livery[]> {
     if (byCarId.value.has(carId)) return byCarId.value.get(carId)!
@@ -94,5 +107,5 @@ export const useLiveriesStore = defineStore('liveries', () => {
     return true
   }
 
-  return { byCarId, byId, loadForCar, get, create, update, remove }
+  return { byCarId, byId, loadAll, loadForCar, get, create, update, remove }
 })

@@ -32,12 +32,15 @@ mod trash;
 use std::path::PathBuf;
 
 use axum::{
-    extract::DefaultBodyLimit,
-    http::{HeaderName, HeaderValue},
+    extract::{DefaultBodyLimit, Request},
+    http::{header::CACHE_CONTROL, HeaderName, HeaderValue},
+    middleware::{self, Next},
+    response::Response,
     routing::{delete, get, post, put},
     Router,
 };
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use tower::ServiceBuilder;
 use tower_http::{
     cors::CorsLayer,
     services::{ServeDir, ServeFile},
@@ -45,6 +48,23 @@ use tower_http::{
 };
 
 use state::AppState;
+
+/// Cache-Control for the built SPA. Vite fingerprints everything under
+/// /assets/, so those can be cached forever; everything else the SPA service
+/// returns is index.html (either directly or as the fallback) and must be
+/// revalidated on every load, otherwise browsers heuristic-cache it and keep
+/// referencing bundles that no longer exist after the next deploy.
+async fn spa_cache_control(req: Request, next: Next) -> Response {
+    let immutable = req.uri().path().starts_with("/assets/");
+    let mut res = next.run(req).await;
+    let value = if immutable {
+        HeaderValue::from_static("public, max-age=31536000, immutable")
+    } else {
+        HeaderValue::from_static("no-cache")
+    };
+    res.headers_mut().insert(CACHE_CONTROL, value);
+    res
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -100,8 +120,16 @@ async fn main() -> anyhow::Result<()> {
     // Serve the built SPA: real files (index.html at "/", hashed assets) are
     // served directly; any other path falls back to index.html. (This app has no
     // client-side router, so "/" is the only real entry point.)
-    let spa = ServeDir::new(&frontend_dir)
-        .not_found_service(ServeFile::new(format!("{frontend_dir}/index.html")));
+    // Cache policy: index.html must always revalidate (no Cache-Control at all
+    // lets browsers heuristic-cache it and keep loading old hashed bundles after
+    // a deploy), while the content-hashed /assets/* files are safe to cache
+    // forever.
+    let spa = ServiceBuilder::new()
+        .layer(middleware::from_fn(spa_cache_control))
+        .service(
+            ServeDir::new(&frontend_dir)
+                .not_found_service(ServeFile::new(format!("{frontend_dir}/index.html"))),
+        );
 
     let app = Router::new()
         .route("/api/health", get(|| async { "ok" }))

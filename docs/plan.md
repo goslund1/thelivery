@@ -21,6 +21,10 @@ Narrow-screen pass for the full catalog. Known gaps:
 
 ## Maintenance
 
+### Live data gaps (from session-36 shakedown)
+- **Color filters match zero cards on live** — every color chip returns an empty catalog because live liveries have no `primary_color`/`secondary_color` data. Run the AI assess-color pass against the live DB (admin action, uses API quota).
+- **Seed-data nits** — Smokin engine spec reads `DIRECT_TEST`; Lolita tune name is still the placeholder with share code TBD.
+
 ### Pre-launch checklist
 - **Lock CORS to production domain** — currently `CorsLayer::permissive()` in `backend/src/main.rs`. Change to `CorsLayer::new().allow_origin("https://thelivery.silverleaf.services")` before public launch.
 - **Remove the "Draft — layout preview" tag** from the page head in `App.vue` — do together with the CORS lock.
@@ -41,6 +45,8 @@ Narrow-screen pass for the full catalog. Known gaps:
 ---
 
 ## Recently completed
+
+- **SPA cache headers — stale-bundle fix** — Live shakedown "found" serious bugs (tune-tab collapse, section state loss, phantom gaps, dead Light theme) that all turned out to be a stale browser-cached bundle from before the virtual-scroller removal; the deployed code was already correct. Root cause: `index.html` served with no `Cache-Control`, so browsers heuristic-cache it and keep old hashed bundles after deploys. Fixed with `spa_cache_control` middleware on the SPA service only: `no-cache` for index.html/fallback (revalidates via Last-Modified → cheap 304s), `public, max-age=31536000, immutable` for hashed `/assets/*`; `/api` and `/uploads` untouched. Deployed and verified live. Genuinely still open from the shakedown: **color filters match zero cards on live** (liveries have no color data — run the assess-color pass against live), and seed-data nits (Smokin engine `DIRECT_TEST`, Lolita placeholder tune name / TBD share code). — 2026-07-17 (commit 74798e9)
 
 - **Security batch: login rate limit + traversal fix + og:url** — `/api/login` rate-limited (5 failed/5min, 20/hour per anonymized /24; DB-backed `login_rate_log`, migration 0019); `is_safe_upload_path()` rejects `..`/`.` components in `trash_image` (the old `starts_with` check passed `uploads/../x` — lexical comparison); `client_ip()` honors X-Forwarded-For so per-IP buckets survive the Caddy proxy (applied to login + suggestions — socket address alone would have made the limit global behind the proxy); `og:url` now absolute. — 2026-07-17 (AAR: `docs/aar-2026-07-17c.md`)
 

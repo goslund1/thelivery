@@ -382,6 +382,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/theme", get(get_theme).put(put_theme))
         .route("/api/tuning-presets", get(list_tuning_presets).post(create_tuning_preset))
         .route("/api/tuning-presets/:id", delete(delete_tuning_preset))
+        .route("/api/og-presets", get(list_og_presets).post(create_og_preset))
+        .route("/api/og-presets/:id", put(update_og_preset).delete(delete_og_preset))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
         .fallback_service(spa)
         .layer(DefaultBodyLimit::max(40 * 1024 * 1024)) // 40 MB per file
@@ -1541,6 +1543,97 @@ async fn share_card_png(
             .body("No images".into())
             .unwrap(),
     }
+}
+
+// ── OG Presets ────────────────────────────────────────────────────────────────
+
+async fn list_og_presets(
+    State(st): State<AppState>,
+) -> Result<Json<Vec<Value>>, ApiError> {
+    let rows = sqlx::query("SELECT id, name, config, created_at, updated_at FROM og_presets ORDER BY id")
+        .fetch_all(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let out = rows.iter().map(|r| json!({
+        "id":        r.get::<i64, _>("id"),
+        "name":      r.get::<String, _>("name"),
+        "config":    serde_json::from_str::<Value>(r.get::<String, _>("config").as_str()).unwrap_or(json!({})),
+        "createdAt": r.get::<String, _>("created_at"),
+        "updatedAt": r.get::<String, _>("updated_at"),
+    })).collect();
+    Ok(Json(out))
+}
+
+#[derive(Deserialize)]
+struct OgPresetBody {
+    name: String,
+    config: Option<Value>,
+}
+
+async fn create_og_preset(
+    State(st): State<AppState>,
+    _auth: AuthUser,
+    Json(req): Json<OgPresetBody>,
+) -> Result<Json<Value>, ApiError> {
+    let config = serde_json::to_string(&req.config.unwrap_or(json!({}))).unwrap_or_default();
+    let row = sqlx::query(
+        "INSERT INTO og_presets (name, config) VALUES (?, ?) RETURNING id, name, config, created_at, updated_at"
+    )
+    .bind(&req.name)
+    .bind(&config)
+    .fetch_one(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(json!({
+        "id":        row.get::<i64, _>("id"),
+        "name":      row.get::<String, _>("name"),
+        "config":    serde_json::from_str::<Value>(row.get::<String, _>("config").as_str()).unwrap_or(json!({})),
+        "createdAt": row.get::<String, _>("created_at"),
+        "updatedAt": row.get::<String, _>("updated_at"),
+    })))
+}
+
+async fn update_og_preset(
+    State(st): State<AppState>,
+    _auth: AuthUser,
+    Path(id): Path<i64>,
+    Json(req): Json<OgPresetBody>,
+) -> Result<Json<Value>, ApiError> {
+    let config = serde_json::to_string(&req.config.unwrap_or(json!({}))).unwrap_or_default();
+    let row = sqlx::query(
+        "UPDATE og_presets SET name = ?, config = ?, updated_at = datetime('now')
+         WHERE id = ?
+         RETURNING id, name, config, created_at, updated_at"
+    )
+    .bind(&req.name)
+    .bind(&config)
+    .bind(id)
+    .fetch_optional(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    match row {
+        Some(r) => Ok(Json(json!({
+            "id":        r.get::<i64, _>("id"),
+            "name":      r.get::<String, _>("name"),
+            "config":    serde_json::from_str::<Value>(r.get::<String, _>("config").as_str()).unwrap_or(json!({})),
+            "createdAt": r.get::<String, _>("created_at"),
+            "updatedAt": r.get::<String, _>("updated_at"),
+        }))),
+        None => Err(err(StatusCode::NOT_FOUND, "preset not found")),
+    }
+}
+
+async fn delete_og_preset(
+    State(st): State<AppState>,
+    _auth: AuthUser,
+    Path(id): Path<i64>,
+) -> Result<StatusCode, ApiError> {
+    sqlx::query("DELETE FROM og_presets WHERE id = ?")
+        .bind(id)
+        .execute(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 async fn list_cards(State(st): State<AppState>) -> Result<Json<Vec<Value>>, ApiError> {

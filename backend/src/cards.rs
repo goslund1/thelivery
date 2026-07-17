@@ -10,7 +10,7 @@ use serde_json::{json, Value};
 use sqlx::{Row, SqlitePool};
 
 use crate::auth::AuthUser;
-use crate::images::{inject_images, sync_card_images};
+use crate::images::{fetch_all_images_grouped, inject_images, sync_card_images};
 use crate::state::{err, ApiError, AppState};
 
 // --- Seed -------------------------------------------------------------------
@@ -339,10 +339,18 @@ pub async fn list_cards(State(st): State<AppState>) -> Result<Json<Vec<Value>>, 
         .fetch_all(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    // One query for all images, grouped by card — avoids a per-card query.
+    // Same fallback semantics as inject_images: cards with no DB image rows
+    // keep their body images as-is (unmigrated card).
+    let images_by_card = fetch_all_images_grouped(&st.pool).await;
     let mut out = Vec::new();
     for row in &rows {
         if let Ok(mut v) = serde_json::from_str::<Value>(row.get::<String, _>("body").as_str()) {
-            inject_images(&st.pool, &mut v).await;
+            if let Some(imgs) = v.get("id").and_then(Value::as_str).and_then(|id| images_by_card.get(id)) {
+                if !imgs.is_empty() {
+                    v["images"] = json!(imgs);
+                }
+            }
             out.push(v);
         }
     }

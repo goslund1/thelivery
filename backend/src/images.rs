@@ -24,7 +24,11 @@ pub async fn fetch_images_for_card(pool: &SqlitePool, card_id: &str) -> Vec<Valu
     .await
     .unwrap_or_default();
 
-    rows.iter().map(|r| json!({
+    rows.iter().map(image_row_to_json).collect()
+}
+
+fn image_row_to_json(r: &sqlx::sqlite::SqliteRow) -> Value {
+    json!({
         "id":        r.get::<i64, _>("id"),
         "path":      r.get::<String, _>("path"),
         "thumbPath": r.get::<Option<String>, _>("thumb_path"),
@@ -35,7 +39,27 @@ pub async fn fetch_images_for_card(pool: &SqlitePool, card_id: &str) -> Vec<Valu
         "liveryId":  r.get::<Option<i64>, _>("livery_id"),
         "imageRole": r.get::<Option<String>, _>("image_role").unwrap_or_else(|| "gallery".into()),
         "included":  r.get::<i64, _>("included") != 0,
-    })).collect()
+    })
+}
+
+/// Fetch every image row in one query, grouped by card_id. Used by list_cards
+/// to inject images for the whole catalog without a per-card query.
+pub async fn fetch_all_images_grouped(pool: &SqlitePool) -> std::collections::HashMap<String, Vec<Value>> {
+    let rows = sqlx::query(
+        "SELECT id, card_id, path, thumb_path, stage_path, alt_text, sort_order, car_id, livery_id, image_role, included \
+         FROM images ORDER BY card_id, sort_order ASC",
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    let mut map: std::collections::HashMap<String, Vec<Value>> = std::collections::HashMap::new();
+    for r in &rows {
+        let card_id: Option<String> = r.get("card_id");
+        let Some(card_id) = card_id else { continue };
+        map.entry(card_id).or_default().push(image_row_to_json(r));
+    }
+    map
 }
 
 /// Replace body["images"] with rows from the images table.

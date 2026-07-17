@@ -298,6 +298,42 @@ pub async fn admin_export_seed(
     Ok(Json(json!({ "exported": count })))
 }
 
+/// Light shape gate for card bodies on PUT/POST. The body stays schema-free
+/// JSON by design (new section types need no backend change), so this only
+/// rejects payloads that would corrupt the catalog: wrong-typed identity
+/// fields, a malformed sections array, or non-array images/tags/collections.
+pub fn validate_card_body(body: &Value) -> Result<(), String> {
+    let Some(obj) = body.as_object() else {
+        return Err("card body must be a JSON object".into());
+    };
+    match obj.get("name") {
+        Some(v) if v.is_string() => {}
+        _ => return Err("name must be a string".into()),
+    }
+    match obj.get("catalogNumber") {
+        Some(v) if v.is_i64() || v.is_u64() => {}
+        _ => return Err("catalogNumber must be an integer".into()),
+    }
+    let Some(sections) = obj.get("sections").and_then(Value::as_array) else {
+        return Err("sections must be an array".into());
+    };
+    for s in sections {
+        let ok = s.get("type").map(Value::is_string).unwrap_or(false)
+            && s.get("key").map(Value::is_string).unwrap_or(false);
+        if !ok {
+            return Err("every section needs string `type` and `key` fields".into());
+        }
+    }
+    for field in ["images", "tags", "collections"] {
+        if let Some(v) = obj.get(field) {
+            if !v.is_array() {
+                return Err(format!("{field} must be an array"));
+            }
+        }
+    }
+    Ok(())
+}
+
 pub async fn list_cards(State(st): State<AppState>) -> Result<Json<Vec<Value>>, ApiError> {
     let rows = sqlx::query("SELECT body FROM cards WHERE deleted_at IS NULL ORDER BY catalog_number")
         .fetch_all(&st.pool)
@@ -336,6 +372,7 @@ pub async fn put_card(
     Json(mut body): Json<Value>,
 ) -> Result<Json<Value>, ApiError> {
     body["id"] = json!(id);
+    validate_card_body(&body).map_err(|e| err(StatusCode::UNPROCESSABLE_ENTITY, e))?;
 
     // Snapshot the current state into history before overwriting.
     let existing: Option<String> = sqlx::query_scalar("SELECT body FROM cards WHERE id = ?")
@@ -436,6 +473,7 @@ pub async fn create_card(
     if card_id.is_empty() {
         return Err(err(StatusCode::BAD_REQUEST, "body.id is required"));
     }
+    validate_card_body(&body).map_err(|e| err(StatusCode::UNPROCESSABLE_ENTITY, e))?;
     sync_card_images(&st.pool, &card_id, &mut body)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
@@ -507,4 +545,93 @@ pub async fn admin_purge_card(
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn valid_card() -> Value {
+        json!({
+            "id": "7",
+            "catalogNumber": 7,
+            "name": "Test Card",
+            "subtitle": "",
+            "isFavorite": false,
+            "isLegend": false,
+            "collections": ["FH5"],
+            "tags": [],
+            "images": [],
+            "sections": [
+                { "type": "text", "key": "inspiration", "label": "Inspiration", "body": "" },
+                { "type": "forza_recipe", "key": "recipe", "label": "Tune / Build Parts",
+                  "tuneName": "", "shareCode": "", "coreSpecs": {}, "upgrades": [], "adjustments": [] }
+            ]
+        })
+    }
+
+    #[test]
+    fn accepts_a_well_formed_card() {
+        assert!(validate_card_body(&valid_card()).is_ok());
+    }
+
+    #[test]
+    fn accepts_unknown_extra_fields() {
+        // Schema-free by design: future fields must pass through untouched.
+        let mut c = valid_card();
+        c["shareOverlayConfig"] = json!({ "photoId": 3, "textBoxes": [] });
+        c["someFutureField"] = json!({ "anything": true });
+        assert!(validate_card_body(&c).is_ok());
+    }
+
+    #[test]
+    fn accepts_unknown_section_types() {
+        // New section types need no backend change — only type/key shape is checked.
+        let mut c = valid_card();
+        c["sections"].as_array_mut().unwrap().push(json!({
+            "type": "video", "key": "clips", "url": "/uploads/x.mp4"
+        }));
+        assert!(validate_card_body(&c).is_ok());
+    }
+
+    #[test]
+    fn rejects_non_object_body() {
+        assert!(validate_card_body(&json!([1, 2, 3])).is_err());
+        assert!(validate_card_body(&json!("card")).is_err());
+    }
+
+    #[test]
+    fn rejects_wrong_typed_identity_fields() {
+        let mut c = valid_card();
+        c["name"] = json!(42);
+        assert!(validate_card_body(&c).is_err());
+
+        let mut c = valid_card();
+        c["catalogNumber"] = json!("seven");
+        assert!(validate_card_body(&c).is_err());
+
+        let mut c = valid_card();
+        c.as_object_mut().unwrap().remove("name");
+        assert!(validate_card_body(&c).is_err());
+    }
+
+    #[test]
+    fn rejects_malformed_sections() {
+        let mut c = valid_card();
+        c["sections"] = json!("not an array");
+        assert!(validate_card_body(&c).is_err());
+
+        let mut c = valid_card();
+        c["sections"].as_array_mut().unwrap().push(json!({ "label": "no type or key" }));
+        assert!(validate_card_body(&c).is_err());
+    }
+
+    #[test]
+    fn rejects_non_array_collection_fields() {
+        for field in ["images", "tags", "collections"] {
+            let mut c = valid_card();
+            c[field] = json!({});
+            assert!(validate_card_body(&c).is_err(), "{field} should require an array");
+        }
+    }
 }

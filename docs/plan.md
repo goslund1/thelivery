@@ -6,110 +6,15 @@ Living to-do file for thelivery. Update this when items are started, completed, 
 
 ## Active — ordered by priority
 
-### ~~1. OG Overlay Studio~~ — **Complete — 2026-07-16**
-
-See `docs/plan-og-overlay.md`, `docs/plan-og-overlay-single-renderer.md`, `docs/compositor-for-geoff.md`. AAR: `docs/aar-2026-07-16.md`.
-
----
-
-### 2. Photo Manager overlay — unified import and pool management
-
-**~~Complete~~ — done 2026-07-13. Core built (commit 3b4cee4), Escape flash fixed (d1ed193), gallery carId pre-fill (589b7c9), figure-pick session car (6ea1a26), multi-car detection on [change] (d2e748e). All gaps resolved.**
-
-**Design spec (settled 2026-07-12)**
-
-All photo-related actions across the app converge on one modal overlay: the Photo Manager. It replaces the scattered upload paths in NewCardModal, Gallery folder import, and the figure picker's bare file inputs, and expands ImagePicker into the full management surface.
-
-#### What it is
-
-A single overlay (expands the existing `ImagePicker` component) with three areas:
-
-**Main area — image pool grid**
-All images associated with the card, regardless of role. Thumbnails support drag-to-reorder, included/excluded toggle (slideshow visibility), per-image delete, and click-to-open PhotoDetail. This is what ImagePicker already renders — no structural change needed, just needs to stay the center of the overlay.
-
-**Top bar — game + role chips**
-`FH5` · `FH6` · `+IMG` chips live here. These set the carId context for the current upload session:
-- **FH5 / FH6**: opens that game's car list (CarPicker disambiguation). Once a car is selected, carId is set for the session. All subsequent uploads in this overlay session auto-tag to that car without re-prompting.
-- **+IMG**: bypasses the make/model path entirely. Marks incoming files as `image_role = 'refimg'`, `included = false`. No carId required.
-- **Session carId pill**: once a car is selected, the chip area collapses to a pill showing the car name with a [change] button. Tapping [change] re-opens the full CarPicker. If the user picks a *different* car, multi-car detection fires and the CarTabs wizard is offered (same as today).
-- **Existing card with carId already set**: the pill is pre-populated on open. The user can proceed with the same car or hit [change] to start a new vehicle round.
-
-**Side panel — import progress**
-Appears while files are uploading; collapses when idle. Shows per-file progress rows (filename + progress bar + status), mirroring ImageMigrationModal's log style. Fades out or collapses to a summary when all uploads complete.
-
-#### Modes
-
-- **Pick mode**: opened from a figure section (inspiration / design notes). Clicking a thumbnail picks it as the figure image and closes the overlay. "Upload new" drops into the same pool flow — file lands in the pool, auto-selected as the figure pick.
-- **Manage mode**: opened from the gallery edit button or a "Manage photos" action. Full management — reorder, toggle, delete, batch select, upload more. No figure selection.
-
-#### Entry points → all open the same overlay
-
-| Trigger | Mode | carId pre-fill |
-|---|---|---|
-| Figure picker (inspiration / notes) | Pick | card's carId if set |
-| Gallery "add photos" / folder drop (edit mode) | Manage | card's carId if set |
-| "Manage photos" button | Manage | card's carId if set |
-| New card — first photo action | Manage | none (chips required) |
-
-#### NewCardModal changes
-
-- The staged-file holding area and "Import →" batch button are removed. Photo management moves entirely into the Photo Manager overlay, opened the first time the user takes a photo action.
-- The final action button becomes **"Create Card"** — it commits the card metadata and saves. Photos are already in the pool by this point.
-- The `imageRole` local ref and the figure-picker pre-upload workaround (`openFigurePicker` auto-upload that was hardcoding `'refimg'`) are no longer needed once the overlay owns all upload paths.
-
-#### Key invariant
-
-**CarPicker disambiguation always happens inside the overlay, at upload time, not before.** No pre-form setup required. The session carId persists for the duration of the overlay session so repeated uploads to the same car need only one disambiguation step.
+### 1. Mobile layout
+Narrow-screen pass for the full catalog. Known gaps:
+- Theme builder flyout — doesn't fit on small screens
+- General card layout on narrow viewports
+- No blocking dependencies remaining
 
 ---
 
-### 2. Finish CarTabs implementation (in progress)
-See `docs/plan-cartabs-tunetabs.md` for the full action plan covering steps 1–4.
-CarTabs wizard and tab strip UI are built. The following gaps remain before the mashup feature is shippable:
-
-- ~~**Figure image near recipe**~~ — done. Lead image for the active carId appears before the tune name (48px tall, hover shows 200px preview, click opens lightbox). Tune name falls back to `'YY Model` when empty in multi-car mode. Share code is click-to-copy in view mode.
-- ~~**Discipline preset values**~~ — done 2026-07-13. Race/Rally/Drift/Street baseline presets seeded. Jason to refine values when ready.
-- ~~**NewCardModal multi-car detection**~~ — done. After a successful photo import, modal pauses and shows "Done / + Add another car" instead of auto-closing. Each additional round creates a new livery on the same card. RecipeSection's auto-propose banner handles tab setup once 2+ carIds are present in the photos.
-- ~~**Shakedown pass**~~ — done. Two bugs found and fixed: (1) spurious Springs dialog on tab switch (`_inPropUpdate` + `flush:'sync'` in TuningAdjustments); (2) tune-name invisible when empty in edit mode (placeholder prop on EditableText). Save/restore round-trip, discard, tab deletion, single-car cards unaffected — all confirmed. — 2026-07-12
-
----
-
-### 2. Car → Tunes hierarchy (design revision — supersedes either/or mode)
-The original "cars mode vs tunes mode" design (implicit from data shape, flat `variants[]` array) is replaced with a proper two-level hierarchy:
-
-```
-Card
-  └─ Car (0 to many, identified by carId)
-       └─ Tune (1 to many per car, named: Race / Rally / Drift / etc.)
-            └─ Slider tab group (Alignment, Gearing, Aero, etc.)
-```
-
-**Why this is better:** Every car can have multiple tunes. A single-car card with one tune is just the degenerate case (1 car, 1 tune). A Smokin-style mashup is 3 cars × N tunes each. The either/or framing was an artificial constraint.
-
-**Data model change required:**
-- Current: flat `variants[]` array on the recipe, mode inferred from whether carIds are distinct
-- New: `cars[]` where each car entry has its own `tunes[]` array. Each tune carries a name + the full recipe payload (upgrades, adjustments, specs, share code). The existing slider tab groups (Alignment, Gearing, etc.) sit inside each tune — unchanged structurally, just nested one level deeper.
-
-**TuneTabs — new module, parallel to CarTabs:**
-- CarTabs is the UI for navigating between cars on a card. TuneTabs is the UI for navigating between tunes within a single car.
-- Both use the same folder-tab visual pattern. TuneTabs is a new but similar module — same tab strip component, scoped to a car context rather than the card.
-- CarTabs wizard (already built) handles the car-level setup. A TuneTabs authoring flow handles adding/naming tune variants per car — triggered from within a car tab, not at the card level.
-- A single-car card with one tune renders no tab strips at all (current default behavior, unchanged).
-
-**Implementation order:**
-1. ~~Finish item 1 (current CarTabs shakedown) first~~ — done
-2. ~~Design the `cars[]` data shape and migration path~~ — done 2026-07-13 (Step 3 complete)
-3. ~~Build TuneTabs UI and authoring flow~~ — done 2026-07-13 (Step 4 complete)
-
-**Backend migration note:**
-The `variants[]` array lives in the card's JSON body, so no new SQL migration is needed. However, `normalize_bodies()` in `backend/src/main.rs` will need a new step to reshape existing `variants[]` flat arrays into the `cars[]` nested structure. Smokin is currently the only card with variants, so the migration surface is small — but it must go through `normalize_bodies()` (idempotent, runs on startup) rather than a one-time manual DB patch. See CLAUDE.md → "Seeding" for the normalize_bodies pattern.
-
-**Deferred — community tune scrape + compare:**
-- Park until app is live and primary content is established.
-
----
-
-### 3. AI low-balance alert — discuss and plan
+### 2. AI low-balance alert — discuss and plan
 Before the catalog scales up and image imports become frequent, we need a proactive warning when Anthropic credit is running low — not just a toast when it's already gone.
 
 **Questions to answer before building:**
@@ -126,14 +31,6 @@ See Maintenance → AI billing notification for context.
 
 ---
 
-### 4. Mobile layout
-Narrow-screen pass for the full catalog. Known gaps:
-- Theme builder flyout — doesn't fit on small screens
-- General card layout on narrow viewports
-- Deferred until now; no blocking dependencies remaining
-
----
-
 ## Maintenance
 
 ### Pre-launch checklist
@@ -141,8 +38,8 @@ Narrow-screen pass for the full catalog. Known gaps:
 - **Update README.md** — significantly out of date: still references `/api/liveries` (now `/api/cards`), `seed/liveries.json` (now `seed/cards.json`), "single-user, no auth" (JWT auth exists), and is missing most current endpoints. Rewrite the API table and data description to match reality before the repo goes public.
 
 ### Backfill pass (another round coming)
-- Card data was brought in line once. The next structural change is the Cars→Tunes hierarchy refactor (active item 2) which will reshape card body data again. Hold off on a full backfill pass until that data model stabilizes — otherwise it's two passes.
-- Done in-app via EditCardModal; revisit when the dust settles.
+- Cars→Tunes hierarchy refactor is complete (migration 0017, normalize_bodies step). Data model is now stable.
+- Ready for a backfill pass via EditCardModal when content work resumes.
 
 ### AI billing notification (planned, lower priority)
 - See active item 3 for the discussion and planning work needed before this gets built.

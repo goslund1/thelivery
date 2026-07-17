@@ -33,6 +33,7 @@ const photos       = ref<CardImage[]>([])
 const presetName   = ref('')
 const newContent   = ref('')
 const newStyle     = ref('POSTCARD')
+const logoVisible  = ref(false)
 const saving       = ref(false)
 const saveMsg      = ref('')
 
@@ -44,12 +45,13 @@ const selected = computed(() => boxes.value.find(b => b.id === selectedId.value)
 
 watch(() => modal.ogMaker, (cfg) => {
   if (!cfg) return
-  boxes.value      = cfg.boxes ? cfg.boxes.map(b => ({ ...b, id: (b as any).id ?? crypto.randomUUID() })) : []
-  presetName.value = cfg.presetName ?? ''
-  photoId.value    = cfg.photoId ?? null
-  photos.value     = cfg.photos ?? []
-  previewSrc.value = null
-  selectedId.value = null
+  boxes.value       = cfg.boxes ? cfg.boxes.map(b => ({ ...b, id: (b as any).id ?? crypto.randomUUID() })) : []
+  presetName.value  = cfg.presetName ?? ''
+  photoId.value     = cfg.photoId ?? null
+  photos.value      = cfg.photos ?? []
+  logoVisible.value = false
+  previewSrc.value  = null
+  selectedId.value  = null
   if (photoId.value !== null) requestPreview()
 }, { immediate: true })
 
@@ -209,7 +211,7 @@ async function requestPreview() {
 function buildConfig() {
   return {
     photoId: photoId.value ?? 0,
-    logoVisible: false,
+    logoVisible: logoVisible.value,
     textBoxes: boxes.value.map(({ id: _id, ...b }) => b),
   }
 }
@@ -247,6 +249,7 @@ function setPhoto(img: CardImage) {
 watch(() => selected.value?.rotateDeg, () => schedulePreview())
 watch(() => selected.value?.shearX,    () => schedulePreview())
 watch(() => selected.value?.style,     () => schedulePreview())
+watch(logoVisible,                     () => schedulePreview())
 
 // ── Save preset ──────────────────────────────────────────────────────────────
 
@@ -309,6 +312,12 @@ function rotHandleStyle(box: TextBox) {
         <!-- Header -->
         <div class="ogm-header">
           <input v-model="presetName" class="ogm-preset-name" placeholder="Preset name…" />
+          <button
+            class="ogm-btn ogm-btn--logo"
+            :class="{ 'ogm-btn--logo-on': logoVisible }"
+            @click="logoVisible = !logoVisible"
+            title="Toggle logo mark"
+          >TL</button>
           <button class="ogm-btn ogm-btn--save" :disabled="saving" @click="savePreset">
             {{ saving ? 'Saving…' : 'Save Preset' }}
           </button>
@@ -603,6 +612,8 @@ function rotHandleStyle(box: TextBox) {
   cursor: pointer;
 }
 .ogm-btn:hover { background: var(--panel-edge); }
+.ogm-btn--logo     { font-weight: 700; letter-spacing: 0.05em; font-size: 0.75rem; }
+.ogm-btn--logo-on  { background: var(--accent, #e8c84a); color: #000; border-color: var(--accent, #e8c84a); }
 .ogm-btn--save  { border-color: var(--accent, #e8c84a); color: var(--accent, #e8c84a); }
 .ogm-btn--card  { border-color: var(--highlight, #e8748a); color: var(--highlight, #e8748a); }
 .ogm-btn--add  { border-color: var(--accent, #e8c84a); color: var(--accent, #e8c84a); }

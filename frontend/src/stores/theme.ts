@@ -3,6 +3,9 @@ import { ref, computed } from 'vue'
 import type { Theme } from '../types'
 import { api } from '../api'
 import { errMsg } from '../utils/errMsg'
+// Static import is safe here: ui.ts does not import theme.ts, so there is no
+// module cycle (unlike ui.ts ↔ modal.ts, which must stay dynamic).
+import { useUiStore } from './ui'
 
 export interface ThemeColors {
   base:    string
@@ -156,10 +159,7 @@ export const useThemeStore = defineStore('theme', () => {
     applyTuning(data.tuning)
     applyEffects(data.effects)
     // Sync ambiance to the ui store's theme (which sets data-theme on <html>).
-    // Import lazily to avoid circular dep at module load time.
-    import('./ui').then(({ useUiStore }) => {
-      useUiStore().theme = data.ambiance
-    })
+    useUiStore().theme = data.ambiance
   }
 
   async function load() {
@@ -218,9 +218,7 @@ export const useThemeStore = defineStore('theme', () => {
     current.value.ambiance = ambiance
     current.value.colors = deepClone(AMBIANCE_DEFAULTS[ambiance])
     applyColors(current.value.colors)
-    import('./ui').then(({ useUiStore }) => {
-      useUiStore().theme = ambiance
-    })
+    useUiStore().theme = ambiance
   }
 
   function reset() {

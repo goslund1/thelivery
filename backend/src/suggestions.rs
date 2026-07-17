@@ -3,7 +3,7 @@
 
 use axum::{
     extract::{ConnectInfo, Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     Json,
 };
 use serde::Deserialize;
@@ -48,6 +48,22 @@ pub fn anonymize_ip(ip: &str) -> String {
     }
 }
 
+/// Resolve the real client IP for rate limiting. In production the backend
+/// binds to 127.0.0.1 behind Caddy, so ConnectInfo is always localhost and
+/// X-Forwarded-For (set by Caddy) carries the real address — without this,
+/// every visitor shares one bucket and 5 bad attempts from anyone would lock
+/// out everyone. The header is trustworthy here precisely because nothing but
+/// the local proxy can reach the port; the first entry is the original client.
+pub fn client_ip(headers: &HeaderMap, addr: &std::net::SocketAddr) -> String {
+    headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| addr.ip().to_string())
+}
+
 // --- Suggestions ------------------------------------------------------------
 
 #[derive(Deserialize)]
@@ -61,9 +77,10 @@ pub struct SubmitSuggestionReq {
 pub async fn submit_suggestion(
     State(st): State<AppState>,
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    headers: HeaderMap,
     Json(req): Json<SubmitSuggestionReq>,
 ) -> Result<Json<Value>, ApiError> {
-    let ip_hash = anonymize_ip(&addr.ip().to_string());
+    let ip_hash = anonymize_ip(&client_ip(&headers, &addr));
 
     // DB-based rate limiting — persists across restarts.
     // Two tiers: hourly hard cap, and a burst cap with a warning before blocking.
@@ -178,4 +195,27 @@ pub async fn admin_like_suggestion(
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     Ok(Json(json!({ "ok": true })))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn client_ip_prefers_forwarded_header() {
+        let addr: std::net::SocketAddr = "127.0.0.1:9999".parse().unwrap();
+        let mut headers = HeaderMap::new();
+        assert_eq!(client_ip(&headers, &addr), "127.0.0.1");
+
+        headers.insert("x-forwarded-for", "203.0.113.7".parse().unwrap());
+        assert_eq!(client_ip(&headers, &addr), "203.0.113.7");
+
+        // Multi-hop: first entry is the original client.
+        headers.insert("x-forwarded-for", "203.0.113.7, 10.0.0.1".parse().unwrap());
+        assert_eq!(client_ip(&headers, &addr), "203.0.113.7");
+
+        // Empty header falls back to the socket address.
+        headers.insert("x-forwarded-for", "".parse().unwrap());
+        assert_eq!(client_ip(&headers, &addr), "127.0.0.1");
+    }
 }

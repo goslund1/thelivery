@@ -9,7 +9,7 @@ use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, Salt
 use argon2::Argon2;
 use axum::{
     async_trait,
-    extract::{FromRequestParts, State},
+    extract::{ConnectInfo, FromRequestParts, State},
     http::{header::AUTHORIZATION, request::Parts, StatusCode},
     Json,
 };
@@ -84,9 +84,44 @@ pub struct LoginReq {
     password: String,
 }
 
+/// Failed login attempts allowed per anonymized IP before blocking.
+pub const LOGIN_BURST_LIMIT: i64 = 5; // per 5 minutes
+pub const LOGIN_HOURLY_LIMIT: i64 = 20; // per hour
+
+/// Count recent failed logins for an anonymized IP within the given SQLite
+/// datetime modifier window (e.g. "-5 minutes").
+pub async fn failed_logins_since(pool: &SqlitePool, ip_hash: &str, window: &str) -> Result<i64, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT COUNT(*) FROM login_rate_log WHERE ip_hash = ? AND attempted_at > datetime('now', ?)",
+    )
+    .bind(ip_hash)
+    .bind(window)
+    .fetch_one(pool)
+    .await
+}
+
 /// Verify credentials against the users table and issue a JWT. Uses a generic
 /// "invalid credentials" error for both unknown users and bad passwords.
-pub async fn login(State(st): State<AppState>, Json(req): Json<LoginReq>) -> Result<Json<Value>, ApiError> {
+/// Failed attempts are rate-limited per anonymized IP (DB-backed, mirrors
+/// suggestion_rate_log); successful logins don't count against the limit.
+pub async fn login(
+    State(st): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    headers: axum::http::HeaderMap,
+    Json(req): Json<LoginReq>,
+) -> Result<Json<Value>, ApiError> {
+    let ip_hash = crate::suggestions::anonymize_ip(&crate::suggestions::client_ip(&headers, &addr));
+
+    let burst = failed_logins_since(&st.pool, &ip_hash, "-5 minutes")
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let hourly = failed_logins_since(&st.pool, &ip_hash, "-1 hour")
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    if burst >= LOGIN_BURST_LIMIT || hourly >= LOGIN_HOURLY_LIMIT {
+        return Err(err(StatusCode::TOO_MANY_REQUESTS, "too many failed login attempts — try again later"));
+    }
+
     let row = sqlx::query("SELECT password_hash FROM users WHERE username = ?")
         .bind(&req.username)
         .fetch_optional(&st.pool)
@@ -100,6 +135,10 @@ pub async fn login(State(st): State<AppState>, Json(req): Json<LoginReq>) -> Res
         }))
         .unwrap_or(false);
     if !ok {
+        let _ = sqlx::query("INSERT INTO login_rate_log (ip_hash) VALUES (?)")
+            .bind(&ip_hash)
+            .execute(&st.pool)
+            .await;
         return Err(err(StatusCode::UNAUTHORIZED, "invalid credentials"));
     }
     let token = make_token(&req.username, &st.jwt_secret)
@@ -239,4 +278,38 @@ pub async fn seed_users_if_empty(pool: &SqlitePool, seed_path: &str) -> anyhow::
     }
     tracing::info!("seeded {} user(s) from {seed_path}", users.len());
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn failed_login_counting_hits_burst_limit() {
+        let pool = crate::testutil::test_pool().await;
+        let ip = "1.2.3.0";
+
+        assert_eq!(failed_logins_since(&pool, ip, "-5 minutes").await.unwrap(), 0);
+
+        for _ in 0..LOGIN_BURST_LIMIT {
+            sqlx::query("INSERT INTO login_rate_log (ip_hash) VALUES (?)")
+                .bind(ip)
+                .execute(&pool)
+                .await
+                .unwrap();
+        }
+
+        let burst = failed_logins_since(&pool, ip, "-5 minutes").await.unwrap();
+        assert!(burst >= LOGIN_BURST_LIMIT, "burst window counts all recent failures");
+
+        // A different subnet is unaffected.
+        assert_eq!(failed_logins_since(&pool, "9.9.9.0", "-5 minutes").await.unwrap(), 0);
+
+        // Attempts outside the window don't count.
+        sqlx::query("UPDATE login_rate_log SET attempted_at = datetime('now', '-2 hours')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert_eq!(failed_logins_since(&pool, ip, "-1 hour").await.unwrap(), 0);
+    }
 }

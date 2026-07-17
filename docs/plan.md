@@ -11,11 +11,6 @@ First real first-party use of the OG Maker. Open a card, click the title → Sha
 
 ---
 
-### 2. Chrome shakedown — live site
-End-to-end pass on https://thelivery.silverleaf.services in a real browser. Check view mode, edit mode, sharing, OG Maker, photo manager, CarTabs/TuneTabs, and theme switching. Log anything broken or visually off.
-
----
-
 ### 2. Mobile layout
 Narrow-screen pass for the full catalog. Known gaps:
 - Theme builder flyout — doesn't fit on small screens
@@ -29,9 +24,8 @@ Narrow-screen pass for the full catalog. Known gaps:
 ### Pre-launch checklist
 - **Lock CORS to production domain** — currently `CorsLayer::permissive()` in `backend/src/main.rs`. Change to `CorsLayer::new().allow_origin("https://thelivery.silverleaf.services")` before public launch.
 - **Remove the "Draft — layout preview" tag** from the page head in `App.vue` — do together with the CORS lock.
-- **Rate-limit `/api/login`** — currently brute-forceable; mirror the DB-backed pattern used by `suggestion_rate_log`.
-- **Path normalization in `delete_images`** — the `trim_start_matches("/uploads/")` + `join` pattern doesn't neutralize `..` components; an authenticated caller could move files outside uploads/ into trash. Reject paths whose components include `..` before resolving.
 - **Update README.md** — significantly out of date: still references `/api/liveries` (now `/api/cards`), `seed/liveries.json` (now `seed/cards.json`), "single-user, no auth" (JWT auth exists), and is missing most current endpoints. Rewrite the API table and data description to match reality before the repo goes public.
+- **Set JWT_SECRET on the droplet** — unverified whether `secrets.env` defines it; if absent, live logins reset on every service restart (a warning appears in the service log).
 
 ### Backfill pass (another round coming)
 - Cars→Tunes hierarchy refactor is complete (migration 0017, normalize_bodies step). Data model is now stable.
@@ -47,6 +41,10 @@ Narrow-screen pass for the full catalog. Known gaps:
 ---
 
 ## Recently completed
+
+- **Security batch: login rate limit + traversal fix + og:url** — `/api/login` rate-limited (5 failed/5min, 20/hour per anonymized /24; DB-backed `login_rate_log`, migration 0019); `is_safe_upload_path()` rejects `..`/`.` components in `trash_image` (the old `starts_with` check passed `uploads/../x` — lexical comparison); `client_ip()` honors X-Forwarded-For so per-IP buckets survive the Caddy proxy (applied to login + suggestions — socket address alone would have made the limit global behind the proxy); `og:url` now absolute. — 2026-07-17
+
+- **Chrome shakedown — live site + wipe-and-reseed** — Full pass done. Found and fixed: Light theme half-applying (flyout now routes through `setAmbiance()`); live DB missing cars/users/liveries seed data → deploy pipeline now ships the full seed set (`USERS_SEED_JSON` secret for users) and live was wiped (backup: `data.db.bak-20260717` on droplet) and re-seeded from local, including purgatoried cards via the seed-only `deletedAt` marker; three fresh-DB seeding bugs (numeric image ids, livery FK, normalize resurrecting soft-deleted cards); gallery + zero-result-filter empty states. — 2026-07-17
 
 - **Quality pass: module split + backend test suite** — full codebase read-through, then per-commit cleanup: CardView stale `variants[]`→`cars[]` fix; main.rs (3363 lines) split into domain modules (`auth`/`cards`/`images`/`trash`/`identity`/`share`/`suggestions`/`presets`/`theme`/`state`); light card-body validation on PUT/POST (schema-free JSON preserved — unknown fields/sections pass through); `list_cards` N+1 → single grouped query (output verified byte-identical); theme.ts static ui import (never was a cycle); ui↔modal circular imports marked SETTLED (comment + gotchas entry); `.env` gitignored; **29-test suite** covering the startup migration pipeline (`normalize_card`, `migrate_variants_to_cars`, `ensure_standard_sections`, `sync_card_images` branches, end-to-end `normalize_bodies`) against in-memory SQLite. Backend gate is now `cargo test`. 21 finished docs moved to `docs/completed/`. — 2026-07-17 (AAR: `docs/aar-2026-07-17b.md`)
 

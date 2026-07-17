@@ -92,8 +92,9 @@ pub async fn share_card(
         String::new()
     };
 
-    // Build a canonical URL from the request path (no query string).
-    let canonical = uri.path().to_string();
+    // Build a canonical URL from the request path (no query string). Absolute,
+    // like og:image — OG scrapers don't reliably resolve relative og:url.
+    let canonical = format!("{scheme}://{host}{}", uri.path());
 
     let og_title = if first_car_name.is_empty() {
         card_name.to_string()

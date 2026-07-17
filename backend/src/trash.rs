@@ -167,6 +167,19 @@ pub fn move_to_trash(src: &std::path::Path, trash_dir: &std::path::Path) -> Opti
     Some(trash_name)
 }
 
+/// True when every component of the path (after the /uploads/ prefix is
+/// stripped) is a plain name — no `..`, `.`, or root components. Joining
+/// unchecked input into uploads_dir is not enough: `PathBuf::starts_with`
+/// compares components lexically, so `uploads/../x` passes it.
+pub fn is_safe_upload_path(path_str: &str) -> bool {
+    use std::path::Component;
+    let stripped = path_str.trim_start_matches('/').trim_start_matches("uploads/");
+    !stripped.is_empty()
+        && std::path::Path::new(stripped)
+            .components()
+            .all(|c| matches!(c, Component::Normal(_)))
+}
+
 /// Move an image (and its thumb/stage variants) to trash, log the event, and
 /// remove the images table row. Called when an image is explicitly removed from
 /// a card (reason = 'user_delete') or auto-detected as orphaned (reason = 'orphan').
@@ -177,6 +190,10 @@ pub async fn trash_image(
     path_str: &str,
     reason: &str,
 ) -> bool {
+    if !is_safe_upload_path(path_str) {
+        tracing::warn!("rejected unsafe trash path: {path_str:?}");
+        return false;
+    }
     let row = sqlx::query(
         "SELECT id, card_id, path, thumb_path, stage_path FROM images WHERE path = ?",
     )
@@ -492,4 +509,43 @@ pub async fn admin_restore_trash(
     }
 
     Ok(Json(json!({ "restored": restored, "imageIds": image_ids })))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn safe_upload_paths_pass() {
+        assert!(is_safe_upload_path("/uploads/smokin_1/photo.jpg"));
+        assert!(is_safe_upload_path("uploads/a/b/c.png"));
+        assert!(is_safe_upload_path("/uploads/legend-0.png"));
+    }
+
+    #[test]
+    fn traversal_and_degenerate_paths_are_rejected() {
+        assert!(!is_safe_upload_path("/uploads/../secrets.env"));
+        assert!(!is_safe_upload_path("/uploads/a/../../data.db"));
+        assert!(!is_safe_upload_path("/uploads/./a.jpg"));
+        assert!(!is_safe_upload_path("../outside.jpg"));
+        assert!(!is_safe_upload_path("/uploads/"));
+        assert!(!is_safe_upload_path(""));
+    }
+
+    #[tokio::test]
+    async fn trash_image_refuses_traversal_paths() {
+        let pool = crate::testutil::test_pool().await;
+        let uploads = std::env::temp_dir().join("trash_test_uploads");
+        let trash = uploads.join("trash");
+        std::fs::create_dir_all(&trash).unwrap();
+        // Bait file OUTSIDE uploads that a traversal path would reach.
+        let bait = std::env::temp_dir().join("trash_test_bait.txt");
+        std::fs::write(&bait, "bait").unwrap();
+
+        let moved = trash_image(&pool, &uploads, &trash, "/uploads/../trash_test_bait.txt", "user_delete").await;
+
+        assert!(!moved, "traversal path must be rejected");
+        assert!(bait.exists(), "file outside uploads/ must be untouched");
+        std::fs::remove_file(&bait).ok();
+    }
 }

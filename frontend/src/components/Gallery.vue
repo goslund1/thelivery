@@ -248,7 +248,12 @@ function cancelFolderImport() {
       :data-index="i"
       @click="toggle"
     />
-    <div class="stage-controls">
+    <div v-if="ordered.length === 0" class="stage-empty">
+      <span class="stage-empty-glyph">⊘</span>
+      <span class="stage-empty-label">No images on file</span>
+      <span v-if="ui.isEditing" class="stage-empty-hint">Add photos from the rail below</span>
+    </div>
+    <div class="stage-controls" v-if="ordered.length > 0">
       <button class="play-toggle" ref="toggleRef" title="Pause or resume the slideshow" @click="toggle">
         <span class="icon" v-if="toggleIcon">{{ toggleIcon }}</span>
         <span class="label">{{ toggleLabel }}</span>
@@ -388,6 +393,34 @@ function cancelFolderImport() {
 </template>
 
 <style scoped>
+.stage-empty {
+  position: absolute;
+  inset: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed var(--panel-edge);
+  color: var(--muted);
+  cursor: default;
+}
+.stage-empty-glyph {
+  font-size: 26px;
+  opacity: 0.6;
+}
+.stage-empty-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.stage-empty-hint {
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
 .stage-expand {
   position: absolute;
   top: 10px;

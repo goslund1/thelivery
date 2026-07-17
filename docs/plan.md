@@ -6,15 +6,9 @@ Living to-do file for thelivery. Update this when items are started, completed, 
 
 ## Active — ordered by priority
 
-### 1. OG Overlay Studio — shareable card image + OG Maker
+### ~~1. OG Overlay Studio~~ — **Complete — 2026-07-16**
 
-See `docs/plan-og-overlay.md` for the full plan and `docs/plan-og-overlay-single-renderer.md` for the single-renderer architecture decision.
-
-**Summary:** Server-generated 1200×630 PNG used as `og:image` for social share unfurls. Authored in the OG Maker modal (edit mode) — a canvas where text boxes can be placed, resized with corner handles, rotated, sheared, and styled. The DOM canvas handles interaction only; live preview is produced by the real Rust compositor via `POST /share/preview`. Saved as named OG Presets, selectable in the share flow with per-card nudge via "Adjust."
-
-**Build order (6 steps):** stub route → presets table → real compositor (pulled forward, source of truth) → OG Maker modal → share flow integration → compositor polish.
-
-**Status:** Planning complete. Not started.
+See `docs/plan-og-overlay.md`, `docs/plan-og-overlay-single-renderer.md`, `docs/compositor-for-geoff.md`. AAR: `docs/aar-2026-07-16.md`.
 
 ---
 
@@ -161,6 +155,8 @@ Narrow-screen pass for the full catalog. Known gaps:
 ---
 
 ## Recently completed
+
+- **OG Overlay Studio** — server-generated 1200×630 `og:image` for social share unfurls (Discord, iMessage, Reddit). Pure-Rust compositor (`fontdue` + `image` crate): `POST /share/preview` for live OG Maker preview, `GET /share/:id/card.png` for public card image, `og_presets` table + CRUD. Three text styles: POSTCARD (Bebas Neue, floating), SIGNAL (Oswald VF + dark chyron backdrop), GHOST (Oswald VF, semi-transparent). Polish: bottom scrim gradient, per-style drop shadows, logo slot ("THE LIVERY" placeholder). OG Maker modal: freely-positioned text boxes with corner-resize, rotation handle, shear slider; 200ms debounced live preview; preset save + "Save to Card." ShareModal integration with preset picker, preview thumbnails, Adjust/Reset flow. — 2026-07-16
 
 - **CarTabs/TuneTabs shakedown + polish**: discipline baseline presets (Race/Rally/Drift/Street) seeded in DB; `+ ADD CAR` / `+ ADD TUNE` buttons styled as dashed tabs (grey→gold/pink on hover); TuneTabs shelf color = `--highlight`; spacing and gap fixes; `v-tip-up` directive for right-flying tooltip from text end; card title opens ShareModal. — 2026-07-13
 - **Social sharing foundation + Reddit pre-fill**: OG share page endpoint (`GET /share/:id/:slug`) added to Rust backend — server-rendered HTML with full OG + Twitter card tags; real browsers get `<meta refresh>` to `/`. Card title opens `ShareModal` (view mode only, `v-tip-up` tooltip). Modal: Copy Link button (clipboard API, 2s feedback) + **Post to Reddit** (pre-fill approach — opens `reddit.com/submit?url=…&title=…` in new tab with editable title pre-populated from card + car name + share code; Reddit's native form handles subreddit selection and posting) + Discord stub. Note: direct Reddit API posting blocked — Reddit ended self-service OAuth access Nov 2025 for personal projects. See `docs/plan-reddit-share.md`. — 2026-07-13

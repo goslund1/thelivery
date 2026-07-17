@@ -5,6 +5,7 @@ import { useModalStore } from '../stores/modal'
 import { useFilterStore } from '../stores/filters'
 import { useCardsStore } from '../stores/cards'
 import { useAuthStore } from '../stores/auth'
+import { useThemeStore } from '../stores/theme'
 import { onClickOutside } from '../composables/onClickOutside'
 import { hideTip, refreshTip } from '../composables/tooltip'
 import type { Theme } from '../types'
@@ -15,6 +16,7 @@ const modal = useModalStore()
 const filters = useFilterStore()
 const store = useCardsStore()
 const auth = useAuthStore()
+const themeStore = useThemeStore()
 
 // Inline SVGs for each theme (matches the original theme-flyout icons).
 const themeIcons: Record<Theme, string> = {
@@ -101,7 +103,14 @@ onBeforeUnmount(() => window.removeEventListener('resize', positionSideBug))
 // Reposition once cards have loaded (catalog column width can change).
 watch(() => store.cards.length, () => nextTick(positionSideBug))
 
-function pickTheme(t: Theme) { ui.theme = t; open.value = null }
+function pickTheme(t: Theme) {
+  // Go through the theme store so the inline color variables set by
+  // theme.load()/ThemeBuilder are reset too — setting ui.theme alone only
+  // flips data-theme, which inline styles on <html> override.
+  if (themeStore.current) themeStore.setAmbiance(t)
+  else ui.theme = t
+  open.value = null
+}
 function openThemeBuilder() { open.value = null; modal.openThemeBuilder() }
 function pickDelta(d: number) { ui.textDelta = d; open.value = null }
 

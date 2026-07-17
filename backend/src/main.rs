@@ -21,6 +21,8 @@
 //!   PUT    /api/theme                        -> ThemeBody (auth required)
 //!   GET    /api/health                       -> "ok"
 
+mod compositor;
+
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -31,6 +33,7 @@ use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, Salt
 use argon2::Argon2;
 use axum::{
     async_trait,
+    body::Body,
     extract::{ConnectInfo, DefaultBodyLimit, FromRequestParts, Host, Multipart, Path, Query, State},
     http::{header::AUTHORIZATION, request::Parts, HeaderName, HeaderValue, StatusCode},
     routing::{delete, get, post, put},
@@ -372,6 +375,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/deleted-cards/:id/restore", post(admin_restore_card))
         .route("/api/admin/deleted-cards/:id", delete(admin_purge_card))
         .route("/share/:id/card.png", get(share_card_png))
+        .route("/share/preview", post(share_preview))
         .route("/share/:id", get(share_card))
         .route("/api/cars", get(list_cars).post(create_car))
         .route("/api/tune-types", get(list_tune_types).post(create_tune_type))
@@ -1500,12 +1504,12 @@ async fn share_card(
         .unwrap()
 }
 
-/// Stub: redirect to the card's lead photo.
-/// Will be replaced by real compositor output once the PNG pipeline is built.
+/// Returns a compositor-generated PNG when the card has a share_overlay_config,
+/// otherwise redirects to the lead photo (fallback while presets are being built).
 async fn share_card_png(
     State(st): State<AppState>,
     Path(id): Path<String>,
-) -> axum::response::Response<String> {
+) -> axum::response::Response<Body> {
     let row = sqlx::query("SELECT body FROM cards WHERE id = ? AND deleted_at IS NULL")
         .bind(&id)
         .fetch_optional(&st.pool)
@@ -1516,8 +1520,7 @@ async fn share_card_png(
     let Some(row) = row else {
         return axum::response::Response::builder()
             .status(StatusCode::NOT_FOUND)
-            .header("content-type", "text/plain")
-            .body("Not found".into())
+            .body(Body::empty())
             .unwrap();
     };
 
@@ -1525,6 +1528,23 @@ async fn share_card_png(
         .unwrap_or(Value::Null);
     inject_images(&st.pool, &mut body).await;
 
+    // If the card has a saved overlay config, run the compositor.
+    if let Some(config) = body.get("shareOverlayConfig")
+        .and_then(|v| serde_json::from_value::<compositor::OgConfig>(v.clone()).ok())
+    {
+        if let Some(png) = image_path_for_id(&st, config.photo_id).await
+            .and_then(|p| compositor::compose(&p, &config).ok())
+        {
+            return axum::response::Response::builder()
+                .status(StatusCode::OK)
+                .header("content-type", "image/png")
+                .header("cache-control", "public, max-age=300")
+                .body(Body::from(png))
+                .unwrap();
+        }
+    }
+
+    // Fallback: redirect to the lead photo.
     let lead_path = body.get("images")
         .and_then(Value::as_array)
         .and_then(|imgs| imgs.first())
@@ -1535,14 +1555,55 @@ async fn share_card_png(
         Some(path) => axum::response::Response::builder()
             .status(StatusCode::FOUND)
             .header("location", path)
-            .body(String::new())
+            .body(Body::empty())
             .unwrap(),
         None => axum::response::Response::builder()
             .status(StatusCode::NOT_FOUND)
-            .header("content-type", "text/plain")
-            .body("No images".into())
+            .body(Body::empty())
             .unwrap(),
     }
+}
+
+/// Live preview endpoint for the OG Maker. Accepts the same config shape as
+/// share_overlay_config, calls the same compositor, returns PNG bytes.
+/// Auth-gated — only the editor calls this.
+async fn share_preview(
+    State(st): State<AppState>,
+    _auth: AuthUser,
+    Json(config): Json<compositor::OgConfig>,
+) -> axum::response::Response<Body> {
+    match image_path_for_id(&st, config.photo_id).await {
+        Some(path) => match compositor::compose(&path, &config) {
+            Ok(png) => axum::response::Response::builder()
+                .status(StatusCode::OK)
+                .header("content-type", "image/png")
+                .header("cache-control", "no-store")
+                .body(Body::from(png))
+                .unwrap(),
+            Err(_) => axum::response::Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::empty())
+                .unwrap(),
+        },
+        None => axum::response::Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(Body::empty())
+            .unwrap(),
+    }
+}
+
+/// Resolve an image id to its full filesystem path.
+async fn image_path_for_id(st: &AppState, image_id: i64) -> Option<std::path::PathBuf> {
+    let row = sqlx::query("SELECT path FROM images WHERE id = ?")
+        .bind(image_id)
+        .fetch_optional(&st.pool)
+        .await
+        .ok()
+        .flatten()?;
+    let path_str: String = row.get("path");
+    // path is stored as /uploads/filename — strip the leading /uploads/ prefix.
+    let rel = path_str.trim_start_matches("/uploads/");
+    Some(st.uploads_dir.join(rel))
 }
 
 // ── OG Presets ────────────────────────────────────────────────────────────────

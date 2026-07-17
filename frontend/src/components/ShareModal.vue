@@ -3,7 +3,7 @@ import { computed, ref, watch, nextTick } from 'vue'
 import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
 import { useAuthStore } from '../stores/auth'
-import type { OgConfig } from '../types'
+import type { OgConfig, ForzaRecipeSection } from '../types'
 
 const modal = useModalStore()
 const store = useCardsStore()
@@ -21,13 +21,10 @@ function slugify(s: string): string {
 const recipe = computed(() => {
   const c = card.value
   if (!c) return null
-  return c.sections.find(s => s.type === 'forza_recipe') ?? null
+  return c.sections.find((s): s is ForzaRecipeSection => s.type === 'forza_recipe') ?? null
 })
 
-const firstCarName = computed(() => {
-  const r = recipe.value
-  return r && 'cars' in r ? ((r as any).cars?.[0]?.carName ?? '') : ''
-})
+const firstCarName = computed(() => recipe.value?.cars?.[0]?.carName ?? '')
 
 const shareCode = computed(() => {
   const r = recipe.value
@@ -89,7 +86,8 @@ const selectedPreset = computed(() =>
 const cardOverlayConfig = computed(() => card.value?.shareOverlayConfig ?? null)
 
 async function fetchPresets() {
-  const res = await fetch('/api/og-presets')
+  const token = localStorage.getItem('auth_token') ?? ''
+  const res = await fetch('/api/og-presets', { headers: { authorization: `Bearer ${token}` } })
   if (res.ok) presets.value = await res.json()
 }
 

@@ -1610,6 +1610,7 @@ async fn image_path_for_id(st: &AppState, image_id: i64) -> Option<std::path::Pa
 
 async fn list_og_presets(
     State(st): State<AppState>,
+    _auth: AuthUser,
 ) -> Result<Json<Vec<Value>>, ApiError> {
     let rows = sqlx::query("SELECT id, name, config, created_at, updated_at FROM og_presets ORDER BY id")
         .fetch_all(&st.pool)

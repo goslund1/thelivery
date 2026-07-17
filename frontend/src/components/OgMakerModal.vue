@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
-import type { CardImage } from '../types'
+import type { CardImage, OgTextStyle } from '../types'
 
 const modal = useModalStore()
 const store = useCardsStore()
@@ -11,7 +11,7 @@ const store = useCardsStore()
 
 interface TextBox {
   id: string
-  style: string
+  style: OgTextStyle
   content: string
   x: number   // fraction 0–1, left edge
   y: number   // fraction 0–1, top edge
@@ -32,12 +32,12 @@ const photoId      = ref<number | null>(null)
 const photos       = ref<CardImage[]>([])
 const presetName   = ref('')
 const newContent   = ref('')
-const newStyle     = ref('POSTCARD')
+const newStyle     = ref<OgTextStyle>('POSTCARD')
 const logoVisible  = ref(false)
 const saving       = ref(false)
 const saveMsg      = ref('')
 
-const STYLES = ['POSTCARD', 'SIGNAL', 'GHOST']
+const STYLES: OgTextStyle[] = ['POSTCARD', 'SIGNAL', 'GHOST']
 
 const selected = computed(() => boxes.value.find(b => b.id === selectedId.value) ?? null)
 
@@ -373,7 +373,7 @@ function rotHandleStyle(box: TextBox) {
           <select v-model="selected.style" class="ogm-select">
             <option v-for="s in STYLES" :key="s" :value="s">{{ s }}</option>
           </select>
-          <input v-model="selected.content" class="ogm-text-input" @change="schedulePreview()" />
+          <input v-model="selected.content" class="ogm-text-input" @input="schedulePreview()" />
           <label class="ogm-slider-label">
             Rotate
             <input type="range" v-model.number="selected.rotateDeg" min="-45" max="45" step="0.5" class="ogm-slider" />

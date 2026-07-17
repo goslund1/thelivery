@@ -8,9 +8,17 @@ pub const CANVAS_H: u32 = 630;
 static FONT_POSTCARD: &[u8] = include_bytes!("../fonts/BebasNeue-Regular.ttf");
 static FONT_SIGNAL: &[u8] = include_bytes!("../fonts/Oswald-VF.ttf");
 
+#[derive(Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum TextStyle {
+    Postcard,
+    Signal,
+    Ghost,
+}
+
 #[derive(Deserialize, Clone, Debug)]
 pub struct OgTextBox {
-    pub style: String,
+    pub style: TextStyle,
     pub content: String,
     pub x: f32,
     pub y: f32,
@@ -38,9 +46,9 @@ pub fn compose(photo_path: &Path, config: &OgConfig) -> anyhow::Result<Vec<u8>> 
         .resize_to_fill(CANVAS_W, CANVAS_H, imageops::FilterType::Lanczos3)
         .to_rgba8();
 
-    // Bottom scrim: gradient if any visible box lives in the lower half of the frame.
+    // Bottom scrim: gradient if any visible box overlaps the lower half of the frame.
     let needs_scrim = config.text_boxes.iter().any(|tb| {
-        !tb.content.trim().is_empty() && tb.w > 0.0 && tb.h > 0.0 && tb.y > 0.4
+        !tb.content.trim().is_empty() && tb.w > 0.0 && tb.h > 0.0 && tb.y + tb.h > 0.45
     });
     if needs_scrim {
         apply_bottom_scrim(&mut canvas);
@@ -57,7 +65,7 @@ pub fn compose(photo_path: &Path, config: &OgConfig) -> anyhow::Result<Vec<u8>> 
         let h_px = ((tb.h * CANVAS_H as f32).round() as u32).max(8);
 
         // SIGNAL: dark backdrop plate (chyron / broadcast lower-third look).
-        if tb.style == "SIGNAL" {
+        if tb.style == TextStyle::Signal {
             blit_backdrop(&mut canvas, x_px, y_px, w_px as i32, h_px as i32, tb.rotate_deg, tb.shear_x);
         }
 
@@ -65,7 +73,7 @@ pub fn compose(photo_path: &Path, config: &OgConfig) -> anyhow::Result<Vec<u8>> 
         let text_img = rasterize_text_box(font_data, &tb.content, w_px, h_px, &tb.style);
 
         // Drop shadow on POSTCARD and SIGNAL — GHOST stays intentionally delicate.
-        if tb.style != "GHOST" {
+        if tb.style != TextStyle::Ghost {
             blit_transformed_tinted(
                 &mut canvas, &text_img,
                 x_px + 2, y_px + 3,
@@ -148,95 +156,28 @@ fn render_logo(canvas: &mut RgbaImage) {
 
 // ── Font / style helpers ─────────────────────────────────────────────────────
 
-fn font_for_style(style: &str) -> &'static [u8] {
+fn font_for_style(style: &TextStyle) -> &'static [u8] {
     match style {
-        "POSTCARD" => FONT_POSTCARD,
+        TextStyle::Postcard => FONT_POSTCARD,
         _ => FONT_SIGNAL,
     }
 }
 
-fn text_alpha_for_style(style: &str) -> u8 {
+fn text_alpha_for_style(style: &TextStyle) -> u8 {
     match style {
-        "GHOST" => 170,
+        TextStyle::Ghost => 170,
         _ => 255,
     }
 }
 
 // ── Rasterizers ──────────────────────────────────────────────────────────────
 
-/// Rasterize `text` into an RGBA image of exactly `w_px × h_px` pixels.
-/// Text is scaled to fill the box both horizontally and vertically —
-/// horizontal stretch is intentional (same as CSS scaleX to fill a box).
-fn rasterize_text_box(font_data: &[u8], text: &str, w_px: u32, h_px: u32, style: &str) -> RgbaImage {
-    let alpha = text_alpha_for_style(style);
-
-    let font = match fontdue::Font::from_bytes(font_data, fontdue::FontSettings::default()) {
-        Ok(f) => f,
-        Err(_) => return RgbaImage::new(w_px, h_px),
-    };
-
-    let px = h_px as f32;
-    let (nat_w, ascent, descent) = measure_text(&font, text, px);
+/// Inner glyph renderer. Returns the text at natural (unstretched) size, or
+/// `None` if the text produces no measurable glyphs.
+fn render_glyphs(font: &fontdue::Font, text: &str, px: f32, alpha: u8) -> Option<RgbaImage> {
+    let (nat_w, ascent, descent) = measure_text(font, text, px);
     if nat_w <= 0.0 || (ascent - descent) <= 0.0 {
-        return RgbaImage::new(w_px, h_px);
-    }
-
-    let img_h = (ascent - descent).ceil() as u32;
-    let img_w = nat_w.ceil() as u32;
-    let baseline = ascent.ceil() as i32;
-    let mut nat_img = RgbaImage::new(img_w.max(1), img_h.max(1));
-
-    let mut cursor_x = 0.0f32;
-    for ch in text.chars() {
-        let (metrics, bitmap) = font.rasterize(ch, px);
-        if metrics.width == 0 || metrics.height == 0 {
-            cursor_x += metrics.advance_width;
-            continue;
-        }
-        let glyph_left = (cursor_x as i32) + metrics.xmin;
-        let glyph_top = baseline - (metrics.ymin + metrics.height as i32);
-
-        for gy in 0..metrics.height {
-            for gx in 0..metrics.width {
-                let coverage = bitmap[gy * metrics.width + gx];
-                if coverage == 0 {
-                    continue;
-                }
-                let px_x = glyph_left + gx as i32;
-                let px_y = glyph_top + gy as i32;
-                if px_x >= 0
-                    && px_x < nat_img.width() as i32
-                    && px_y >= 0
-                    && px_y < nat_img.height() as i32
-                {
-                    let a = ((coverage as u32 * alpha as u32) / 255) as u8;
-                    nat_img.put_pixel(px_x as u32, px_y as u32, Rgba([255, 255, 255, a]));
-                }
-            }
-        }
-        cursor_x += metrics.advance_width;
-    }
-
-    // Scale the natural buffer to exactly w_px × h_px.
-    // Clamp alpha after resize: Lanczos3 sinc ringing can push alpha above the
-    // source max at glyph edges, which would break GHOST-style opacity.
-    let mut scaled = imageops::resize(&nat_img, w_px, h_px, imageops::FilterType::Lanczos3);
-    for p in scaled.pixels_mut() {
-        p[3] = p[3].min(alpha);
-    }
-    scaled
-}
-
-/// Rasterize `text` at natural (unstretched) width and the given `px` size.
-/// Used for the logo mark and any other fixed-size glyphs.
-fn rasterize_text_natural(font_data: &[u8], text: &str, px: f32, alpha: u8) -> RgbaImage {
-    let font = match fontdue::Font::from_bytes(font_data, fontdue::FontSettings::default()) {
-        Ok(f) => f,
-        Err(_) => return RgbaImage::new(1, 1),
-    };
-    let (nat_w, ascent, descent) = measure_text(&font, text, px);
-    if nat_w <= 0.0 || (ascent - descent) <= 0.0 {
-        return RgbaImage::new(1, 1);
+        return None;
     }
     let img_w = nat_w.ceil() as u32;
     let img_h = (ascent - descent).ceil() as u32;
@@ -256,7 +197,7 @@ fn rasterize_text_natural(font_data: &[u8], text: &str, px: f32, alpha: u8) -> R
                 let coverage = bitmap[gy * metrics.width + gx];
                 if coverage == 0 { continue; }
                 let px_x = glyph_left + gx as i32;
-                let px_y = glyph_top  + gy as i32;
+                let px_y = glyph_top + gy as i32;
                 if px_x >= 0 && px_x < img_w as i32 && px_y >= 0 && px_y < img_h as i32 {
                     let a = ((coverage as u32 * alpha as u32) / 255) as u8;
                     img.put_pixel(px_x as u32, px_y as u32, Rgba([255, 255, 255, a]));
@@ -265,7 +206,39 @@ fn rasterize_text_natural(font_data: &[u8], text: &str, px: f32, alpha: u8) -> R
         }
         cursor_x += metrics.advance_width;
     }
-    img
+    Some(img)
+}
+
+/// Rasterize `text` into an RGBA image of exactly `w_px × h_px` pixels.
+/// Text is scaled to fill the box both horizontally and vertically.
+fn rasterize_text_box(font_data: &[u8], text: &str, w_px: u32, h_px: u32, style: &TextStyle) -> RgbaImage {
+    let alpha = text_alpha_for_style(style);
+    let font = match fontdue::Font::from_bytes(font_data, fontdue::FontSettings::default()) {
+        Ok(f) => f,
+        Err(_) => return RgbaImage::new(w_px, h_px),
+    };
+    let nat_img = match render_glyphs(&font, text, h_px as f32, alpha) {
+        Some(img) => img,
+        None => return RgbaImage::new(w_px, h_px),
+    };
+    // Scale the natural buffer to exactly w_px × h_px.
+    // Clamp alpha after resize: Lanczos3 sinc ringing can push alpha above the
+    // source max at glyph edges, which would break GHOST-style opacity.
+    let mut scaled = imageops::resize(&nat_img, w_px, h_px, imageops::FilterType::Lanczos3);
+    for p in scaled.pixels_mut() {
+        p[3] = p[3].min(alpha);
+    }
+    scaled
+}
+
+/// Rasterize `text` at natural (unstretched) width and the given `px` size.
+/// Used for the logo mark and any other fixed-size glyphs.
+fn rasterize_text_natural(font_data: &[u8], text: &str, px: f32, alpha: u8) -> RgbaImage {
+    let font = match fontdue::Font::from_bytes(font_data, fontdue::FontSettings::default()) {
+        Ok(f) => f,
+        Err(_) => return RgbaImage::new(1, 1),
+    };
+    render_glyphs(&font, text, px, alpha).unwrap_or_else(|| RgbaImage::new(1, 1))
 }
 
 // ── Text measurement ──────────────────────────────────────────────────────────
@@ -289,15 +262,16 @@ fn measure_text(font: &fontdue::Font, text: &str, px: f32) -> (f32, f32, f32) {
 
 // ── Blitters ─────────────────────────────────────────────────────────────────
 
-/// Composite `src` onto `canvas` at (`box_x`, `box_y`) with rotation + shear.
-/// Uses inverse mapping: per output pixel, inverse-transform → sample from src.
-fn blit_transformed(
+/// Shared inverse-mapping pixel loop. For each output pixel that maps back into
+/// `src`, calls `pixel_fn(dst, src_pixel)` and writes the result to canvas.
+fn blit_with_transform(
     canvas: &mut RgbaImage,
     src: &RgbaImage,
     box_x: i32,
     box_y: i32,
     rotate_deg: f32,
     shear_x: f32,
+    pixel_fn: impl Fn(Rgba<u8>, Rgba<u8>) -> Rgba<u8>,
 ) {
     let sw = src.width() as f32;
     let sh = src.height() as f32;
@@ -322,17 +296,27 @@ fn blit_transformed(
             let rx = cos_a * dx - sin_a * dy;
             let ry = sin_a * dx + cos_a * dy;
             // Inverse shear: x = x' - shear*y
-            let ux = rx - shear_x * ry;
-            let uy = ry;
-            let u = ux + sw / 2.0;
-            let v = uy + sh / 2.0;
+            let u = rx - shear_x * ry + sw / 2.0;
+            let v = ry + sh / 2.0;
             if u < 0.0 || v < 0.0 || u >= sw || v >= sh { continue; }
-            let src_pixel = src.get_pixel(u as u32, v as u32);
+            let src_pixel = *src.get_pixel(u as u32, v as u32);
             if src_pixel[3] == 0 { continue; }
-            let dst = canvas.get_pixel(px_out as u32, py as u32);
-            canvas.put_pixel(px_out as u32, py as u32, alpha_over(*dst, *src_pixel));
+            let dst = *canvas.get_pixel(px_out as u32, py as u32);
+            canvas.put_pixel(px_out as u32, py as u32, pixel_fn(dst, src_pixel));
         }
     }
+}
+
+/// Composite `src` onto `canvas` at (`box_x`, `box_y`) with rotation + shear.
+fn blit_transformed(
+    canvas: &mut RgbaImage,
+    src: &RgbaImage,
+    box_x: i32,
+    box_y: i32,
+    rotate_deg: f32,
+    shear_x: f32,
+) {
+    blit_with_transform(canvas, src, box_x, box_y, rotate_deg, shear_x, alpha_over);
 }
 
 /// Same as `blit_transformed` but replaces each source pixel's colour with `tint`,
@@ -346,42 +330,11 @@ fn blit_transformed_tinted(
     shear_x: f32,
     tint: Rgba<u8>,
 ) {
-    let sw = src.width() as f32;
-    let sh = src.height() as f32;
-    if sw == 0.0 || sh == 0.0 { return; }
-
-    let cx = box_x as f32 + sw / 2.0;
-    let cy = box_y as f32 + sh / 2.0;
-    let angle = -rotate_deg.to_radians();
-    let cos_a = angle.cos();
-    let sin_a = angle.sin();
-
-    let half_diag = (sw * sw + sh * sh).sqrt() / 2.0 + 1.0;
-    let min_x = ((cx - half_diag).floor() as i32).max(0);
-    let max_x = ((cx + half_diag).ceil()  as i32).min(canvas.width()  as i32 - 1);
-    let min_y = ((cy - half_diag).floor() as i32).max(0);
-    let max_y = ((cy + half_diag).ceil()  as i32).min(canvas.height() as i32 - 1);
-
-    for py in min_y..=max_y {
-        for px_out in min_x..=max_x {
-            let dx = px_out as f32 - cx;
-            let dy = py     as f32 - cy;
-            let rx = cos_a * dx - sin_a * dy;
-            let ry = sin_a * dx + cos_a * dy;
-            let ux = rx - shear_x * ry;
-            let uy = ry;
-            let u = ux + sw / 2.0;
-            let v = uy + sh / 2.0;
-            if u < 0.0 || v < 0.0 || u >= sw || v >= sh { continue; }
-            let src_pixel = src.get_pixel(u as u32, v as u32);
-            if src_pixel[3] == 0 { continue; }
-            // Scale tint alpha by source alpha so glyph edges stay smooth.
-            let a = ((src_pixel[3] as u32 * tint[3] as u32) / 255) as u8;
-            let tinted = Rgba([tint[0], tint[1], tint[2], a]);
-            let dst = canvas.get_pixel(px_out as u32, py as u32);
-            canvas.put_pixel(px_out as u32, py as u32, alpha_over(*dst, tinted));
-        }
-    }
+    blit_with_transform(canvas, src, box_x, box_y, rotate_deg, shear_x, |dst, src_px| {
+        // Scale tint alpha by source alpha so glyph edges stay smooth.
+        let a = ((src_px[3] as u32 * tint[3] as u32) / 255) as u8;
+        alpha_over(dst, Rgba([tint[0], tint[1], tint[2], a]))
+    });
 }
 
 // ── Porter-Duff ───────────────────────────────────────────────────────────────
@@ -413,7 +366,7 @@ mod tests {
 
     #[test]
     fn test_rasterize_no_panic() {
-        let img = rasterize_text_box(FONT_POSTCARD, "SMOKIN", 600, 113, "POSTCARD");
+        let img = rasterize_text_box(FONT_POSTCARD, "SMOKIN", 600, 113, &TextStyle::Postcard);
         assert_eq!(img.width(), 600);
         assert_eq!(img.height(), 113);
         let has_content = img.pixels().any(|p| p[3] > 0);
@@ -422,7 +375,7 @@ mod tests {
 
     #[test]
     fn test_rasterize_ghost_alpha() {
-        let img = rasterize_text_box(FONT_SIGNAL, "TEST", 300, 80, "GHOST");
+        let img = rasterize_text_box(FONT_SIGNAL, "TEST", 300, 80, &TextStyle::Ghost);
         let max_alpha = img.pixels().map(|p| p[3]).max().unwrap_or(0);
         assert!(max_alpha <= 170, "GHOST style alpha should be capped at 170, got {max_alpha}");
     }

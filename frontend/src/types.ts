@@ -136,8 +136,10 @@ export interface Tune {
 
 export type Section = TextSection | ForzaRecipeSection
 
+export type OgTextStyle = 'POSTCARD' | 'SIGNAL' | 'GHOST'
+
 export interface OgTextBox {
-  style: string
+  style: OgTextStyle
   content: string
   x: number; y: number; w: number; h: number
   rotateDeg: number

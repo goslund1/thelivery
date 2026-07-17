@@ -92,13 +92,13 @@ and `/uploads` to the backend, so the app always uses same-origin relative URLs.
 ## Build / typecheck / verify
 
 - **Frontend:** `npm --prefix frontend run build` runs `vue-tsc -b && vite build`. This is the typecheck gate — run it after frontend changes.
-- **Backend:** `cd backend && cargo build`. For the production target: `cargo build --release --target x86_64-unknown-linux-musl` (needs `musl-tools`; set `CC_x86_64_unknown_linux_musl=musl-gcc`).
-- **No automated test suite exists.** Verify by building, by curling the API, and by the production-simulation pattern (run the release binary with `FRONTEND_DIR`/`UPLOADS_DIR`/`SEED_PATH`/`DATABASE_PATH` set and curl `/`, `/api/cards`, `/uploads/...`).
+- **Backend:** `cd backend && cargo test` — this is the backend gate (builds + runs the suite, ~0.1s). For the production target: `cargo build --release --target x86_64-unknown-linux-musl` (needs `musl-tools`; set `CC_x86_64_unknown_linux_musl=musl-gcc`).
+- **Backend tests** live in `#[cfg(test)]` modules next to the code: card-body validation and the startup migration pipeline (`cards.rs`), image sync branches (`images.rs`, against in-memory SQLite via `testutil::test_pool()`), and the OG compositor (`compositor.rs`). When touching a migration/transform function, extend its tests — idempotency asserts (run twice, byte-identical) are the house pattern. **The frontend has no test suite** — verify UI changes by building, by curling the API, and by the production-simulation pattern (run the release binary with `FRONTEND_DIR`/`UPLOADS_DIR`/`SEED_PATH`/`DATABASE_PATH` set and curl `/`, `/api/cards`, `/uploads/...`).
 - `frontend/shot.mjs` is a Playwright screenshot helper, but headless Chromium needs system libs (`libnspr4`, etc.) that require root to install — it won't run here without that.
 
 ## Backend (`backend/`)
 
-- **Axum + SQLx (SQLite).** Single file: `backend/src/main.rs`.
+- **Axum + SQLx (SQLite).** `main.rs` is a thin entry point (config + router); handlers live in domain modules: `auth`, `cards`, `images`, `trash`, `identity` (cars/liveries/tunes), `share`, `suggestions`, `presets`, `theme`, `compositor`, plus `state` (AppState/errors) and `testutil` (test-only).
 - **Storage model:** one row per card in the `cards` table — `id`, `catalog_number`, and `body` (the full `Card` JSON). The `images` table is the **single source of truth** for image data; card body stores only `{ id, alt, order, carId }` per image — **no paths**. On every card read, `inject_images()` replaces body["images"] with the full rows from the DB (path, thumbPath, stagePath, livery_id, etc.). On every card write, `sync_card_images()` upserts the images table from the body and strips paths before saving. `normalize_bodies()` step 3 migrates legacy cards at startup (idempotent).
 - **Endpoints:** `GET/PUT/POST/DELETE /api/cards[/:id]`, `POST /api/images` (multipart upload, accepts `livery_id` field → returns `{ id, path, ... }`), `GET /api/cars` (search), `GET/POST /api/liveries`, `POST /api/admin/liveries/:id/assess-color` (auth-gated, calls Claude with thumbnail, stores primary/secondary color), `GET /api/health`, static `/uploads/*`, and (production) the SPA at everything else.
 - **Serving the SPA:** `ServeDir::new(FRONTEND_DIR).not_found_service(ServeFile::new(index.html))`. Real files (index, hashed assets) serve at 200; unknown paths return index.html with a 404 status — acceptable because the app has **no client-side router** (only `/` is a real entry point). Don't "fix" this with `ServeDir::fallback` — that broke static serving entirely in this tower-http version.
@@ -146,5 +146,5 @@ and `/uploads` to the backend, so the app always uses same-origin relative URLs.
 - **Staging before committing:** always run `git status` before any commit to see the full picture of modified and untracked files. The codebase often has inter-dependent files in flight (types, api, components, backend) — committing only the files you touched and leaving the rest behind will break CI. Stage everything that's part of the same feature together.
 - **Migrations:** new migration files only; never edit applied ones.
 - **Don't break visual parity:** keep `catalog.css` and its class names intact; the original single-file app in `archive/` is the reference to diff against.
-- After frontend changes, run `npm --prefix frontend run build` (typecheck) before considering it done; after backend changes, `cargo build`.
+- After frontend changes, run `npm --prefix frontend run build` (typecheck) before considering it done; after backend changes, `cargo test`.
 - Keep edits same-origin and relative (`/api`, `/uploads`) — never hardcode hosts/ports in the frontend.

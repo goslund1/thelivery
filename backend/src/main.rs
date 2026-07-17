@@ -31,7 +31,7 @@ use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, Salt
 use argon2::Argon2;
 use axum::{
     async_trait,
-    extract::{ConnectInfo, DefaultBodyLimit, FromRequestParts, Multipart, Path, Query, State},
+    extract::{ConnectInfo, DefaultBodyLimit, FromRequestParts, Host, Multipart, Path, Query, State},
     http::{header::AUTHORIZATION, request::Parts, HeaderName, HeaderValue, StatusCode},
     routing::{delete, get, post, put},
     Json, Router,
@@ -371,6 +371,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/deleted-cards", get(admin_list_deleted_cards))
         .route("/api/admin/deleted-cards/:id/restore", post(admin_restore_card))
         .route("/api/admin/deleted-cards/:id", delete(admin_purge_card))
+        .route("/share/:id/card.png", get(share_card_png))
         .route("/share/:id", get(share_card))
         .route("/api/cars", get(list_cars).post(create_car))
         .route("/api/tune-types", get(list_tune_types).post(create_tune_type))
@@ -1377,6 +1378,7 @@ async fn admin_export_seed(
 /// Real browsers are redirected to the app via <meta http-equiv="refresh">.
 async fn share_card(
     State(st): State<AppState>,
+    Host(host): Host,
     Path(id): Path<String>,
     axum::extract::OriginalUri(uri): axum::extract::OriginalUri,
 ) -> axum::response::Response<String> {
@@ -1430,16 +1432,19 @@ async fn share_card(
         .and_then(Value::as_str)
         .unwrap_or("");
 
-    // Thumbnail: first image with a thumbPath, else first image path.
-    let og_image = body.get("images")
+    // Point og:image at the card.png route (absolute URL required by OG spec).
+    // The route currently redirects to the lead photo; later it will return a
+    // compositor-generated PNG with the card's overlay preset applied.
+    let has_images = body.get("images")
         .and_then(Value::as_array)
-        .and_then(|imgs| imgs.first())
-        .and_then(|img| {
-            img.get("thumbPath")
-                .or_else(|| img.get("path"))
-                .and_then(Value::as_str)
-        })
-        .unwrap_or("");
+        .map(|imgs| !imgs.is_empty())
+        .unwrap_or(false);
+    let scheme = if host.starts_with("localhost") || host.starts_with("127.") { "http" } else { "https" };
+    let og_image = if has_images {
+        format!("{scheme}://{host}/share/{card_id}/card.png")
+    } else {
+        String::new()
+    };
 
     // Build a canonical URL from the request path (no query string).
     let canonical = uri.path().to_string();
@@ -1491,6 +1496,51 @@ async fn share_card(
         .header("content-type", "text/html; charset=utf-8")
         .body(html)
         .unwrap()
+}
+
+/// Stub: redirect to the card's lead photo.
+/// Will be replaced by real compositor output once the PNG pipeline is built.
+async fn share_card_png(
+    State(st): State<AppState>,
+    Path(id): Path<String>,
+) -> axum::response::Response<String> {
+    let row = sqlx::query("SELECT body FROM cards WHERE id = ? AND deleted_at IS NULL")
+        .bind(&id)
+        .fetch_optional(&st.pool)
+        .await
+        .ok()
+        .flatten();
+
+    let Some(row) = row else {
+        return axum::response::Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header("content-type", "text/plain")
+            .body("Not found".into())
+            .unwrap();
+    };
+
+    let mut body: Value = serde_json::from_str(row.get::<String, _>("body").as_str())
+        .unwrap_or(Value::Null);
+    inject_images(&st.pool, &mut body).await;
+
+    let lead_path = body.get("images")
+        .and_then(Value::as_array)
+        .and_then(|imgs| imgs.first())
+        .and_then(|img| img.get("path").and_then(Value::as_str))
+        .map(str::to_owned);
+
+    match lead_path {
+        Some(path) => axum::response::Response::builder()
+            .status(StatusCode::FOUND)
+            .header("location", path)
+            .body(String::new())
+            .unwrap(),
+        None => axum::response::Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header("content-type", "text/plain")
+            .body("No images".into())
+            .unwrap(),
+    }
 }
 
 async fn list_cards(State(st): State<AppState>) -> Result<Json<Vec<Value>>, ApiError> {

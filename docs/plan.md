@@ -6,7 +6,19 @@ Living to-do file for thelivery. Update this when items are started, completed, 
 
 ## Active — ordered by priority
 
-### 1. Photo Manager overlay — unified import and pool management
+### 1. OG Overlay Studio — shareable card image + OG Maker
+
+See `docs/plan-og-overlay.md` for the full plan and `docs/plan-og-overlay-single-renderer.md` for the single-renderer architecture decision.
+
+**Summary:** Server-generated 1200×630 PNG used as `og:image` for social share unfurls. Authored in the OG Maker modal (edit mode) — a canvas where text boxes can be placed, resized with corner handles, rotated, sheared, and styled. The DOM canvas handles interaction only; live preview is produced by the real Rust compositor via `POST /share/preview`. Saved as named OG Presets, selectable in the share flow with per-card nudge via "Adjust."
+
+**Build order (6 steps):** stub route → presets table → real compositor (pulled forward, source of truth) → OG Maker modal → share flow integration → compositor polish.
+
+**Status:** Planning complete. Not started.
+
+---
+
+### 2. Photo Manager overlay — unified import and pool management
 
 **~~Complete~~ — done 2026-07-13. Core built (commit 3b4cee4), Escape flash fixed (d1ed193), gallery carId pre-fill (589b7c9), figure-pick session car (6ea1a26), multi-car detection on [change] (d2e748e). All gaps resolved.**
 

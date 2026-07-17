@@ -156,6 +156,8 @@ Narrow-screen pass for the full catalog. Known gaps:
 
 ## Recently completed
 
+- **OG overlay access fixed** — ShareModal OG design section now gated by `auth.isAuthenticated` instead of `ui.isEditing`. Admins see the overlay composer in normal user view (click card title → Share modal) — the correct flow since sharing is a post-edit action, and the title is an editable input in edit mode. Also added `/share` to the Vite dev proxy so the compositor preview and share routes work in local dev. — 2026-07-16
+
 - **OG Overlay Studio** — server-generated 1200×630 `og:image` for social share unfurls (Discord, iMessage, Reddit). Pure-Rust compositor (`fontdue` + `image` crate): `POST /share/preview` for live OG Maker preview, `GET /share/:id/card.png` for public card image, `og_presets` table + CRUD. Three text styles: POSTCARD (Bebas Neue, floating), SIGNAL (Oswald VF + dark chyron backdrop), GHOST (Oswald VF, semi-transparent). Polish: bottom scrim gradient, per-style drop shadows, logo slot ("THE LIVERY" placeholder). OG Maker modal: freely-positioned text boxes with corner-resize, rotation handle, shear slider; 200ms debounced live preview; preset save + "Save to Card." ShareModal integration with preset picker, preview thumbnails, Adjust/Reset flow. — 2026-07-16
 
 - **CarTabs/TuneTabs shakedown + polish**: discipline baseline presets (Race/Rally/Drift/Street) seeded in DB; `+ ADD CAR` / `+ ADD TUNE` buttons styled as dashed tabs (grey→gold/pink on hover); TuneTabs shelf color = `--highlight`; spacing and gap fixes; `v-tip-up` directive for right-flying tooltip from text end; card title opens ShareModal. — 2026-07-13

@@ -1,6 +1,22 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { Card } from '../types'
+import type { Card, CardImage } from '../types'
+
+export interface OgTextBox {
+  id: string
+  style: string
+  content: string
+  x: number; y: number; w: number; h: number
+  rotateDeg: number
+  shearX: number
+}
+
+export interface OgMakerConfig {
+  photoId: number | null
+  photos: CardImage[]
+  boxes: OgTextBox[]
+  presetName?: string
+}
 
 export interface PoolImage {
   id?: number
@@ -152,6 +168,11 @@ export const useModalStore = defineStore('modal', () => {
   function openShare(cardId: string) { shareCardId.value = cardId }
   function closeShare() { shareCardId.value = null }
 
+  // ── OG Maker ─────────────────────────────────────────────────────────────
+  const ogMaker = ref<OgMakerConfig | null>(null)
+  function openOgMaker(cfg: OgMakerConfig) { ogMaker.value = cfg }
+  function closeOgMaker() { ogMaker.value = null }
+
   // ── Archive card confirm ─────────────────────────────────────────────────────
   const archiveCardPending = ref(false)
   const archiveCardName = ref('')
@@ -176,6 +197,7 @@ export const useModalStore = defineStore('modal', () => {
   // Close whichever modal is frontmost. Returns true if anything was closed.
   // Priority order mirrors visual z-order: innermost/topmost first.
   function closeTopModal(): boolean {
+    if (ogMaker.value)               { closeOgMaker();          return true }
     if (promotedCard.value)          { closePromotedCard();     return true }
     if (lightboxSrc.value)           { closeLightbox();         return true }
     if (chipPicker.value)            { closeChipPicker();       return true }
@@ -208,6 +230,7 @@ export const useModalStore = defineStore('modal', () => {
     adminPanelOpen, openAdminPanel, closeAdminPanel,
     themeBuilderOpen, openThemeBuilder, closeThemeBuilder,
     shareCardId, openShare, closeShare,
+    ogMaker, openOgMaker, closeOgMaker,
     archiveCardPending, archiveCardName, promptArchiveCard, confirmArchiveCard, cancelArchiveCard,
     closeTopModal,
   }

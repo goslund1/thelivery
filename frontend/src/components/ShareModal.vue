@@ -2,9 +2,11 @@
 import { computed, ref, watch, nextTick } from 'vue'
 import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
+import { useUiStore } from '../stores/ui'
 
 const modal = useModalStore()
 const store = useCardsStore()
+const ui    = useUiStore()
 
 const card = computed(() => {
   if (!modal.shareCardId) return null
@@ -63,6 +65,18 @@ function openReddit() {
   const title = encodeURIComponent(redditTitle.value)
   window.open(`https://www.reddit.com/submit?url=${url}&title=${title}`, '_blank', 'noopener')
 }
+
+function openOgMaker() {
+  const c = card.value
+  if (!c) return
+  const leadId = c.images[0]?.id ?? null
+  modal.openOgMaker({
+    photoId: leadId,
+    photos: c.images.filter(img => img.included !== false),
+    boxes: [],
+    presetName: '',
+  })
+}
 </script>
 
 <template>
@@ -102,6 +116,13 @@ function openReddit() {
             <span class="share-dest-icon">💬</span>
             <span class="share-dest-label">Discord</span>
             <span class="share-dest-tag">Coming soon</span>
+          </button>
+        </div>
+
+        <div v-if="ui.isEditing" class="share-og-row">
+          <button class="share-og-btn" @click="openOgMaker">
+            <span>🎨</span>
+            <span>Design Share Card</span>
           </button>
         </div>
       </div>
@@ -281,5 +302,28 @@ function openReddit() {
 .share-dest-btn--reddit:hover {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.share-og-row {
+  padding: 10px 16px;
+  border-top: 1px solid var(--panel-edge);
+}
+.share-og-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px dashed var(--panel-edge);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.share-og-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 </style>

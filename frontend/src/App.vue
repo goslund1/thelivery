@@ -28,6 +28,7 @@ import ImageMigrationModal from './components/ImageMigrationModal.vue'
 import AdminPanel from './components/AdminPanel.vue'
 import ArchiveCardModal from './components/ArchiveCardModal.vue'
 import ShareModal from './components/ShareModal.vue'
+import OgMakerModal from './components/OgMakerModal.vue'
 
 useScrollGuard()
 
@@ -121,6 +122,7 @@ onBeforeUnmount(() => {
   <EditCardModal v-if="modal.promotedCard" :card="modal.promotedCard" @close="modal.closePromotedCard()" />
   <ImageMigrationModal />
   <ShareModal />
+  <OgMakerModal />
   <AdminPanel />
   <ArchiveCardModal />
   <CustomTip />

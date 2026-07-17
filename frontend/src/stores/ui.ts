@@ -75,6 +75,9 @@ export const useUiStore = defineStore('ui', () => {
   function handleAuthError(e: unknown): boolean {
     if (e instanceof ApiError && e.status === 401) {
       useAuthStore().logout()
+      // Lazy import — ui.ts ↔ modal.ts are mutually dependent; dynamic import
+      // breaks the module-level cycle. Do not restructure: keeping this in the
+      // store (vs. the component) means all post-login flows stay in one place.
       import('./modal').then(({ useModalStore }) => useModalStore().openLogin(false))
       return true
     }
@@ -139,6 +142,7 @@ export const useUiStore = defineStore('ui', () => {
     } else if (useAuthStore().isAuthenticated) {
       enterEdit()
     } else {
+      // Same lazy-import pattern — see handleAuthError above.
       import('./modal').then(({ useModalStore }) => useModalStore().openLogin(true))
     }
   }

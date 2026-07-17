@@ -28,6 +28,9 @@ Narrow-screen pass for the full catalog. Known gaps:
 
 ### Pre-launch checklist
 - **Lock CORS to production domain** — currently `CorsLayer::permissive()` in `backend/src/main.rs`. Change to `CorsLayer::new().allow_origin("https://thelivery.silverleaf.services")` before public launch.
+- **Remove the "Draft — layout preview" tag** from the page head in `App.vue` — do together with the CORS lock.
+- **Rate-limit `/api/login`** — currently brute-forceable; mirror the DB-backed pattern used by `suggestion_rate_log`.
+- **Path normalization in `delete_images`** — the `trim_start_matches("/uploads/")` + `join` pattern doesn't neutralize `..` components; an authenticated caller could move files outside uploads/ into trash. Reject paths whose components include `..` before resolving.
 - **Update README.md** — significantly out of date: still references `/api/liveries` (now `/api/cards`), `seed/liveries.json` (now `seed/cards.json`), "single-user, no auth" (JWT auth exists), and is missing most current endpoints. Rewrite the API table and data description to match reality before the repo goes public.
 
 ### Backfill pass (another round coming)
@@ -44,6 +47,8 @@ Narrow-screen pass for the full catalog. Known gaps:
 ---
 
 ## Recently completed
+
+- **Quality pass: module split + backend test suite** — full codebase read-through, then per-commit cleanup: CardView stale `variants[]`→`cars[]` fix; main.rs (3363 lines) split into domain modules (`auth`/`cards`/`images`/`trash`/`identity`/`share`/`suggestions`/`presets`/`theme`/`state`); light card-body validation on PUT/POST (schema-free JSON preserved — unknown fields/sections pass through); `list_cards` N+1 → single grouped query (output verified byte-identical); theme.ts static ui import (never was a cycle); ui↔modal circular imports marked SETTLED (comment + gotchas entry); `.env` gitignored; **29-test suite** covering the startup migration pipeline (`normalize_card`, `migrate_variants_to_cars`, `ensure_standard_sections`, `sync_card_images` branches, end-to-end `normalize_bodies`) against in-memory SQLite. Backend gate is now `cargo test`. 21 finished docs moved to `docs/completed/`. — 2026-07-17 (AAR: `docs/aar-2026-07-17b.md`)
 
 - **Code audit pass 4** — six fixes across compositor, OG Maker, ShareModal, auth: `@input` on content field for live preview; scrim overlap check; `as any` removed from ShareModal; `list_og_presets` auth-gated; `render_glyphs` + `blit_with_transform` extracted (−75 lines); `TextStyle` enum + `OgTextStyle` union replace magic strings. Deferred: circular store import warning (`ui.ts` ↔ `modal.ts`). — 2026-07-16 (commit b3214b2, AAR: `docs/aar-2026-07-16b.md`)
 

@@ -689,8 +689,20 @@ frontend/src/
     [See components/ for full list]
 
 backend/
-  src/main.rs           ← entire backend; ~2900 lines
-  migrations/           ← 0001–0013; append-only
+  src/main.rs           ← thin entry point: config + router (~170 lines)
+  src/state.rs          ← AppState + error helpers
+  src/auth.rs           ← JWT, login, users, adduser CLI
+  src/cards.rs          ← card CRUD, history, seeding, normalize_bodies migration
+  src/images.rs         ← images table sync/inject, upload, naming, migration
+  src/trash.rs          ← orphan scan, trash pipeline, stats
+  src/identity.rs       ← cars registry, liveries, tunes, serials, AI color assess
+  src/share.rs          ← OG share page, card PNG, compositor preview, OG presets
+  src/suggestions.rs    ← public tune suggestions + admin review
+  src/presets.rs        ← tuning presets
+  src/theme.rs          ← site theme
+  src/compositor.rs     ← OG image rendering (fontdue + image)
+  src/testutil.rs       ← in-memory SQLite test pool (cfg(test) only)
+  migrations/           ← 0001–0018; append-only
   seed/
     cards.json          ← seed data loaded on first run
     cars.json           ← FH5 + FH6 car models

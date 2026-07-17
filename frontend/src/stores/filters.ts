@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useCardsStore } from './cards'
 import { useLiveriesStore } from './liveries'
 import type { Card } from '../types'
@@ -66,10 +66,24 @@ export const useFilterStore = defineStore('filters', () => {
     return true
   }
 
+  const hasActiveFilters = computed(() =>
+    favoritesOnly.value
+    || disabledCollections.value.size > 0
+    || activeColor.value !== null
+    || activeTuneTypeName.value !== null
+  )
+
+  function resetFilters() {
+    favoritesOnly.value = false
+    disabledCollections.value = new Set()
+    activeColor.value = null
+    activeTuneTypeName.value = null
+  }
+
   return {
     allExpanded, sectionExpanded, upgradesExpanded,
     favoritesOnly, disabledCollections,
-    activeColor, activeTuneTypeName,
-    toggleAll, setSectionExpanded, toggleCollection, isCardVisible,
+    activeColor, activeTuneTypeName, hasActiveFilters,
+    toggleAll, setSectionExpanded, toggleCollection, isCardVisible, resetFilters,
   }
 })

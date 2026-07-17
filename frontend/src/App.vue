@@ -101,6 +101,13 @@ onBeforeUnmount(() => {
           <CardView :card="card" />
         </CardShell>
       </div>
+      <div v-if="visibleCards.length === 0" class="catalog-empty">
+        <span class="catalog-empty-glyph">⊘</span>
+        <span class="catalog-empty-label">No cards match the current filters</span>
+        <button v-if="filters.hasActiveFilters" class="catalog-empty-clear" @click="filters.resetFilters()">
+          Clear filters
+        </button>
+      </div>
     </template>
   </div>
 
@@ -127,3 +134,42 @@ onBeforeUnmount(() => {
   <ArchiveCardModal />
   <CustomTip />
 </template>
+
+<style scoped>
+.catalog-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 64px 20px;
+  border: 1px dashed var(--panel-edge);
+  color: var(--muted);
+}
+.catalog-empty-glyph {
+  font-size: 26px;
+  opacity: 0.6;
+}
+.catalog-empty-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.catalog-empty-clear {
+  margin-top: 6px;
+  padding: 7px 16px;
+  background: none;
+  border: 1px solid var(--panel-edge);
+  color: var(--fg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.catalog-empty-clear:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+</style>

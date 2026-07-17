@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useModalStore } from '../stores/modal'
+import { useCardsStore } from '../stores/cards'
 import type { CardImage } from '../types'
 
 const modal = useModalStore()
+const store = useCardsStore()
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,7 +44,7 @@ const selected = computed(() => boxes.value.find(b => b.id === selectedId.value)
 
 watch(() => modal.ogMaker, (cfg) => {
   if (!cfg) return
-  boxes.value      = cfg.boxes ? cfg.boxes.map(b => ({ ...b })) : []
+  boxes.value      = cfg.boxes ? cfg.boxes.map(b => ({ ...b, id: (b as any).id ?? crypto.randomUUID() })) : []
   presetName.value = cfg.presetName ?? ''
   photoId.value    = cfg.photoId ?? null
   photos.value     = cfg.photos ?? []
@@ -206,7 +208,7 @@ async function requestPreview() {
 
 function buildConfig() {
   return {
-    photoId: photoId.value,
+    photoId: photoId.value ?? 0,
     logoVisible: false,
     textBoxes: boxes.value.map(({ id: _id, ...b }) => b),
   }
@@ -266,6 +268,17 @@ async function savePreset() {
   }
 }
 
+async function saveToCard() {
+  const cardId = modal.ogMaker?.cardId
+  if (!cardId) return
+  const card = store.byId(cardId)
+  if (!card) return
+  card.shareOverlayConfig = buildConfig()
+  await store.save(cardId)
+  saveMsg.value = 'Saved to card!'
+  setTimeout(() => { saveMsg.value = ''; modal.closeOgMaker() }, 1200)
+}
+
 // ── CSS helpers ──────────────────────────────────────────────────────────────
 
 function boxStyle(box: TextBox) {
@@ -298,6 +311,9 @@ function rotHandleStyle(box: TextBox) {
           <input v-model="presetName" class="ogm-preset-name" placeholder="Preset name…" />
           <button class="ogm-btn ogm-btn--save" :disabled="saving" @click="savePreset">
             {{ saving ? 'Saving…' : 'Save Preset' }}
+          </button>
+          <button v-if="modal.ogMaker?.cardId" class="ogm-btn ogm-btn--card" :disabled="saving" @click="saveToCard">
+            Save to Card
           </button>
           <span v-if="saveMsg" class="ogm-save-msg">{{ saveMsg }}</span>
           <button class="ogm-btn ogm-btn--close" @click="modal.closeOgMaker()">✕</button>
@@ -587,7 +603,8 @@ function rotHandleStyle(box: TextBox) {
   cursor: pointer;
 }
 .ogm-btn:hover { background: var(--panel-edge); }
-.ogm-btn--save { border-color: var(--accent, #e8c84a); color: var(--accent, #e8c84a); }
+.ogm-btn--save  { border-color: var(--accent, #e8c84a); color: var(--accent, #e8c84a); }
+.ogm-btn--card  { border-color: var(--highlight, #e8748a); color: var(--highlight, #e8748a); }
 .ogm-btn--add  { border-color: var(--accent, #e8c84a); color: var(--accent, #e8c84a); }
 .ogm-btn--delete { border-color: var(--highlight, #e8748a); color: var(--highlight, #e8748a); }
 .ogm-btn--close { margin-left: auto; font-size: 1rem; }

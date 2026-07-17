@@ -3,6 +3,7 @@ import { computed, ref, watch, nextTick } from 'vue'
 import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
 import { useUiStore } from '../stores/ui'
+import type { OgConfig } from '../types'
 
 const modal = useModalStore()
 const store = useCardsStore()
@@ -45,12 +46,13 @@ const copied = ref(false)
 const redditTitle = ref('')
 
 watch(() => modal.shareCardId, (id) => {
-  if (!id) return
+  if (!id) { presets.value = []; selectedPresetId.value = null; previewSrc.value = null; return }
   nextTick(() => {
     const nameParts = [card.value?.name, firstCarName.value].filter(Boolean).join(' — ')
     const code = shareCode.value
     redditTitle.value = code ? `${nameParts} | Share code: ${code}` : nameParts
   })
+  fetchPresets()
 })
 
 async function copyLink() {
@@ -66,17 +68,110 @@ function openReddit() {
   window.open(`https://www.reddit.com/submit?url=${url}&title=${title}`, '_blank', 'noopener')
 }
 
-function openOgMaker() {
+// ── OG design section ────────────────────────────────────────────────────────
+
+interface OgPreset { id: number; name: string; config: OgConfig }
+
+const presets          = ref<OgPreset[]>([])
+const selectedPresetId = ref<number | null>(null)
+const previewSrc       = ref<string | null>(null)
+const previewLoading   = ref(false)
+
+const selectedPreset = computed(() =>
+  presets.value.find(p => p.id === selectedPresetId.value) ?? null
+)
+
+const cardOverlayConfig = computed(() => card.value?.shareOverlayConfig ?? null)
+
+async function fetchPresets() {
+  const res = await fetch('/api/og-presets')
+  if (res.ok) presets.value = await res.json()
+}
+
+async function selectPreset(id: number) {
+  selectedPresetId.value = id
+  const preset = presets.value.find(p => p.id === id)
+  if (!preset || !card.value?.images[0]) return
+  await fetchPreview({ ...preset.config, photoId: card.value.images[0].id })
+}
+
+async function fetchPreview(config: OgConfig) {
+  previewLoading.value = true
+  previewSrc.value = null
+  try {
+    const token = localStorage.getItem('auth_token') ?? ''
+    const res = await fetch('/share/preview', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify(config),
+    })
+    if (res.ok) {
+      const blob = await res.blob()
+      previewSrc.value = URL.createObjectURL(blob)
+    }
+  } finally {
+    previewLoading.value = false
+  }
+}
+
+async function usePreset() {
+  const c = card.value
+  const preset = selectedPreset.value
+  if (!c || !preset) return
+  const cfg: OgConfig = { ...preset.config, photoId: c.images[0]?.id ?? preset.config.photoId }
+  c.shareOverlayConfig = cfg
+  await store.save(c.id)
+  selectedPresetId.value = null
+  previewSrc.value = null
+}
+
+async function resetOverlay() {
   const c = card.value
   if (!c) return
-  const leadId = c.images[0]?.id ?? null
+  delete c.shareOverlayConfig
+  await store.save(c.id)
+  previewSrc.value = null
+}
+
+function openOgMakerBlank() {
+  const c = card.value
+  if (!c) return
   modal.openOgMaker({
-    photoId: leadId,
+    photoId: c.images[0]?.id ?? null,
     photos: c.images.filter(img => img.included !== false),
     boxes: [],
-    presetName: '',
+    cardId: c.id,
   })
 }
+
+function openOgMakerWithPreset() {
+  const c = card.value
+  const preset = selectedPreset.value
+  if (!c || !preset) return
+  modal.openOgMaker({
+    photoId: c.images[0]?.id ?? null,
+    photos: c.images.filter(img => img.included !== false),
+    boxes: preset.config.textBoxes.map(b => ({ ...b, id: crypto.randomUUID() })),
+    cardId: c.id,
+    presetName: preset.name,
+  })
+}
+
+function openOgMakerWithCurrent() {
+  const c = card.value
+  if (!c || !c.shareOverlayConfig) return
+  modal.openOgMaker({
+    photoId: c.shareOverlayConfig.photoId,
+    photos: c.images.filter(img => img.included !== false),
+    boxes: c.shareOverlayConfig.textBoxes.map(b => ({ ...b, id: crypto.randomUUID() })),
+    cardId: c.id,
+  })
+}
+
+// Show live preview of current card overlay when ShareModal opens
+watch(cardOverlayConfig, (cfg) => {
+  if (cfg) fetchPreview(cfg)
+}, { immediate: true })
 </script>
 
 <template>
@@ -119,11 +214,49 @@ function openOgMaker() {
           </button>
         </div>
 
-        <div v-if="ui.isEditing" class="share-og-row">
-          <button class="share-og-btn" @click="openOgMaker">
-            <span>🎨</span>
-            <span>Design Share Card</span>
-          </button>
+        <!-- OG design section (edit mode) -->
+        <div v-if="ui.isEditing" class="share-og-section">
+          <div class="share-og-label">Share card design</div>
+
+          <!-- Card already has a saved overlay -->
+          <template v-if="cardOverlayConfig">
+            <div class="share-og-current">
+              <img v-if="previewSrc" :src="previewSrc" class="share-og-preview" />
+              <div v-else-if="previewLoading" class="share-og-preview share-og-preview--loading" />
+            </div>
+            <div class="share-og-actions">
+              <button class="share-og-btn share-og-btn--adjust" @click="openOgMakerWithCurrent">Adjust</button>
+              <button class="share-og-btn share-og-btn--reset" @click="resetOverlay">Reset</button>
+            </div>
+          </template>
+
+          <!-- No overlay yet — show preset picker -->
+          <template v-else>
+            <div v-if="presets.length" class="share-og-presets">
+              <button
+                v-for="p in presets"
+                :key="p.id"
+                class="share-og-preset-chip"
+                :class="{ 'share-og-preset-chip--active': selectedPresetId === p.id }"
+                @click="selectPreset(p.id)"
+              >{{ p.name }}</button>
+            </div>
+            <div v-else class="share-og-empty">No presets saved yet.</div>
+
+            <!-- Preview of selected preset -->
+            <div v-if="selectedPresetId" class="share-og-current">
+              <img v-if="previewSrc" :src="previewSrc" class="share-og-preview" />
+              <div v-else-if="previewLoading" class="share-og-preview share-og-preview--loading" />
+            </div>
+
+            <div class="share-og-actions">
+              <template v-if="selectedPresetId">
+                <button class="share-og-btn share-og-btn--use" @click="usePreset">Use This</button>
+                <button class="share-og-btn share-og-btn--adjust" @click="openOgMakerWithPreset">Adjust</button>
+              </template>
+              <button class="share-og-btn share-og-btn--blank" @click="openOgMakerBlank">Start Blank</button>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -304,26 +437,73 @@ function openOgMaker() {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
-.share-og-row {
+.share-og-section {
   padding: 10px 16px;
   border-top: 1px solid var(--panel-edge);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.share-og-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.share-og-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.share-og-preset-chip {
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--panel-edge);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.share-og-preset-chip:hover { border-color: var(--accent); }
+.share-og-preset-chip--active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+.share-og-empty { font-size: 0.8rem; color: var(--muted); }
+.share-og-current { width: 100%; }
+.share-og-preview {
+  width: 100%;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--panel-edge);
+  display: block;
+}
+.share-og-preview--loading {
+  background: var(--panel-edge);
+  animation: og-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes og-pulse { from { opacity: 0.4 } to { opacity: 0.8 } }
+.share-og-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 .share-og-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 12px;
-  background: transparent;
-  border: 1px dashed var(--panel-edge);
+  padding: 4px 12px;
   border-radius: 4px;
-  color: var(--muted);
-  font-size: 0.8rem;
+  border: 1px solid var(--panel-edge);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.78rem;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
-.share-og-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
+.share-og-btn:hover { border-color: var(--accent); color: var(--accent); }
+.share-og-btn--use    { border-color: var(--accent); color: var(--accent); }
+.share-og-btn--adjust { border-color: var(--highlight); color: var(--highlight); }
+.share-og-btn--reset  { border-color: var(--muted); color: var(--muted); }
+.share-og-btn--blank  { border-color: var(--panel-edge); }
 </style>

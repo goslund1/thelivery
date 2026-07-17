@@ -136,6 +136,20 @@ export interface Tune {
 
 export type Section = TextSection | ForzaRecipeSection
 
+export interface OgTextBox {
+  style: string
+  content: string
+  x: number; y: number; w: number; h: number
+  rotateDeg: number
+  shearX: number
+}
+
+export interface OgConfig {
+  photoId: number
+  logoVisible: boolean
+  textBoxes: OgTextBox[]
+}
+
 export interface Card {
   id: string
   catalogNumber: number
@@ -151,6 +165,7 @@ export interface Card {
   colors?: Record<string, string>
   accentOverride?: string  // CSS color; overrides --accent on this card only
   carId?: string  // FK into the cars registry; null for multi-car/showcase cards
+  shareOverlayConfig?: OgConfig  // saved OG Maker output; drives /share/:id/card.png
 }
 
 export interface Car {

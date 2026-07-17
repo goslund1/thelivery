@@ -1,21 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { Card, CardImage } from '../types'
-
-export interface OgTextBox {
-  id: string
-  style: string
-  content: string
-  x: number; y: number; w: number; h: number
-  rotateDeg: number
-  shearX: number
-}
+import type { Card, CardImage, OgTextBox } from '../types'
 
 export interface OgMakerConfig {
   photoId: number | null
   photos: CardImage[]
-  boxes: OgTextBox[]
+  boxes: OgTextBox[]   // id field added by the modal; stripped before saving
   presetName?: string
+  cardId?: string      // if set, "Save to Card" button appears in the OG Maker
 }
 
 export interface PoolImage {

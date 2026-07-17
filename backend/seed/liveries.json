@@ -1,0 +1,178 @@
+[
+  {
+    "id": 14,
+    "car_id": "fh5-formula-drift-777-chevrolet-corvette",
+    "serial": "FH5-FD777CHV-L001",
+    "name": "Smokin",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Yellow",
+    "color_secondary": "Black",
+    "created_at": "2026-07-06 09:25:02"
+  },
+  {
+    "id": 15,
+    "car_id": "fh5-austin-healey-sprite-mki",
+    "serial": "FH5-07280620-L001",
+    "name": "Smokin",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Black",
+    "color_secondary": "Yellow",
+    "created_at": "2026-07-06 09:25:40"
+  },
+  {
+    "id": 16,
+    "car_id": "fh5-formula-drift-117-599-gtb-fiorano",
+    "serial": "FH5-FD117599-L001",
+    "name": "Smokin",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Red",
+    "color_secondary": "Yellow",
+    "created_at": "2026-07-06 09:26:09"
+  },
+  {
+    "id": 17,
+    "car_id": "fh6-mazda-mx-5-fe",
+    "serial": "FH6-D176E94F-L001",
+    "name": "Lolita",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Black",
+    "color_secondary": "Gold",
+    "created_at": "2026-07-06 09:27:54"
+  },
+  {
+    "id": 18,
+    "car_id": "fh6-mazda-mx-5-fe",
+    "serial": "FH6-D176E94F-L002",
+    "name": "Tune In Tokyo",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Multi",
+    "color_secondary": null,
+    "created_at": "2026-07-06 09:28:56"
+  },
+  {
+    "id": 19,
+    "car_id": "fh6-ford-bronco-r-2020",
+    "serial": "FH6-BRNCR2069-L001",
+    "name": "Photo Safari: Discover Japan",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Black",
+    "color_secondary": "Gold",
+    "created_at": "2026-07-06 09:39:37"
+  },
+  {
+    "id": 20,
+    "car_id": "fh6-formula-drift-34-toyota-supra-mkiv",
+    "serial": "FH6-FD34SPRM-L001",
+    "name": "Violet",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Purple",
+    "color_secondary": "Black",
+    "created_at": "2026-07-06 09:45:58"
+  },
+  {
+    "id": 21,
+    "car_id": "fh5-gmc-vandura-g-1500",
+    "serial": "FH5-41676C31-L001",
+    "name": "A Better A-Team",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Black",
+    "color_secondary": "Red",
+    "created_at": "2026-07-06 09:46:34"
+  },
+  {
+    "id": 22,
+    "car_id": "fh5-gmc-vandura-g-1500",
+    "serial": "FH5-41676C31-L002",
+    "name": "ISLAND HOPPERS",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Orange",
+    "color_secondary": "Yellow",
+    "created_at": "2026-07-06 09:47:08"
+  },
+  {
+    "id": 23,
+    "car_id": "fh5-ariel-nomad",
+    "serial": "FH5-FF8E64BE-L001",
+    "name": "Space Buggy",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Black",
+    "color_secondary": "Blue",
+    "created_at": "2026-07-06 09:47:44"
+  },
+  {
+    "id": 24,
+    "car_id": "fh6-mazda-mx-5-fe",
+    "serial": "FH6-D176E94F-L003",
+    "name": "Faker",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Purple",
+    "color_secondary": "Blue",
+    "created_at": "2026-07-06 09:48:38"
+  },
+  {
+    "id": 25,
+    "car_id": "fh6-mazda-mx-5-fe",
+    "serial": "FH6-D176E94F-L004",
+    "name": "Further Testing",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Silver",
+    "color_secondary": "Black",
+    "created_at": "2026-07-06 09:49:34"
+  },
+  {
+    "id": 26,
+    "car_id": "fh5-formula-drift-777-chevrolet-corvette",
+    "serial": "FH5-FD777CHV-L002",
+    "name": "Smokin (Updated)",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": null,
+    "color_secondary": null,
+    "created_at": "2026-07-06 09:50:24"
+  },
+  {
+    "id": 27,
+    "car_id": "fh5-austin-healey-sprite-mki",
+    "serial": "FH5-07280620-L002",
+    "name": "Smokin (Updated)",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": null,
+    "color_secondary": null,
+    "created_at": "2026-07-06 09:55:56"
+  },
+  {
+    "id": 28,
+    "car_id": "fh5-formula-drift-117-599-gtb-fiorano",
+    "serial": "FH5-FD117599-L002",
+    "name": "Smokin (Updated)",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": null,
+    "color_secondary": null,
+    "created_at": "2026-07-06 09:56:13"
+  },
+  {
+    "id": 29,
+    "car_id": "fh5-abarth-fiat-131",
+    "serial": "FH5-87AC745A-L001",
+    "name": "Sold Out",
+    "is_factory": 0,
+    "share_code": null,
+    "color_primary": "Black",
+    "color_secondary": "Red",
+    "created_at": "2026-07-11 05:26:27"
+  }
+]

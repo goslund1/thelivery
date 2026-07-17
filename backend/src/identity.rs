@@ -123,6 +123,43 @@ pub async fn seed_cars_if_empty(pool: &SqlitePool) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Seed the liveries registry on first run. Rows keep their explicit ids —
+/// seeded card images reference liveries by id (images.livery_id FK), so the
+/// ids must survive the trip through the seed file.
+pub async fn seed_liveries_if_empty(pool: &SqlitePool, seed_path: &str) -> anyhow::Result<()> {
+    let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM liveries")
+        .fetch_one(pool)
+        .await?;
+    if count > 0 {
+        tracing::info!("db already has {count} liveries; skipping livery seed");
+        return Ok(());
+    }
+    let Ok(raw) = std::fs::read_to_string(seed_path) else {
+        tracing::warn!("no liveries seed at {seed_path}; livery registry will be empty");
+        return Ok(());
+    };
+    let liveries: Vec<Value> = serde_json::from_str(&raw)?;
+    for l in &liveries {
+        sqlx::query(
+            "INSERT INTO liveries (id, car_id, serial, name, is_factory, share_code, color_primary, color_secondary, created_at) \
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, datetime('now')))",
+        )
+        .bind(l.get("id").and_then(Value::as_i64))
+        .bind(l.get("car_id").and_then(Value::as_str))
+        .bind(l.get("serial").and_then(Value::as_str))
+        .bind(l.get("name").and_then(Value::as_str))
+        .bind(l.get("is_factory").and_then(Value::as_i64).unwrap_or(0))
+        .bind(l.get("share_code").and_then(Value::as_str))
+        .bind(l.get("color_primary").and_then(Value::as_str))
+        .bind(l.get("color_secondary").and_then(Value::as_str))
+        .bind(l.get("created_at").and_then(Value::as_str))
+        .execute(pool)
+        .await?;
+    }
+    tracing::info!("seeded {} liveries from {seed_path}", liveries.len());
+    Ok(())
+}
+
 // --- AI color assessment ----------------------------------------------------
 
 pub const COLOR_TAXONOMY: &[&str] = &[
@@ -690,4 +727,39 @@ pub async fn delete_tune(
         return Err(err(StatusCode::NOT_FOUND, "tune not found"));
     }
     Ok(Json(json!({ "deleted": id })))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn seed_liveries_preserves_explicit_ids() {
+        let pool = crate::testutil::test_pool().await;
+        // Livery FK target: car row must exist first.
+        upsert_car(&pool, &json!({ "id": "fh5-test-car", "game": "FH5", "make": "Test", "model": "Car" }))
+            .await
+            .unwrap();
+
+        let seed = json!([{
+            "id": 24, "car_id": "fh5-test-car", "serial": "FH5-TEST-L001",
+            "name": "Faker", "is_factory": 0, "share_code": null,
+            "color_primary": "Green", "color_secondary": null,
+            "created_at": "2026-07-06 09:25:02"
+        }]);
+        let path = std::env::temp_dir().join("seed_liveries_test.json");
+        std::fs::write(&path, seed.to_string()).unwrap();
+
+        seed_liveries_if_empty(&pool, path.to_str().unwrap()).await.unwrap();
+
+        let id: i64 = sqlx::query_scalar("SELECT id FROM liveries WHERE serial = 'FH5-TEST-L001'")
+            .fetch_one(&pool).await.unwrap();
+        assert_eq!(id, 24, "seeded livery keeps its explicit id");
+
+        // Second run is a no-op (table non-empty).
+        seed_liveries_if_empty(&pool, path.to_str().unwrap()).await.unwrap();
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM liveries")
+            .fetch_one(&pool).await.unwrap();
+        assert_eq!(count, 1, "reseed on populated table is a no-op");
+    }
 }

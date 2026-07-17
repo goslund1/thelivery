@@ -31,7 +31,24 @@ pub async fn seed_if_empty(pool: &SqlitePool, seed_path: &str) -> anyhow::Result
     };
     let cards: Vec<Value> = serde_json::from_str(&raw)?;
     for c in &cards {
-        upsert(pool, c).await?;
+        // A top-level `deletedAt` marks a soft-deleted (purgatoried) card: seed
+        // it, then restore its deleted_at so it lands in the admin trash rather
+        // than the live catalog. The marker is seed-file-only — strip it from
+        // the stored body.
+        let mut body = c.clone();
+        let deleted_at = body
+            .as_object_mut()
+            .and_then(|o| o.remove("deletedAt"))
+            .and_then(|v| v.as_str().map(String::from));
+        upsert(pool, &body).await?;
+        if let Some(ts) = deleted_at {
+            let id = body.get("id").and_then(Value::as_str).unwrap_or_default();
+            sqlx::query("UPDATE cards SET deleted_at = ? WHERE id = ?")
+                .bind(&ts)
+                .bind(id)
+                .execute(pool)
+                .await?;
+        }
     }
     tracing::info!("seeded {} cards from {seed_path}", cards.len());
     Ok(())
@@ -85,8 +102,12 @@ pub async fn normalize_bodies(pool: &SqlitePool) -> anyhow::Result<()> {
                 .map(|arr| arr.iter().any(|img| img.get("path").is_some()))
                 .unwrap_or(false);
             if has_path_images {
-                if sync_card_images(pool, &card_id, &mut v).await.is_ok() {
-                    changed = true;
+                match sync_card_images(pool, &card_id, &mut v).await {
+                    Ok(()) => changed = true,
+                    // Leave the body un-stripped so paths survive for a retry
+                    // on the next boot, but say so — a silent skip here once
+                    // hid a broken FK for an entire reseed.
+                    Err(e) => tracing::warn!("image sync failed for card {card_id}: {e}"),
                 }
             }
         }
@@ -95,7 +116,15 @@ pub async fn normalize_bodies(pool: &SqlitePool) -> anyhow::Result<()> {
             changed = true;
         }
         if changed {
-            upsert(pool, &v).await?;
+            // Deliberately not upsert(): its ON CONFLICT clause clears
+            // deleted_at (save = undelete), which would resurrect purgatoried
+            // cards during a startup migration pass.
+            sqlx::query("UPDATE cards SET catalog_number = ?, body = ? WHERE id = ?")
+                .bind(v.get("catalogNumber").and_then(Value::as_i64).unwrap_or(0))
+                .bind(v.to_string())
+                .bind(v.get("id").and_then(Value::as_str).unwrap_or_default())
+                .execute(pool)
+                .await?;
             migrated += 1;
         }
     }
@@ -832,5 +861,52 @@ mod tests {
         let body2: String = sqlx::query_scalar("SELECT body FROM cards WHERE id = '3'")
             .fetch_one(&pool).await.unwrap();
         assert_eq!(body, body2, "normalize_bodies is idempotent");
+    }
+
+    // ── seed_if_empty: deletedAt marker ─────────────────────────────────────
+
+    #[tokio::test]
+    async fn seed_honors_deleted_at_marker() {
+        let pool = crate::testutil::test_pool().await;
+
+        let mut purgatoried = valid_card();
+        purgatoried["id"] = json!("8");
+        purgatoried["catalogNumber"] = json!(8);
+        purgatoried["deletedAt"] = json!("2026-07-17 12:55:29");
+        // Path image: forces normalize_bodies to sync + rewrite this card, the
+        // path that once resurrected purgatoried cards via upsert().
+        purgatoried["images"] = json!([{ "path": "/uploads/purg.jpg", "order": 0 }]);
+        let seed = json!([valid_card(), purgatoried]);
+        let path = std::env::temp_dir().join("seed_deleted_at_test.json");
+        std::fs::write(&path, seed.to_string()).unwrap();
+
+        seed_if_empty(&pool, path.to_str().unwrap()).await.unwrap();
+
+        let active: Option<String> = sqlx::query_scalar("SELECT deleted_at FROM cards WHERE id = '7'")
+            .fetch_one(&pool).await.unwrap();
+        assert_eq!(active, None, "unmarked card seeds as live");
+        let deleted: Option<String> = sqlx::query_scalar("SELECT deleted_at FROM cards WHERE id = '8'")
+            .fetch_one(&pool).await.unwrap();
+        assert_eq!(deleted.as_deref(), Some("2026-07-17 12:55:29"), "marker restores deleted_at");
+        let body: String = sqlx::query_scalar("SELECT body FROM cards WHERE id = '8'")
+            .fetch_one(&pool).await.unwrap();
+        let v: Value = serde_json::from_str(&body).unwrap();
+        assert!(v.get("deletedAt").is_none(), "marker is stripped from the stored body");
+
+        // Second run must be a no-op (table non-empty → seed skipped).
+        seed_if_empty(&pool, path.to_str().unwrap()).await.unwrap();
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM cards")
+            .fetch_one(&pool).await.unwrap();
+        assert_eq!(count, 2, "reseed on populated db is a no-op");
+
+        // The startup migration pass must not resurrect purgatoried cards
+        // when it rewrites their bodies (image sync strips paths).
+        normalize_bodies(&pool).await.unwrap();
+        let deleted: Option<String> = sqlx::query_scalar("SELECT deleted_at FROM cards WHERE id = '8'")
+            .fetch_one(&pool).await.unwrap();
+        assert_eq!(deleted.as_deref(), Some("2026-07-17 12:55:29"), "normalize preserves deleted_at");
+        let synced: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM images WHERE card_id = '8'")
+            .fetch_one(&pool).await.unwrap();
+        assert_eq!(synced, 1, "purgatoried card's images still sync to the images table");
     }
 }

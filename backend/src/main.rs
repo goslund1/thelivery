@@ -84,6 +84,9 @@ async fn main() -> anyhow::Result<()> {
     auth::seed_users_if_empty(&pool, "seed/users.json").await?;
     theme::seed_theme_if_empty(&pool).await?;
     identity::seed_cars_if_empty(&pool).await?;
+    // Must run before normalize_bodies: seeded card images reference liveries
+    // by id, and the images.livery_id FK needs those rows to exist.
+    identity::seed_liveries_if_empty(&pool, "seed/liveries.json").await?;
     cards::normalize_bodies(&pool).await?;
 
     let state = AppState {

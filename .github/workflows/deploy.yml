@@ -59,11 +59,19 @@ jobs:
 
       # --- Assemble the deploy bundle -------------------------------------
       - name: Assemble bundle
+        env:
+          USERS_SEED_JSON: ${{ secrets.USERS_SEED_JSON }}
         run: |
           mkdir -p bundle/seed bundle/static bundle/seed-uploads
           cp "backend/target/$TARGET/release/livery-backend" bundle/
           cp -r frontend/dist/. bundle/static/
           cp backend/seed/cards.json bundle/seed/
+          cp backend/seed/cars.json bundle/seed/
+          cp backend/seed/liveries.json bundle/seed/
+          # users.json is gitignored (password hash) — injected from a secret.
+          if [ -n "$USERS_SEED_JSON" ]; then
+            printf '%s' "$USERS_SEED_JSON" > bundle/seed/users.json
+          fi
           cp -r backend/uploads/. bundle/seed-uploads/
           cp deploy/thelivery.service bundle/
           cp deploy/rollback.sh bundle/

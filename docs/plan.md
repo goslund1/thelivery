@@ -6,28 +6,16 @@ Living to-do file for thelivery. Update this when items are started, completed, 
 
 ## Active — ordered by priority
 
-### 1. Mobile layout
+### 1. Chrome shakedown — live site
+End-to-end pass on https://thelivery.silverleaf.services in a real browser. Check view mode, edit mode, sharing, OG Maker, photo manager, CarTabs/TuneTabs, and theme switching. Log anything broken or visually off.
+
+---
+
+### 2. Mobile layout
 Narrow-screen pass for the full catalog. Known gaps:
 - Theme builder flyout — doesn't fit on small screens
 - General card layout on narrow viewports
 - No blocking dependencies remaining
-
----
-
-### 2. AI low-balance alert — discuss and plan
-Before the catalog scales up and image imports become frequent, we need a proactive warning when Anthropic credit is running low — not just a toast when it's already gone.
-
-**Questions to answer before building:**
-- Does the Anthropic API expose a balance or usage endpoint queryable with an API key? If yes, the backend can poll it on a schedule and fire an alert at a threshold. If no, the only trigger is catching a 429/quota error in the assess endpoint.
-- What's the notification target? Options: email (needs SMTP or a mail API), push (needs a webhook service like Pushover or ntfy), or both via a `NOTIFY_WEBHOOK` env var the backend POSTs to.
-- What threshold triggers the alert — a fixed dollar amount, a percentage of last top-up, or just "first time we hit a 429"?
-
-**Rough shape once answers are settled:**
-- `NOTIFY_WEBHOOK` env var in the systemd unit
-- Backend fires a POST on quota error AND (if balance API exists) on a scheduled low-balance check
-- No frontend changes needed
-
-See Maintenance → AI billing notification for context.
 
 ---
 
@@ -41,10 +29,9 @@ See Maintenance → AI billing notification for context.
 - Cars→Tunes hierarchy refactor is complete (migration 0017, normalize_bodies step). Data model is now stable.
 - Ready for a backfill pass via EditCardModal when content work resumes.
 
-### AI billing notification (planned, lower priority)
-- See active item 3 for the discussion and planning work needed before this gets built.
-- When `assess-color` hits a 429 or quota error, the toast already surfaces it in-app. What's missing is a *proactive* low-balance alert before hitting zero.
-- Implementation shape is roughly settled (NOTIFY_WEBHOOK env var, POST on quota error + optional scheduled balance check) but key questions remain — see active item 3.
+### AI billing notification (deferred — wait until credits actually run out)
+- When `assess-color` hits a 429 or quota error, the toast already surfaces it in-app. That's enough for now.
+- If a proactive alert becomes needed: `NOTIFY_WEBHOOK` env var in the systemd unit; backend POSTs on quota error; check if Anthropic API exposes a balance endpoint to poll. No frontend changes needed.
 
 ### Deferred
 - **`car_colors`** — factory *stock* color options per car model (e.g. "this Corvette comes in Arctic White, Rapid Blue..."). Requires scraping Forza wikis. Not to be confused with `primary_color`/`secondary_color` on the `liveries` table, which is the AI livery color assessment already wired into the import flow. No ETA on car_colors.

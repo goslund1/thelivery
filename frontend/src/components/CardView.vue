@@ -78,6 +78,8 @@ function onSetupCarTabs(sectionKey: string) {
 // Active car ID for gallery filtering. Set by RecipeSection when a variant tab is selected.
 // Null = no filter (single-car cards or no tab selection yet).
 const activeCarId = ref<string | null>(null)
+// Active tune's share code — mirrors the active car tab; null falls back to card.liveryShareCode.
+const activeShareCode = ref<string | null>(null)
 
 // Ref to RecipeSection so we can call addVariantWithLookup when the interrupt fires.
 type RecipeSectionInstance = InstanceType<typeof RecipeSection>
@@ -93,7 +95,7 @@ watch(() => ui.pendingMultiCarTrigger, (trigger) => {
 
 <template>
   <div class="card" :id="`card-${card.id}`" :class="{ 'legend-card': card.isLegend }" :data-collections="card.collections.join(',')" :style="card.accentOverride ? { '--accent': card.accentOverride } : undefined">
-    <CardMeta :card="card" />
+    <CardMeta :card="card" :active-share-code="activeShareCode" />
     <Gallery :card="card" :active-car-id="activeCarId" />
     <TagCloud :card="card" :recipe-key="recipeKey" @build-it="onBuildIt" />
 
@@ -127,6 +129,7 @@ watch(() => ui.pendingMultiCarTrigger, (trigger) => {
         @update:recipe="updated => Object.assign(section, updated)"
         @update:car-id="id => { cardsStore.setCarId(card.id, id); ui.markCardDirty(card.id) }"
         @update:active-car-id="id => { activeCarId = id }"
+        @update:active-share-code="code => { activeShareCode = code }"
       />
     </CollapsibleSection>
 

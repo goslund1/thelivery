@@ -30,6 +30,7 @@ const emit = defineEmits<{
   'update:recipe': [recipe: ForzaRecipeSection]
   'update:carId': [id: string | null]
   'update:activeCarId': [carId: string | null]
+  'update:activeShareCode': [code: string | null]
 }>()
 const ui = useUiStore()
 const isEditing = computed(() => ui.isEditing || !!props.forceEdit)
@@ -102,6 +103,14 @@ const hasTunes   = computed(() => (activeCar.value?.tunes.length ?? 0) >= 2)
 
 const activeCarIndex  = ref(0)
 const activeTuneIndex = ref(0)
+
+// Emit the active tune's share code so CardView can surface it near the card title.
+// Only fires when in multi-car mode; null collapses CardMeta back to the livery code.
+const activeTuneShareCode = computed(() => {
+  if (!hasCars.value) return null
+  return local.cars?.[activeCarIndex.value]?.tunes[activeTuneIndex.value]?.shareCode || null
+})
+watch(activeTuneShareCode, code => emit('update:activeShareCode', code), { immediate: true })
 
 function applyVariant(carIdx: number, tuneIdx = activeTuneIndex.value) {
   const tune = local.cars?.[carIdx]?.tunes[tuneIdx]

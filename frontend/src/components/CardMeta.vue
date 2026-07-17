@@ -10,7 +10,7 @@ import SubtitleEditor from './SubtitleEditor.vue'
 import { refreshTip } from '../composables/tooltip'
 import { formatShareCode } from '../utils/shareCode'
 
-const props = defineProps<{ card: Card }>()
+const props = defineProps<{ card: Card; activeShareCode?: string | null }>()
 const store = useCardsStore()
 const ui = useUiStore()
 const modal = useModalStore()
@@ -64,7 +64,7 @@ function setAccent(color: string | undefined) {
       </p>
       <EditableText v-if="ui.isEditing" tag="h2" class="card-title" v-model="card.name" />
       <h2 v-else class="card-title card-title--shareable" v-tip-up="'Click for sharing options'" @click="modal.openShare(card.id)">{{ card.name }}</h2>
-      <div v-if="ui.isEditing || card.liveryShareCode" class="plate livery-code-plate">
+      <div v-if="ui.isEditing || card.liveryShareCode || activeShareCode" class="plate livery-code-plate">
         SHARE CODE:
         <input
           v-if="ui.isEditing"
@@ -75,7 +75,7 @@ function setAccent(color: string | undefined) {
           maxlength="11"
           spellcheck="false"
         />
-        <b v-else>{{ card.liveryShareCode || '—' }}</b>
+        <b v-else>{{ activeShareCode || card.liveryShareCode || '—' }}</b>
       </div>
       <SubtitleEditor v-model="card.subtitle" />
       <div v-if="ui.isEditing" class="accent-picker">

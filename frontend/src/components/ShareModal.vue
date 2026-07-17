@@ -2,13 +2,11 @@
 import { computed, ref, watch, nextTick } from 'vue'
 import { useModalStore } from '../stores/modal'
 import { useCardsStore } from '../stores/cards'
-import { useUiStore } from '../stores/ui'
 import { useAuthStore } from '../stores/auth'
 import type { OgConfig } from '../types'
 
 const modal = useModalStore()
 const store = useCardsStore()
-const ui    = useUiStore()
 const auth  = useAuthStore()
 
 const card = computed(() => {
@@ -33,7 +31,8 @@ const firstCarName = computed(() => {
 
 const shareCode = computed(() => {
   const r = recipe.value
-  return r && 'shareCode' in r ? ((r as any).shareCode ?? '') : ''
+  if (!r) return ''
+  return r.cars?.[0]?.tunes?.[0]?.shareCode || r.shareCode || ''
 })
 
 const shareUrl = computed(() => {
@@ -47,8 +46,12 @@ const shareUrl = computed(() => {
 const copied = ref(false)
 const redditTitle = ref('')
 
+function revokePreview() {
+  if (previewSrc.value) { URL.revokeObjectURL(previewSrc.value); previewSrc.value = null }
+}
+
 watch(() => modal.shareCardId, (id) => {
-  if (!id) { presets.value = []; selectedPresetId.value = null; previewSrc.value = null; return }
+  if (!id) { presets.value = []; selectedPresetId.value = null; revokePreview(); return }
   nextTick(() => {
     const nameParts = [card.value?.name, firstCarName.value].filter(Boolean).join(' — ')
     const code = shareCode.value
@@ -99,7 +102,7 @@ async function selectPreset(id: number) {
 
 async function fetchPreview(config: OgConfig) {
   previewLoading.value = true
-  previewSrc.value = null
+  revokePreview()
   try {
     const token = localStorage.getItem('auth_token') ?? ''
     const res = await fetch('/share/preview', {

@@ -50,13 +50,17 @@ watch(() => modal.ogMaker, (cfg) => {
   photoId.value     = cfg.photoId ?? null
   photos.value      = cfg.photos ?? []
   logoVisible.value = false
-  previewSrc.value  = null
+  if (previewSrc.value) { URL.revokeObjectURL(previewSrc.value); previewSrc.value = null }
   selectedId.value  = null
   if (photoId.value !== null) requestPreview()
 }, { immediate: true })
 
 onMounted(() => document.addEventListener('pointermove', onPointerMove))
-onBeforeUnmount(() => document.removeEventListener('pointermove', onPointerMove))
+onBeforeUnmount(() => {
+  document.removeEventListener('pointermove', onPointerMove)
+  if (previewTimer) clearTimeout(previewTimer)
+  if (previewSrc.value) URL.revokeObjectURL(previewSrc.value)
+})
 
 // ── Drag state (non-reactive mutable) ───────────────────────────────────────
 

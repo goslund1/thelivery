@@ -24,7 +24,8 @@ Narrow-screen pass for the full catalog. Known gaps:
 ### Live data gaps (from session-36 shakedown)
 - ~~Color filters match zero cards on live~~ **RESOLVED** — the live data was fine (11/11 card-referenced liveries had colors); the real bug was the liveries store never loading outside edit flows, so the filter's liveryId→color lookup was empty for fresh visitors. Fixed by `loadAll()` on Filters mount (commit a70cce3, verified live).
 - ~~Set JWT_SECRET on the droplet~~ **RESOLVED** — was confirmed missing (every deploy rotated the fallback secret and logged all users out; bit us twice on 2026-07-17). Geoff added it to `/opt/thelivery/secrets.env` same day; verified by a token surviving a subsequent deploy restart.
-- **Orphan livery rows** — ids 26–28 "Smokin (Updated)" (plus 24 "Faker", 29 "Sold Out") have no images tagged and no card references. Harmless, but candidates for cleanup or re-linking if they were meant to replace the originals.
+- ~~Orphan livery rows~~ **CLEANED 2026-07-17** — ids 26–28 "Smokin (Updated)" deleted (no images, no live or purgatory card references). Kept: 24 "Faker" (belongs to purgatory card id 11 — needed for restore) and 29 "Sold Out" (assessed colors, provenance unclear).
+- **Test the admin delete/purge flow on the purgatory cards** — "Rally Base Car Test" (id 22) and "Faker" (id 11) are being kept in purgatory specifically as test subjects for a later admin-delete/restore/purge shakedown.
 - **Seed-data nits** — Smokin engine spec reads `DIRECT_TEST`; Lolita tune name is still the placeholder with share code TBD.
 
 ### Pre-launch checklist

@@ -518,6 +518,18 @@ pub async fn create_card(
     if card_id.is_empty() {
         return Err(err(StatusCode::BAD_REQUEST, "body.id is required"));
     }
+    // POST must never overwrite: upsert()'s ON CONFLICT clause replaces the
+    // body AND clears deleted_at, so an id collision with a purgatoried card
+    // (invisible to the client's max-catalog id generation) would silently
+    // resurrect-and-overwrite it. Existing ids — live or purgatoried — get 409.
+    let exists: Option<i64> = sqlx::query_scalar("SELECT 1 FROM cards WHERE id = ?")
+        .bind(&card_id)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    if exists.is_some() {
+        return Err(err(StatusCode::CONFLICT, "card id already exists"));
+    }
     validate_card_body(&body).map_err(|e| err(StatusCode::UNPROCESSABLE_ENTITY, e))?;
     sync_card_images(&st.pool, &card_id, &mut body)
         .await
@@ -535,11 +547,15 @@ pub async fn delete_card(
     auth: AuthUser,
     Path(id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
-    sqlx::query("UPDATE cards SET deleted_at = datetime('now') WHERE id = ?")
+    let affected = sqlx::query("UPDATE cards SET deleted_at = datetime('now') WHERE id = ? AND deleted_at IS NULL")
         .bind(&id)
         .execute(&st.pool)
         .await
-        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .rows_affected();
+    if affected == 0 {
+        return Err(err(StatusCode::NOT_FOUND, "card not found"));
+    }
     // Soft delete — reversible from the Admin tab's purgatory (deleted-cards restore).
     crate::audit::record(&st.pool, &auth.username, "card.delete", "card", Some(&id), None).await;
     Ok(StatusCode::NO_CONTENT)
@@ -872,6 +888,28 @@ mod tests {
         let body2: String = sqlx::query_scalar("SELECT body FROM cards WHERE id = '3'")
             .fetch_one(&pool).await.unwrap();
         assert_eq!(body, body2, "normalize_bodies is idempotent");
+    }
+
+    // ── create_card: no silent overwrite ────────────────────────────────────
+
+    #[tokio::test]
+    async fn create_card_refuses_existing_ids_even_purgatoried() {
+        let pool = crate::testutil::test_pool().await;
+        let card = valid_card();
+        upsert(&pool, &card).await.unwrap();
+        // Soft-delete it — invisible to clients, but the id is still taken.
+        sqlx::query("UPDATE cards SET deleted_at = datetime('now') WHERE id = ?")
+            .bind(card.get("id").and_then(Value::as_str).unwrap())
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        let exists: Option<i64> = sqlx::query_scalar("SELECT 1 FROM cards WHERE id = ?")
+            .bind(card.get("id").and_then(Value::as_str).unwrap())
+            .fetch_optional(&pool)
+            .await
+            .unwrap();
+        assert!(exists.is_some(), "purgatoried card still owns its id — create_card must 409, not upsert");
     }
 
     // ── seed_if_empty: deletedAt marker ─────────────────────────────────────

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Card, TextSection, UpgradeCategory, AdjustmentRow } from '../types'
-import { api } from '../api'
+import { api, ApiError } from '../api'
 import { impliedUpgrades, applyImpliedUpgrades } from '../constants/tuning'
 import { errMsg } from '../utils/errMsg'
 
@@ -21,6 +21,23 @@ export const useCardsStore = defineStore('cards', () => {
 
   function byId(id: string) {
     return cards.value.find((c) => c.id === id)
+  }
+
+  // Create with id-collision retry. Numeric ids come from max(catalogNumber)+1
+  // over the *visible* cards, but purgatoried (soft-deleted) cards still own
+  // their ids — the backend 409s instead of overwriting them, and we bump to
+  // the next free number.
+  async function createWithFreshId(card: Card): Promise<Card> {
+    let num = card.catalogNumber
+    for (let attempt = 0; attempt < 20; attempt++) {
+      try {
+        return await api.createCard({ ...card, id: String(num), catalogNumber: num })
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 409) { num++; continue }
+        throw e
+      }
+    }
+    throw new Error('could not find a free card id')
   }
 
   function ensureSections(card: Card): Card {
@@ -83,7 +100,7 @@ export const useCardsStore = defineStore('cards', () => {
       ],
       carId: fields.carId,
     }
-    const created = await api.createCard(newCard)
+    const created = await createWithFreshId(newCard)
     cards.value.push(created)
     return created
   }
@@ -106,7 +123,7 @@ export const useCardsStore = defineStore('cards', () => {
         return { ...s, shareCode: '', adjustments: overrides.adjustments }
       }),
     }
-    const created = await api.createCard(cloned)
+    const created = await createWithFreshId(cloned)
     cards.value.push(created)
     return created
   }

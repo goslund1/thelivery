@@ -13,6 +13,10 @@ pub struct AppState {
     pub seed_path: PathBuf,
     pub db_path: PathBuf,
     pub jwt_secret: Arc<Vec<u8>>,
+    /// Canonical base URL e.g. "https://thelivery.silverleaf.services".
+    /// Set via SITE_URL env var; used for sitemap, robots.txt, and attribution.
+    /// Falls back to request Host header when empty.
+    pub site_url: String,
 }
 
 pub type ApiError = (StatusCode, String);

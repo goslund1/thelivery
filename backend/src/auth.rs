@@ -452,6 +452,7 @@ mod tests {
             seed_path: std::env::temp_dir().join("unused.json"),
             db_path: std::env::temp_dir().join("unused.db"),
             jwt_secret: Arc::new(b"test-secret".to_vec()),
+            site_url: String::new(),
         };
         let auth = AuthUser { username: "geoff".into(), role: "editor".into() };
         change_password(

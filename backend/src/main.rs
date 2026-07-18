@@ -111,12 +111,15 @@ async fn main() -> anyhow::Result<()> {
     identity::seed_liveries_if_empty(&pool, "seed/liveries.json").await?;
     cards::normalize_bodies(&pool).await?;
 
+    let site_url = std::env::var("SITE_URL").unwrap_or_default();
+
     let state = AppState {
         pool,
         uploads_dir: uploads_dir.clone(),
         seed_path: PathBuf::from(&seed_path),
         db_path: PathBuf::from(&db_path),
         jwt_secret: auth::load_jwt_secret(),
+        site_url,
     };
 
     // Serve the built SPA: real files (index.html at "/", hashed assets) are

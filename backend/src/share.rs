@@ -235,6 +235,17 @@ pub async fn share_preview(
 
 // ── Crawlers ──────────────────────────────────────────────────────────────────
 
+/// Resolve the canonical base URL. Prefers the configured SITE_URL (no trailing
+/// slash); falls back to deriving scheme+host from the request Host header.
+fn resolve_base(site_url: &str, host: &str) -> String {
+    if !site_url.is_empty() {
+        site_url.trim_end_matches('/').to_string()
+    } else {
+        let scheme = if host.starts_with("localhost") || host.starts_with("127.") { "http" } else { "https" };
+        format!("{scheme}://{host}")
+    }
+}
+
 /// Produce a URL slug matching the frontend's slugify: lowercase, collapse
 /// non-alphanumeric runs to a single hyphen, strip leading/trailing hyphens.
 fn url_slug(s: &str) -> String {
@@ -255,8 +266,11 @@ fn url_slug(s: &str) -> String {
 
 /// `GET /robots.txt` — allow standard search crawlers; block known AI/scraper
 /// bots that harvest training data without attribution.
-pub async fn robots_txt(Host(host): Host) -> axum::response::Response<String> {
-    let scheme = if host.starts_with("localhost") || host.starts_with("127.") { "http" } else { "https" };
+pub async fn robots_txt(
+    State(st): State<AppState>,
+    Host(host): Host,
+) -> axum::response::Response<String> {
+    let base = resolve_base(&st.site_url, &host);
     let body = format!(
         "User-agent: *\nAllow: /\n\n\
          User-agent: GPTBot\nDisallow: /\n\n\
@@ -267,7 +281,7 @@ pub async fn robots_txt(Host(host): Host) -> axum::response::Response<String> {
          User-agent: ClaudeBot\nDisallow: /\n\n\
          User-agent: Bytespider\nDisallow: /\n\n\
          User-agent: Omgilibot\nDisallow: /\n\n\
-         Sitemap: {scheme}://{host}/sitemap.xml\n"
+         Sitemap: {base}/sitemap.xml\n"
     );
     axum::response::Response::builder()
         .status(StatusCode::OK)
@@ -283,8 +297,7 @@ pub async fn sitemap_xml(
     State(st): State<AppState>,
     Host(host): Host,
 ) -> axum::response::Response<String> {
-    let scheme = if host.starts_with("localhost") || host.starts_with("127.") { "http" } else { "https" };
-    let base = format!("{scheme}://{host}");
+    let base = resolve_base(&st.site_url, &host);
 
     let rows = sqlx::query("SELECT id, body FROM cards WHERE deleted_at IS NULL ORDER BY catalog_number")
         .fetch_all(&st.pool)

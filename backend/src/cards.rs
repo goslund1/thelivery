@@ -363,7 +363,7 @@ pub fn validate_card_body(body: &Value) -> Result<(), String> {
     Ok(())
 }
 
-pub async fn list_cards(State(st): State<AppState>) -> Result<Json<Vec<Value>>, ApiError> {
+pub async fn list_cards(State(st): State<AppState>) -> Result<Json<Value>, ApiError> {
     let rows = sqlx::query("SELECT body FROM cards WHERE deleted_at IS NULL ORDER BY catalog_number")
         .fetch_all(&st.pool)
         .await
@@ -372,7 +372,7 @@ pub async fn list_cards(State(st): State<AppState>) -> Result<Json<Vec<Value>>, 
     // Same fallback semantics as inject_images: cards with no DB image rows
     // keep their body images as-is (unmigrated card).
     let images_by_card = fetch_all_images_grouped(&st.pool).await;
-    let mut out = Vec::new();
+    let mut cards = Vec::new();
     for row in &rows {
         if let Ok(mut v) = serde_json::from_str::<Value>(row.get::<String, _>("body").as_str()) {
             if let Some(imgs) = v.get("id").and_then(Value::as_str).and_then(|id| images_by_card.get(id)) {
@@ -380,10 +380,18 @@ pub async fn list_cards(State(st): State<AppState>) -> Result<Json<Vec<Value>>, 
                     v["images"] = json!(imgs);
                 }
             }
-            out.push(v);
+            cards.push(v);
         }
     }
-    Ok(Json(out))
+    let url = if st.site_url.is_empty() { "https://thelivery.silverleaf.services".to_string() } else { st.site_url.clone() };
+    Ok(Json(json!({
+        "cards": cards,
+        "attribution": {
+            "author":  "JasonHunt3r @ The Livery",
+            "license": "CC BY-NC-ND 4.0",
+            "url":     url
+        }
+    })))
 }
 
 pub async fn get_card(
@@ -907,6 +915,7 @@ mod tests {
             seed_path: std::env::temp_dir().join("unused.json"),
             db_path: std::env::temp_dir().join("unused.db"),
             jwt_secret: std::sync::Arc::new(b"test-secret".to_vec()),
+            site_url: String::new(),
         }
     }
 

@@ -18,6 +18,7 @@ Environment=DATABASE_PATH=/opt/thelivery/data.db
 Environment=UPLOADS_DIR=/opt/thelivery/uploads
 Environment=SEED_PATH=/opt/thelivery/seed/cards.json
 Environment=FRONTEND_DIR=/opt/thelivery/releases/current/static
+Environment=SITE_URL=https://thelivery.silverleaf.services
 ExecStart=/opt/thelivery/releases/current/livery-backend
 Restart=on-failure
 RestartSec=3

@@ -30,7 +30,7 @@ export const api = {
       body: JSON.stringify({ username, password }),
     }).then(json<{ token: string; username: string; role: 'admin' | 'editor'; mustChangePassword: boolean }>),
 
-  listCards: () => fetch('/api/cards').then(json<Card[]>),
+  listCards: () => fetch('/api/cards').then(json<{ cards: Card[]; attribution: unknown }>).then(d => d.cards),
 
   getCard: (id: string) => fetch(`/api/cards/${id}`).then(json<Card>),
 

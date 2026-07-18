@@ -141,6 +141,12 @@ pub async fn submit_suggestion(
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
+    // Piggyback pruning — rows older than the widest rate window (1 hour)
+    // can never affect a limit check again. Mirrors login_rate_log.
+    let _ = sqlx::query("DELETE FROM suggestion_rate_log WHERE submitted_at < datetime('now', '-1 day')")
+        .execute(&st.pool)
+        .await;
+
     // Warn if they've just hit the burst threshold (this submission was accepted).
     let slowdown = count_burst + 1 >= SUGGESTION_BURST_WARN;
     Ok(Json(json!({ "ok": true, "slowdown": slowdown })))

@@ -165,6 +165,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/deleted-cards/:id/restore", post(cards::admin_restore_card))
         .route("/api/admin/deleted-cards/:id", delete(cards::admin_purge_card))
         .route("/api/admin/audit", get(audit::admin_list_audit))
+        .route("/robots.txt", get(share::robots_txt))
+        .route("/sitemap.xml", get(share::sitemap_xml))
         .route("/share/:id/card.png", get(share::share_card_png))
         .route("/share/preview", post(share::share_preview))
         .route("/share/:id", get(share::share_card))

@@ -233,6 +233,115 @@ pub async fn share_preview(
     }
 }
 
+// ── Crawlers ──────────────────────────────────────────────────────────────────
+
+/// Produce a URL slug matching the frontend's slugify: lowercase, collapse
+/// non-alphanumeric runs to a single hyphen, strip leading/trailing hyphens.
+fn url_slug(s: &str) -> String {
+    let mut out = String::new();
+    let mut last_dash = true;
+    for ch in s.chars() {
+        if ch.is_alphanumeric() {
+            out.push(ch.to_ascii_lowercase());
+            last_dash = false;
+        } else if !last_dash {
+            out.push('-');
+            last_dash = true;
+        }
+    }
+    if out.ends_with('-') { out.pop(); }
+    out
+}
+
+/// `GET /robots.txt` — allow standard search crawlers; block known AI/scraper
+/// bots that harvest training data without attribution.
+pub async fn robots_txt(Host(host): Host) -> axum::response::Response<String> {
+    let scheme = if host.starts_with("localhost") || host.starts_with("127.") { "http" } else { "https" };
+    let body = format!(
+        "User-agent: *\nAllow: /\n\n\
+         User-agent: GPTBot\nDisallow: /\n\n\
+         User-agent: ChatGPT-User\nDisallow: /\n\n\
+         User-agent: CCBot\nDisallow: /\n\n\
+         User-agent: Google-Extended\nDisallow: /\n\n\
+         User-agent: anthropic-ai\nDisallow: /\n\n\
+         User-agent: ClaudeBot\nDisallow: /\n\n\
+         User-agent: Bytespider\nDisallow: /\n\n\
+         User-agent: Omgilibot\nDisallow: /\n\n\
+         Sitemap: {scheme}://{host}/sitemap.xml\n"
+    );
+    axum::response::Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", "text/plain; charset=utf-8")
+        .body(body)
+        .unwrap()
+}
+
+/// `GET /sitemap.xml` — dynamically generated from all non-deleted cards.
+/// Each card gets a `/share/{id}/{name-slug}` entry. Slugs match the frontend's
+/// ShareModal format so links are human-readable and consistent.
+pub async fn sitemap_xml(
+    State(st): State<AppState>,
+    Host(host): Host,
+) -> axum::response::Response<String> {
+    let scheme = if host.starts_with("localhost") || host.starts_with("127.") { "http" } else { "https" };
+    let base = format!("{scheme}://{host}");
+
+    let rows = sqlx::query("SELECT id, body FROM cards WHERE deleted_at IS NULL ORDER BY catalog_number")
+        .fetch_all(&st.pool)
+        .await
+        .unwrap_or_default();
+
+    let mut entries = format!(
+        "  <url>\n    <loc>{base}/</loc>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>\n"
+    );
+
+    for row in &rows {
+        let id: String = row.get("id");
+        let body: Value = serde_json::from_str(row.get::<String, _>("body").as_str())
+            .unwrap_or(Value::Null);
+
+        let card_name = body.get("name").and_then(Value::as_str).unwrap_or("");
+        let first_car_name = body.get("sections")
+            .and_then(Value::as_array)
+            .and_then(|secs| secs.iter().find(|s| s.get("type").and_then(Value::as_str) == Some("forza_recipe")))
+            .and_then(|recipe| recipe.get("cars"))
+            .and_then(Value::as_array)
+            .and_then(|cars| cars.first())
+            .and_then(|car| car.get("carName"))
+            .and_then(Value::as_str)
+            .unwrap_or("");
+
+        let parts: Vec<String> = [url_slug(card_name), url_slug(first_car_name)]
+            .into_iter()
+            .filter(|s| !s.is_empty())
+            .collect();
+        let slug = parts.join("-");
+
+        let loc = if slug.is_empty() {
+            format!("{base}/share/{id}")
+        } else {
+            format!("{base}/share/{id}/{slug}")
+        };
+
+        entries.push_str(&format!(
+            "  <url>\n    <loc>{loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n"
+        ));
+    }
+
+    let xml = format!(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
+         <urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n\
+         {entries}</urlset>"
+    );
+
+    axum::response::Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", "application/xml; charset=utf-8")
+        .header("cache-control", "public, max-age=3600")
+        .body(xml)
+        .unwrap()
+}
+
 // ── OG Presets ────────────────────────────────────────────────────────────────
 
 pub async fn list_og_presets(

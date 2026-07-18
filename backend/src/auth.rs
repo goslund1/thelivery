@@ -168,6 +168,7 @@ pub async fn login(
         .fetch_optional(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let user_known = row.is_some();
     let verified = row.and_then(|r| {
         let role: String = r.get("role");
         let must_change: bool = r.get::<i64, _>("must_change_password") != 0;
@@ -179,8 +180,20 @@ pub async fn login(
         })
     });
     let Some((role, must_change)) = verified else {
+        if !user_known {
+            // Burn the same Argon2 work an unknown username skipped, so
+            // response timing can't distinguish "no such user" from
+            // "wrong password" (username enumeration).
+            let salt = SaltString::generate(&mut OsRng);
+            let _ = Argon2::default().hash_password(req.password.as_bytes(), &salt);
+        }
         let _ = sqlx::query("INSERT INTO login_rate_log (ip_hash) VALUES (?)")
             .bind(&ip_hash)
+            .execute(&st.pool)
+            .await;
+        // Piggyback pruning on failures — rows older than the widest rate
+        // window (1 hour) can never affect a limit check again.
+        let _ = sqlx::query("DELETE FROM login_rate_log WHERE attempted_at < datetime('now', '-1 day')")
             .execute(&st.pool)
             .await;
         return Err(err(StatusCode::UNAUTHORIZED, "invalid credentials"));
@@ -211,6 +224,10 @@ pub async fn create_user(
     State(st): State<AppState>,
     Json(req): Json<CreateUserReq>,
 ) -> Result<Json<Value>, ApiError> {
+    let username = req.username.trim();
+    if username.is_empty() || username.len() > 64 {
+        return Err(err(StatusCode::BAD_REQUEST, "username must be 1-64 characters"));
+    }
     if req.password.len() < 8 {
         return Err(err(StatusCode::BAD_REQUEST, "password must be at least 8 characters"));
     }
@@ -224,7 +241,7 @@ pub async fn create_user(
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
         .to_string();
     sqlx::query("INSERT INTO users (username, password_hash, role, must_change_password) VALUES (?, ?, ?, ?)")
-        .bind(&req.username)
+        .bind(username)
         .bind(&hash)
         .bind(role)
         .bind(req.must_change_password.unwrap_or(false))
@@ -237,7 +254,7 @@ pub async fn create_user(
                 err(StatusCode::INTERNAL_SERVER_ERROR, e)
             }
         })?;
-    Ok(Json(json!({ "username": req.username, "role": role })))
+    Ok(Json(json!({ "username": username, "role": role })))
 }
 
 #[derive(Deserialize)]

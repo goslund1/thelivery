@@ -390,7 +390,7 @@ pub async fn get_card(
     State(st): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<Json<Value>, ApiError> {
-    let row = sqlx::query("SELECT body FROM cards WHERE id = ?")
+    let row = sqlx::query("SELECT body FROM cards WHERE id = ? AND deleted_at IS NULL")
         .bind(&id)
         .fetch_optional(&st.pool)
         .await
@@ -411,47 +411,55 @@ pub async fn put_card(
     body["id"] = json!(id);
     validate_card_body(&body).map_err(|e| err(StatusCode::UNPROCESSABLE_ENTITY, e))?;
 
-    // Snapshot the current state into history before overwriting.
-    let existing: Option<String> = sqlx::query_scalar("SELECT body FROM cards WHERE id = ?")
-        .bind(&id)
-        .fetch_optional(&st.pool)
-        .await
-        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-
-    let mut snapshot_version: Option<i64> = None;
-    if let Some(current_body) = existing {
-        let next_version: i64 = sqlx::query_scalar(
-            "SELECT COALESCE(MAX(version), 0) + 1 FROM card_history WHERE card_id = ?"
-        )
-        .bind(&id)
-        .fetch_one(&st.pool)
-        .await
-        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-
-        sqlx::query(
-            "INSERT INTO card_history (card_id, version, body) VALUES (?, ?, ?)"
-        )
-        .bind(&id)
-        .bind(next_version)
-        .bind(&current_body)
-        .execute(&st.pool)
-        .await
-        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-        snapshot_version = Some(next_version);
-
-        // Prune to 20 most recent versions.
-        sqlx::query(
-            "DELETE FROM card_history WHERE card_id = ? AND version <= (
-                SELECT version FROM card_history WHERE card_id = ?
-                ORDER BY version DESC LIMIT 1 OFFSET 19
-            )"
-        )
-        .bind(&id)
-        .bind(&id)
-        .execute(&st.pool)
-        .await
-        .ok();
+    // PUT only edits live cards. upsert()'s ON CONFLICT clause clears
+    // deleted_at, so letting a purgatoried id through (e.g. a stale editor tab
+    // saving after an admin soft-deleted the card) would silently resurrect it;
+    // and letting an unknown id through would mint a card, bypassing POST's
+    // 409 collision guard.
+    let existing: Option<(String, Option<String>)> =
+        sqlx::query_as("SELECT body, deleted_at FROM cards WHERE id = ?")
+            .bind(&id)
+            .fetch_optional(&st.pool)
+            .await
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let Some((current_body, deleted_at)) = existing else {
+        return Err(err(StatusCode::NOT_FOUND, "card not found"));
+    };
+    if deleted_at.is_some() {
+        return Err(err(StatusCode::CONFLICT, "card is deleted — restore it from the Admin tab first"));
     }
+
+    // Snapshot the current state into history before overwriting.
+    let snapshot_version: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(MAX(version), 0) + 1 FROM card_history WHERE card_id = ?"
+    )
+    .bind(&id)
+    .fetch_one(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    sqlx::query(
+        "INSERT INTO card_history (card_id, version, body) VALUES (?, ?, ?)"
+    )
+    .bind(&id)
+    .bind(snapshot_version)
+    .bind(&current_body)
+    .execute(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    // Prune to 20 most recent versions.
+    sqlx::query(
+        "DELETE FROM card_history WHERE card_id = ? AND version <= (
+            SELECT version FROM card_history WHERE card_id = ?
+            ORDER BY version DESC LIMIT 1 OFFSET 19
+        )"
+    )
+    .bind(&id)
+    .bind(&id)
+    .execute(&st.pool)
+    .await
+    .ok();
 
     sync_card_images(&st.pool, &id, &mut body)
         .await
@@ -464,7 +472,7 @@ pub async fn put_card(
     // state to restore to reverse this edit.
     crate::audit::record(
         &st.pool, &auth.username, "card.update", "card", Some(&id),
-        snapshot_version.map(|v| json!({ "prevVersion": v })),
+        Some(json!({ "prevVersion": snapshot_version })),
     ).await;
     Ok(Json(body))
 }
@@ -890,26 +898,76 @@ mod tests {
         assert_eq!(body, body2, "normalize_bodies is idempotent");
     }
 
-    // ── create_card: no silent overwrite ────────────────────────────────────
+    // ── create_card / put_card: no silent overwrite or resurrection ─────────
+
+    fn test_state(pool: sqlx::SqlitePool) -> AppState {
+        AppState {
+            pool,
+            uploads_dir: std::env::temp_dir(),
+            seed_path: std::env::temp_dir().join("unused.json"),
+            db_path: std::env::temp_dir().join("unused.db"),
+            jwt_secret: std::sync::Arc::new(b"test-secret".to_vec()),
+        }
+    }
+
+    fn test_auth() -> AuthUser {
+        AuthUser { username: "tester".into(), role: "admin".into() }
+    }
 
     #[tokio::test]
     async fn create_card_refuses_existing_ids_even_purgatoried() {
         let pool = crate::testutil::test_pool().await;
         let card = valid_card();
         upsert(&pool, &card).await.unwrap();
+        let id = card.get("id").and_then(Value::as_str).unwrap().to_string();
         // Soft-delete it — invisible to clients, but the id is still taken.
         sqlx::query("UPDATE cards SET deleted_at = datetime('now') WHERE id = ?")
-            .bind(card.get("id").and_then(Value::as_str).unwrap())
+            .bind(&id)
             .execute(&pool)
             .await
             .unwrap();
 
-        let exists: Option<i64> = sqlx::query_scalar("SELECT 1 FROM cards WHERE id = ?")
-            .bind(card.get("id").and_then(Value::as_str).unwrap())
-            .fetch_optional(&pool)
+        let res = create_card(State(test_state(pool.clone())), test_auth(), Json(card)).await;
+        let e = res.err().expect("POST on a purgatoried id must be rejected");
+        assert_eq!(e.0, StatusCode::CONFLICT);
+
+        let deleted_at: Option<String> =
+            sqlx::query_scalar("SELECT deleted_at FROM cards WHERE id = ?")
+                .bind(&id)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert!(deleted_at.is_some(), "card stays purgatoried — not resurrected");
+    }
+
+    #[tokio::test]
+    async fn put_card_refuses_purgatoried_and_unknown_ids() {
+        let pool = crate::testutil::test_pool().await;
+        let card = valid_card();
+        upsert(&pool, &card).await.unwrap();
+        let id = card.get("id").and_then(Value::as_str).unwrap().to_string();
+        sqlx::query("UPDATE cards SET deleted_at = datetime('now') WHERE id = ?")
+            .bind(&id)
+            .execute(&pool)
             .await
             .unwrap();
-        assert!(exists.is_some(), "purgatoried card still owns its id — create_card must 409, not upsert");
+
+        let st = test_state(pool.clone());
+        let res = put_card(State(st.clone()), test_auth(), Path(id.clone()), Json(card.clone())).await;
+        let e = res.err().expect("PUT on a purgatoried id must be rejected");
+        assert_eq!(e.0, StatusCode::CONFLICT);
+
+        let deleted_at: Option<String> =
+            sqlx::query_scalar("SELECT deleted_at FROM cards WHERE id = ?")
+                .bind(&id)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert!(deleted_at.is_some(), "PUT must not resurrect a purgatoried card");
+
+        let res = put_card(State(st), test_auth(), Path("nope".into()), Json(card)).await;
+        let e = res.err().expect("PUT on an unknown id must not mint a card");
+        assert_eq!(e.0, StatusCode::NOT_FOUND);
     }
 
     // ── seed_if_empty: deletedAt marker ─────────────────────────────────────

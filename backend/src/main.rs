@@ -155,6 +155,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/suggestions", post(suggestions::submit_suggestion))
         .route("/api/admin/suggestions", get(suggestions::admin_list_suggestions))
         .route("/api/admin/suggestions/:id", delete(suggestions::admin_dismiss_suggestion).patch(suggestions::admin_like_suggestion))
+        // Exception to the /api/admin prefix convention: assess-color takes
+        // AuthUser, not AdminUser — editors keep it (roles design, 2026-07-17).
+        // Don't assume new routes are admin-gated just because they live here.
         .route("/api/admin/liveries/:id/assess-color", post(identity::admin_assess_livery_color))
         .route("/api/admin/images/migrate", post(images::admin_migrate_images))
         .route("/api/admin/repair-figure-paths", post(images::admin_repair_figure_paths))

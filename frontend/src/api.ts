@@ -28,7 +28,7 @@ export const api = {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ username, password }),
-    }).then(json<{ token: string; username: string; role: 'admin' | 'editor' }>),
+    }).then(json<{ token: string; username: string; role: 'admin' | 'editor'; mustChangePassword: boolean }>),
 
   listCards: () => fetch('/api/cards').then(json<Card[]>),
 
@@ -59,11 +59,11 @@ export const api = {
   getCardHistoryVersion: (id: string, version: number) =>
     fetch(`/api/cards/${id}/history/${version}`).then(json<{ version: number; savedAt: string; body: import('./types').Card }>),
 
-  createUser: (username: string, password: string, role: 'admin' | 'editor' = 'editor') =>
+  createUser: (username: string, password: string, role: 'admin' | 'editor' = 'editor', mustChangePassword = false) =>
     fetch('/api/users', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ username, password, role }),
+      body: JSON.stringify({ username, password, role, mustChangePassword }),
     }).then(json<{ username: string; role: string }>),
 
   changePassword: (currentPassword: string, newPassword: string) =>

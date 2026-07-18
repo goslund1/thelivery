@@ -86,12 +86,19 @@ impl FromRequestParts<AppState> for AuthUser {
         )
         .map_err(|_| err(StatusCode::UNAUTHORIZED, "invalid or expired token"))?;
         let username = data.claims.sub;
-        let role: Option<String> = sqlx::query_scalar("SELECT role FROM users WHERE username = ?")
+        let row = sqlx::query("SELECT role, must_change_password FROM users WHERE username = ?")
             .bind(&username)
             .fetch_optional(&state.pool)
             .await
-            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-        let role = role.ok_or_else(|| err(StatusCode::UNAUTHORIZED, "user no longer exists"))?;
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+            .ok_or_else(|| err(StatusCode::UNAUTHORIZED, "user no longer exists"))?;
+        let role: String = row.get("role");
+        let must_change: bool = row.get::<i64, _>("must_change_password") != 0;
+        // A temp password only buys you the change-password endpoint — nothing
+        // else works until the user sets a real one.
+        if must_change && parts.uri.path() != "/api/me/password" {
+            return Err(err(StatusCode::FORBIDDEN, "password change required"));
+        }
         Ok(AuthUser { username, role })
     }
 }
@@ -156,21 +163,22 @@ pub async fn login(
         return Err(err(StatusCode::TOO_MANY_REQUESTS, "too many failed login attempts — try again later"));
     }
 
-    let row = sqlx::query("SELECT password_hash, role FROM users WHERE username = ?")
+    let row = sqlx::query("SELECT password_hash, role, must_change_password FROM users WHERE username = ?")
         .bind(&req.username)
         .fetch_optional(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     let verified = row.and_then(|r| {
         let role: String = r.get("role");
+        let must_change: bool = r.get::<i64, _>("must_change_password") != 0;
         PasswordHash::new(&r.get::<String, _>("password_hash")).ok().and_then(|ph| {
             Argon2::default()
                 .verify_password(req.password.as_bytes(), &ph)
                 .is_ok()
-                .then_some(role)
+                .then_some((role, must_change))
         })
     });
-    let Some(role) = verified else {
+    let Some((role, must_change)) = verified else {
         let _ = sqlx::query("INSERT INTO login_rate_log (ip_hash) VALUES (?)")
             .bind(&ip_hash)
             .execute(&st.pool)
@@ -179,7 +187,12 @@ pub async fn login(
     };
     let token = make_token(&req.username, &st.jwt_secret)
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-    Ok(Json(json!({ "token": token, "username": req.username, "role": role })))
+    Ok(Json(json!({
+        "token": token,
+        "username": req.username,
+        "role": role,
+        "mustChangePassword": must_change,
+    })))
 }
 
 #[derive(Deserialize)]
@@ -187,6 +200,8 @@ pub struct CreateUserReq {
     username: String,
     password: String,
     role: Option<String>,
+    #[serde(rename = "mustChangePassword")]
+    must_change_password: Option<bool>,
 }
 
 /// Create a new user. Admin-only — otherwise an editor could mint themselves a
@@ -208,10 +223,11 @@ pub async fn create_user(
         .hash_password(req.password.as_bytes(), &salt)
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
         .to_string();
-    sqlx::query("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)")
+    sqlx::query("INSERT INTO users (username, password_hash, role, must_change_password) VALUES (?, ?, ?, ?)")
         .bind(&req.username)
         .bind(&hash)
         .bind(role)
+        .bind(req.must_change_password.unwrap_or(false))
         .execute(&st.pool)
         .await
         .map_err(|e| {
@@ -256,7 +272,7 @@ pub async fn change_password(
         .hash_password(req.new_password.as_bytes(), &salt)
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
         .to_string();
-    sqlx::query("UPDATE users SET password_hash = ? WHERE username = ?")
+    sqlx::query("UPDATE users SET password_hash = ?, must_change_password = 0 WHERE username = ?")
         .bind(&new_hash)
         .bind(&username)
         .execute(&st.pool)
@@ -364,6 +380,50 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(role_of("legacy").await, "admin");
+    }
+
+    #[tokio::test]
+    async fn change_password_clears_must_change_flag() {
+        let pool = crate::testutil::test_pool().await;
+        let salt = SaltString::generate(&mut OsRng);
+        let hash = Argon2::default()
+            .hash_password(b"temppass123", &salt)
+            .unwrap()
+            .to_string();
+        sqlx::query(
+            "INSERT INTO users (username, password_hash, role, must_change_password) VALUES ('geoff', ?, 'editor', 1)",
+        )
+        .bind(&hash)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let st = AppState {
+            pool: pool.clone(),
+            uploads_dir: std::env::temp_dir(),
+            seed_path: std::env::temp_dir().join("unused.json"),
+            db_path: std::env::temp_dir().join("unused.db"),
+            jwt_secret: Arc::new(b"test-secret".to_vec()),
+        };
+        let auth = AuthUser { username: "geoff".into(), role: "editor".into() };
+        change_password(
+            auth,
+            State(st),
+            Json(ChangePasswordReq {
+                current_password: "temppass123".into(),
+                new_password: "a-real-password".into(),
+            }),
+        )
+        .await
+        .expect("change succeeds with correct current password");
+
+        let flag: i64 = sqlx::query_scalar(
+            "SELECT must_change_password FROM users WHERE username = 'geoff'",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(flag, 0, "flag cleared after password change");
     }
 
     #[tokio::test]

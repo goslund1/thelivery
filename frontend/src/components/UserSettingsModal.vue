@@ -37,6 +37,7 @@ const newUsername    = ref('')
 const newUserPw      = ref('')
 const newUserConfirm = ref('')
 const newUserRole    = ref<'admin' | 'editor'>('editor')
+const newUserTempPw  = ref(true)  // require password change on first login
 const userError      = ref('')
 const userSuccess    = ref('')
 const userBusy       = ref(false)
@@ -49,9 +50,9 @@ async function submitCreateUser() {
   if (newUserPw.value.length < 8) { userError.value = 'Password must be at least 8 characters.'; return }
   userBusy.value = true
   try {
-    const res = await api.createUser(newUsername.value.trim(), newUserPw.value, newUserRole.value)
-    userSuccess.value = `User '${res.username}' created (${res.role}).`
-    newUsername.value = ''; newUserPw.value = ''; newUserConfirm.value = ''; newUserRole.value = 'editor'
+    const res = await api.createUser(newUsername.value.trim(), newUserPw.value, newUserRole.value, newUserTempPw.value)
+    userSuccess.value = `User '${res.username}' created (${res.role}${newUserTempPw.value ? ', must change password' : ''}).`
+    newUsername.value = ''; newUserPw.value = ''; newUserConfirm.value = ''; newUserRole.value = 'editor'; newUserTempPw.value = true
     showCreateUser.value = false
   } catch (e) {
     userError.value = errMsg(e).includes('already exists') ? 'That username is already taken.' : 'Failed to create user.'
@@ -120,6 +121,10 @@ function openAdmin() {
                 <option value="editor">Editor — can edit and archive, no permanent deletes</option>
                 <option value="admin">Admin — full access</option>
               </select>
+            </label>
+            <label class="temp-pw-row">
+              <input v-model="newUserTempPw" type="checkbox" />
+              <span>Temporary password — require change on first sign-in</span>
             </label>
             <p v-if="userError"   class="settings-error">{{ userError }}</p>
             <p v-if="userSuccess" class="settings-ok">{{ userSuccess }}</p>
@@ -206,6 +211,17 @@ function openAdmin() {
   letter-spacing: normal;
 }
 .role-select-row select:focus { outline: none; border-color: var(--accent); }
+
+.temp-pw-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.temp-pw-row input { cursor: pointer; }
 
 .section-toggle {
   background: none;

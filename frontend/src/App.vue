@@ -26,6 +26,7 @@ import SuggestionViewer from './components/SuggestionViewer.vue'
 import EditCardModal from './components/EditCardModal.vue'
 import ImageMigrationModal from './components/ImageMigrationModal.vue'
 import AdminPanel from './components/AdminPanel.vue'
+import ForcePasswordModal from './components/ForcePasswordModal.vue'
 import ArchiveCardModal from './components/ArchiveCardModal.vue'
 import ShareModal from './components/ShareModal.vue'
 import OgMakerModal from './components/OgMakerModal.vue'
@@ -132,6 +133,8 @@ onBeforeUnmount(() => {
   <OgMakerModal />
   <AdminPanel />
   <ArchiveCardModal />
+  <!-- Last: must stack above every other modal while a temp password is unset -->
+  <ForcePasswordModal />
   <CustomTip />
 </template>
 

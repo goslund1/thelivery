@@ -11,7 +11,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use sqlx::Row;
 
-use crate::auth::AuthUser;
+use crate::auth::{AdminUser, AuthUser};
 use crate::compositor;
 use crate::images::{image_path_for_id, inject_images};
 use crate::state::{err, ApiError, AppState};
@@ -261,7 +261,7 @@ pub struct OgPresetBody {
 
 pub async fn create_og_preset(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Json(req): Json<OgPresetBody>,
 ) -> Result<Json<Value>, ApiError> {
     let config = serde_json::to_string(&req.config.unwrap_or(json!({}))).unwrap_or_default();
@@ -273,6 +273,10 @@ pub async fn create_og_preset(
     .fetch_one(&st.pool)
     .await
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    crate::audit::record(
+        &st.pool, &auth.username, "og_preset.create", "og_preset",
+        Some(&row.get::<i64, _>("id").to_string()), None,
+    ).await;
     Ok(Json(json!({
         "id":        row.get::<i64, _>("id"),
         "name":      row.get::<String, _>("name"),
@@ -284,10 +288,20 @@ pub async fn create_og_preset(
 
 pub async fn update_og_preset(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(id): Path<i64>,
     Json(req): Json<OgPresetBody>,
 ) -> Result<Json<Value>, ApiError> {
+    // Snapshot for the audit trail — `detail.prev` reverses this overwrite.
+    let prev = sqlx::query("SELECT name, config FROM og_presets WHERE id = ?")
+        .bind(id)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .map(|r| json!({
+            "name": r.get::<String, _>("name"),
+            "config": serde_json::from_str::<Value>(r.get::<String, _>("config").as_str()).unwrap_or(json!({})),
+        }));
     let config = serde_json::to_string(&req.config.unwrap_or(json!({}))).unwrap_or_default();
     let row = sqlx::query(
         "UPDATE og_presets SET name = ?, config = ?, updated_at = datetime('now')
@@ -301,20 +315,26 @@ pub async fn update_og_preset(
     .await
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     match row {
-        Some(r) => Ok(Json(json!({
-            "id":        r.get::<i64, _>("id"),
-            "name":      r.get::<String, _>("name"),
-            "config":    serde_json::from_str::<Value>(r.get::<String, _>("config").as_str()).unwrap_or(json!({})),
-            "createdAt": r.get::<String, _>("created_at"),
-            "updatedAt": r.get::<String, _>("updated_at"),
-        }))),
+        Some(r) => {
+            crate::audit::record(
+                &st.pool, &auth.username, "og_preset.update", "og_preset",
+                Some(&id.to_string()), prev.map(|p| json!({ "prev": p })),
+            ).await;
+            Ok(Json(json!({
+                "id":        r.get::<i64, _>("id"),
+                "name":      r.get::<String, _>("name"),
+                "config":    serde_json::from_str::<Value>(r.get::<String, _>("config").as_str()).unwrap_or(json!({})),
+                "createdAt": r.get::<String, _>("created_at"),
+                "updatedAt": r.get::<String, _>("updated_at"),
+            })))
+        }
         None => Err(err(StatusCode::NOT_FOUND, "preset not found")),
     }
 }
 
 pub async fn delete_og_preset(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    _admin: AdminUser,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, ApiError> {
     sqlx::query("DELETE FROM og_presets WHERE id = ?")

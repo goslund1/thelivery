@@ -36,6 +36,7 @@ async function submitChangePassword() {
 const newUsername    = ref('')
 const newUserPw      = ref('')
 const newUserConfirm = ref('')
+const newUserRole    = ref<'admin' | 'editor'>('editor')
 const userError      = ref('')
 const userSuccess    = ref('')
 const userBusy       = ref(false)
@@ -48,9 +49,9 @@ async function submitCreateUser() {
   if (newUserPw.value.length < 8) { userError.value = 'Password must be at least 8 characters.'; return }
   userBusy.value = true
   try {
-    const res = await api.createUser(newUsername.value.trim(), newUserPw.value)
-    userSuccess.value = `User '${res.username}' created.`
-    newUsername.value = ''; newUserPw.value = ''; newUserConfirm.value = ''
+    const res = await api.createUser(newUsername.value.trim(), newUserPw.value, newUserRole.value)
+    userSuccess.value = `User '${res.username}' created (${res.role}).`
+    newUsername.value = ''; newUserPw.value = ''; newUserConfirm.value = ''; newUserRole.value = 'editor'
     showCreateUser.value = false
   } catch (e) {
     userError.value = errMsg(e).includes('already exists') ? 'That username is already taken.' : 'Failed to create user.'
@@ -104,7 +105,7 @@ function openAdmin() {
       </div>
 
       <!-- Create user (admin only) -->
-      <template v-if="auth.isAuthenticated">
+      <template v-if="auth.isAdmin">
         <div class="create-user-section">
           <button class="section-toggle" @click="showCreateUser = !showCreateUser">
             Add User {{ showCreateUser ? '▲' : '▼' }}
@@ -113,6 +114,13 @@ function openAdmin() {
             <input v-model="newUsername"    type="text"     placeholder="Username"         autocomplete="off" />
             <input v-model="newUserPw"      type="password" placeholder="Password"         autocomplete="new-password" />
             <input v-model="newUserConfirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
+            <label class="role-select-row">
+              <span>Role</span>
+              <select v-model="newUserRole">
+                <option value="editor">Editor — can edit and archive, no permanent deletes</option>
+                <option value="admin">Admin — full access</option>
+              </select>
+            </label>
             <p v-if="userError"   class="settings-error">{{ userError }}</p>
             <p v-if="userSuccess" class="settings-ok">{{ userSuccess }}</p>
             <button type="submit" :disabled="userBusy">{{ userBusy ? 'Creating…' : 'Create User' }}</button>
@@ -121,7 +129,7 @@ function openAdmin() {
       </template>
 
       <div class="settings-footer">
-        <button v-if="auth.isAuthenticated" class="admin-link-btn" @click="openAdmin">Admin Panel →</button>
+        <button v-if="auth.isAdmin" class="admin-link-btn" @click="openAdmin">Admin Panel →</button>
         <button class="logout-btn" @click="logout">Sign Out</button>
       </div>
     </div>
@@ -175,6 +183,29 @@ function openAdmin() {
   border-top: 1px solid var(--panel-edge);
 }
 .create-user-form { margin-top: 10px; }
+
+.role-select-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.role-select-row select {
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--panel-edge);
+  background: var(--panel-well);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.role-select-row select:focus { outline: none; border-color: var(--accent); }
 
 .section-toggle {
   background: none;

@@ -9,7 +9,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use sqlx::Row;
 
-use crate::auth::AuthUser;
+use crate::auth::{AdminUser, AuthUser};
 use crate::state::{err, ApiError, AppState};
 
 // --- Tuning Presets ---------------------------------------------------------
@@ -53,7 +53,7 @@ pub async fn list_tuning_presets(
 
 pub async fn create_tuning_preset(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Json(req): Json<CreatePresetReq>,
 ) -> Result<Json<Value>, ApiError> {
     let name = req.name.trim().to_string();
@@ -84,6 +84,7 @@ pub async fn create_tuning_preset(
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     let upgrades_out = req.upgrades.unwrap_or(json!([]));
+    crate::audit::record(&st.pool, &auth.username, "preset.create", "preset", Some(&id.to_string()), None).await;
     Ok(Json(json!({
         "id": id, "name": name, "values": req.values,
         "kind": kind, "upgrades": upgrades_out, "baselineId": baseline_id,
@@ -93,7 +94,7 @@ pub async fn create_tuning_preset(
 
 pub async fn delete_tuning_preset(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    _admin: AdminUser,
     Path(id): Path<i64>,
 ) -> Result<Json<Value>, ApiError> {
     sqlx::query("DELETE FROM tuning_presets WHERE id = ?")

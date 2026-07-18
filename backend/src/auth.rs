@@ -55,8 +55,19 @@ pub fn load_jwt_secret() -> Arc<Vec<u8>> {
 
 /// Extractor that requires a valid `Authorization: Bearer <jwt>`. Handlers that
 /// take it are gated behind authentication; returns 401 on missing/invalid/
-/// expired tokens.
-pub struct AuthUser(#[allow(dead_code)] String);
+/// expired tokens. The role is read from the DB on every request (not from the
+/// token), so demoting or deleting a user takes effect immediately instead of
+/// waiting out the 7-day token TTL.
+pub struct AuthUser {
+    pub username: String,
+    pub role: String,
+}
+
+impl AuthUser {
+    pub fn is_admin(&self) -> bool {
+        self.role == "admin"
+    }
+}
 
 #[async_trait]
 impl FromRequestParts<AppState> for AuthUser {
@@ -74,7 +85,30 @@ impl FromRequestParts<AppState> for AuthUser {
             &Validation::default(),
         )
         .map_err(|_| err(StatusCode::UNAUTHORIZED, "invalid or expired token"))?;
-        Ok(AuthUser(data.claims.sub))
+        let username = data.claims.sub;
+        let role: Option<String> = sqlx::query_scalar("SELECT role FROM users WHERE username = ?")
+            .bind(&username)
+            .fetch_optional(&state.pool)
+            .await
+            .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        let role = role.ok_or_else(|| err(StatusCode::UNAUTHORIZED, "user no longer exists"))?;
+        Ok(AuthUser { username, role })
+    }
+}
+
+/// Extractor for admin-only endpoints: everything permanent (hard deletes,
+/// trash purge, seed reload) and user management. Editors get 403.
+pub struct AdminUser(#[allow(dead_code)] pub AuthUser);
+
+#[async_trait]
+impl FromRequestParts<AppState> for AdminUser {
+    type Rejection = ApiError;
+    async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
+        let user = AuthUser::from_request_parts(parts, state).await?;
+        if !user.is_admin() {
+            return Err(err(StatusCode::FORBIDDEN, "admin access required"));
+        }
+        Ok(AdminUser(user))
     }
 }
 
@@ -122,53 +156,62 @@ pub async fn login(
         return Err(err(StatusCode::TOO_MANY_REQUESTS, "too many failed login attempts — try again later"));
     }
 
-    let row = sqlx::query("SELECT password_hash FROM users WHERE username = ?")
+    let row = sqlx::query("SELECT password_hash, role FROM users WHERE username = ?")
         .bind(&req.username)
         .fetch_optional(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-    let ok = row
-        .and_then(|r| PasswordHash::new(&r.get::<String, _>("password_hash")).ok().map(|ph| {
+    let verified = row.and_then(|r| {
+        let role: String = r.get("role");
+        PasswordHash::new(&r.get::<String, _>("password_hash")).ok().and_then(|ph| {
             Argon2::default()
                 .verify_password(req.password.as_bytes(), &ph)
                 .is_ok()
-        }))
-        .unwrap_or(false);
-    if !ok {
+                .then_some(role)
+        })
+    });
+    let Some(role) = verified else {
         let _ = sqlx::query("INSERT INTO login_rate_log (ip_hash) VALUES (?)")
             .bind(&ip_hash)
             .execute(&st.pool)
             .await;
         return Err(err(StatusCode::UNAUTHORIZED, "invalid credentials"));
-    }
+    };
     let token = make_token(&req.username, &st.jwt_secret)
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-    Ok(Json(json!({ "token": token, "username": req.username })))
+    Ok(Json(json!({ "token": token, "username": req.username, "role": role })))
 }
 
 #[derive(Deserialize)]
 pub struct CreateUserReq {
     username: String,
     password: String,
+    role: Option<String>,
 }
 
-/// Create a new user. Requires a valid JWT so only existing users can invite others.
+/// Create a new user. Admin-only — otherwise an editor could mint themselves a
+/// fresh admin account. New users default to 'editor' unless a role is given.
 pub async fn create_user(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
     Json(req): Json<CreateUserReq>,
 ) -> Result<Json<Value>, ApiError> {
     if req.password.len() < 8 {
         return Err(err(StatusCode::BAD_REQUEST, "password must be at least 8 characters"));
     }
+    let role = req.role.as_deref().unwrap_or("editor");
+    if !matches!(role, "admin" | "editor") {
+        return Err(err(StatusCode::BAD_REQUEST, "role must be 'admin' or 'editor'"));
+    }
     let salt = SaltString::generate(&mut OsRng);
     let hash = Argon2::default()
         .hash_password(req.password.as_bytes(), &salt)
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
         .to_string();
-    sqlx::query("INSERT INTO users (username, password_hash) VALUES (?, ?)")
+    sqlx::query("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)")
         .bind(&req.username)
         .bind(&hash)
+        .bind(role)
         .execute(&st.pool)
         .await
         .map_err(|e| {
@@ -178,7 +221,7 @@ pub async fn create_user(
                 err(StatusCode::INTERNAL_SERVER_ERROR, e)
             }
         })?;
-    Ok(Json(json!({ "username": req.username })))
+    Ok(Json(json!({ "username": req.username, "role": role })))
 }
 
 #[derive(Deserialize)]
@@ -189,7 +232,7 @@ pub struct ChangePasswordReq {
 
 /// Change the calling user's own password. Requires the current password to confirm.
 pub async fn change_password(
-    AuthUser(username): AuthUser,
+    AuthUser { username, .. }: AuthUser,
     State(st): State<AppState>,
     Json(req): Json<ChangePasswordReq>,
 ) -> Result<Json<Value>, ApiError> {
@@ -223,7 +266,11 @@ pub async fn change_password(
 }
 
 /// `adduser` CLI: prompt for a password and insert an Argon2-hashed user.
-pub async fn add_user(pool: &SqlitePool, username: &str) -> anyhow::Result<()> {
+/// Role defaults to 'admin' (matching historical behavior of CLI-created users).
+pub async fn add_user(pool: &SqlitePool, username: &str, role: &str) -> anyhow::Result<()> {
+    if !matches!(role, "admin" | "editor") {
+        anyhow::bail!("role must be 'admin' or 'editor'");
+    }
     let password = rpassword::prompt_password(format!("Password for '{username}': "))?;
     let confirm = rpassword::prompt_password("Confirm password: ")?;
     if password != confirm {
@@ -237,14 +284,15 @@ pub async fn add_user(pool: &SqlitePool, username: &str) -> anyhow::Result<()> {
         .hash_password(password.as_bytes(), &salt)
         .map_err(|e| anyhow::anyhow!("hashing failed: {e}"))?
         .to_string();
-    match sqlx::query("INSERT INTO users (username, password_hash) VALUES (?, ?)")
+    match sqlx::query("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)")
         .bind(username)
         .bind(&hash)
+        .bind(role)
         .execute(pool)
         .await
     {
         Ok(_) => {
-            println!("✓ user '{username}' created");
+            println!("✓ user '{username}' created ({role})");
             Ok(())
         }
         Err(e) if e.to_string().contains("UNIQUE") => anyhow::bail!("user '{username}' already exists"),
@@ -269,10 +317,12 @@ pub async fn seed_users_if_empty(pool: &SqlitePool, seed_path: &str) -> anyhow::
     for u in &users {
         let username = u.get("username").and_then(Value::as_str).unwrap_or_default();
         let hash = u.get("password_hash").and_then(Value::as_str).unwrap_or_default();
+        let role = u.get("role").and_then(Value::as_str).unwrap_or("admin");
         if username.is_empty() || hash.is_empty() { continue; }
-        sqlx::query("INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)")
+        sqlx::query("INSERT OR IGNORE INTO users (username, password_hash, role) VALUES (?, ?, ?)")
             .bind(username)
             .bind(hash)
+            .bind(role)
             .execute(pool)
             .await?;
     }
@@ -283,6 +333,46 @@ pub async fn seed_users_if_empty(pool: &SqlitePool, seed_path: &str) -> anyhow::
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn seed_users_reads_role_and_defaults_to_admin() {
+        let pool = crate::testutil::test_pool().await;
+        let seed = serde_json::json!([
+            { "username": "jason", "password_hash": "$argon2$fake" },
+            { "username": "geoff", "password_hash": "$argon2$fake", "role": "editor" }
+        ]);
+        let path = std::env::temp_dir().join("seed_users_roles_test.json");
+        std::fs::write(&path, seed.to_string()).unwrap();
+        seed_users_if_empty(&pool, path.to_str().unwrap()).await.unwrap();
+
+        let role_of = |u: &'static str| {
+            let pool = pool.clone();
+            async move {
+                sqlx::query_scalar::<_, String>("SELECT role FROM users WHERE username = ?")
+                    .bind(u)
+                    .fetch_one(&pool)
+                    .await
+                    .unwrap()
+            }
+        };
+        assert_eq!(role_of("jason").await, "admin", "missing role defaults to admin");
+        assert_eq!(role_of("geoff").await, "editor");
+
+        // Legacy INSERTs without a role column also land as admin (schema default).
+        sqlx::query("INSERT INTO users (username, password_hash) VALUES ('legacy', 'x')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        assert_eq!(role_of("legacy").await, "admin");
+    }
+
+    #[tokio::test]
+    async fn role_check_rejects_editor_for_admin_gate() {
+        let editor = AuthUser { username: "geoff".into(), role: "editor".into() };
+        let admin = AuthUser { username: "jason".into(), role: "admin".into() };
+        assert!(!editor.is_admin());
+        assert!(admin.is_admin());
+    }
 
     #[tokio::test]
     async fn failed_login_counting_hits_burst_limit() {

@@ -10,7 +10,7 @@ use axum::{
 use serde_json::{json, Value};
 use sqlx::{Row, SqlitePool};
 
-use crate::auth::AuthUser;
+use crate::auth::{AdminUser, AuthUser};
 use crate::state::{err, ApiError, AppState};
 
 /// Fetch images for a card from the authoritative images table.
@@ -300,7 +300,7 @@ pub async fn build_image_stem(
 /// If the numbered file already exists (duplicate import), a short UUID suffix is appended.
 pub async fn upload_image(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     mut multipart: Multipart,
 ) -> Result<Json<Value>, ApiError> {
     let mut card_name = String::new();
@@ -415,6 +415,12 @@ pub async fn upload_image(
             None
         };
 
+        if let Some(id) = db_id {
+            crate::audit::record(
+                &st.pool, &auth.username, "image.upload", "image",
+                Some(&id.to_string()), Some(json!({ "path": path, "cardId": card_id })),
+            ).await;
+        }
         return Ok(Json(json!({
             "id":        db_id,
             "path":      path,
@@ -443,7 +449,7 @@ pub async fn upload_image(
 /// For each stale path, replaces it with the card's lead image stage_path (or path).
 /// Returns { repaired, cleared } — cleared means the card had no images to fall back to.
 pub async fn admin_repair_figure_paths(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
     let rows = sqlx::query("SELECT id, body FROM cards")
@@ -555,7 +561,7 @@ pub async fn admin_repair_figure_paths(
 }
 
 pub async fn admin_migrate_images(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
     Json(body): Json<Value>,
 ) -> Result<Json<Value>, ApiError> {

@@ -9,7 +9,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use sqlx::{Row, SqlitePool};
 
-use crate::auth::AuthUser;
+use crate::auth::{AdminUser, AuthUser};
 use crate::state::{err, ApiError, AppState};
 
 // --- Admin ------------------------------------------------------------------
@@ -44,7 +44,7 @@ pub async fn referenced_paths(pool: &SqlitePool) -> Result<std::collections::Has
 }
 
 pub async fn admin_stats(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
     let card_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM cards")
@@ -78,7 +78,7 @@ pub async fn admin_stats(
 }
 
 pub async fn admin_scan_orphans(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
     let refs = referenced_paths(&st.pool).await?;
@@ -109,7 +109,7 @@ pub async fn admin_scan_orphans(
 }
 
 pub async fn admin_delete_orphans(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
     let refs = referenced_paths(&st.pool).await?;
@@ -258,7 +258,7 @@ pub async fn trash_image(
 /// Body: { "paths": ["/uploads/folder/001.jpg", ...] }
 pub async fn delete_images(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Json(body): Json<Value>,
 ) -> StatusCode {
     let paths = match body.get("paths").and_then(Value::as_array) {
@@ -279,7 +279,13 @@ pub async fn delete_images(
         // Only process original paths (the images.path column); thumb/stage are covered by trash_image().
         if handled.contains(path_str) { continue; }
         handled.insert(path_str.to_string());
-        trash_image(&st.pool, &st.uploads_dir, &trash_dir, path_str, "user_delete").await;
+        if trash_image(&st.pool, &st.uploads_dir, &trash_dir, path_str, "user_delete").await {
+            // Trash-based, not permanent — reversible via the Admin tab's trash restore.
+            crate::audit::record(
+                &st.pool, &auth.username, "image.delete", "image", None,
+                Some(serde_json::json!({ "path": path_str })),
+            ).await;
+        }
     }
     StatusCode::NO_CONTENT
 }
@@ -287,7 +293,7 @@ pub async fn delete_images(
 // --- Admin: trash management ------------------------------------------------
 
 pub async fn admin_list_trash(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
     let rows = sqlx::query(
@@ -353,7 +359,7 @@ pub struct DeleteTrashReq {
 }
 
 pub async fn admin_delete_trash(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
     Json(req): Json<DeleteTrashReq>,
 ) -> Result<Json<Value>, ApiError> {
@@ -427,7 +433,7 @@ pub struct RestoreTrashReq {
 }
 
 pub async fn admin_restore_trash(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
     Json(req): Json<RestoreTrashReq>,
 ) -> Result<Json<Value>, ApiError> {

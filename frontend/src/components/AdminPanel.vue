@@ -12,7 +12,7 @@ const { failedAssess } = useAssessFailures()
 const modal = useModalStore()
 const cards = useCardsStore()
 
-type Tab = 'tools' | 'export'
+type Tab = 'tools' | 'export' | 'timeline'
 const tab = ref<Tab>('tools')
 
 
@@ -351,6 +351,43 @@ async function commitAdjMigration() {
 
 function onTabExport() { tab.value = 'export'; adjCardId.value = null; catResult.value = null; adjResult.value = null }
 
+// ── Timeline (audit log) ──────────────────────────────────────────────────────
+type AuditEntry = {
+  id: number
+  username: string
+  action: string
+  entity: string
+  entityId: string | null
+  detail: unknown | null
+  createdAt: string
+}
+const auditEntries = ref<AuditEntry[]>([])
+const auditBusy    = ref(false)
+const auditDone    = ref(false)  // no more pages
+const AUDIT_PAGE   = 50
+
+async function loadAudit(more = false) {
+  auditBusy.value = true
+  adminError.value = null
+  try {
+    const beforeId = more ? auditEntries.value[auditEntries.value.length - 1]?.id : undefined
+    const page = await api.adminListAudit({ limit: AUDIT_PAGE, beforeId })
+    auditEntries.value = more ? [...auditEntries.value, ...page] : page
+    auditDone.value = page.length < AUDIT_PAGE
+  } catch (e) { adminError.value = `Timeline failed: ${errMsg(e)}` }
+  finally { auditBusy.value = false }
+}
+
+function onTabTimeline() { tab.value = 'timeline'; loadAudit() }
+
+// "card.delete" → the action verb; used to color destructive entries.
+function actionKind(action: string): 'delete' | 'create' | 'update' | 'other' {
+  if (action.endsWith('.delete')) return 'delete'
+  if (action.endsWith('.create') || action.endsWith('.upload')) return 'create'
+  if (action.endsWith('.update')) return 'update'
+  return 'other'
+}
+
 // YAML
 function downloadCardYaml(card: Card) {
   const text = cardToYaml(card)
@@ -411,6 +448,7 @@ function cancelImport() { importPreview.value = null; importError.value = null; 
       <div class="settings-tabs">
         <button :class="{ active: tab === 'tools' }" @click="onTabTools">Tools</button>
         <button :class="{ active: tab === 'export' }" @click="onTabExport">Export Card</button>
+        <button :class="{ active: tab === 'timeline' }" @click="onTabTimeline">Timeline</button>
       </div>
 
       <!-- Tools -->
@@ -678,6 +716,30 @@ function cancelImport() { importPreview.value = null; importError.value = null; 
         </div>
 
       </div>
+
+      <!-- Timeline -->
+      <div v-if="tab === 'timeline'" class="ap-sections">
+        <p v-if="adminError" class="settings-error">{{ adminError }}</p>
+        <div class="admin-section">
+          <div class="admin-section-head">Edit Timeline</div>
+          <p class="admin-muted">Every save, upload, and delete by every user, newest first. Card edits are reversible via card history; deletes via Trash / Deleted Cards above.</p>
+          <div v-if="auditBusy && !auditEntries.length" class="admin-muted">Loading…</div>
+          <p v-else-if="!auditEntries.length" class="admin-muted">No activity recorded yet.</p>
+          <div v-else class="audit-list">
+            <div v-for="e in auditEntries" :key="e.id" class="audit-row">
+              <span class="audit-time">{{ e.createdAt.slice(0, 16).replace('T', ' ') }}</span>
+              <span class="audit-user">{{ e.username }}</span>
+              <span class="audit-action" :class="`audit-action--${actionKind(e.action)}`">{{ e.action }}</span>
+              <span v-if="e.entityId" class="audit-entity">{{ e.entityId }}</span>
+            </div>
+          </div>
+          <div v-if="auditEntries.length && !auditDone" class="admin-row">
+            <button class="admin-btn" :disabled="auditBusy" @click="loadAudit(true)">
+              {{ auditBusy ? 'Loading…' : 'Load More' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -821,4 +883,16 @@ function cancelImport() { importPreview.value = null; importError.value = null; 
 .deleted-card-name { font: 12px/1.3 'JetBrains Mono', monospace; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deleted-card-date { font: 10px/1 'JetBrains Mono', monospace; color: var(--muted); }
 .deleted-purge-label { font: 10px/1 'JetBrains Mono', monospace; color: var(--danger-bright); text-transform: uppercase; letter-spacing: 0.05em; align-self: center; }
+
+.audit-list { display: flex; flex-direction: column; gap: 2px; max-height: 380px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--panel-edge); border-radius: 4px; padding: 4px; }
+.audit-row { display: flex; align-items: center; gap: 8px; padding: 4px; font: 11px/1.3 'JetBrains Mono', monospace; border-radius: 3px; }
+.audit-row:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.audit-time { color: var(--muted); flex-shrink: 0; font-size: 10px; }
+.audit-user { color: var(--fg); flex-shrink: 0; font-weight: 600; }
+.audit-action { padding: 1px 6px; border-radius: 3px; font-size: 10px; flex-shrink: 0; }
+.audit-action--create { background: color-mix(in srgb, var(--accent) 15%, transparent);    color: var(--accent); }
+.audit-action--update { background: color-mix(in srgb, var(--highlight) 15%, transparent); color: var(--highlight); }
+.audit-action--delete { background: color-mix(in srgb, var(--danger) 15%, transparent);    color: var(--danger-bright); }
+.audit-action--other  { background: color-mix(in srgb, var(--muted) 15%, transparent);     color: var(--muted); }
+.audit-entity { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

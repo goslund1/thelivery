@@ -9,7 +9,7 @@ use axum::{
 use serde_json::{json, Value};
 use sqlx::{Row, SqlitePool};
 
-use crate::auth::AuthUser;
+use crate::auth::{AdminUser, AuthUser};
 use crate::images::{fetch_all_images_grouped, inject_images, sync_card_images};
 use crate::state::{err, ApiError, AppState};
 
@@ -273,7 +273,7 @@ pub fn normalize_card(v: &mut Value) {
 }
 
 pub async fn admin_reload_seed(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
     let raw = std::fs::read_to_string(&st.seed_path)
@@ -310,7 +310,7 @@ pub async fn admin_reload_seed(
 }
 
 pub async fn admin_export_seed(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
     let rows = sqlx::query("SELECT body FROM cards WHERE deleted_at IS NULL ORDER BY catalog_number")
@@ -404,7 +404,7 @@ pub async fn get_card(
 
 pub async fn put_card(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(id): Path<String>,
     Json(mut body): Json<Value>,
 ) -> Result<Json<Value>, ApiError> {
@@ -418,6 +418,7 @@ pub async fn put_card(
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
+    let mut snapshot_version: Option<i64> = None;
     if let Some(current_body) = existing {
         let next_version: i64 = sqlx::query_scalar(
             "SELECT COALESCE(MAX(version), 0) + 1 FROM card_history WHERE card_id = ?"
@@ -436,6 +437,7 @@ pub async fn put_card(
         .execute(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        snapshot_version = Some(next_version);
 
         // Prune to 20 most recent versions.
         sqlx::query(
@@ -458,6 +460,12 @@ pub async fn put_card(
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     inject_images(&st.pool, &mut body).await;
+    // prevVersion points at the card_history snapshot taken above — that's the
+    // state to restore to reverse this edit.
+    crate::audit::record(
+        &st.pool, &auth.username, "card.update", "card", Some(&id),
+        snapshot_version.map(|v| json!({ "prevVersion": v })),
+    ).await;
     Ok(Json(body))
 }
 
@@ -503,7 +511,7 @@ pub async fn get_card_history_version(
 
 pub async fn create_card(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Json(mut body): Json<Value>,
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
     let card_id = body.get("id").and_then(Value::as_str).unwrap_or_default().to_string();
@@ -518,12 +526,13 @@ pub async fn create_card(
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     inject_images(&st.pool, &mut body).await;
+    crate::audit::record(&st.pool, &auth.username, "card.create", "card", Some(&card_id), None).await;
     Ok((StatusCode::CREATED, Json(body)))
 }
 
 pub async fn delete_card(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    auth: AuthUser,
     Path(id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
     sqlx::query("UPDATE cards SET deleted_at = datetime('now') WHERE id = ?")
@@ -531,11 +540,13 @@ pub async fn delete_card(
         .execute(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    // Soft delete — reversible from the Admin tab's purgatory (deleted-cards restore).
+    crate::audit::record(&st.pool, &auth.username, "card.delete", "card", Some(&id), None).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn admin_list_deleted_cards(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
 ) -> Result<Json<Value>, ApiError> {
     let rows = sqlx::query(
@@ -559,7 +570,7 @@ pub async fn admin_list_deleted_cards(
 }
 
 pub async fn admin_restore_card(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<Json<Value>, ApiError> {
@@ -572,7 +583,7 @@ pub async fn admin_restore_card(
 }
 
 pub async fn admin_purge_card(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
     Path(id): Path<String>,
 ) -> Result<StatusCode, ApiError> {

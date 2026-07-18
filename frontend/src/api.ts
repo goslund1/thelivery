@@ -28,7 +28,7 @@ export const api = {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ username, password }),
-    }).then(json<{ token: string; username: string }>),
+    }).then(json<{ token: string; username: string; role: 'admin' | 'editor' }>),
 
   listCards: () => fetch('/api/cards').then(json<Card[]>),
 
@@ -59,12 +59,12 @@ export const api = {
   getCardHistoryVersion: (id: string, version: number) =>
     fetch(`/api/cards/${id}/history/${version}`).then(json<{ version: number; savedAt: string; body: import('./types').Card }>),
 
-  createUser: (username: string, password: string) =>
+  createUser: (username: string, password: string, role: 'admin' | 'editor' = 'editor') =>
     fetch('/api/users', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ username, password }),
-    }).then(json<{ username: string }>),
+      body: JSON.stringify({ username, password, role }),
+    }).then(json<{ username: string; role: string }>),
 
   changePassword: (currentPassword: string, newPassword: string) =>
     fetch('/api/me/password', {
@@ -120,6 +120,24 @@ export const api = {
       headers: { ...authHeaders(), 'content-type': 'application/json' },
       body: JSON.stringify(opts),
     }).then(json<{ deleted: number }>),
+
+  adminListAudit: (opts?: { limit?: number; beforeId?: number }) => {
+    const params = new URLSearchParams()
+    if (opts?.limit) params.set('limit', String(opts.limit))
+    if (opts?.beforeId) params.set('before_id', String(opts.beforeId))
+    const qs = params.toString()
+    return fetch(`/api/admin/audit${qs ? `?${qs}` : ''}`, { headers: authHeaders() }).then(
+      json<Array<{
+        id: number
+        username: string
+        action: string
+        entity: string
+        entityId: string | null
+        detail: unknown | null
+        createdAt: string
+      }>>
+    )
+  },
 
   adminRestoreTrash: (ids: number[]) =>
     fetch('/api/admin/trash/restore', {

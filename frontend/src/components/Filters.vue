@@ -16,7 +16,8 @@ const tuneTypes = useTuneTypesStore()
 const liveries = useLiveriesStore()
 
 async function fetchCount() {
-  if (!auth.isAuthenticated) return
+  // Suggestion moderation (list/dismiss/like) is admin-only on the backend.
+  if (!auth.isAdmin) return
   try {
     const all = await api.adminListSuggestions()
     modal.pendingSuggestionCount = all.filter(s => s.status === 'pending').length
@@ -30,7 +31,7 @@ onMounted(() => {
   // lookup every color chip returns zero cards on a fresh visit.
   liveries.loadAll()
 })
-watch(() => auth.isAuthenticated, fetchCount)
+watch(() => auth.isAdmin, fetchCount)
 
 function toggleColor(c: LiveryColor) {
   filters.activeColor = filters.activeColor === c ? null : c
@@ -41,7 +42,7 @@ function toggleTuneType(name: string) {
 </script>
 
 <template>
-  <template v-if="auth.isAuthenticated">
+  <template v-if="auth.isAdmin">
     <button class="bug-check sugg-row" @click="modal.openSuggestionViewer()">
       <span class="sugg-badge">{{ modal.pendingSuggestionCount }}</span>
       Suggestions

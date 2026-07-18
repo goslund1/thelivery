@@ -2,6 +2,7 @@
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { AdjustmentRow, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
+import { useAuthStore } from '../stores/auth'
 import { MarkDirtyKey } from '../keys'
 import { errMsg } from '../utils/errMsg'
 import { api } from '../api'
@@ -24,6 +25,7 @@ const emit = defineEmits<{
   'remove-upgrade': [part: string]
 }>()
 const ui = useUiStore()
+const auth = useAuthStore()
 const markDirty = inject(MarkDirtyKey, () => {})
 
 // ── Canonical structure ───────────────────────────────────────────────────────
@@ -1208,6 +1210,7 @@ async function submitSuggestion() {
         @click="applyPreset"
       >Apply</button>
       <button
+        v-if="auth.isAdmin"
         class="ta-btn-lwb ta-preset-btn ta-preset-btn--delete"
         :disabled="!selectedPresetId || presetBusy"
         @click="deletePreset"

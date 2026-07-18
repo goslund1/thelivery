@@ -12,7 +12,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use sqlx::{Row, SqlitePool};
 
-use crate::auth::AuthUser;
+use crate::auth::{AdminUser, AuthUser};
 use crate::state::{err, ApiError, AppState};
 
 // --- Cars -------------------------------------------------------------------
@@ -93,13 +93,15 @@ pub async fn list_cars(
 }
 
 pub async fn create_car(
-    _auth: AuthUser,
+    auth: AuthUser,
     State(st): State<AppState>,
     Json(body): Json<Value>,
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
     upsert_car(&st.pool, &body)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let car_id = body.get("id").and_then(Value::as_str).unwrap_or_default().to_string();
+    crate::audit::record(&st.pool, &auth.username, "car.create", "car", Some(&car_id), None).await;
     Ok((StatusCode::CREATED, Json(body)))
 }
 
@@ -167,6 +169,9 @@ pub const COLOR_TAXONOMY: &[&str] = &[
     "White", "Black", "Silver", "Grey", "Gold", "Bronze", "Teal", "Multi",
 ];
 
+// Editor-allowed despite the /api/admin/ path: color assessment runs as part of
+// the normal upload flow (PhotoDetail, ImagePicker), and the result is derived,
+// recomputable metadata — not a destructive operation.
 pub async fn admin_assess_livery_color(
     _auth: AuthUser,
     State(st): State<AppState>,
@@ -462,7 +467,7 @@ pub struct CreateLiveryReq {
 }
 
 pub async fn create_livery(
-    _auth: AuthUser,
+    auth: AuthUser,
     State(st): State<AppState>,
     Json(req): Json<CreateLiveryReq>,
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
@@ -487,6 +492,7 @@ pub async fn create_livery(
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
     .last_insert_rowid();
 
+    crate::audit::record(&st.pool, &auth.username, "livery.create", "livery", Some(&id.to_string()), None).await;
     Ok((StatusCode::CREATED, Json(json!({ "id": id, "serial": serial }))))
 }
 
@@ -506,11 +512,30 @@ pub struct UpdateLiveryReq {
 }
 
 pub async fn update_livery(
-    _auth: AuthUser,
+    auth: AuthUser,
     State(st): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpdateLiveryReq>,
 ) -> Result<Json<Value>, ApiError> {
+    // Snapshot the mutable columns first — the audit entry's `detail.prev` is
+    // the only way to reverse this overwrite.
+    let prev = sqlx::query(
+        "SELECT name, is_factory, car_color_id, share_code, color_primary, color_secondary
+         FROM liveries WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_optional(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+    .map(|r| json!({
+        "name":           r.get::<Option<String>, _>("name"),
+        "isFactory":      r.get::<bool, _>("is_factory"),
+        "carColorId":     r.get::<Option<i64>, _>("car_color_id"),
+        "shareCode":      r.get::<Option<String>, _>("share_code"),
+        "colorPrimary":   r.get::<Option<String>, _>("color_primary"),
+        "colorSecondary": r.get::<Option<String>, _>("color_secondary"),
+    }));
+
     let affected = sqlx::query(
         "UPDATE liveries SET
            name            = COALESCE(?, name),
@@ -536,11 +561,15 @@ pub async fn update_livery(
     if affected == 0 {
         return Err(err(StatusCode::NOT_FOUND, "livery not found"));
     }
+    crate::audit::record(
+        &st.pool, &auth.username, "livery.update", "livery", Some(&id.to_string()),
+        prev.map(|p| json!({ "prev": p })),
+    ).await;
     Ok(Json(json!({ "id": id })))
 }
 
 pub async fn delete_livery(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<Json<Value>, ApiError> {
@@ -627,7 +656,7 @@ pub struct CreateTuneReq {
 }
 
 pub async fn create_tune(
-    _auth: AuthUser,
+    auth: AuthUser,
     State(st): State<AppState>,
     Json(req): Json<CreateTuneReq>,
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
@@ -657,6 +686,7 @@ pub async fn create_tune(
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
     .last_insert_rowid();
 
+    crate::audit::record(&st.pool, &auth.username, "tune.create", "tune", Some(&id.to_string()), None).await;
     Ok((StatusCode::CREATED, Json(json!({ "id": id, "serial": serial }))))
 }
 
@@ -675,11 +705,19 @@ pub struct UpdateTuneReq {
 }
 
 pub async fn update_tune(
-    _auth: AuthUser,
+    auth: AuthUser,
     State(st): State<AppState>,
     Path(id): Path<i64>,
     Json(req): Json<UpdateTuneReq>,
 ) -> Result<Json<Value>, ApiError> {
+    // Snapshot for the audit trail — `detail.prev` reverses this overwrite.
+    let prev = sqlx::query("SELECT * FROM tunes WHERE id = ?")
+        .bind(id)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?
+        .map(|r| tune_row_to_json(&r));
+
     let core_specs_str  = req.core_specs.as_ref().map(|v| v.to_string());
     let upgrades_str    = req.upgrades.as_ref().map(|v| v.to_string());
     let adjustments_str = req.adjustments.as_ref().map(|v| v.to_string());
@@ -709,11 +747,15 @@ pub async fn update_tune(
     if affected == 0 {
         return Err(err(StatusCode::NOT_FOUND, "tune not found"));
     }
+    crate::audit::record(
+        &st.pool, &auth.username, "tune.update", "tune", Some(&id.to_string()),
+        prev.map(|p| json!({ "prev": p })),
+    ).await;
     Ok(Json(json!({ "id": id })))
 }
 
 pub async fn delete_tune(
-    _auth: AuthUser,
+    _admin: AdminUser,
     State(st): State<AppState>,
     Path(id): Path<i64>,
 ) -> Result<Json<Value>, ApiError> {

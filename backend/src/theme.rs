@@ -68,10 +68,15 @@ pub async fn get_theme(State(st): State<AppState>) -> Result<Json<Value>, ApiErr
 }
 
 pub async fn put_theme(
-    _auth: AuthUser,
+    auth: AuthUser,
     State(st): State<AppState>,
     Json(body): Json<Value>,
 ) -> Result<Json<Value>, ApiError> {
+    // Snapshot for the audit trail — `detail.prev` reverses this overwrite.
+    let prev: Option<String> = sqlx::query_scalar("SELECT body FROM theme WHERE id = 1")
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
     let body_str = body.to_string();
     sqlx::query(
         "INSERT INTO theme (id, body) VALUES (1, ?)
@@ -81,5 +86,10 @@ pub async fn put_theme(
     .execute(&st.pool)
     .await
     .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let prev_json = prev.and_then(|p| serde_json::from_str::<Value>(&p).ok());
+    crate::audit::record(
+        &st.pool, &auth.username, "theme.update", "theme", None,
+        prev_json.map(|p| serde_json::json!({ "prev": p })),
+    ).await;
     Ok(Json(body))
 }

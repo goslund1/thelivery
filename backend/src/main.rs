@@ -15,6 +15,7 @@
 //!   theme       — site theme
 //!   compositor  — OG image rendering
 
+mod audit;
 mod auth;
 mod cards;
 mod compositor;
@@ -89,14 +90,15 @@ async fn main() -> anyhow::Result<()> {
 
     sqlx::migrate!("./migrations").run(&pool).await?;
 
-    // CLI: `livery-backend adduser <username>` — create a user, then exit.
+    // CLI: `livery-backend adduser <username> [admin|editor]` — create a user, then exit.
     let args: Vec<String> = std::env::args().collect();
     if args.get(1).map(String::as_str) == Some("adduser") {
         let Some(username) = args.get(2) else {
-            eprintln!("usage: livery-backend adduser <username>");
+            eprintln!("usage: livery-backend adduser <username> [admin|editor]");
             std::process::exit(2);
         };
-        auth::add_user(&pool, username).await?;
+        let role = args.get(3).map(String::as_str).unwrap_or("admin");
+        auth::add_user(&pool, username, role).await?;
         return Ok(());
     }
 
@@ -159,6 +161,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/admin/deleted-cards", get(cards::admin_list_deleted_cards))
         .route("/api/admin/deleted-cards/:id/restore", post(cards::admin_restore_card))
         .route("/api/admin/deleted-cards/:id", delete(cards::admin_purge_card))
+        .route("/api/admin/audit", get(audit::admin_list_audit))
         .route("/share/:id/card.png", get(share::share_card_png))
         .route("/share/preview", post(share::share_preview))
         .route("/share/:id", get(share::share_card))

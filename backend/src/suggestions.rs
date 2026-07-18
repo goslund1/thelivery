@@ -10,7 +10,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use sqlx::Row;
 
-use crate::auth::AuthUser;
+use crate::auth::AdminUser;
 use crate::state::{err, ApiError, AppState};
 
 pub const SUGGESTION_HOURLY_LIMIT: i64 = 15;   // hard cap per hour
@@ -148,7 +148,7 @@ pub async fn submit_suggestion(
 
 pub async fn admin_list_suggestions(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    _admin: AdminUser,
 ) -> Result<Json<Value>, ApiError> {
     let rows = sqlx::query(
         "SELECT id, card_id, title, credit, adjustments, submitted_at, ip, status FROM suggestions ORDER BY submitted_at DESC"
@@ -173,7 +173,7 @@ pub async fn admin_list_suggestions(
 
 pub async fn admin_dismiss_suggestion(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    _admin: AdminUser,
     Path(id): Path<i64>,
 ) -> Result<Json<Value>, ApiError> {
     sqlx::query("DELETE FROM suggestions WHERE id = ?")
@@ -186,7 +186,7 @@ pub async fn admin_dismiss_suggestion(
 
 pub async fn admin_like_suggestion(
     State(st): State<AppState>,
-    _auth: AuthUser,
+    _admin: AdminUser,
     Path(id): Path<i64>,
 ) -> Result<Json<Value>, ApiError> {
     sqlx::query("UPDATE suggestions SET status = CASE WHEN status = 'liked' THEN 'pending' ELSE 'liked' END WHERE id = ?")

@@ -59,6 +59,11 @@ export const api = {
   getCardHistoryVersion: (id: string, version: number) =>
     fetch(`/api/cards/${id}/history/${version}`).then(json<{ version: number; savedAt: string; body: import('./types').Card }>),
 
+  listUsers: () =>
+    fetch('/api/users', { headers: authHeaders() }).then(
+      json<Array<{ username: string; role: string; mustChangePassword: boolean; createdAt: string }>>
+    ),
+
   createUser: (username: string, password: string, role: 'admin' | 'editor' = 'editor', mustChangePassword = false) =>
     fetch('/api/users', {
       method: 'POST',

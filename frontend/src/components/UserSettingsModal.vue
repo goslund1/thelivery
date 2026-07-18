@@ -32,6 +32,26 @@ async function submitChangePassword() {
   } finally { pwBusy.value = false }
 }
 
+// User list (admin only)
+type UserRow = { username: string; role: string; mustChangePassword: boolean; createdAt: string }
+const showUsers  = ref(false)
+const users      = ref<UserRow[]>([])
+const usersError = ref('')
+const usersBusy  = ref(false)
+
+async function loadUsers() {
+  usersBusy.value = true
+  usersError.value = ''
+  try { users.value = await api.listUsers() }
+  catch { usersError.value = 'Failed to load users.' }
+  finally { usersBusy.value = false }
+}
+
+function toggleUsers() {
+  showUsers.value = !showUsers.value
+  if (showUsers.value) loadUsers()
+}
+
 // Create user (admin only)
 const newUsername    = ref('')
 const newUserPw      = ref('')
@@ -54,6 +74,7 @@ async function submitCreateUser() {
     userSuccess.value = `User '${res.username}' created (${res.role}${newUserTempPw.value ? ', must change password' : ''}).`
     newUsername.value = ''; newUserPw.value = ''; newUserConfirm.value = ''; newUserRole.value = 'editor'; newUserTempPw.value = true
     showCreateUser.value = false
+    if (showUsers.value) loadUsers()
   } catch (e) {
     userError.value = errMsg(e).includes('already exists') ? 'That username is already taken.' : 'Failed to create user.'
   } finally { userBusy.value = false }
@@ -66,6 +87,8 @@ function close() {
   userError.value = ''; userSuccess.value = ''
   showChangePw.value = false
   showCreateUser.value = false
+  showUsers.value = false
+  usersError.value = ''
 }
 
 function logout() {
@@ -104,6 +127,26 @@ function openAdmin() {
           <button type="submit" :disabled="pwBusy">{{ pwBusy ? 'Saving…' : 'Update Password' }}</button>
         </form>
       </div>
+
+      <!-- User list (admin only) -->
+      <template v-if="auth.isAdmin">
+        <div class="create-user-section">
+          <button class="section-toggle" @click="toggleUsers()">
+            Users {{ showUsers ? '▲' : '▼' }}
+          </button>
+          <template v-if="showUsers">
+            <p v-if="usersError" class="settings-error">{{ usersError }}</p>
+            <p v-else-if="usersBusy && !users.length" class="user-list-muted">Loading…</p>
+            <div v-else class="user-list">
+              <div v-for="u in users" :key="u.username" class="user-row">
+                <span class="user-name">{{ u.username }}</span>
+                <span class="user-role" :class="`user-role--${u.role}`">{{ u.role }}</span>
+                <span v-if="u.mustChangePassword" class="user-pending" v-tip="'Temporary password — hasn\'t signed in yet'">pending</span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
 
       <!-- Create user (admin only) -->
       <template v-if="auth.isAdmin">
@@ -188,6 +231,48 @@ function openAdmin() {
   border-top: 1px solid var(--panel-edge);
 }
 .create-user-form { margin-top: 10px; }
+
+.user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 10px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  padding: 4px;
+}
+.user-list-muted {
+  margin: 10px 0 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  font: 12px/1.3 'JetBrains Mono', monospace;
+  border-radius: 3px;
+}
+.user-row:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+.user-name { color: var(--fg); font-weight: 600; }
+.user-role {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.user-role--admin  { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.user-role--editor { background: color-mix(in srgb, var(--muted) 15%, transparent);  color: var(--muted); }
+.user-pending {
+  margin-left: auto;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--highlight);
+}
 
 .role-select-row {
   display: flex;

@@ -136,7 +136,7 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/api/health", get(|| async { "ok" }))
         .route("/api/login", post(auth::login))
-        .route("/api/users", post(auth::create_user))
+        .route("/api/users", get(auth::list_users).post(auth::create_user))
         .route("/api/me/password", put(auth::change_password))
         .route("/api/cards", get(cards::list_cards).post(cards::create_card))
         .route(

@@ -105,7 +105,7 @@ impl FromRequestParts<AppState> for AuthUser {
 
 /// Extractor for admin-only endpoints: everything permanent (hard deletes,
 /// trash purge, seed reload) and user management. Editors get 403.
-pub struct AdminUser(#[allow(dead_code)] pub AuthUser);
+pub struct AdminUser(pub AuthUser);
 
 #[async_trait]
 impl FromRequestParts<AppState> for AdminUser {
@@ -217,10 +217,37 @@ pub struct CreateUserReq {
     must_change_password: Option<bool>,
 }
 
+/// List all users. Admin-only, read-only — lets an admin see what accounts
+/// exist; `mustChangePassword` doubles as a "hasn't signed in yet" indicator
+/// for temp-password accounts.
+pub async fn list_users(
+    _admin: AdminUser,
+    State(st): State<AppState>,
+) -> Result<Json<Value>, ApiError> {
+    let rows = sqlx::query(
+        "SELECT username, role, must_change_password, created_at FROM users ORDER BY created_at",
+    )
+    .fetch_all(&st.pool)
+    .await
+    .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let users: Vec<Value> = rows
+        .iter()
+        .map(|r| {
+            json!({
+                "username": r.get::<String, _>("username"),
+                "role": r.get::<String, _>("role"),
+                "mustChangePassword": r.get::<i64, _>("must_change_password") != 0,
+                "createdAt": r.get::<String, _>("created_at"),
+            })
+        })
+        .collect();
+    Ok(Json(json!(users)))
+}
+
 /// Create a new user. Admin-only — otherwise an editor could mint themselves a
 /// fresh admin account. New users default to 'editor' unless a role is given.
 pub async fn create_user(
-    _admin: AdminUser,
+    admin: AdminUser,
     State(st): State<AppState>,
     Json(req): Json<CreateUserReq>,
 ) -> Result<Json<Value>, ApiError> {
@@ -254,6 +281,10 @@ pub async fn create_user(
                 err(StatusCode::INTERNAL_SERVER_ERROR, e)
             }
         })?;
+    crate::audit::record(
+        &st.pool, &admin.0.username, "user.create", "user", Some(username),
+        Some(json!({ "role": role, "mustChangePassword": req.must_change_password.unwrap_or(false) })),
+    ).await;
     Ok(Json(json!({ "username": username, "role": role })))
 }
 

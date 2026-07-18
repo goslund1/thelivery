@@ -27,7 +27,11 @@ Narrow-screen pass for the full catalog. Known gaps:
 - ~~Orphan livery rows~~ **CLEANED 2026-07-17** — ids 26–28 "Smokin (Updated)" deleted (no images, no live or purgatory card references). Kept: 24 "Faker" (belongs to purgatory card id 11 — needed for restore) and 29 "Sold Out" (assessed colors, provenance unclear).
 - **Test the admin delete/purge flow on the purgatory cards** — "Rally Base Car Test" (id 22) and "Faker" (id 11) are being kept in purgatory specifically as test subjects for a later admin-delete/restore/purge shakedown.
 - **Seed-data nits** — Smokin engine spec reads `DIRECT_TEST`; Lolita tune name is still the placeholder with share code TBD.
-- **Create Geoff's editor account on live** — Account Settings → Add User → editor role + temp-password checkbox on, then send the onboarding note (sign-in is via `/#ignition`). Jason also needs one sign-out/in on live so his session picks up the admin role in the UI.
+- ~~Create Geoff's editor account on live~~ **DONE** — Jason created it via Add User; as of 2026-07-18 Geoff hasn't signed in yet (temp password stays valid until he completes the forced change).
+
+### User management gaps (from session-38 audit follow-up)
+- **No way to list users** — no `GET /api/users` route and no UI, so an admin can't see what accounts exist (came up when verifying Geoff's account; only workaround is trying to re-create the username and reading the "already taken" error). Add an admin-only list route + a read-only list in Account Settings showing username, role, and the `must_change_password` flag (doubles as a "hasn't signed in yet" indicator).
+- **`user.create` isn't audit-logged** — `create_user` in `backend/src/auth.rs` never calls `audit::record`, so the Timeline has no record of account creation. Trivial fix: one `audit::record(..., "user.create", "user", Some(username), Some(json!({"role": role})))` call after the insert.
 
 ### Pre-launch checklist
 - **Lock CORS to production domain** — currently `CorsLayer::permissive()` in `backend/src/main.rs`. Change to `CorsLayer::new().allow_origin("https://thelivery.silverleaf.services")` before public launch.

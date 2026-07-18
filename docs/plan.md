@@ -27,6 +27,7 @@ Narrow-screen pass for the full catalog. Known gaps:
 - ~~Orphan livery rows~~ **CLEANED 2026-07-17** — ids 26–28 "Smokin (Updated)" deleted (no images, no live or purgatory card references). Kept: 24 "Faker" (belongs to purgatory card id 11 — needed for restore) and 29 "Sold Out" (assessed colors, provenance unclear).
 - **Test the admin delete/purge flow on the purgatory cards** — "Rally Base Car Test" (id 22) and "Faker" (id 11) are being kept in purgatory specifically as test subjects for a later admin-delete/restore/purge shakedown.
 - **Seed-data nits** — Smokin engine spec reads `DIRECT_TEST`; Lolita tune name is still the placeholder with share code TBD.
+- **Create Geoff's editor account on live** — Account Settings → Add User → editor role + temp-password checkbox on, then send the onboarding note (sign-in is via `/#ignition`). Jason also needs one sign-out/in on live so his session picks up the admin role in the UI.
 
 ### Pre-launch checklist
 - **Lock CORS to production domain** — currently `CorsLayer::permissive()` in `backend/src/main.rs`. Change to `CorsLayer::new().allow_origin("https://thelivery.silverleaf.services")` before public launch.
@@ -43,11 +44,17 @@ Narrow-screen pass for the full catalog. Known gaps:
 - If a proactive alert becomes needed: `NOTIFY_WEBHOOK` env var in the systemd unit; backend POSTs on quota error; check if Anthropic API exposes a balance endpoint to poll. No frontend changes needed.
 
 ### Deferred
+- **One-click revert on the Timeline tab** — audit entries already store everything needed (`detail.prev` JSON for livery/tune/theme/og-preset overwrites, `detail.prevVersion` linking card_history for card edits); a revert endpoint + button would make reversal self-serve instead of manual.
+- **Editor suggestion triage** — suggestions moderation is admin-only because dismissing is a hard delete. If Geoff should triage, dismiss needs to become a soft delete first.
 - **`car_colors`** — factory *stock* color options per car model (e.g. "this Corvette comes in Arctic White, Rapid Blue..."). Requires scraping Forza wikis. Not to be confused with `primary_color`/`secondary_color` on the `liveries` table, which is the AI livery color assessment already wired into the import flow. No ETA on car_colors.
 
 ---
 
 ## Recently completed
+
+- ~~**User roles + audit timeline**~~ **DONE** (totally planned all along) — migration 0020: `users.role` admin/editor; `AdminUser` extractor 403s editors on all `/api/admin/*`, hard deletes (livery/tune/preset/og-preset), trash purge, and `POST /api/users` (closed a hole where any authed user could mint accounts). Editors keep card CRUD incl. soft delete, image upload/trash-delete, livery/tune/car create+update, presets, theme, assess-color. Every editor-capable mutation logs to `audit_log` with prev-state JSON for overwrites and card_history version links for card edits; Admin Panel gained a read-only Timeline tab. Role read from DB per request → demotion is immediate. — 2026-07-17 (commit f79ef0c, AAR: `docs/aar-2026-07-17d.md`)
+
+- ~~**Temp-password onboarding**~~ **DONE** (also "planned") — migration 0021: `must_change_password` flag; while set, backend 403s everything except `PUT /api/me/password`. Add User form gained role select + "temporary password" checkbox (default on); non-dismissable `ForcePasswordModal` (mounted last in App.vue, deliberately outside the modal store so Escape/closeTopModal can't reach it) forces the change on first sign-in; sign-out keeps the temp password valid for retry. Smoke-tested end-to-end. — 2026-07-17 (commit 7a42481, AAR: `docs/aar-2026-07-17d.md`)
 
 - **SPA cache headers — stale-bundle fix** — Live shakedown "found" serious bugs (tune-tab collapse, section state loss, phantom gaps, dead Light theme) that all turned out to be a stale browser-cached bundle from before the virtual-scroller removal; the deployed code was already correct. Root cause: `index.html` served with no `Cache-Control`, so browsers heuristic-cache it and keep old hashed bundles after deploys. Fixed with `spa_cache_control` middleware on the SPA service only: `no-cache` for index.html/fallback (revalidates via Last-Modified → cheap 304s), `public, max-age=31536000, immutable` for hashed `/assets/*`; `/api` and `/uploads` untouched. Deployed and verified live. Genuinely still open from the shakedown: **color filters match zero cards on live** (liveries have no color data — run the assess-color pass against live), and seed-data nits (Smokin engine `DIRECT_TEST`, Lolita placeholder tune name / TBD share code). — 2026-07-17 (commit 74798e9)
 

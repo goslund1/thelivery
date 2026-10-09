@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import './styles/catalog.css'
+import './styles/responsive.css'
 import App from './App.vue'
 import { vTip, vTipUp } from './composables/tooltip'
 import { vScrollContain } from './directives/scrollContain'

@@ -292,6 +292,7 @@ function onReset() { theme.reset() }
   min-width: 0;
   height: 600px;
   max-height: 85vh;
+  max-height: 85dvh;
 }
 
 /* ── Header content slots ── */
@@ -319,6 +320,7 @@ function onReset() { theme.reset() }
   min-width: 200px;
   height: 600px;
   max-height: 85vh;
+  max-height: 85dvh;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);

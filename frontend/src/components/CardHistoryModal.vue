@@ -306,6 +306,7 @@ function fmtVal(v: number | null) {
   border-radius: 8px;
   width: min(900px, 95vw);
   max-height: 80vh;
+  max-height: 80dvh;
   display: flex; flex-direction: column;
   overflow: hidden;
 }

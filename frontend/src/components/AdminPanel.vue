@@ -749,6 +749,7 @@ function cancelImport() { importPreview.value = null; importError.value = null; 
   width: 480px;
   max-width: 96vw;
   max-height: 88vh;
+  max-height: 88dvh;
 }
 
 .settings-tabs {

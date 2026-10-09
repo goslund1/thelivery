@@ -41,6 +41,7 @@ const toasts = useToastsStore()
   top: 0;
   right: 0;
   bottom: 0;
+  bottom: env(safe-area-inset-bottom);
   z-index: 900;
   display: flex;
   flex-direction: column;
@@ -49,6 +50,7 @@ const toasts = useToastsStore()
   overflow-y: auto;
   overflow-x: hidden;
   max-height: 100vh;
+  max-height: 100dvh;
 }
 
 .ts-panel {

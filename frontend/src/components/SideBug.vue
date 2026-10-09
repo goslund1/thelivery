@@ -42,7 +42,19 @@ const sideBugEl = ref<HTMLElement | null>(null)
 const hamburgerBtn = ref<HTMLElement | null>(null)
 const flyoutStyle = ref<Record<string, string>>({})
 
-onClickOutside(bugRef, () => (open.value = null))
+// Phone width (≤640px): the bug starts collapsed to a 24px edge tab so it covers
+// almost none of the card; a tap opens it, an outside tap folds it again. The
+// class only has rules inside the phone media query, so wider screens ignore it.
+const collapsed = ref(true)
+function expandBug() {
+  collapsed.value = false
+  nextTick(positionSideBug)
+}
+
+onClickOutside(bugRef, () => {
+  open.value = null
+  if (!collapsed.value) { collapsed.value = true; nextTick(positionSideBug) }
+})
 
 const themeIcon = computed(() => themeIcons[ui.theme])
 
@@ -170,7 +182,8 @@ function onToggleAll() {
 
 <template>
   <div ref="bugRef">
-    <div class="side-bug" ref="sideBugEl">
+    <div class="side-bug" :class="{ 'side-bug--collapsed': collapsed }" ref="sideBugEl">
+      <button class="bug-tab" aria-label="Open side menu" :aria-expanded="!collapsed" @click="expandBug">‹</button>
       <button v-if="auth.isAuthenticated" class="bug-btn" aria-label="Account settings" v-tip="'Account settings'" @click="modal.openSettings()">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="8" r="4"></circle>
@@ -233,6 +246,29 @@ function onToggleAll() {
 </template>
 
 <style scoped>
+/* Collapsed edge tab (phone only) — same tab language as DrawerPanel's .dp-tab */
+.bug-tab {
+  display: none;
+}
+@media (max-width: 640px) {
+  .side-bug--collapsed > :not(.bug-tab) {
+    display: none;
+  }
+  .side-bug--collapsed .bug-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 23px;   /* + the bug's 1px borders = 24×44 on screen */
+    height: 42px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-size: 16px;
+    cursor: pointer;
+  }
+}
+
 .bug-btn--filters {
   position: relative;
 }

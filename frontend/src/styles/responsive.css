@@ -1,0 +1,82 @@
+/* ── Responsive overrides (Mobile & Touch work order) ──────────────────────
+   Loaded right after catalog.css, which stays untouched. Two independent axes:
+   layout follows width (phone = max-width 640px), interaction follows
+   capability ((hover: none), (pointer: coarse)). No user-agent sniffing.
+   Nothing here may move a pixel on desktop at 1440×900 with a mouse —
+   check with `node frontend/shot.mjs --compare before <label>`. */
+
+/* ── Viewport units + safe areas (L7) ──
+   env() is 0 and dvh equals vh on desktop, so these restate catalog.css rules
+   without changing them there. dvh tracks Safari's collapsing toolbar. */
+body {
+  padding-left: max(24px, env(safe-area-inset-left));
+  padding-right: max(24px, env(safe-area-inset-right));
+}
+.bug-flyout { max-height: calc(100dvh - 24px); }
+.lightbox img { max-height: 90dvh; }
+.image-picker-panel { max-height: 80dvh; }
+
+/* ── Side bug gutter (L6) ──
+   Below 1067px the catalog column reaches the window edge and positionSideBug()
+   pins the bug over the card. Reserve its width (42px button + 1px border) on the
+   right. The left padding grows toward the same 43px as the window nears 1066px,
+   so the column is still centred there and nothing jumps at the 1067px boundary. */
+@media (min-width: 641px) and (max-width: 1066px) {
+  body {
+    padding-left: max(24px, calc((100vw - 980px) / 2), env(safe-area-inset-left));
+    padding-right: max(43px, env(safe-area-inset-right));
+  }
+}
+
+/* ── Phone layout ── */
+@media (max-width: 640px) {
+  /* L1 edge-to-edge cards */
+  body {
+    padding: 12px env(safe-area-inset-right) 96px env(safe-area-inset-left);
+  }
+  .card,
+  .page-head {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+  }
+  .catalog { gap: 16px; }
+
+  /* L2 text padding 24 → 14 (horizontal only) */
+  .card-meta { padding-left: 14px; padding-right: 14px; }
+  .tag-cloud { padding-left: 14px; padding-right: 14px; }
+  .thumbs { padding-left: 14px; padding-right: 14px; }
+  .section summary { padding-left: 14px; padding-right: 14px; }
+  .section-body { padding-left: 14px; padding-right: 14px; }
+  .nc-section-head { padding-left: 14px; padding-right: 14px; }
+  .nc-footer { padding-left: 14px; padding-right: 14px; }
+
+  /* L3 no fixed minimums */
+  .gutter-text,
+  .anecdote-text { min-width: 0; }
+  .gutter-figure { flex: 0 0 100%; }
+
+  /* L4 spec table → label/value rows (stacked-table pattern, no markup change).
+     The table is two rows of five; tr → contents lets the grid take the cells
+     directly, and column flow puts the five th left and the five td right. */
+  .recipe-table tbody {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    grid-template-rows: repeat(5, auto);
+    grid-auto-flow: column;
+  }
+  .recipe-table tr { display: contents; }
+  .recipe-table th,
+  .recipe-table td {
+    width: auto;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    margin: 0 0 -1px -1px;   /* collapse the doubled 1px borders */
+  }
+  .recipe-table th { padding-right: 14px; }
+
+  /* L5 type scale */
+  .card-title { font-size: clamp(28px, 8.5vw, 42px); }
+  .tune-name { font-size: 18px; }
+}

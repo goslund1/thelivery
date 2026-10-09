@@ -1,0 +1,1744 @@
+{
+  "label": "phase1",
+  "url": "http://localhost:5173/",
+  "when": "2026-10-09T23:50:03.520Z",
+  "editView": "SKIPPED — LIVERY_USER/LIVERY_PASS not set (unverified)",
+  "viewports": {
+    "360x640": {
+      "touch": {
+        "view": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-tab",
+              "minW": 23,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 360,
+              "minH": 35,
+              "opacity": 1,
+              "count": 26
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 330,
+              "minH": 39,
+              "opacity": 1,
+              "count": 7
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 14
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": []
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 360,
+          "innerWidth": 360,
+          "items": [
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary > .ta-nonstock-actions",
+              "content": 170,
+              "box": 155,
+              "pastEdgeBy": -29,
+              "culprit": ".ta-nonstock-chev",
+              "count": 1
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line > .ta-nonstock-loc",
+              "content": 73,
+              "box": 61,
+              "pastEdgeBy": -101,
+              "culprit": null,
+              "count": 4
+            },
+            {
+              "path": ".ta > .ta-content > .ta-tab--tires > .ta-group",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": null,
+              "count": 8
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-group-header",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 8
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row.changed",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 2
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 14
+            }
+          ]
+        }
+      },
+      "bug": {
+        "width": 24,
+        "height": 44,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 86,
+            "bottom": 702,
+            "left": 117,
+            "right": 309,
+            "inside": false,
+            "scrollsInside": true
+          },
+          "smallTargets": [
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .bug-check > input",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip",
+              "minW": 34,
+              "minH": 18,
+              "opacity": 1,
+              "count": 15
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip",
+              "minW": 40,
+              "minH": 18,
+              "opacity": 1,
+              "count": 8
+            }
+          ],
+          "smallFonts": []
+        },
+        "theme": {
+          "fit": {
+            "top": 128,
+            "bottom": 371,
+            "left": 185,
+            "right": 309,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.theme-flyout > .theme-option",
+              "minW": 107,
+              "minH": 36,
+              "opacity": 1,
+              "count": 5
+            }
+          ],
+          "smallFonts": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 170,
+            "bottom": 483,
+            "left": 239,
+            "right": 309,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.text-size-flyout > .text-size-option",
+              "minW": 52,
+              "minH": 31,
+              "opacity": 1,
+              "count": 9
+            }
+          ],
+          "smallFonts": []
+        }
+      }
+    },
+    "390x844": {
+      "touch": {
+        "view": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-tab",
+              "minW": 23,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 390,
+              "minH": 35,
+              "opacity": 1,
+              "count": 26
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 360,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 14
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": []
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "items": [
+            {
+              "path": ".ta > .ta-content > .ta-tab--tires > .ta-group",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": null,
+              "count": 8
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-group-header",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 8
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row.changed",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 2
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 14
+            }
+          ]
+        }
+      },
+      "bug": {
+        "width": 24,
+        "height": 44,
+        "overCardPx": 24
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 86,
+            "bottom": 764,
+            "left": 147,
+            "right": 339,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .bug-check > input",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip",
+              "minW": 34,
+              "minH": 18,
+              "opacity": 1,
+              "count": 15
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip",
+              "minW": 40,
+              "minH": 18,
+              "opacity": 1,
+              "count": 8
+            }
+          ],
+          "smallFonts": []
+        },
+        "theme": {
+          "fit": {
+            "top": 128,
+            "bottom": 371,
+            "left": 215,
+            "right": 339,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.theme-flyout > .theme-option",
+              "minW": 107,
+              "minH": 36,
+              "opacity": 1,
+              "count": 5
+            }
+          ],
+          "smallFonts": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 170,
+            "bottom": 483,
+            "left": 269,
+            "right": 339,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.text-size-flyout > .text-size-option",
+              "minW": 52,
+              "minH": 31,
+              "opacity": 1,
+              "count": 9
+            }
+          ],
+          "smallFonts": []
+        }
+      }
+    },
+    "844x390": {
+      "touch": {
+        "view": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-btn--filters",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-toggle-all",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 775,
+              "minH": 35,
+              "opacity": 1,
+              "count": 26
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".section-body > .kit-toggle.is-open > summary",
+              "minW": 725,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 725,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero",
+              "minW": 45,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes",
+              "minW": 51,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential",
+              "minW": 74,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack",
+              "minW": 75,
+              "minH": 28,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 342,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 342,
+              "minH": 20,
+              "opacity": 1,
+              "count": 14
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": []
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 844,
+          "innerWidth": 844,
+          "items": []
+        }
+      },
+      "bug": {
+        "width": 43,
+        "height": 170,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 379,
+            "left": 601,
+            "right": 793,
+            "inside": true,
+            "scrollsInside": true
+          },
+          "smallTargets": [
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .bug-check > input",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip",
+              "minW": 34,
+              "minH": 18,
+              "opacity": 1,
+              "count": 15
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip",
+              "minW": 40,
+              "minH": 18,
+              "opacity": 1,
+              "count": 8
+            }
+          ],
+          "smallFonts": []
+        },
+        "theme": {
+          "fit": {
+            "top": 55,
+            "bottom": 298,
+            "left": 669,
+            "right": 793,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.theme-flyout > .theme-option",
+              "minW": 107,
+              "minH": 36,
+              "opacity": 1,
+              "count": 5
+            }
+          ],
+          "smallFonts": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 97,
+            "bottom": 410,
+            "left": 723,
+            "right": 793,
+            "inside": false,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.text-size-flyout > .text-size-option",
+              "minW": 52,
+              "minH": 31,
+              "opacity": 1,
+              "count": 9
+            }
+          ],
+          "smallFonts": []
+        }
+      }
+    },
+    "820x1180": {
+      "touch": {
+        "view": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-btn--filters",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-toggle-all",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 751,
+              "minH": 35,
+              "opacity": 1,
+              "count": 26
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".section-body > .kit-toggle.is-open > summary",
+              "minW": 701,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 701,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero",
+              "minW": 45,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes",
+              "minW": 51,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential",
+              "minW": 74,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack",
+              "minW": 75,
+              "minH": 28,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 318,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 318,
+              "minH": 20,
+              "opacity": 1,
+              "count": 14
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": []
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 820,
+          "innerWidth": 820,
+          "items": []
+        }
+      },
+      "bug": {
+        "width": 43,
+        "height": 170,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 691,
+            "left": 577,
+            "right": 769,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .bug-check > input",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip",
+              "minW": 34,
+              "minH": 18,
+              "opacity": 1,
+              "count": 15
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip",
+              "minW": 40,
+              "minH": 18,
+              "opacity": 1,
+              "count": 8
+            }
+          ],
+          "smallFonts": []
+        },
+        "theme": {
+          "fit": {
+            "top": 55,
+            "bottom": 298,
+            "left": 645,
+            "right": 769,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.theme-flyout > .theme-option",
+              "minW": 107,
+              "minH": 36,
+              "opacity": 1,
+              "count": 5
+            }
+          ],
+          "smallFonts": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 97,
+            "bottom": 410,
+            "left": 699,
+            "right": 769,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.text-size-flyout > .text-size-option",
+              "minW": 52,
+              "minH": 31,
+              "opacity": 1,
+              "count": 9
+            }
+          ],
+          "smallFonts": []
+        }
+      }
+    },
+    "1180x820": {
+      "touch": {
+        "view": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-btn--filters",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-toggle-all",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 978,
+              "minH": 35,
+              "opacity": 1,
+              "count": 26
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".section-body > .kit-toggle.is-open > summary",
+              "minW": 928,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 928,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero",
+              "minW": 45,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes",
+              "minW": 51,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential",
+              "minW": 74,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack",
+              "minW": 75,
+              "minH": 28,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 545,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 545,
+              "minH": 20,
+              "opacity": 1,
+              "count": 14
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": []
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 1180,
+          "innerWidth": 1180,
+          "items": []
+        }
+      },
+      "bug": {
+        "width": 43,
+        "height": 170,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 691,
+            "left": 880,
+            "right": 1072,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .bug-check > input",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip",
+              "minW": 34,
+              "minH": 18,
+              "opacity": 1,
+              "count": 15
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip",
+              "minW": 40,
+              "minH": 18,
+              "opacity": 1,
+              "count": 8
+            }
+          ],
+          "smallFonts": []
+        },
+        "theme": {
+          "fit": {
+            "top": 55,
+            "bottom": 298,
+            "left": 948,
+            "right": 1072,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.theme-flyout > .theme-option",
+              "minW": 107,
+              "minH": 36,
+              "opacity": 1,
+              "count": 5
+            }
+          ],
+          "smallFonts": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 97,
+            "bottom": 410,
+            "left": 1002,
+            "right": 1072,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.text-size-flyout > .text-size-option",
+              "minW": 52,
+              "minH": 31,
+              "opacity": 1,
+              "count": 9
+            }
+          ],
+          "smallFonts": []
+        }
+      }
+    },
+    "1440x900": {
+      "touch": false,
+      "media": {
+        "hoverNone": false,
+        "coarse": false
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "items": []
+        }
+      },
+      "bug": {
+        "width": 43,
+        "height": 170,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 691,
+            "left": 1010,
+            "right": 1202,
+            "inside": true,
+            "scrollsInside": false
+          }
+        },
+        "theme": {
+          "fit": {
+            "top": 55,
+            "bottom": 298,
+            "left": 1078,
+            "right": 1202,
+            "inside": true,
+            "scrollsInside": false
+          }
+        },
+        "text-size": {
+          "fit": {
+            "top": 97,
+            "bottom": 410,
+            "left": 1132,
+            "right": 1202,
+            "inside": true,
+            "scrollsInside": false
+          }
+        }
+      }
+    }
+  }
+}

@@ -149,6 +149,7 @@ const pillLabel = computed(() => {
 .edit-pill {
   position: fixed;
   bottom: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   z-index: 900;
@@ -194,6 +195,7 @@ const pillLabel = computed(() => {
   position: fixed;
   right: max(0px, calc((100vw - 980px) / 2));
   bottom: 60px;
+  bottom: calc(60px + env(safe-area-inset-bottom));
   z-index: 900;
   display: flex;
   flex-direction: column;

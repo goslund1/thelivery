@@ -460,6 +460,7 @@ function close() { modal.closeImageMigration() }
   flex-direction: row;
   align-items: stretch;
   max-height: 90vh;
+  max-height: 90dvh;
   border: 1px solid var(--glass-border);
   border-radius: 8px;
   overflow: hidden;

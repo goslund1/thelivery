@@ -188,6 +188,7 @@ function openAdmin() {
 .settings-panel {
   max-width: 320px;
   max-height: 88vh;
+  max-height: 88dvh;
 }
 
 .settings-form {

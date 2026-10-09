@@ -294,6 +294,7 @@ function onOverlay(e: MouseEvent) {
   max-width: 860px;
   min-height: 300px;
   max-height: calc(100vh - 64px);
+  max-height: calc(100dvh - 64px);
   display: flex;
   flex-direction: column;
 }

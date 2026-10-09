@@ -462,6 +462,7 @@ function rotHandleStyle(box: TextBox) {
   border-radius: 6px;
   width: min(960px, 100%);
   max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;

@@ -216,6 +216,7 @@ function dismissInterrupt() {
   flex-direction: column;
   width: min(92vw, 860px);
   max-height: 92vh;
+  max-height: 92dvh;
   border-radius: 8px;
   overflow: hidden;
   background: var(--panel-bg, #1a1a1a);

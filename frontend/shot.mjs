@@ -102,6 +102,8 @@ async function runSet(label, url) {
 
     r.overflow = { view: await overflowAudit(page) }
     if (vp.touch) r.touch = { view: await touchAudit(page) }
+    await page.evaluate(() => window.scrollTo(0, 0))
+    r.bug = await bugAudit(page)
     r.flyouts = await flyoutAudit(page, vp.touch)
 
     if (token) {
@@ -249,6 +251,20 @@ function touchAudit(page, root = 'body') {
   }, root)
 }
 
+// L6 — the side bug's size and how many px of it sit over any card.
+function bugAudit(page) {
+  return page.evaluate(() => {
+    const b = document.querySelector('.side-bug').getBoundingClientRect()
+    let overlap = 0
+    for (const c of document.querySelectorAll('.card')) {
+      const r = c.getBoundingClientRect()
+      if (r.bottom <= b.top || r.top >= b.bottom) continue
+      overlap = Math.max(overlap, Math.min(r.right, b.right) - Math.max(r.left, b.left))
+    }
+    return { width: Math.round(b.width), height: Math.round(b.height), overCardPx: Math.max(0, Math.round(overlap)) }
+  })
+}
+
 // Opens each side-bug flyout in turn: does it fit the viewport (T6/S1), and on
 // touch, what in it is too small to tap (S2/T3).
 const FLYOUTS = [
@@ -258,6 +274,9 @@ const FLYOUTS = [
 ]
 async function flyoutAudit(page, touch) {
   const out = {}
+  // At phone width the bug starts as a collapsed edge tab; open it the way a user would.
+  await page.evaluate(() => { const t = document.querySelector('.bug-tab'); if (t && t.offsetWidth) t.click() })
+  await page.waitForTimeout(200)
   for (const f of FLYOUTS) {
     await page.evaluate((sel) => document.querySelector(sel).click(), f.btn)
     await page.waitForSelector(`${f.panel}.open`)
@@ -291,6 +310,7 @@ function formatReport(rep) {
       for (const s of t.smallTargets) L.push(`    ${s.minW}×${s.minH}  ${s.path}${s.opacity < 1 ? `  (opacity ${s.opacity})` : ''}${s.count > 1 ? `  ×${s.count}` : ''}`)
       for (const f of t.smallFonts) L.push(`    font ${f.minPx}px  ${f.path}${f.count > 1 ? `  ×${f.count}` : ''}`)
     }
+    L.push(`  side bug: ${r.bug.width}×${r.bug.height}, ${r.bug.overCardPx ? `${r.bug.overCardPx}px over a card` : 'clear of cards'} (page top, as loaded)`)
     for (const [name, f] of Object.entries(r.flyouts)) {
       const { fit } = f
       L.push(`  flyout ${name}: ${fit.inside ? 'inside viewport' : `OFF SCREEN (top ${fit.top}, bottom ${fit.bottom}, left ${fit.left}, right ${fit.right})`}${fit.scrollsInside ? ', scrolls inside' : ''}`)

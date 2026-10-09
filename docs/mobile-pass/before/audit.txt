@@ -1,0 +1,254 @@
+mobile-pass set "before"  2026-10-09T23:33:16.832Z
+edit view: SKIPPED — LIVERY_USER/LIVERY_PASS not set (unverified)
+
+══ 360x640 touch  (hover:none=true coarse=true)  shots: 4
+  overflow [view]: document ok; 18 element(s)
+    .section   content 320 in box 310  ×19
+    .recipe-table > tbody > tr > th   content 84 in box 51  ×32
+    .recipe-table > tbody > tr > td   content 102 in box 51  ← span  ×14
+    .section-body > .ta-nonstock > .ta-nonstock-summary > .ta-nonstock-actions   content 170 in box 119  ← .ta-nonstock-chev  ×8
+    .ta-nonstock > .ta-nonstock-summary > .ta-nonstock-actions > .ta-nonstock-chev   content 9 in box 9, 11px past card edge
+    .ta > .ta-content > .ta-tab--tires > .ta-group   content 302 in box 236  ×8
+    .ta-content > .ta-tab--tires > .ta-group > .ta-group-header   content 302 in box 236  ← .ta-right-section  ×8
+    .ta-group > .ta-group-header > .ta-left-section > .ta-group-title.ta-caps-nudge   content 92 in box 70  ×8
+    .ta-tab--tires > .ta-group > .ta-group-header > .ta-right-section   content 208 in box 208, 28px past card edge  ×8
+    .ta-group > .ta-group-header > .ta-right-section > .ta-group-axis-col.ta-group-axis-col--max   content 48 in box 48, 20px past card edge  ×8
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row.changed   content 302 in box 236  ← .ta-right-section  ×2
+    .ta-tab--tires > .ta-group > .ta-row.changed > .ta-left-section   content 112 in box 94  ← .ta-val-box  ×2
+    .ta-tab--tires > .ta-group > .ta-row.changed > .ta-right-section   content 208 in box 208, 28px past card edge  ×2
+    .ta-group > .ta-row.changed > .ta-right-section > .ta-end-label   content 48 in box 48, 20px past card edge  ×2
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row   content 302 in box 236  ← .ta-right-section  ×14
+    .ta-tab--tires > .ta-group > .ta-row > .ta-left-section   content 112 in box 94  ← .ta-val-box  ×14
+    .ta-tab--tires > .ta-group > .ta-row > .ta-right-section   content 208 in box 208, 28px past card edge  ×14
+    .ta-group > .ta-row > .ta-right-section > .ta-end-label   content 48 in box 48, 20px past card edge  ×14
+  touch [view]: 26 target(s) under 44px, 0 field(s) under 16px
+    42×42  div > .side-bug > .bug-btn.bug-btn--filters
+    42×42  div > .side-bug > .bug-btn  ×2
+    42×42  div > .side-bug > .bug-btn.bug-toggle-all
+    86×30  .stage > .stage-controls > .play-toggle  ×9
+    28×28  .card > .stage > .stage-expand  (opacity 0)  ×9
+    111×35  .card > .tag-cloud > .build-it  ×9
+    310×35  .card > .section > summary  ×26
+    178×26  .rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active
+    99×26  .rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab  ×2
+    81×19  .kit-toggle.is-open > summary > .kit-stock-btn  ×8
+    230×21  .ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    230×21  .ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line  ×3
+    230×21  .ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    230×21  .ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line  ×4
+    230×21  .ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line  ×4
+    230×21  .ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    230×21  .ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    230×21  .ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line  ×5
+    48×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires  ×8
+    61×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing  ×8
+    71×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment  ×8
+    81×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb  ×8
+    59×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs  ×8
+    80×20  .ta-right-section > .ta-track-wrap > .ta-slider  ×2
+    80×20  .ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock  ×14
+    60×13  .catalog-credits > p > a  ×2
+  flyout filters: inside viewport, scrolls inside
+    14×14  .bug-flyout.drawer_menu_panel > .bug-check > input  ×10
+    34×18  .bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip  ×15
+    40×18  .bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip  ×8
+  flyout theme: inside viewport
+    107×36  div > .bug-flyout.theme-flyout > .theme-option  ×5
+  flyout text-size: inside viewport
+    52×31  div > .bug-flyout.text-size-flyout > .text-size-option  ×9
+
+══ 390x844 touch  (hover:none=true coarse=true)  shots: 4
+  overflow [view]: document ok; 17 element(s)
+    .recipe-table > tbody > tr > th   content 84 in box 57  ×24
+    .recipe-table > tbody > tr > td   content 102 in box 57  ← span  ×7
+    .section > .section-body > .ta-nonstock   content 311 in box 290  ×8
+    .section-body > .ta-nonstock > .ta-nonstock-summary > .ta-nonstock-actions   content 170 in box 134  ← .ta-nonstock-chev  ×8
+    .ta > .ta-content > .ta-tab--tires > .ta-group   content 314 in box 266  ×8
+    .ta-content > .ta-tab--tires > .ta-group > .ta-group-header   content 314 in box 266  ← .ta-right-section  ×8
+    .ta-group > .ta-group-header > .ta-left-section > .ta-group-title.ta-caps-nudge   content 92 in box 82  ×8
+    .ta-tab--tires > .ta-group > .ta-group-header > .ta-right-section   content 208 in box 208, 10px past card edge  ×8
+    .ta-group > .ta-group-header > .ta-right-section > .ta-group-axis-col.ta-group-axis-col--max   content 48 in box 48, 2px past card edge  ×8
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row.changed   content 314 in box 266  ← .ta-right-section  ×2
+    .ta-tab--tires > .ta-group > .ta-row.changed > .ta-left-section   content 112 in box 106  ← .ta-val-box  ×2
+    .ta-tab--tires > .ta-group > .ta-row.changed > .ta-right-section   content 208 in box 208, 10px past card edge  ×2
+    .ta-group > .ta-row.changed > .ta-right-section > .ta-end-label   content 48 in box 48, 2px past card edge  ×2
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row   content 314 in box 266  ← .ta-right-section  ×14
+    .ta-tab--tires > .ta-group > .ta-row > .ta-left-section   content 112 in box 106  ← .ta-val-box  ×14
+    .ta-tab--tires > .ta-group > .ta-row > .ta-right-section   content 208 in box 208, 10px past card edge  ×14
+    .ta-group > .ta-row > .ta-right-section > .ta-end-label   content 48 in box 48, 2px past card edge  ×14
+  touch [view]: 26 target(s) under 44px, 0 field(s) under 16px
+    42×42  div > .side-bug > .bug-btn.bug-btn--filters
+    42×42  div > .side-bug > .bug-btn  ×2
+    42×42  div > .side-bug > .bug-btn.bug-toggle-all
+    86×30  .stage > .stage-controls > .play-toggle  (opacity 0)  ×9
+    28×28  .card > .stage > .stage-expand  (opacity 0)  ×9
+    111×35  .card > .tag-cloud > .build-it  ×9
+    340×35  .card > .section > summary  ×26
+    178×26  .rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active
+    99×26  .rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab  ×2
+    81×19  .kit-toggle.is-open > summary > .kit-stock-btn  ×8
+    260×21  .ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    260×21  .ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line  ×3
+    260×21  .ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    260×21  .ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line  ×4
+    260×21  .ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line  ×4
+    260×21  .ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    260×21  .ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    260×21  .ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line  ×5
+    48×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires  ×8
+    61×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing  ×8
+    71×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment  ×8
+    81×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb  ×8
+    59×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs  ×8
+    80×20  .ta-right-section > .ta-track-wrap > .ta-slider  ×2
+    80×20  .ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock  ×14
+    60×13  .catalog-credits > p > a  ×2
+  flyout filters: inside viewport
+    14×14  .bug-flyout.drawer_menu_panel > .bug-check > input  ×10
+    34×18  .bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip  ×15
+    40×18  .bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip  ×8
+  flyout theme: inside viewport
+    107×36  div > .bug-flyout.theme-flyout > .theme-option  ×5
+  flyout text-size: inside viewport
+    52×31  div > .bug-flyout.text-size-flyout > .text-size-option  ×9
+
+══ 844x390 touch  (hover:none=true coarse=true)  shots: 4
+  overflow [view]: document ok; 0 element(s)
+  touch [view]: 33 target(s) under 44px, 0 field(s) under 16px
+    42×42  div > .side-bug > .bug-btn.bug-btn--filters
+    42×42  div > .side-bug > .bug-btn  ×2
+    42×42  div > .side-bug > .bug-btn.bug-toggle-all
+    86×30  .stage > .stage-controls > .play-toggle  ×9
+    28×28  .card > .stage > .stage-expand  (opacity 0)  ×9
+    111×35  .card > .tag-cloud > .build-it  ×9
+    794×35  .card > .section > summary  ×26
+    178×26  .rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active
+    99×26  .rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab  ×2
+    744×39  .section-body > .kit-toggle.is-open > summary  ×8
+    81×19  .kit-toggle.is-open > summary > .kit-stock-btn  ×8
+    744×39  .section-body > .ta-nonstock > .ta-nonstock-summary  ×8
+    165×21  .ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    165×21  .ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line  ×4
+    165×21  .ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line  ×3
+    165×21  .ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    165×21  .ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    165×21  .ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    165×21  .ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line  ×5
+    165×21  .ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line  ×4
+    48×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires  ×8
+    61×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing  ×8
+    71×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment  ×8
+    81×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb  ×8
+    59×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs  ×8
+    66×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping  ×8
+    45×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero  ×8
+    51×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes  ×8
+    74×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential  ×8
+    75×28  .ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack  ×8
+    361×20  .ta-right-section > .ta-track-wrap > .ta-slider  ×2
+    361×20  .ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock  ×14
+    60×13  .catalog-credits > p > a  ×2
+  flyout filters: inside viewport, scrolls inside
+    14×14  .bug-flyout.drawer_menu_panel > .bug-check > input  ×10
+    34×18  .bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip  ×15
+    40×18  .bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip  ×8
+  flyout theme: inside viewport
+    107×36  div > .bug-flyout.theme-flyout > .theme-option  ×5
+  flyout text-size: OFF SCREEN (top 97, bottom 410, left 723, right 793)
+    52×31  div > .bug-flyout.text-size-flyout > .text-size-option  ×9
+
+══ 820x1180 touch  (hover:none=true coarse=true)  shots: 4
+  overflow [view]: document ok; 0 element(s)
+  touch [view]: 33 target(s) under 44px, 0 field(s) under 16px
+    42×42  div > .side-bug > .bug-btn.bug-btn--filters
+    42×42  div > .side-bug > .bug-btn  ×2
+    42×42  div > .side-bug > .bug-btn.bug-toggle-all
+    86×30  .stage > .stage-controls > .play-toggle  (opacity 0)  ×9
+    28×28  .card > .stage > .stage-expand  (opacity 0)  ×9
+    111×35  .card > .tag-cloud > .build-it  ×9
+    770×35  .card > .section > summary  ×26
+    178×26  .rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active
+    99×26  .rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab  ×2
+    720×39  .section-body > .kit-toggle.is-open > summary  ×8
+    81×19  .kit-toggle.is-open > summary > .kit-stock-btn  ×8
+    720×39  .section-body > .ta-nonstock > .ta-nonstock-summary  ×8
+    159×21  .ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    159×21  .ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line  ×4
+    159×21  .ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line  ×3
+    159×21  .ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    159×21  .ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    159×21  .ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    159×21  .ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line  ×5
+    159×21  .ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line  ×4
+    48×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires  ×8
+    61×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing  ×8
+    71×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment  ×8
+    81×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb  ×8
+    59×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs  ×8
+    66×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping  ×8
+    45×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero  ×8
+    51×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes  ×8
+    74×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential  ×8
+    75×28  .ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack  ×8
+    337×20  .ta-right-section > .ta-track-wrap > .ta-slider  ×2
+    337×20  .ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock  ×14
+    60×13  .catalog-credits > p > a  ×2
+  flyout filters: inside viewport
+    14×14  .bug-flyout.drawer_menu_panel > .bug-check > input  ×10
+    34×18  .bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip  ×15
+    40×18  .bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip  ×8
+  flyout theme: inside viewport
+    107×36  div > .bug-flyout.theme-flyout > .theme-option  ×5
+  flyout text-size: inside viewport
+    52×31  div > .bug-flyout.text-size-flyout > .text-size-option  ×9
+
+══ 1180x820 touch  (hover:none=true coarse=true)  shots: 4
+  overflow [view]: document ok; 0 element(s)
+  touch [view]: 33 target(s) under 44px, 0 field(s) under 16px
+    42×42  div > .side-bug > .bug-btn.bug-btn--filters
+    42×42  div > .side-bug > .bug-btn  ×2
+    42×42  div > .side-bug > .bug-btn.bug-toggle-all
+    86×30  .stage > .stage-controls > .play-toggle  (opacity 0)  ×9
+    28×28  .card > .stage > .stage-expand  (opacity 0)  ×9
+    111×35  .card > .tag-cloud > .build-it  ×9
+    978×35  .card > .section > summary  ×26
+    178×26  .rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active
+    99×26  .rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab  ×2
+    928×39  .section-body > .kit-toggle.is-open > summary  ×8
+    81×19  .kit-toggle.is-open > summary > .kit-stock-btn  ×8
+    928×39  .section-body > .ta-nonstock > .ta-nonstock-summary  ×8
+    165×21  .ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    165×21  .ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    165×21  .ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line  ×3
+    165×21  .ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line  ×5
+    165×21  .ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    165×21  .ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line  ×2
+    165×21  .ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line  ×4
+    165×21  .ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line  ×4
+    48×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires  ×8
+    61×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing  ×8
+    71×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment  ×8
+    81×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb  ×8
+    59×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs  ×8
+    66×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping  ×8
+    45×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero  ×8
+    51×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes  ×8
+    74×27  .ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential  ×8
+    75×28  .ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack  ×8
+    545×20  .ta-right-section > .ta-track-wrap > .ta-slider  ×2
+    545×20  .ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock  ×14
+    60×13  .catalog-credits > p > a  ×2
+  flyout filters: inside viewport
+    14×14  .bug-flyout.drawer_menu_panel > .bug-check > input  ×10
+    34×18  .bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip  ×15
+    40×18  .bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip  ×8
+  flyout theme: inside viewport
+    107×36  div > .bug-flyout.theme-flyout > .theme-option  ×5
+  flyout text-size: inside viewport
+    52×31  div > .bug-flyout.text-size-flyout > .text-size-option  ×9
+
+══ 1440x900 mouse  (hover:none=false coarse=false)  shots: 4
+  overflow [view]: document ok; 0 element(s)
+  flyout filters: inside viewport
+  flyout theme: inside viewport
+  flyout text-size: inside viewport

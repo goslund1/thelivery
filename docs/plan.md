@@ -18,8 +18,11 @@ Built from the Mobile & Touch work order, Phases 0–6 (commits 24282cd → 633b
 
 ## Maintenance
 
-### Phantom unsaved card on page load (found 2026-10-09, mobile pass Phase 4)
-A fresh load with no sign-in and no edits marks card 1 (Smokin) dirty: `ui.dirtyIds` has it within a second, so `hasUnsavedChanges` is true for every visitor and the `beforeunload` "Leave site?" guard is armed. Entering edit mode clears it (`enterEdit` → `clearAllDirty`), which is why it went unnoticed. Cause not traced; the likely path is a mount-time `flush()` in `TuningAdjustments.vue` (it calls `markDirty()` via `CardView`'s `MarkDirtyKey`) — Smokin is the card whose tune triggers implied-upgrade checks. Draft safety (E4) only writes drafts in edit mode, so it isn't affected.
+### ~~Phantom unsaved card on page load~~ FIXED 2026-10-09
+A fresh load (signed out, no edits) marked card 1 dirty, arming the `beforeunload` "Leave site?" guard for every visitor. Cause: `RecipeSection.vue`'s `onMounted` applied the saved car variant without `suppressFlush`, so swapping in its upgrades fired the sync `local.upgrades` watcher → `flush()` (copying the tuning panel's not-yet-updated rows over the variant) + `markDirty()`. Fixed with the same guard the variant switcher and the reset use.
+
+### ~~Touch step could press "Reset Stock"~~ FIXED 2026-10-09
+Found while testing the fix above. A tuning −/+ step (acts on `pointerdown`, mobile pass Phase 3) can open the Springs & Dampers or Transmission prompt under the finger; in Chromium the same tap's click then landed on the prompt's button — "Reset Stock" zeroed the tune's alignment, springs and damping. Both prompts now ignore presses for 400ms after opening (`promptReady()` in `TuningAdjustments.vue`). This was live from Phase 3 until this fix: any tune edited with the step buttons on a touch device in that window is worth a look in its card History.
 
 ### Live data gaps (from session-36 shakedown)
 - ~~Color filters match zero cards on live~~ **RESOLVED** — the live data was fine (11/11 card-referenced liveries had colors); the real bug was the liveries store never loading outside edit flows, so the filter's liveryId→color lookup was empty for fresh visitors. Fixed by `loadAll()` on Filters mount (commit a70cce3, verified live).

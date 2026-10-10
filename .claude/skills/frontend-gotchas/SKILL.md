@@ -55,9 +55,9 @@ Phone/iPad behaviour hangs off `@media (hover: none), (pointer: coarse)` (CSS) o
 
 Focusing an `input`/`select`/`textarea`/contenteditable with a computed font-size below 16px makes iOS Safari zoom the page. Raise the field to 16px on touch (`font-size: max(16px, 1em)` under `:where(...)` so class rules still win, or 16px in the component's touch block). Never use `maximum-scale=1` — it disables pinch zoom.
 
-## Buttons that act on `pointerdown` need `@touchstart.prevent`
+## Buttons that act on `pointerdown`: guard against tap-through
 
-The tuning steppers act on `pointerdown` (for hold-to-repeat). Without `@touchstart.prevent`, the browser still synthesizes a click after the tap: it moves focus off the value box being typed in (closing the number pad) and can land on a prompt the step just opened. `touchstart.prevent` cancels the follow-up mouse events and click; pointer events still fire.
+The tuning steppers act on `pointerdown` (for hold-to-repeat). The tap still produces a click afterwards, and if the step changed what's under the finger, the click lands there: it moved focus off the value box being typed in, and when a step opened the Springs prompt it pressed "Reset Stock" (zeroing a tune). `@touchstart.prevent` on the button stops most of it but is not reliable in Chromium. So also guard what can appear: a prompt that a step can open ignores presses for 400ms after it opens (`promptReady()` in `TuningAdjustments.vue`).
 
 ## `overflow: hidden` on an ancestor kills `position: sticky`
 

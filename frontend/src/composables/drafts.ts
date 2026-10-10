@@ -63,9 +63,8 @@ export function useDraftAutosave() {
     () => {
       if (timer) clearTimeout(timer)
       timer = setTimeout(() => {
-        // Only real edits: outside edit mode a card can be marked dirty with no
-        // change at all (docs/plan.md, "phantom unsaved card"), and that must
-        // not turn into a restore prompt on the next visit.
+        // Edits only happen in edit mode; anything marked dirty outside it is
+        // not a user edit and must not become a restore prompt next visit.
         if (!ui.isEditing) return
         for (const id of ui.dirtyIds) {
           const c = cards.byId(id)

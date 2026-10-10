@@ -456,7 +456,13 @@ watch(activeCarIndex, async (idx, prevIdx) => {
 onMounted(() => {
   if (hasCars.value) {
     const idx = activeCarIndex.value
+    // Showing the saved variant is not an edit: without the guard, swapping in
+    // its upgrades fires the sync upgrades watcher, which flushed (copying the
+    // tuning panel's not-yet-updated rows over the variant) and marked the card
+    // unsaved on every page load — arming "Leave site?" for every visitor.
+    suppressFlush = true
     applyVariant(idx)
+    suppressFlush = false
     emit('update:activeCarId', local.cars?.[idx]?.carId ?? null)
   }
 })

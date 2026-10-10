@@ -460,6 +460,16 @@ function onSpringsChoice(tier: 'Race' | 'Rally' | 'Drift') {
   emit('springs-choice', tier)
 }
 
+// Tap-through guard: a touch step (−/+ act on pointerdown) can open one of these
+// prompts under the finger, and the same tap's click then lands on whatever
+// button is now there — it pressed "Reset Stock" and zeroed a tune's alignment,
+// springs and damping. Presses in the first 400ms after a prompt opens are ignored.
+let promptOpenedAt = 0
+watch([springsDialogOpen, transDialogOpen], ([springs, trans], [wasSprings, wasTrans]) => {
+  if ((springs && !wasSprings) || (trans && !wasTrans)) promptOpenedAt = Date.now()
+}, { flush: 'sync' })
+function promptReady() { return Date.now() - promptOpenedAt > 400 }
+
 function onSpringsReset() {
   springsDialogOpen.value = false
   for (const r of localRows.value) {
@@ -1608,29 +1618,29 @@ async function submitSuggestion() {
 
   <Teleport to="body">
     <!-- Transmission picker modal -->
-    <div v-if="transDialogOpen" class="ta-trans-modal-backdrop" @click.self="transDialogOpen = false">
+    <div v-if="transDialogOpen" class="ta-trans-modal-backdrop" @click.self="promptReady() && (transDialogOpen = false)">
       <div class="ta-trans-modal">
         <span class="ta-prompt-label">Select Race Transmission</span>
         <select ref="transSelectRef" class="ta-trans-select" v-model="transDialogSelection" @keydown.enter.prevent="onTransChoice(transDialogSelection)">
           <option v-for="t in transDialogOptions" :key="t.name" :value="t.name">{{ t.name }}</option>
         </select>
         <div class="ta-trans-modal-actions">
-          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onTransChoice(transDialogSelection)">Confirm</button>
-          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="transDialogOpen = false">Cancel</button>
+          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="promptReady() && onTransChoice(transDialogSelection)">Confirm</button>
+          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="promptReady() && (transDialogOpen = false)">Cancel</button>
         </div>
       </div>
     </div>
 
     <!-- Springs and Dampers tier prompt -->
-    <div v-if="springsDialogOpen" class="ta-trans-modal-backdrop" @click.self="springsDialogOpen = false">
+    <div v-if="springsDialogOpen" class="ta-trans-modal-backdrop" @click.self="promptReady() && (springsDialogOpen = false)">
       <div class="ta-trans-modal">
         <span class="ta-prompt-label">Springs &amp; Dampers — which tier?</span>
         <div class="ta-trans-modal-actions ta-trans-modal-actions--wrap">
-          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Race')">Race</button>
-          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Rally')">Rally</button>
-          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="onSpringsChoice('Drift')">Drift</button>
-          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="onSpringsReset">Reset Stock</button>
-          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="springsDialogOpen = false">Cancel</button>
+          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="promptReady() && onSpringsChoice('Race')">Race</button>
+          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="promptReady() && onSpringsChoice('Rally')">Rally</button>
+          <button class="ta-prompt-btn ta-prompt-btn--choice" @click="promptReady() && onSpringsChoice('Drift')">Drift</button>
+          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="promptReady() && onSpringsReset()">Reset Stock</button>
+          <button class="ta-prompt-btn ta-prompt-btn--muted" @click="promptReady() && (springsDialogOpen = false)">Cancel</button>
         </div>
       </div>
     </div>

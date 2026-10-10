@@ -42,3 +42,6 @@ frontend/.shot-login.json
 
 # Mobile-pass screenshots stay local; audit.txt / audit.json are tracked
 spec/mobile-pass/**/*.png
+
+# Jason's inbox (Projects standard)
+Drop Offs/

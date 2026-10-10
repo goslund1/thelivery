@@ -39,3 +39,6 @@ backend/seed/users.json
 
 # Local-only harness login for frontend/shot.mjs (account exists only in the local data.db)
 frontend/.shot-login.json
+
+# Mobile-pass screenshots stay local; audit.txt / audit.json are tracked
+docs/mobile-pass/**/*.png

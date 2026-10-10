@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, computed, provide } from 'vue'
 import { useScrollGuard } from './composables/useScrollGuard'
+import { useWakeLock } from './composables/wakeLock'
 import { useCardsStore } from './stores/cards'
 import { useUiStore } from './stores/ui'
 import { useFilterStore } from './stores/filters'
@@ -38,6 +39,9 @@ const ui = useUiStore()
 const filters = useFilterStore()
 const modal = useModalStore()
 const theme = useThemeStore()
+
+// Edit mode on a phone means entering a tune while reading the game: keep the screen on.
+useWakeLock(computed(() => ui.isEditing))
 
 const visibleCards = computed(() =>
   store.cards.filter(c => c.isLegend ? ui.isEditing : filters.isCardVisible(c))

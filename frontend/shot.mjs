@@ -272,8 +272,9 @@ function touchAudit(page, root = 'body') {
     // Agreed exceptions: the 24px side-bug tab (L6), inline links in running text
     // (WCAG 2.5.8 inline exception), and editable text, which is tapped to place a caret.
     const EXEMPT = '.bug-tab, p a, [contenteditable=true]'
-    // Rebuilt for touch in Phase 3 (U1 rows, U6 slider, U10 tweaks list): reported apart.
-    const LATER = 'input[type=range], .ta-val-input, .ta-end-field, .ta-nonstock-line'
+    // Controls deferred to a later phase are reported apart rather than counted.
+    // (Phase 3 cleared the tuning rows; nothing is deferred now.)
+    const LATER = ':not(*)'
     const small = new Map(), fonts = new Map(), later = new Map()
     const scope = document.querySelector(root)
     for (const el of scope.querySelectorAll(CONTROLS)) {

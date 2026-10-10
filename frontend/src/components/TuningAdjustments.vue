@@ -553,6 +553,23 @@ function switchToTabView(sectionId: string) {
   })
 }
 
+// Tab bar: keep the active tab centred (horizontal scroll only, so a page that
+// isn't overflowing never moves) and fade the right edge while tabs are hidden.
+const tabbarRef = ref<HTMLElement | null>(null)
+const tabbarMore = ref(false)
+function updateTabbarMore() {
+  const el = tabbarRef.value
+  tabbarMore.value = !!el && el.scrollLeft + el.clientWidth < el.scrollWidth - 2
+}
+watch(activeTabId, () => nextTick(() => {
+  const bar = tabbarRef.value
+  const btn = bar?.querySelector<HTMLElement>('.ta-tab-btn.active')
+  if (bar && btn && bar.scrollWidth > bar.clientWidth) {
+    bar.scrollTo({ left: btn.offsetLeft - (bar.clientWidth - btn.offsetWidth) / 2, behavior: 'smooth' })
+  }
+  updateTabbarMore()
+}))
+
 function toggleStacked() {
   stacked.value = !stacked.value
 }
@@ -621,10 +638,13 @@ const tweakColCount = ref(5)
 let tweakResizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
+  nextTick(updateTabbarMore)
   if (taNonstockRef.value) {
+    // One column on a phone (U10): two would clip every tweak line.
+    const phone = window.matchMedia('(max-width: 640px)')
     tweakResizeObserver = new ResizeObserver(([entry]) => {
       const w = entry.contentRect.width
-      tweakColCount.value = w >= 880 ? 5 : w >= 700 ? 4 : w >= 500 ? 3 : w >= 320 ? 2 : 1
+      tweakColCount.value = phone.matches ? 1 : w >= 880 ? 5 : w >= 700 ? 4 : w >= 500 ? 3 : w >= 320 ? 2 : 1
     })
     tweakResizeObserver.observe(taNonstockRef.value)
   }
@@ -695,7 +715,8 @@ function trackStyle(r: AdjustmentRow) {
 
 function thumbPct(r: AdjustmentRow, val: number) {
   const p = r.max === r.min ? 0 : (val - r.min) / (r.max - r.min)
-  return { left: `calc(7px + ${p} * (100% - 14px))` }
+  // --thumb-half is the slider thumb's half-width: 7px, or 14px on touch.
+  return { left: `calc(var(--thumb-half, 7px) + ${p} * (100% - 2 * var(--thumb-half, 7px)))` }
 }
 
 function stockDotStyle(r: AdjustmentRow) {
@@ -724,11 +745,40 @@ const undoStacks = new Map<string, number[]>()
 const MAX_UNDO = 20
 let sliderDragStart: { key: string; value: number } | null = null
 
+// Panel-wide order of changes, so the touch Undo button (no Cmd+Z on a phone)
+// can step back through edits across rows. Cmd+Z stays per-row.
+const undoLog: string[] = []
+const canUndo = ref(false)
+
 function pushUndo(key: string, value: number) {
   const stack = undoStacks.get(key) ?? []
   stack.push(value)
   if (stack.length > MAX_UNDO) stack.shift()
   undoStacks.set(key, stack)
+  undoLog.push(key)
+  if (undoLog.length > MAX_UNDO * 4) undoLog.shift()
+  canUndo.value = true
+}
+
+function popUndo(r: LocalRow) {
+  const stack = undoStacks.get(r.key)
+  if (!stack?.length) return false
+  r.value = stack.pop()!
+  const i = undoLog.lastIndexOf(r.key)
+  if (i >= 0) undoLog.splice(i, 1)
+  canUndo.value = undoLog.length > 0
+  flush()
+  return true
+}
+
+function undoLast() {
+  while (undoLog.length) {
+    const key = undoLog[undoLog.length - 1]
+    const r = localRows.value.find(row => row.key === key)
+    if (r && popUndo(r)) return
+    undoLog.pop()
+  }
+  canUndo.value = false
 }
 
 function onSliderMouseDown(r: LocalRow, e: MouseEvent) {
@@ -750,6 +800,26 @@ function onSliderMouseDown(r: LocalRow, e: MouseEvent) {
   }
   sliderDragStart = { key: r.key, value: r.value }
 }
+
+// Touch: the mouse path above relies on preventDefault in mousedown, which touch
+// never fires in time. Take the undo snapshot on pointerdown, and gate a touch
+// that lands away from the thumb so a tap or a scroll's sideways wobble can't
+// move the value — only dragging the thumb does (decision D3).
+let touchGateKey: string | null = null
+function onSliderPointerDown(r: LocalRow, e: PointerEvent) {
+  if (e.pointerType === 'mouse') return
+  const slider = e.currentTarget as HTMLInputElement
+  const rect = slider.getBoundingClientRect()
+  const p = r.max === r.min ? 0 : (r.value - r.min) / (r.max - r.min)
+  const thumbPx = 14 + p * (rect.width - 28)
+  if (Math.abs(e.clientX - rect.left - thumbPx) > 22) {
+    touchGateKey = r.key
+    return
+  }
+  focusedKey.value = r.key
+  sliderDragStart = { key: r.key, value: r.value }
+}
+function onSliderPointerUp() { touchGateKey = null }
 
 function onSliderDragEnd(r: LocalRow) {
   if (sliderDragStart?.key === r.key) {
@@ -795,11 +865,7 @@ function onRowKeydown(r: LocalRow, e: KeyboardEvent) {
   if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
     if (!ui.isEditing || r.locked) return
     e.preventDefault()
-    const stack = undoStacks.get(r.key)
-    if (stack?.length) {
-      r.value = stack.pop()!
-      flush()
-    }
+    popUndo(r)
     return
   }
 
@@ -820,20 +886,70 @@ function onRowKeydown(r: LocalRow, e: KeyboardEvent) {
   }
 
   // Left/Right: adjust slider value (all modes; flush only in edit mode)
+  const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+  if (!dir) {
+    if (r.locked) {
+      if (r.tab === 'gearing') unlockByUpgrade(r)
+      else r.locked = false
+    }
+    return
+  }
+  e.preventDefault()
+  stepRow(r, dir)
+}
+
+// One step left/right — the arrow-key path, shared with the touch −/+ buttons.
+function stepRow(r: LocalRow, dir: number) {
   if (r.locked) {
     if (r.tab === 'gearing') unlockByUpgrade(r)
     else r.locked = false
   }
-  const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
-  if (!dir) return
-  e.preventDefault()
   if (ui.isEditing) pushUndo(r.key, r.value)
   r.value = parseFloat(Math.max(r.min, Math.min(r.max, r.value + dir * r.step)).toFixed(decimals(r)))
   if (r.tab === 'gearing' && !autoAddedPart.value && Math.abs(r.value - r.stock) <= r.step / 2) r.locked = true
   if (ui.isEditing) flush(); else checkImplied()
 }
 
+// Touch −/+ : one step per tap, repeating while held. The buttons act on
+// pointerdown and cancel touchstart, so no click follows the tap: a click would
+// move focus off a value box being typed in, or land on a prompt the step opened.
+let repeatTimer: ReturnType<typeof setTimeout> | null = null
+function startStep(r: LocalRow, dir: number) {
+  focusedKey.value = r.key
+  stepRow(r, dir)
+  stopStep()
+  const tick = (delay: number) => { repeatTimer = setTimeout(() => { stepRow(r, dir); tick(80) }, delay) }
+  tick(400)
+}
+function stopStep() {
+  if (repeatTimer) clearTimeout(repeatTimer)
+  repeatTimer = null
+}
+onUnmounted(stopStep)
+
+// Touch ± for rows that go below zero: the iPhone number pad has no minus key.
+// With the value box focused it flips the typed text (the pad stays open);
+// otherwise it negates the value through the same path as a typed entry.
+function flipSign(r: LocalRow, e: PointerEvent) {
+  const input = (e.currentTarget as HTMLElement).closest('.ta-left-section')?.querySelector<HTMLInputElement>('.ta-val-input')
+  if (input && document.activeElement === input) {
+    const t = input.value.trim()
+    input.value = t.startsWith('-') || t.startsWith('−') ? t.slice(1) : '-' + t
+    return
+  }
+  const v = Math.max(r.min, Math.min(r.max, -r.value))
+  if (v === r.value) return
+  focusedKey.value = r.key
+  if (ui.isEditing) pushUndo(r.key, r.value)
+  r.value = parseFloat(v.toFixed(decimals(r)))
+  if (ui.isEditing) flush(); else checkImplied()
+}
+
 function onSliderInput(r: LocalRow, e: Event) {
+  if (touchGateKey === r.key) {
+    ;(e.target as HTMLInputElement).value = String(r.value)
+    return
+  }
   if (r.locked) {
     if (r.tab === 'gearing') unlockByUpgrade(r)
     else r.locked = false
@@ -865,9 +981,52 @@ function onMaxChange(r: LocalRow, e: Event) {
   }
 }
 function onBadgeChange(r: LocalRow, e: Event) {
-  const v = parseFloat((e.target as HTMLInputElement).value)
-  if (!isNaN(v)) { r.value = Math.max(r.min, Math.min(r.max, v)); flush() }
+  const v = parseFloat((e.target as HTMLInputElement).value.replace('−', '-'))
+  if (!isNaN(v)) {
+    const next = Math.max(r.min, Math.min(r.max, v))
+    if (next !== r.value) pushUndo(r.key, r.value)
+    r.value = next
+    flush()
+  }
   ;(e.target as HTMLInputElement).value = fmt(r, r.value)
+}
+
+// Value boxes select their number on focus, so typing replaces it.
+function selectOnFocus(e: FocusEvent) {
+  const input = e.target as HTMLInputElement
+  requestAnimationFrame(() => input.select())
+}
+
+// Enter/Next in a value box: commit, then the next unlocked row's box; after a
+// tab's last row, the next tab's first. iOS only keeps the keyboard up if focus
+// moves inside this event, so a tab switch parks focus on a hidden proxy input
+// first, then moves on once the new tab has rendered.
+const focusProxy = ref<HTMLInputElement | null>(null)
+function nextValueBox(from: HTMLElement): HTMLInputElement | null {
+  const boxes = [...(taRef.value?.querySelectorAll<HTMLInputElement>('.ta-row:not(.ta-row--locked-edit) .ta-val-input') ?? [])]
+  return boxes[boxes.indexOf(from as HTMLInputElement) + 1] ?? null
+}
+function onValueEnter(r: LocalRow, e: KeyboardEvent) {
+  e.preventDefault()
+  const input = e.target as HTMLInputElement
+  onBadgeChange(r, e)
+  const next = nextValueBox(input)
+  if (next) { next.focus(); return }
+  if (stacked.value) return
+  focusProxy.value?.focus()
+  focusFirstBoxFrom(activeTabs.value.findIndex(t => t.id === activeTabId.value) + 1)
+}
+// Next tab with an unlocked row (Gearing stays locked until a transmission is
+// picked, so it can be passed over).
+function focusFirstBoxFrom(i: number) {
+  const tabs = activeTabs.value
+  if (i <= 0 || i >= tabs.length) { focusProxy.value?.blur(); return }
+  activeTabId.value = tabs[i].id
+  nextTick(() => {
+    const box = taRef.value?.querySelector<HTMLInputElement>('.ta-row:not(.ta-row--locked-edit) .ta-val-input')
+    if (box) box.focus()
+    else focusFirstBoxFrom(i + 1)
+  })
 }
 
 // ── Stock snapshot ────────────────────────────────────────────────────────────
@@ -1236,8 +1395,9 @@ async function submitSuggestion() {
       <p v-if="presetError" class="ta-preset-error">{{ presetError }}</p>
     </div>
 
-    <!-- Tab bar -->
-    <div v-if="activeTabs.length" class="ta-tabbar">
+    <!-- Tab bar, in a header that sticks on phones/touch (display: contents elsewhere) -->
+    <div v-if="activeTabs.length" class="ta-header">
+    <div class="ta-tabbar" ref="tabbarRef" :class="{ 'ta-tabbar--more': tabbarMore }" @scroll.passive="updateTabbarMore">
       <button
         v-for="tab in activeTabs" :key="tab.id"
         :class="['ta-tab-btn', 'ta-tab--' + tab.id, { active: !stacked && tab.id === activeTabId }]"
@@ -1252,6 +1412,9 @@ async function submitSuggestion() {
         {{ stacked ? 'View As Tabs' : 'View Inline' }}
       </button>
     </div>
+    <button v-if="ui.isEditing" class="ta-btn-lwb ta-undo-btn" :disabled="!canUndo" @click="undoLast">↩ Undo</button>
+    </div>
+    <input ref="focusProxy" class="ta-focus-proxy" inputmode="decimal" tabindex="-1" aria-hidden="true" />
 
     <!-- Content -->
     <div v-if="activeTabs.length" class="ta-content">
@@ -1342,19 +1505,29 @@ async function submitSuggestion() {
             >
               <div class="ta-left-section">
                 <div class="ta-row-label">{{ r.label }}</div>
-                <div class="ta-val-box">
-                  <input v-if="ui.isEditing" type="text" class="ta-val-input"
-                    :value="fmt(r, r.value)"
-                    @change="onBadgeChange(r, $event)"
-                    @focus="focusedKey = r.key"
-                  />
-                  <span v-else>{{ fmt(r, r.value) }}</span>
+                <div class="ta-val-controls">
+                  <button v-if="r.min < 0 && ui.isEditing" type="button" class="ta-step-btn ta-sign-btn" aria-label="Flip sign"
+                    @pointerdown.prevent="flipSign(r, $event)" @touchstart.prevent @click.stop>±</button>
+                  <button type="button" class="ta-step-btn" :aria-label="'Decrease ' + r.label" :disabled="props.readOnly"
+                    @pointerdown.prevent="startStep(r, -1)" @touchstart.prevent @click.stop @pointerup="stopStep" @pointerleave="stopStep" @pointercancel="stopStep">−</button>
+                  <div class="ta-val-box">
+                    <input v-if="ui.isEditing" type="text" class="ta-val-input"
+                      inputmode="decimal" enterkeyhint="next"
+                      :value="fmt(r, r.value)"
+                      @change="onBadgeChange(r, $event)"
+                      @focus="focusedKey = r.key; selectOnFocus($event)"
+                      @keydown.enter="onValueEnter(r, $event)"
+                    />
+                    <span v-else>{{ fmt(r, r.value) }}</span>
+                  </div>
+                  <button type="button" class="ta-step-btn" :aria-label="'Increase ' + r.label" :disabled="props.readOnly"
+                    @pointerdown.prevent="startStep(r, 1)" @touchstart.prevent @click.stop @pointerup="stopStep" @pointerleave="stopStep" @pointercancel="stopStep">+</button>
                 </div>
               </div>
 
               <div class="ta-right-section">
                 <!-- Min -->
-                <input v-if="ui.isEditing" type="text" class="ta-end-field"
+                <input v-if="ui.isEditing" type="text" class="ta-end-field" inputmode="decimal"
                   :class="{ 'ta-end-field--static': isTabStatic(r.tab) }"
                   :readonly="isTabStatic(r.tab)"
                   :value="endDisplay[r.key + ':min'] ?? fmt(r, r.min)"
@@ -1374,13 +1547,15 @@ async function submitSuggestion() {
                     :style="trackStyle(r)"
                     :disabled="props.readOnly"
                     @mousedown="!props.readOnly && onSliderMouseDown(r, $event)"
+                    @pointerdown="!props.readOnly && onSliderPointerDown(r, $event)"
+                    @pointerup="onSliderPointerUp" @pointercancel="onSliderPointerUp"
                     @change="!props.readOnly && onSliderDragEnd(r)"
                     @input="!props.readOnly && onSliderInput(r, $event)"
                   />
                 </div>
 
                 <!-- Max -->
-                <input v-if="ui.isEditing" type="text" class="ta-end-field"
+                <input v-if="ui.isEditing" type="text" class="ta-end-field" inputmode="decimal"
                   :class="{ 'ta-end-field--static': isTabStatic(r.tab) }"
                   :readonly="isTabStatic(r.tab)"
                   :value="endDisplay[r.key + ':max'] ?? fmt(r, r.max)"
@@ -2615,6 +2790,126 @@ async function submitSuggestion() {
   .ta-preset-select {
     min-height: 44px;
     font-size: 16px;
+  }
+}
+
+/* ── Phase 3: phone + touch tuning entry ─────────────────────────────────────
+   On desktop the new wrappers are display: contents and the new buttons are
+   hidden, so the layout is exactly as before. */
+.ta-header,
+.ta-val-controls { display: contents; }
+.ta-step-btn,
+.ta-undo-btn { display: none; }
+/* Holds focus for the iPhone keyboard during a tab switch (see onValueEnter). */
+.ta-focus-proxy {
+  position: fixed; top: 0; left: 0;
+  width: 1px; height: 1px; padding: 0; border: 0;
+  opacity: 0; pointer-events: none;
+  font-size: 16px;
+}
+
+/* U1 two-line rows: label + value on line 1; Low, track, High on line 2. */
+@media (max-width: 640px) {
+  .ta {
+    --col-label: auto;
+    --col-end: 56px;
+    padding: 8px;
+  }
+  .ta-row,
+  .ta-group-header { flex-wrap: wrap; }
+  .ta-left-section,
+  .ta-right-section { width: 100%; flex-basis: 100%; }
+  /* Title bars stay one line: stacked, their two halves repeat the same title. */
+  .ta-title-label-zone { width: auto; max-width: 50%; }
+  /* In the edit-mode Range bar both halves name the same group; keep the left. */
+  .ta-mode-row .ta-slider-zone-title { display: none; }
+  .ta-row-label { flex: 1; min-width: 0; }
+  /* A header whose title is hidden would leave an empty first line. */
+  .ta-group-header .ta-left-section:has(> .ta-group-title[style*="hidden"]) { display: none; }
+  .ta-preset-bar { flex-wrap: wrap; }
+  .ta-trans-modal { max-width: calc(100vw - 16px); box-sizing: border-box; }
+  /* "Share these tweaks" drops under the title instead of running off the edge. */
+  .ta-nonstock-summary { flex-wrap: wrap; row-gap: 6px; }
+  .ta-nonstock-actions { margin-left: auto; }
+}
+
+/* Touch: steppers, 44px fields, a thumb-sized slider, Undo, tweak rows. */
+@media (hover: none), (pointer: coarse) {
+  .ta { --col-val: 72px; --thumb-half: 14px; }
+  .ta-val-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .ta-step-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 46px;
+    padding: 0;
+    flex-shrink: 0;
+    border: 1px solid var(--panel-edge);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--panel-well) 90%, #000);
+    color: var(--fg);
+    font-size: 20px;
+    line-height: 1;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .ta-step-btn:disabled { opacity: 0.35; }
+  .ta-sign-btn { font-size: 17px; color: var(--highlight); }
+  /* 44px input inside the 1px box border; the steppers match the box. */
+  .ta-val-box { height: 46px; flex: 0 0 var(--col-val); }
+  .ta-val-input { height: 100%; }
+  .ta-val-input,
+  .ta-end-field { font-size: 16px; }
+  .ta-end-field { height: 44px; }
+  .ta-slider { height: 44px; }
+  .ta-slider::-webkit-slider-thumb { width: 28px; height: 28px; margin-top: -11px; }
+  .ta-slider::-moz-range-thumb { width: 28px; height: 28px; }
+  .ta-undo-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-left: 6px;
+    padding: 0 12px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .ta-undo-btn:disabled { opacity: 0.35; }
+  .ta-nonstock-line { min-height: 44px; align-items: center; }
+  .ta-preset-name-input,
+  .ta-trans-select { min-height: 44px; font-size: 16px; }
+}
+/* iPad width: rows stay one line; give the value zone room for the steppers. */
+@media (min-width: 641px) and (hover: none), (min-width: 641px) and (pointer: coarse) {
+  .ta-left-section,
+  .ta-title-label-zone { width: min(var(--col-left-zone), 45%); }
+  .ta { --col-left-zone: 340px; }
+}
+
+/* U8 header sticks to the top while the panel is on screen. */
+@media (max-width: 640px), (hover: none), (pointer: coarse) {
+  .ta-header {
+    display: flex;
+    align-items: flex-end;
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: var(--panel-well);
+  }
+  .ta-tabbar {
+    flex: 1;
+    min-width: 0;
+    scrollbar-width: none;
+  }
+  .ta-tabbar::-webkit-scrollbar { display: none; }
+  .ta-tabbar--more {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
   }
 }
 </style>

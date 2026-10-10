@@ -159,3 +159,10 @@ body {
   /* T5 a vertical swipe that starts on a slider scrolls the page */
   input[type=range] { touch-action: pan-y; }
 }
+
+/* U8: the tuning panel's tab bar is sticky on phones and touch. overflow: hidden
+   on .card would turn the card into the sticky's scroll box and stop it; clip
+   cuts off the same pixels without that. */
+@media (max-width: 640px), (hover: none), (pointer: coarse) {
+  .card { overflow: clip; }
+}

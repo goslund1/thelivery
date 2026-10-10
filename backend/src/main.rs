@@ -34,7 +34,10 @@ use std::path::PathBuf;
 
 use axum::{
     extract::{DefaultBodyLimit, Request},
-    http::{header::CACHE_CONTROL, HeaderName, HeaderValue},
+    http::{
+        header::{CACHE_CONTROL, IF_MODIFIED_SINCE, IF_NONE_MATCH},
+        HeaderName, HeaderValue,
+    },
     middleware::{self, Next},
     response::Response,
     routing::{delete, get, post, put},
@@ -55,8 +58,20 @@ use state::AppState;
 /// returns is index.html (either directly or as the fallback) and must be
 /// revalidated on every load, otherwise browsers heuristic-cache it and keep
 /// referencing bundles that no longer exist after the next deploy.
-async fn spa_cache_control(req: Request, next: Next) -> Response {
+///
+/// Conditional request headers are stripped for the non-asset paths. A path
+/// with no real file behind it (e.g. /ignition) is answered by the
+/// not_found_service, which serves index.html and then forces the status to
+/// 404. If the browser revalidates that URL, ServeFile answers "304, no body"
+/// and the forced status turns it into an empty, typeless 404, which browsers
+/// save as a blank download. Without the conditionals the full page is always
+/// sent; index.html is a few hundred bytes, so the lost 304 costs nothing.
+async fn spa_cache_control(mut req: Request, next: Next) -> Response {
     let immutable = req.uri().path().starts_with("/assets/");
+    if !immutable {
+        req.headers_mut().remove(IF_MODIFIED_SINCE);
+        req.headers_mut().remove(IF_NONE_MATCH);
+    }
     let mut res = next.run(req).await;
     let value = if immutable {
         HeaderValue::from_static("public, max-age=31536000, immutable")

@@ -1,7 +1,7 @@
 // Playwright screenshot helper + mobile-pass harness.
 //
 //   node shot.mjs [url] [out.png] [theme]        one full-page shot (the original use)
-//   node shot.mjs --set <label> [url]           viewport set + audits → docs/mobile-pass/<label>/
+//   node shot.mjs --set <label> [url]           viewport set + audits → spec/mobile-pass/<label>/
 //   node shot.mjs --compare <labelA> <labelB>   pixel-diff the 1440×900 sets of two labels
 //
 // --set signs in for the edit-mode view with LIVERY_USER / LIVERY_PASS, or else
@@ -13,7 +13,7 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'mobile-pass')
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', 'spec', 'mobile-pass')
 const args = process.argv.slice(2)
 
 // ── Original one-shot mode ──────────────────────────────────────────────────

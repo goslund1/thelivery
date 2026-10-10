@@ -214,7 +214,7 @@ Mobile: `npm run dev:mobile` — use Network URL in iPhone Safari.
 
 ## 17. Mobile (iPhone + iPad, live site)
 
-From the Mobile & Touch work order (Phases 0–6, 2026-10-09). Layout follows width (phone ≤ 640px), interaction follows capability (no hover / coarse pointer). The harness already checked every viewport (`node frontend/shot.mjs --set <label>`, audits in `docs/mobile-pass/`); these are the checks only a real device can do.
+From the Mobile & Touch work order (Phases 0–6, 2026-10-09). Layout follows width (phone ≤ 640px), interaction follows capability (no hover / coarse pointer). The harness already checked every viewport (`node frontend/shot.mjs --set <label>`, audits in `spec/mobile-pass/`); these are the checks only a real device can do.
 
 **iPhone run 1 — tune entry**
 - [ ] Sign in at `/#ignition` and open a card's tuning panel in edit mode.

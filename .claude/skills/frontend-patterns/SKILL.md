@@ -88,7 +88,7 @@ Fully refactored to emit `update:recipe` instead of mutating props directly. Loc
 
 ---
 
-## Build rules (from DESIGN_SYSTEM.md)
+## Build rules (from DESIGN_SYSTEM.md, now `spec/history/2026-07-10-design-system.md`)
 
 ### The data model is generic — don't make it Forza-specific
 

@@ -15,12 +15,27 @@ data-driven app:
 
 Live at **https://thelivery.silverleaf.services** (Caddy terminates TLS, reverse-proxies to the backend).
 
-## See also
+## The docs
 
-- `.claude/skills/frontend-patterns/` — Vue subsystem internals (float panels, edit mode, slideshow, card list, theme builder, drawer system). Load when working on or extending these components.
-- `.claude/skills/frontend-gotchas/` — Known Vue/CSS/TypeScript pitfalls. Load before debugging unexpected frontend behavior or writing new interactive components.
-- `docs/plan.md` — Active work list and recently completed items.
-- `docs/completed/DESIGN_SYSTEM.md` — Archived build-rules doc; its contents are folded into the skills above.
+| File | What it is, and when to read it |
+|---|---|
+| `spec/status.md` | **Read first each session.** Where things stand. 150 lines at most. |
+| `spec/backlog.md` | The to-do list: open items only, each with an ID. |
+| `spec/shakedown.md` | Jason's hands-on checklist; only he ticks it. |
+| `spec/architecture.md` | The app as a generic card-gallery engine: data model, stores, subsystems. Read before structural changes. |
+| `spec/SEO_AND_ATTRIBUTION_SPEC.md` | SEO and attribution: share pages, the `source` field, the license. |
+| `spec/plan-reddit-share.md` | Reddit sharing: the pre-fill approach and why not the API. |
+| `spec/FH5 & FH6 Upgrades Hierarchy.md` | How the games' upgrade parts are organised. Read when touching upgrades. |
+| `spec/compositor-for-geoff.md` | What the OG image compositor (`backend/src/compositor.rs`) does, written for Geoff. |
+| `spec/cc_code_evaluation_audits.md` | Named code-audit prompts to run with Claude Code. |
+| `spec/mobile-pass/` | The harness's audits per run (`audit.txt`); screenshots stay local. |
+| `spec/history/` | Dated events. **Never read for current rules or state**, only for *why*. Start at its README. |
+| `.claude/skills/frontend-patterns/` | Vue subsystem internals (float panels, edit mode, slideshow, card list, theme builder, drawer system). Load when working on or extending these components. |
+| `.claude/skills/frontend-gotchas/` | Known Vue/CSS/TypeScript pitfalls. Load before debugging unexpected frontend behavior or writing new interactive components. |
+
+`Drop Offs/` is Jason's inbox: look there first, read what is new,
+then move each file where it belongs. At every clear, follow the steps
+in `~/Projects/CLAUDE.md` and run `tools/docs-check.sh`.
 
 ## The data model is the center of everything
 
@@ -94,7 +109,7 @@ and `/uploads` to the backend, so the app always uses same-origin relative URLs.
 - **Frontend:** `npm --prefix frontend run build` runs `vue-tsc -b && vite build`. This is the typecheck gate — run it after frontend changes.
 - **Backend:** `cd backend && cargo test` — this is the backend gate (builds + runs the suite, ~0.1s). For the production target: `cargo build --release --target x86_64-unknown-linux-musl` (needs `musl-tools`; set `CC_x86_64_unknown_linux_musl=musl-gcc`).
 - **Backend tests** live in `#[cfg(test)]` modules next to the code: card-body validation and the startup migration pipeline (`cards.rs`), image sync branches (`images.rs`, against in-memory SQLite via `testutil::test_pool()`), and the OG compositor (`compositor.rs`). When touching a migration/transform function, extend its tests — idempotency asserts (run twice, byte-identical) are the house pattern. **The frontend has no test suite** — verify UI changes by building, by curling the API, and by the production-simulation pattern (run the release binary with `FRONTEND_DIR`/`UPLOADS_DIR`/`SEED_PATH`/`DATABASE_PATH` set and curl `/`, `/api/cards`, `/uploads/...`).
-- `frontend/shot.mjs` is the Playwright screenshot helper and the mobile-pass harness (runs on the Mac; needs both servers up). `node frontend/shot.mjs --set <label>` shoots six viewports (five touch, 1440×900 mouse) and writes overflow/touch/flyout audits to `docs/mobile-pass/<label>/`; set `LIVERY_USER`/`LIVERY_PASS` to include the edit-mode view. `--compare before <label>` pixel-diffs the 1440×900 shots for desktop parity.
+- `frontend/shot.mjs` is the Playwright screenshot helper and the mobile-pass harness (runs on the Mac; needs both servers up). `node frontend/shot.mjs --set <label>` shoots six viewports (five touch, 1440×900 mouse) and writes overflow/touch/flyout audits to `spec/mobile-pass/<label>/`; set `LIVERY_USER`/`LIVERY_PASS` to include the edit-mode view. `--compare <baseline> <label>` pixel-diffs the 1440×900 shots for desktop parity (baseline: `partA-base`, 2026-10-09).
 
 ## Backend (`backend/`)
 
@@ -118,7 +133,7 @@ and `/uploads` to the backend, so the app always uses same-origin relative URLs.
 
 ### CSS — important
 - **All styling is one global stylesheet, `src/styles/catalog.css`, copied verbatim from the original HTML.** Components reuse those exact class names. **Do not rename classes or convert to scoped styles** — visual parity depends on the global rules. Scoped `<style>` is only for genuinely new bits (e.g. the per-card save button, unsaved-count).
-- **Responsive/touch:** `src/styles/responsive.css` (loaded right after `catalog.css`) holds the global phone and touch overrides; components put theirs in their own scoped style. Two axes, never mixed: layout follows width (`max-width: 640px`), interaction follows capability (`(hover: none), (pointer: coarse)`). Desktop at 1440×900 must stay pixel-identical — check with `node frontend/shot.mjs --compare before <label>`. See `.claude/skills/frontend-gotchas/` for the touch pitfalls.
+- **Responsive/touch:** `src/styles/responsive.css` (loaded right after `catalog.css`) holds the global phone and touch overrides; components put theirs in their own scoped style. Two axes, never mixed: layout follows width (`max-width: 640px`), interaction follows capability (`(hover: none), (pointer: coarse)`). Desktop at 1440×900 must stay pixel-identical — check with `node frontend/shot.mjs --compare partA-base <label>`. See `.claude/skills/frontend-gotchas/` for the touch pitfalls.
 - **Themes:** `data-theme` on `<html>` swaps ~35 CSS variables; 5 themes (dark/light/rainbow/clouds/stormy). Two live knobs: `--text-delta` (text scaling) and `--dissolve` (crossfade).
 
 ### Component tree

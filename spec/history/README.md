@@ -64,6 +64,7 @@ the file, or else its last content change.
 | `2026-07-17-shakedown.md` | Chrome shakedown, 2026-07-17 | `spec/shakedown.md` |
 | `2026-07-18-plan-completed.md` | Finished items from `docs/plan.md` dated 2026-07-18, moved word for word at the split | `spec/status.md`, `spec/backlog.md` |
 | `2026-10-09-aar-b.md` | AAR: license page | — |
+| `2026-10-09-bottom-bar-and-standard.md` | The bottom bar, star and Playing pill work order (Parts A–C), and thelivery brought to the Projects standard | `spec/status.md` |
 | `2026-10-09-aar.md` | AAR: Mobile & Touch work order, phases 0–6 | — |
 | `2026-10-09-plan-completed.md` | Finished items from `docs/plan.md` dated 2026-10-09, moved word for word at the split | `spec/status.md`, `spec/backlog.md` |
 
@@ -76,3 +77,8 @@ carried out. Never edited.
 |---|---|---|
 | `verbatim/2026-10-09-plan.md` | `docs/plan.md` before the split into status and backlog | `spec/status.md`, `spec/backlog.md` |
 | `verbatim/2026-10-09-shakedown.md` | `docs/shakedown.md` before the move to `spec/` | `spec/shakedown.md` |
+| `verbatim/2026-10-09-work-order-mobile-touch.md` | App Claude's Mobile & Touch work order | `2026-10-09-aar.md` |
+| `verbatim/2026-10-09-work-order-bottom-bar-star-pill.md` | App Claude's bottom bar, star and Playing pill work order | `2026-10-09-bottom-bar-and-standard.md` |
+| `verbatim/2026-10-09-work-order-projects-standard.md` | App Claude's work order to bring thelivery to the Projects standard | `2026-10-09-bottom-bar-and-standard.md` |
+| `verbatim/2026-10-09-license-page-draft.md` | Jason's license page draft, the page's work order | `2026-10-09-aar-b.md` |
+| `verbatim/2026-10-09-fix-ignition-blank-download.patch` | The patch for blank downloads on repeat visits to `/ignition`, committed as `1aaf3dc` | The code (`backend/src/main.rs`) |

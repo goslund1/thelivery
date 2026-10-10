@@ -37,7 +37,7 @@ Found while testing the fix above. A tuning −/+ step (acts on `pointerdown`, m
 - ~~`user.create` isn't audit-logged~~ **DONE 2026-07-18** — `create_user` now records `user.create` with the acting admin, role, and temp-password flag; shows in the Timeline tab.
 
 ### Pre-launch checklist
-- **License / terms page** — `GET /api/cards` now includes `attribution: { author: "JasonHunt3r @ The Livery", license: "CC BY-NC-ND 4.0", url }` for scrapers. Still need: a visible footer line and/or a `/license` page that states the same for human visitors. Copy: builds by JasonHunt3r, CC BY-NC-ND 4.0, no reproduction without credit.
+- ~~**License / terms page**~~ **DONE 2026-10-09** — `/license` (LicensePage.vue, served with a 200, in the sitemap) states CC BY-NC-ND 4.0 by JasonHunt3r @ The Livery; site-wide footer line links to it; `GET /api/cards` attribution `url` now points at it. Built from Jason's `docs/LICENSE_PAGE_DRAFT.md` with the ND wording (no "remix").
 - **Lock CORS to production domain** — currently `CorsLayer::permissive()` in `backend/src/main.rs`. Change to `CorsLayer::new().allow_origin("https://thelivery.silverleaf.services")` before public launch.
 - **Remove the "Draft — layout preview" tag** from the page head in `App.vue` — do together with the CORS lock.
 - **Update README.md** — significantly out of date: still references `/api/liveries` (now `/api/cards`), `seed/liveries.json` (now `seed/cards.json`), "single-user, no auth" (JWT auth exists), and is missing most current endpoints. Rewrite the API table and data description to match reality before the repo goes public.

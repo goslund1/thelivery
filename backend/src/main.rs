@@ -151,6 +151,13 @@ async fn main() -> anyhow::Result<()> {
                 .not_found_service(ServeFile::new(format!("{frontend_dir}/index.html"))),
         );
 
+    // /license is a real page (the SPA renders it from the path), so it gets
+    // index.html with a 200 — the not_found fallback above would answer 404.
+    // Same cache policy as "/".
+    let license_page = ServiceBuilder::new()
+        .layer(middleware::from_fn(spa_cache_control))
+        .service(ServeFile::new(format!("{frontend_dir}/index.html")));
+
     let app = Router::new()
         .route("/api/health", get(|| async { "ok" }))
         .route("/api/login", post(auth::login))
@@ -200,6 +207,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/og-presets", get(share::list_og_presets).post(share::create_og_preset))
         .route("/api/og-presets/:id", put(share::update_og_preset).delete(share::delete_og_preset))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
+        .route_service("/license", license_page)
         .fallback_service(spa)
         .layer(DefaultBodyLimit::max(40 * 1024 * 1024)) // 40 MB per file
         // Stop browsers from MIME-sniffing a response into something executable.

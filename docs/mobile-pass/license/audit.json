@@ -1,0 +1,1102 @@
+{
+  "label": "license",
+  "url": "http://localhost:5173/",
+  "when": "2026-10-10T03:31:16.124Z",
+  "editView": "captured",
+  "viewports": {
+    "360x640": {
+      "touch": {
+        "view": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "edit": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "new-card": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "edit-card": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "photo-manager": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "photo-detail": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit",
+        "6-new-card",
+        "7-edit-card",
+        "8-photo-manager",
+        "9-photo-detail"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 360,
+          "innerWidth": 360,
+          "items": []
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 360,
+          "innerWidth": 360,
+          "items": [
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 356,
+              "box": 324,
+              "pastEdgeBy": -22,
+              "culprit": null,
+              "count": 2
+            },
+            {
+              "path": ".kit-cat > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 296,
+              "box": 284,
+              "pastEdgeBy": -31,
+              "culprit": null,
+              "count": 1
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 328,
+              "box": 284,
+              "pastEdgeBy": -31,
+              "culprit": null,
+              "count": 1
+            }
+          ]
+        },
+        "new-card": {
+          "sideways": false,
+          "scrollWidth": 360,
+          "innerWidth": 360,
+          "items": []
+        },
+        "edit-card": {
+          "sideways": false,
+          "scrollWidth": 360,
+          "innerWidth": 360,
+          "items": [
+            {
+              "path": ".nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 356,
+              "box": 308,
+              "pastEdgeBy": -22,
+              "culprit": null,
+              "count": 1
+            }
+          ]
+        },
+        "photo-manager": {
+          "sideways": false,
+          "scrollWidth": 360,
+          "innerWidth": 360,
+          "items": []
+        },
+        "photo-detail": {
+          "sideways": false,
+          "scrollWidth": 360,
+          "innerWidth": 360,
+          "items": []
+        }
+      },
+      "bug": {
+        "width": 24,
+        "height": 44,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "side-bug": {
+          "fit": {
+            "inside": true
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "filters": {
+          "fit": {
+            "top": 86,
+            "bottom": 628,
+            "left": 8,
+            "right": 307,
+            "inside": true,
+            "scrollsInside": true
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "theme": {
+          "fit": {
+            "top": 130,
+            "bottom": 376,
+            "left": 183,
+            "right": 307,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 174,
+            "bottom": 604,
+            "left": 237,
+            "right": 307,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        }
+      },
+      "photoManager": {
+        "w": 360,
+        "h": 640,
+        "columns": 2
+      }
+    },
+    "390x844": {
+      "touch": {
+        "view": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "edit": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "new-card": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "edit-card": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "photo-manager": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "photo-detail": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit",
+        "6-new-card",
+        "7-edit-card",
+        "8-photo-manager",
+        "9-photo-detail"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "items": []
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "items": [
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 356,
+              "box": 354,
+              "pastEdgeBy": -22,
+              "culprit": null,
+              "count": 2
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 328,
+              "box": 314,
+              "pastEdgeBy": -31,
+              "culprit": null,
+              "count": 1
+            }
+          ]
+        },
+        "new-card": {
+          "sideways": false,
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "items": []
+        },
+        "edit-card": {
+          "sideways": false,
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "items": [
+            {
+              "path": ".nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 356,
+              "box": 338,
+              "pastEdgeBy": -22,
+              "culprit": null,
+              "count": 1
+            }
+          ]
+        },
+        "photo-manager": {
+          "sideways": false,
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "items": []
+        },
+        "photo-detail": {
+          "sideways": false,
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "items": []
+        }
+      },
+      "bug": {
+        "width": 24,
+        "height": 44,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "side-bug": {
+          "fit": {
+            "inside": true
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "filters": {
+          "fit": {
+            "top": 86,
+            "bottom": 832,
+            "left": 8,
+            "right": 337,
+            "inside": true,
+            "scrollsInside": true
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "theme": {
+          "fit": {
+            "top": 130,
+            "bottom": 376,
+            "left": 213,
+            "right": 337,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 174,
+            "bottom": 604,
+            "left": 267,
+            "right": 337,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        }
+      },
+      "photoManager": {
+        "w": 390,
+        "h": 844,
+        "columns": 2
+      }
+    },
+    "844x390": {
+      "touch": {
+        "view": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "edit": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "new-card": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "edit-card": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "photo-manager": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "photo-detail": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit",
+        "6-new-card",
+        "7-edit-card",
+        "8-photo-manager",
+        "9-photo-detail"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 844,
+          "innerWidth": 844,
+          "items": []
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 844,
+          "innerWidth": 844,
+          "items": [
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 110,
+              "box": 72,
+              "pastEdgeBy": -297,
+              "culprit": null,
+              "count": 20
+            },
+            {
+              "path": ".kit-cat > .kit-list > li > .up-inline-select",
+              "content": 244,
+              "box": 206,
+              "pastEdgeBy": -513,
+              "culprit": null,
+              "count": 14
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select",
+              "content": 221,
+              "box": 206,
+              "pastEdgeBy": -278,
+              "culprit": null,
+              "count": 21
+            },
+            {
+              "path": ".kit-cat > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 244,
+              "box": 206,
+              "pastEdgeBy": -513,
+              "culprit": null,
+              "count": 7
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 221,
+              "box": 206,
+              "pastEdgeBy": -278,
+              "culprit": null,
+              "count": 8
+            },
+            {
+              "path": ".kit-cat.up-col3-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 221,
+              "box": 206,
+              "pastEdgeBy": -42,
+              "culprit": null,
+              "count": 2
+            },
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select",
+              "content": 83,
+              "box": 72,
+              "pastEdgeBy": -598,
+              "culprit": null,
+              "count": 4
+            }
+          ]
+        },
+        "new-card": {
+          "sideways": false,
+          "scrollWidth": 844,
+          "innerWidth": 844,
+          "items": []
+        },
+        "edit-card": {
+          "sideways": false,
+          "scrollWidth": 844,
+          "innerWidth": 844,
+          "items": [
+            {
+              "path": ".nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 356,
+              "box": 155,
+              "pastEdgeBy": -462,
+              "culprit": null,
+              "count": 2
+            }
+          ]
+        },
+        "photo-manager": {
+          "sideways": false,
+          "scrollWidth": 844,
+          "innerWidth": 844,
+          "items": []
+        },
+        "photo-detail": {
+          "sideways": false,
+          "scrollWidth": 844,
+          "innerWidth": 844,
+          "items": []
+        }
+      },
+      "bug": {
+        "width": 45,
+        "height": 178,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "side-bug": {
+          "fit": {
+            "inside": true
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 378,
+            "left": 599,
+            "right": 791,
+            "inside": true,
+            "scrollsInside": true
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "theme": {
+          "fit": {
+            "top": 57,
+            "bottom": 303,
+            "left": 667,
+            "right": 791,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 101,
+            "bottom": 378,
+            "left": 721,
+            "right": 791,
+            "inside": true,
+            "scrollsInside": true
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        }
+      },
+      "photoManager": {
+        "w": 700,
+        "h": 312,
+        "columns": 4
+      }
+    },
+    "820x1180": {
+      "touch": {
+        "view": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "edit": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "new-card": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "edit-card": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "photo-manager": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "photo-detail": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit",
+        "6-new-card",
+        "7-edit-card",
+        "8-photo-manager",
+        "9-photo-detail"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 820,
+          "innerWidth": 820,
+          "items": []
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 820,
+          "innerWidth": 820,
+          "items": [
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 110,
+              "box": 72,
+              "pastEdgeBy": -414,
+              "culprit": null,
+              "count": 20
+            },
+            {
+              "path": ".kit-cat > .kit-list > li > .up-inline-select",
+              "content": 244,
+              "box": 198,
+              "pastEdgeBy": -497,
+              "culprit": null,
+              "count": 14
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select",
+              "content": 221,
+              "box": 198,
+              "pastEdgeBy": -270,
+              "culprit": null,
+              "count": 28
+            },
+            {
+              "path": ".kit-cat > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 244,
+              "box": 198,
+              "pastEdgeBy": -497,
+              "culprit": null,
+              "count": 7
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 221,
+              "box": 198,
+              "pastEdgeBy": -270,
+              "culprit": null,
+              "count": 12
+            },
+            {
+              "path": ".kit-cat.up-col3-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 221,
+              "box": 198,
+              "pastEdgeBy": -42,
+              "culprit": null,
+              "count": 2
+            },
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select",
+              "content": 83,
+              "box": 72,
+              "pastEdgeBy": -574,
+              "culprit": null,
+              "count": 4
+            }
+          ]
+        },
+        "new-card": {
+          "sideways": false,
+          "scrollWidth": 820,
+          "innerWidth": 820,
+          "items": []
+        },
+        "edit-card": {
+          "sideways": false,
+          "scrollWidth": 820,
+          "innerWidth": 820,
+          "items": [
+            {
+              "path": ".nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 356,
+              "box": 149,
+              "pastEdgeBy": -450,
+              "culprit": null,
+              "count": 2
+            }
+          ]
+        },
+        "photo-manager": {
+          "sideways": false,
+          "scrollWidth": 820,
+          "innerWidth": 820,
+          "items": []
+        },
+        "photo-detail": {
+          "sideways": false,
+          "scrollWidth": 820,
+          "innerWidth": 820,
+          "items": []
+        }
+      },
+      "bug": {
+        "width": 45,
+        "height": 178,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "side-bug": {
+          "fit": {
+            "inside": true
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 1140,
+            "left": 575,
+            "right": 767,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "theme": {
+          "fit": {
+            "top": 57,
+            "bottom": 303,
+            "left": 643,
+            "right": 767,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 101,
+            "bottom": 531,
+            "left": 697,
+            "right": 767,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        }
+      },
+      "photoManager": {
+        "w": 700,
+        "h": 944,
+        "columns": 4
+      }
+    },
+    "1180x820": {
+      "touch": {
+        "view": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "edit": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "new-card": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "edit-card": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "photo-manager": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "photo-detail": {
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit",
+        "6-new-card",
+        "7-edit-card",
+        "8-photo-manager",
+        "9-photo-detail"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 1180,
+          "innerWidth": 1180,
+          "items": []
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 1180,
+          "innerWidth": 1180,
+          "items": [
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 110,
+              "box": 72,
+              "pastEdgeBy": -409,
+              "culprit": null,
+              "count": 20
+            },
+            {
+              "path": ".kit-cat > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 296,
+              "box": 274,
+              "pastEdgeBy": -650,
+              "culprit": null,
+              "count": 1
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 328,
+              "box": 274,
+              "pastEdgeBy": -346,
+              "culprit": null,
+              "count": 1
+            },
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select",
+              "content": 83,
+              "box": 72,
+              "pastEdgeBy": -803,
+              "culprit": null,
+              "count": 4
+            }
+          ]
+        },
+        "new-card": {
+          "sideways": false,
+          "scrollWidth": 1180,
+          "innerWidth": 1180,
+          "items": []
+        },
+        "edit-card": {
+          "sideways": false,
+          "scrollWidth": 1180,
+          "innerWidth": 1180,
+          "items": [
+            {
+              "path": ".nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 356,
+              "box": 179,
+              "pastEdgeBy": -510,
+              "culprit": null,
+              "count": 2
+            }
+          ]
+        },
+        "photo-manager": {
+          "sideways": false,
+          "scrollWidth": 1180,
+          "innerWidth": 1180,
+          "items": []
+        },
+        "photo-detail": {
+          "sideways": false,
+          "scrollWidth": 1180,
+          "innerWidth": 1180,
+          "items": []
+        }
+      },
+      "bug": {
+        "width": 45,
+        "height": 178,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "side-bug": {
+          "fit": {
+            "inside": true
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 808,
+            "left": 880,
+            "right": 1072,
+            "inside": true,
+            "scrollsInside": true
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "theme": {
+          "fit": {
+            "top": 57,
+            "bottom": 303,
+            "left": 948,
+            "right": 1072,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 101,
+            "bottom": 531,
+            "left": 1002,
+            "right": 1072,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [],
+          "smallFonts": [],
+          "later": []
+        }
+      },
+      "photoManager": {
+        "w": 700,
+        "h": 656,
+        "columns": 4
+      }
+    },
+    "1440x900": {
+      "touch": false,
+      "media": {
+        "hoverNone": false,
+        "coarse": false
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit",
+        "6-new-card",
+        "7-edit-card",
+        "8-photo-manager",
+        "9-photo-detail"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "items": []
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "items": [
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 290,
+              "box": 211,
+              "pastEdgeBy": -89,
+              "culprit": null,
+              "count": 4
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 297,
+              "box": 274,
+              "pastEdgeBy": -346,
+              "culprit": null,
+              "count": 1
+            }
+          ]
+        },
+        "new-card": {
+          "sideways": false,
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "items": []
+        },
+        "edit-card": {
+          "sideways": false,
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "items": [
+            {
+              "path": ".nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 290,
+              "box": 191,
+              "pastEdgeBy": -684,
+              "culprit": null,
+              "count": 1
+            }
+          ]
+        },
+        "photo-manager": {
+          "sideways": false,
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "items": []
+        },
+        "photo-detail": {
+          "sideways": false,
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "items": []
+        }
+      },
+      "bug": {
+        "width": 43,
+        "height": 170,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 691,
+            "left": 1010,
+            "right": 1202,
+            "inside": true,
+            "scrollsInside": false
+          }
+        },
+        "theme": {
+          "fit": {
+            "top": 55,
+            "bottom": 298,
+            "left": 1078,
+            "right": 1202,
+            "inside": true,
+            "scrollsInside": false
+          }
+        },
+        "text-size": {
+          "fit": {
+            "top": 97,
+            "bottom": 410,
+            "left": 1132,
+            "right": 1202,
+            "inside": true,
+            "scrollsInside": false
+          }
+        }
+      },
+      "photoManager": {
+        "w": 700,
+        "h": 385,
+        "columns": 1
+      }
+    }
+  }
+}

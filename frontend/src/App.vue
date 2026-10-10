@@ -18,6 +18,7 @@ import ChipPicker from './components/ChipPicker.vue'
 import ImagePicker from './components/ImagePicker.vue'
 import ExitConfirmModal from './components/ExitConfirmModal.vue'
 import DraftRestoreModal from './components/DraftRestoreModal.vue'
+import LicensePage from './components/LicensePage.vue'
 import LoginModal from './components/LoginModal.vue'
 import UserSettingsModal from './components/UserSettingsModal.vue'
 import CustomTip from './components/CustomTip.vue'
@@ -41,6 +42,10 @@ const ui = useUiStore()
 const filters = useFilterStore()
 const modal = useModalStore()
 const theme = useThemeStore()
+
+// /license is the only other page. No client-side router: like /ignition, the
+// path decides (the backend serves index.html for /license with a 200).
+const isLicensePage = window.location.pathname === '/license'
 
 // Edit mode on a phone means entering a tune while reading the game: keep the screen on.
 useWakeLock(computed(() => ui.isEditing))
@@ -72,7 +77,7 @@ function checkIgnition() {
 }
 
 onMounted(() => {
-  store.load()
+  if (!isLicensePage) store.load()
   theme.load()
   document.addEventListener('keydown', onKey)
   window.addEventListener('hashchange', checkIgnition)
@@ -85,6 +90,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <LicensePage v-if="isLicensePage" />
+  <template v-else>
   <div class="page-head">
     <p class="eyebrow">Festival Garage / Personal Collection</p>
     <h1>Livery Catalog</h1>
@@ -119,8 +126,10 @@ onBeforeUnmount(() => {
       </div>
     </template>
   </div>
+  </template>
 
   <footer class="catalog-credits">
+    <p>© JasonHunt3r @ The Livery · Builds &amp; tunes licensed <a href="/license">CC BY-NC-ND 4.0</a></p>
     <p>Car data sourced from <a href="https://forza.fandom.com" target="_blank" rel="noopener">Forza Wiki</a> and <a href="https://www.forzamotorsport.net" target="_blank" rel="noopener">Forza Motorsport</a>. Fan project — not affiliated with Microsoft or Playground Games.</p>
   </footer>
 

@@ -389,7 +389,7 @@ pub async fn list_cards(State(st): State<AppState>) -> Result<Json<Value>, ApiEr
         "attribution": {
             "author":  "JasonHunt3r @ The Livery",
             "license": "CC BY-NC-ND 4.0",
-            "url":     url
+            "url":     format!("{url}/license")
         }
     })))
 }

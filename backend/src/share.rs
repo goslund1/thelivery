@@ -305,7 +305,8 @@ pub async fn sitemap_xml(
         .unwrap_or_default();
 
     let mut entries = format!(
-        "  <url>\n    <loc>{base}/</loc>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>\n"
+        "  <url>\n    <loc>{base}/</loc>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>\n\
+         \x20 <url>\n    <loc>{base}/license</loc>\n    <changefreq>yearly</changefreq>\n    <priority>0.3</priority>\n  </url>\n"
     );
 
     for row in &rows {

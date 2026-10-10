@@ -162,4 +162,12 @@ function toggleTuneType(name: string) {
     min-height: 44px;
   }
 }
+
+/* S2: on phones the grids use the flyout's width (chips are 44px on touch).
+   Wider touch screens keep 154px: three 44px chips still fit a row, and a
+   full-width grid would stretch the flyout across a landscape screen. */
+@media (max-width: 640px) {
+  .filter-color-grid,
+  .filter-tune-grid { width: auto; }
+}
 </style>

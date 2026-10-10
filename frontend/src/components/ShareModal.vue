@@ -509,4 +509,9 @@ watch(cardOverlayConfig, (cfg) => {
 .share-og-btn--adjust { border-color: var(--highlight); color: var(--highlight); }
 .share-og-btn--reset  { border-color: var(--muted); color: var(--muted); }
 .share-og-btn--blank  { border-color: var(--panel-edge); }
+
+/* S4: the OG Maker's drag canvas is poor at phone size; it stays on iPad. */
+@media (max-width: 640px) {
+  .share-og-section { display: none; }
+}
 </style>

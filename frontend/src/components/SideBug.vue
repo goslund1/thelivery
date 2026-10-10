@@ -357,4 +357,9 @@ function onToggleAll() {
   border: none !important;
   box-shadow: none !important;
 }
+
+/* S3: the Theme Builder is desktop-only; theme switching stays everywhere. */
+@media (max-width: 640px), (hover: none) {
+  .theme-customize-btn { display: none; }
+}
 </style>

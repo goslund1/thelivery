@@ -77,6 +77,9 @@ body {
   }
   .recipe-table th { padding-right: 14px; }
 
+  /* S5 modal gutters: New Card / Edit Card use the width */
+  .nc-overlay { padding: 12px 8px 24px; }
+
   /* L5 type scale */
   .card-title { font-size: clamp(28px, 8.5vw, 42px); }
   .tune-name { font-size: 18px; }

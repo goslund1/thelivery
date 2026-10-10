@@ -3,6 +3,7 @@ import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from '
 import type { AdjustmentRow, UpgradeCategory } from '../types'
 import { useUiStore } from '../stores/ui'
 import { useAuthStore } from '../stores/auth'
+import { useCardsStore } from '../stores/cards'
 import { MarkDirtyKey } from '../keys'
 import { errMsg } from '../utils/errMsg'
 import { api } from '../api'
@@ -771,6 +772,35 @@ function popUndo(r: LocalRow) {
   return true
 }
 
+// Save this card from inside the panel (E2, touch header): the phone has no
+// dock, and Save All is in the folded drawer. The button itself confirms —
+// "Saved ✓" for two seconds, or "Not saved" with the reason as its title.
+const cardsStore = useCardsStore()
+const cardDirty = computed(() => !!props.cardId && ui.isCardDirty(props.cardId))
+const saveState = ref<'idle' | 'saving' | 'saved' | 'error'>('idle')
+const saveError = ref('')
+let saveStateTimer: ReturnType<typeof setTimeout> | null = null
+const saveLabel = computed(() => ({ idle: 'Save', saving: 'Saving…', saved: 'Saved ✓', error: 'Not saved' })[saveState.value])
+async function saveThisCard() {
+  const id = props.cardId
+  if (!id) return
+  const card = cardsStore.cards.find(c => c.id === id)
+  if (card?.isLegend && !(await ui.requestLegendConfirm())) return
+  if (saveStateTimer) clearTimeout(saveStateTimer)
+  saveState.value = 'saving'
+  try {
+    await ui.saveCard(id)
+    // saveCard hands a lapsed sign-in to the login prompt without throwing.
+    if (ui.isCardDirty(id)) { saveState.value = 'error'; saveError.value = 'Sign in again, then Save' }
+    else saveState.value = 'saved'
+  } catch (e) {
+    saveState.value = 'error'
+    saveError.value = errMsg(e)
+  }
+  saveStateTimer = setTimeout(() => { saveState.value = 'idle' }, saveState.value === 'saved' ? 2000 : 5000)
+}
+onUnmounted(() => { if (saveStateTimer) clearTimeout(saveStateTimer) })
+
 function undoLast() {
   while (undoLog.length) {
     const key = undoLog[undoLog.length - 1]
@@ -1413,6 +1443,9 @@ async function submitSuggestion() {
       </button>
     </div>
     <button v-if="ui.isEditing" class="ta-btn-lwb ta-undo-btn" :disabled="!canUndo" @click="undoLast">↩ Undo</button>
+    <button v-if="ui.isEditing" class="ta-btn-lwb ta-undo-btn ta-save-btn"
+      :class="'ta-save-btn--' + saveState" :title="saveState === 'error' ? saveError : undefined" aria-live="polite"
+      :disabled="(!cardDirty && saveState === 'idle') || saveState === 'saving'" @click="saveThisCard">{{ saveLabel }}</button>
     </div>
     <input ref="focusProxy" class="ta-focus-proxy" inputmode="decimal" tabindex="-1" aria-hidden="true" />
 
@@ -2880,6 +2913,9 @@ async function submitSuggestion() {
     flex-shrink: 0;
   }
   .ta-undo-btn:disabled { opacity: 0.35; }
+  .ta-save-btn:not(:disabled) { background: var(--accent); color: var(--ink, #000); border-color: var(--accent); }
+  .ta-save-btn--saved { opacity: 1 !important; background: transparent; color: var(--accent); }
+  .ta-save-btn--error { background: transparent; color: var(--danger, #e74c3c); border-color: var(--danger, #e74c3c); }
   .ta-nonstock-line { min-height: 44px; align-items: center; }
   .ta-preset-name-input,
   .ta-trans-select { min-height: 44px; font-size: 16px; }

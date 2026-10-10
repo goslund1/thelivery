@@ -162,6 +162,21 @@ export const useCardsStore = defineStore('cards', () => {
     if (orphans.length) await api.deleteImages(orphans).catch(() => {})
   }
 
+  // Swap in a whole new card object (a restored draft). Unlike restoreCardVersion,
+  // which edits the existing object in place, a new reference makes CardView bump
+  // its recipe reset token so the tuning panel re-reads the restored values.
+  function replaceCard(id: string, next: Card) {
+    const cur = byId(id)
+    if (!cur) return
+    const card = { ...ensureSections(next), id: cur.id, catalogNumber: cur.catalogNumber, isLegend: cur.isLegend }
+    cards.value = cards.value.map(c => (c.id === id ? card : c))
+  }
+
+  // The saved/loaded JSON an edit started from — drafts fingerprint it (drafts.ts).
+  function baselineOf(id: string): string | undefined {
+    return snapshots[id]
+  }
+
   // Capture a baseline for every card (called when entering edit mode).
   function takeSnapshot() {
     snapshots = {}
@@ -415,7 +430,7 @@ export const useCardsStore = defineStore('cards', () => {
   return {
     cards, loading, error,
     byId, load, save, deleteCard, createNewCard, promoteCard,
-    takeSnapshot, restoreSnapshot, setFigure,
+    takeSnapshot, restoreSnapshot, baselineOf, replaceCard, setFigure,
     toggleFavorite, setLeadImage, reorderImages, restoreImageOrders,
     removeImage, toggleImageIncluded, addImageToPool, setImageMeta,
     setColor,

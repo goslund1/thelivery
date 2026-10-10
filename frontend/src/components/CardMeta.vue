@@ -221,4 +221,15 @@ function setAccent(color: string | undefined) {
     font-size: 16px;
   }
 }
+
+/* Phones (E3): in normal flow, so it can't land on the collection chips.
+   relative, not static — the touch hit area (::after above) is positioned
+   against the button and would otherwise anchor to the card. */
+@media (max-width: 640px) {
+  .edit-card-btn {
+    position: relative;
+    top: auto;
+    right: auto;
+  }
+}
 </style>

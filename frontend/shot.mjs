@@ -125,6 +125,23 @@ async function runSet(label, url) {
       await shootEl(page, vp, CARD, join(dir, '5-card-edit.png')); r.shots.push('5-card-edit')
       r.overflow.edit = await overflowAudit(page)
       if (vp.touch) { await assertTouch(page); r.touch.edit = await touchAudit(page) }
+
+      // E5: the New Card and Edit Card modals (both a .card inside .nc-overlay).
+      const MODAL = '.nc-overlay.open .card'
+      for (const [name, open] of [
+        ['6-new-card', () => document.querySelector('.tl-btn.tl-green').click()],
+        ['7-edit-card', () => document.querySelector('#card-1 .edit-card-btn').click()],
+      ]) {
+        await page.evaluate(open)
+        await page.waitForSelector(MODAL)
+        await settle(page)
+        await shootEl(page, vp, MODAL, join(dir, `${name}.png`)); r.shots.push(name)
+        const view = name.slice(2)
+        r.overflow[view] = await overflowAudit(page, MODAL)
+        if (vp.touch) { await assertTouch(page); r.touch[view] = await touchAudit(page, '.nc-overlay.open') }
+        await page.evaluate(() => document.querySelector('.nc-overlay.open .nc-close').click())
+        await page.waitForFunction(() => !document.querySelector('.nc-overlay.open'))
+      }
       await page.evaluate(() => localStorage.clear())
     }
 
@@ -178,8 +195,8 @@ async function expandAll(page) {
 
 // H3 — sideways document scroll, and anything inside a .card wider than its box
 // or reaching past the card's right edge. .thumbs and .ta-tabbar scroll by design.
-function overflowAudit(page) {
-  return page.evaluate(() => {
+function overflowAudit(page, root = '.card') {
+  return page.evaluate((root) => {
     const path = (el, stop) => {
       const parts = []
       for (let e = el; e && e !== stop; e = e.parentElement) {
@@ -196,7 +213,7 @@ function overflowAudit(page) {
     }
     const doc = { scrollWidth: document.documentElement.scrollWidth, innerWidth }
     const found = new Map()
-    for (const card of document.querySelectorAll('.card')) {
+    for (const card of document.querySelectorAll(root)) {
       const cr = card.getBoundingClientRect()
       if (!visible(card)) continue
       for (const el of card.querySelectorAll('*')) {
@@ -225,7 +242,7 @@ function overflowAudit(page) {
     const items = [...found.values()]
     const kept = items.filter(a => !items.some(b => b !== a && a.path.startsWith(b.path + ' > ')))
     return { sideways: doc.scrollWidth > doc.innerWidth, ...doc, items: kept }
-  })
+  }, root)
 }
 
 // H4 — controls under 44px either way; text fields under 16px.

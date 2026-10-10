@@ -292,4 +292,9 @@ function addSlot() {
     min-height: 44px;
   }
 }
+
+/* Phones (E5): each factoid select gets its own line so its text isn't cut off. */
+@media (max-width: 640px) {
+  .sub-seg:not(.sub-seg--add):not(.sub-seg--gear) { flex-basis: 100%; }
+}
 </style>

@@ -360,4 +360,19 @@ async function onDelete() {
 }
 .ec-btn-history:hover { border-color: var(--accent); color: var(--accent); }
 
+/* Phones (E3): History sits in the header's flow instead of over its content. */
+@media (max-width: 640px) {
+  .ec-btn-history {
+    position: static;
+    align-self: flex-start;
+    margin: 0 0 10px;
+  }
+}
+
+/* Touch (E5) */
+@media (hover: none), (pointer: coarse) {
+  .ec-btn-delete,
+  .ec-btn-history { min-height: 44px; }
+  .nc-livery-code-input { min-height: 44px; font-size: 16px; }
+}
 </style>

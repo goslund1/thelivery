@@ -10,6 +10,7 @@ import { onClickOutside } from '../composables/onClickOutside'
 import { hideTip, refreshTip } from '../composables/tooltip'
 import type { Theme } from '../types'
 import ThemeBuilder from './ThemeBuilder.vue'
+import { useEditCycle } from '../composables/editCycle'
 
 const ui = useUiStore()
 const modal = useModalStore()
@@ -17,6 +18,7 @@ const filters = useFilterStore()
 const store = useCardsStore()
 const auth = useAuthStore()
 const themeStore = useThemeStore()
+const { onCycleDirty } = useEditCycle()
 
 // Inline SVGs for each theme (matches the original theme-flyout icons).
 const themeIcons: Record<Theme, string> = {
@@ -188,7 +190,9 @@ function onToggleAll() {
 <template>
   <div ref="bugRef">
     <div class="side-bug" :class="{ 'side-bug--collapsed': collapsed }" ref="sideBugEl">
-      <button class="bug-tab" aria-label="Open side menu" :aria-expanded="!collapsed" @click="expandBug">‹</button>
+      <button class="bug-tab" :class="{ 'bug-tab--unsaved': ui.isEditing && ui.hasUnsavedChanges }" :aria-label="ui.hasUnsavedChanges ? `Open side menu, ${ui.dirtyIds.size} unsaved` : 'Open side menu'" :aria-expanded="!collapsed" @click="expandBug">
+        ‹<span v-if="ui.isEditing && ui.dirtyIds.size" class="bug-tab-count">{{ ui.dirtyIds.size }}</span>
+      </button>
       <button v-if="auth.isAuthenticated" class="bug-btn" aria-label="Account settings" v-tip="'Account settings'" @click="modal.openSettings()">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="8" r="4"></circle>
@@ -204,6 +208,24 @@ function onToggleAll() {
           </g>
         </svg>
       </button>
+      <!-- Phone edit controls (E1): the bottom dock and pill are hidden at ≤640px and
+           their actions live here. Exit is the edit button above. -->
+      <template v-if="ui.isEditing">
+        <button class="bug-btn bug-btn--phone-edit" aria-label="Save all unsaved cards" :disabled="!ui.hasUnsavedChanges || ui.saving" @click="ui.saveAllDirty()">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 3h11l3 3v15H5z"></path><path d="M8 3v5h7V3"></path><rect x="8" y="13" width="8" height="6"></rect>
+          </svg>
+          <span v-if="ui.dirtyIds.size" class="bug-sugg-dot">{{ ui.dirtyIds.size }}</span>
+        </button>
+        <button class="bug-btn bug-btn--phone-edit" aria-label="Jump to next edit" :disabled="!ui.editCount" @click="onCycleDirty">
+          <svg viewBox="0 0 256 512" width="10" height="20" fill="currentColor"><path d="M.1 29.3C-1.4 47 11.7 62.4 29.3 63.9l8 .7C70.5 67.3 96 95 96 128.3L96 224l-32 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l32 0 0 95.7c0 33.3-25.5 61-58.7 63.8l-8 .7C11.7 449.6-1.4 465 .1 482.7s16.9 30.7 34.5 29.2l8-.7c34.1-2.8 64.2-18.9 85.4-42.9c21.2 24 51.2 40 85.4 42.9l8 .7c17.6 1.5 33.1-11.6 34.5-29.2s-11.6-33.1-29.2-34.5l-8-.7C185.5 444.7 160 417 160 383.7l0-95.7 32 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-32 0 0-95.7c0-33.3 25.5-61 58.7-63.8l8-.7c17.6-1.5 30.7-16.9 29.2-34.5S239-1.4 221.3 .1l-8 .7C179.2 3.6 149.2 19.7 128 43.7c-21.2-24-51.2-40-85.4-42.9l-8-.7C17-1.4 1.6 11.7 .1 29.3z"/></svg>
+        </button>
+        <button class="bug-btn bug-btn--phone-edit" aria-label="New card" @click="modal.openNewCard()">
+          <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M 9 2 L 2 2 L 2 18 L 18 18 L 18 9"/><line x1="10" y1="5.5" x2="17" y2="5.5"/><line x1="13.5" y1="2.5" x2="13.5" y2="8.5"/>
+          </svg>
+        </button>
+      </template>
       <button ref="hamburgerBtn" class="bug-btn bug-btn--filters" aria-label="Section menu" v-tip="() => open === 'menu' ? 'Close section filters' : 'Open section filters'" @click="(e) => toggle('menu', e.currentTarget as HTMLElement)">
         <span class="bug-lines"><span></span><span></span><span></span></span>
         <span v-if="auth.isAuthenticated && modal.pendingSuggestionCount" class="bug-sugg-dot">{{ modal.pendingSuggestionCount }}</span>
@@ -255,6 +277,11 @@ function onToggleAll() {
 .bug-tab {
   display: none;
 }
+.bug-btn--phone-edit {
+  display: none;
+  position: relative;
+}
+.bug-btn--phone-edit:disabled { opacity: 0.35; cursor: default; }
 @media (max-width: 640px) {
   .side-bug--collapsed > :not(.bug-tab) {
     display: none;
@@ -272,6 +299,26 @@ function onToggleAll() {
     font-size: 16px;
     cursor: pointer;
   }
+  .side-bug--collapsed .bug-tab:has(.bug-tab-count) {
+    flex-direction: column;
+    gap: 1px;
+  }
+  .bug-tab-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  /* Unsaved edits: the folded tab pulses so they can't be forgotten. */
+  .bug-tab--unsaved { animation: bug-tab-pulse 1.6s ease-in-out infinite; }
+  .bug-btn--phone-edit { display: flex; }
+}
+@keyframes bug-tab-pulse {
+  0%, 100% { background: transparent; }
+  50% { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bug-tab--unsaved { animation: none; background: color-mix(in srgb, var(--accent) 25%, transparent); }
 }
 
 .bug-btn--filters {

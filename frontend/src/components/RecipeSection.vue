@@ -477,8 +477,14 @@ watch(activeTuneIndex, (idx, prevIdx) => {
 watch(() => props.resetToken, () => {
   activeCarIndex.value = 0
   activeTuneIndex.value = 0
+  // Same guard as the variant switcher: copying the recipe in replaces
+  // local.upgrades, whose sync watcher would flush — and a flush reads the tuning
+  // panel's rows, which still hold the pre-reset values. Without this, Discard
+  // left discarded tune values in the store and a restored draft lost its tune.
+  suppressFlush = true
   Object.assign(local, cloneRecipe(props.recipe))
   if (hasCars.value) applyVariant(0, 0)
+  suppressFlush = false
 })
 
 function flush() {

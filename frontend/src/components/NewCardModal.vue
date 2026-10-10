@@ -452,5 +452,8 @@ onUnmounted(() => { document.body.style.overflow = '' })
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
-
+/* Touch (E5) */
+@media (hover: none), (pointer: coarse) {
+  .nc-add-photos-btn { min-height: 44px; }
+}
 </style>

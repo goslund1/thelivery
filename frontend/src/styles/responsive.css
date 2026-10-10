@@ -158,6 +158,34 @@ body {
 
   /* T5 a vertical swipe that starts on a slider scrolls the page */
   input[type=range] { touch-action: pan-y; }
+
+  /* E5 New Card / Edit Card modals */
+  .nc-col-pick,
+  .nc-tag-opt,
+  .nc-btn-cancel,
+  .nc-btn-create { min-height: 44px; }
+  .nc-col-pick { min-width: 44px; }
+  .nc-col-inline,
+  .nc-tag-input { min-height: 44px; font-size: 16px; }
+  .nc-badge,
+  .nc-tag-sel { display: inline-flex; align-items: center; }
+  .nc-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin-left: 2px;
+  }
+  .nc-close::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
 }
 
 /* U8: the tuning panel's tab bar is sticky on phones and touch. overflow: hidden

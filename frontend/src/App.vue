@@ -2,6 +2,7 @@
 import { onMounted, onBeforeUnmount, computed, provide } from 'vue'
 import { useScrollGuard } from './composables/useScrollGuard'
 import { useWakeLock } from './composables/wakeLock'
+import { useDraftAutosave } from './composables/drafts'
 import { useCardsStore } from './stores/cards'
 import { useUiStore } from './stores/ui'
 import { useFilterStore } from './stores/filters'
@@ -16,6 +17,7 @@ import Lightbox from './components/Lightbox.vue'
 import ChipPicker from './components/ChipPicker.vue'
 import ImagePicker from './components/ImagePicker.vue'
 import ExitConfirmModal from './components/ExitConfirmModal.vue'
+import DraftRestoreModal from './components/DraftRestoreModal.vue'
 import LoginModal from './components/LoginModal.vue'
 import UserSettingsModal from './components/UserSettingsModal.vue'
 import CustomTip from './components/CustomTip.vue'
@@ -42,6 +44,8 @@ const theme = useThemeStore()
 
 // Edit mode on a phone means entering a tune while reading the game: keep the screen on.
 useWakeLock(computed(() => ui.isEditing))
+// Unsaved edits survive a reload (E4); the prompt below offers them back.
+useDraftAutosave()
 
 const visibleCards = computed(() =>
   store.cards.filter(c => c.isLegend ? ui.isEditing : filters.isCardVisible(c))
@@ -124,6 +128,7 @@ onBeforeUnmount(() => {
   <ChipPicker />
   <ImagePicker />
   <ExitConfirmModal />
+  <DraftRestoreModal />
   <LoginModal />
   <UserSettingsModal />
   <NewCardModal />

@@ -21,6 +21,9 @@ Narrow-screen pass for the full catalog. Known gaps:
 
 ## Maintenance
 
+### Phantom unsaved card on page load (found 2026-10-09, mobile pass Phase 4)
+A fresh load with no sign-in and no edits marks card 1 (Smokin) dirty: `ui.dirtyIds` has it within a second, so `hasUnsavedChanges` is true for every visitor and the `beforeunload` "Leave site?" guard is armed. Entering edit mode clears it (`enterEdit` → `clearAllDirty`), which is why it went unnoticed. Cause not traced; the likely path is a mount-time `flush()` in `TuningAdjustments.vue` (it calls `markDirty()` via `CardView`'s `MarkDirtyKey`) — Smokin is the card whose tune triggers implied-upgrade checks. Draft safety (E4) only writes drafts in edit mode, so it isn't affected.
+
 ### Live data gaps (from session-36 shakedown)
 - ~~Color filters match zero cards on live~~ **RESOLVED** — the live data was fine (11/11 card-referenced liveries had colors); the real bug was the liveries store never loading outside edit flows, so the filter's liveryId→color lookup was empty for fresh visitors. Fixed by `loadAll()` on Filters mount (commit a70cce3, verified live).
 - ~~Set JWT_SECRET on the droplet~~ **RESOLVED** — was confirmed missing (every deploy rotated the fallback secret and logged all users out; bit us twice on 2026-07-17). Geoff added it to `/opt/thelivery/secrets.env` same day; verified by a token surviving a subsequent deploy restart.

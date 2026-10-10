@@ -74,7 +74,9 @@ async function runSet(label, url) {
   const browser = await chromium.launch()
   const report = { label, url, when: new Date().toISOString(), editView: token ? 'captured' : 'SKIPPED — no LIVERY_USER/LIVERY_PASS or .shot-login.json (unverified)', viewports: {} }
 
-  for (const vp of VIEWPORTS) {
+  // SHOT_ONLY=1440x900 (comma-separated) limits a run to those viewports.
+  const only = process.env.SHOT_ONLY?.split(',')
+  for (const vp of VIEWPORTS.filter(v => !only || only.includes(`${v.w}x${v.h}`))) {
     const name = `${vp.w}x${vp.h}`
     const dir = join(outDir, name)
     mkdirSync(dir, { recursive: true })
@@ -109,6 +111,17 @@ async function runSet(label, url) {
     await page.evaluate(() => window.scrollTo(0, 0))
     r.bug = await bugAudit(page)
     r.flyouts = await flyoutAudit(page, vp.touch)
+    const phone = vp.w <= 640
+    if (phone) {
+      // A6: with an overlay open the bar can't be seen or tapped.
+      r.barCovered = {}
+      await page.evaluate(() => { window.scrollTo(0, 0); document.querySelector('#card-1 .stage-expand').click() })
+      await page.waitForSelector('.lightbox.open')
+      await settle(page)
+      r.barCovered.lightbox = await barCovered(page)
+      await page.evaluate(() => document.querySelector('.lightbox-close').click())
+      await page.waitForFunction(() => !document.querySelector('.lightbox.open'))
+    }
 
     if (token) {
       await page.evaluate((t) => {
@@ -119,8 +132,10 @@ async function runSet(label, url) {
       }, token)
       await page.reload({ waitUntil: 'networkidle' })
       await page.waitForSelector(CARD)
+      if (phone) { await settle(page); r.bugSignedIn = await bugAudit(page) }
       await page.evaluate(() => document.querySelector('.bug-btn[aria-label="Edit mode"]').click())
       await page.waitForSelector('body.editing-mode')
+      if (phone) { await settle(page); r.bugEdit = await bugAudit(page) }
       await expandAll(page)
       await shootEl(page, vp, CARD, join(dir, '5-card-edit.png')); r.shots.push('5-card-edit')
       r.overflow.edit = await overflowAudit(page)
@@ -139,6 +154,7 @@ async function runSet(label, url) {
         const view = name.slice(2)
         r.overflow[view] = await overflowAudit(page, MODAL)
         if (vp.touch) { await assertTouch(page); r.touch[view] = await touchAudit(page, '.nc-overlay.open') }
+        if (phone) r.barCovered[view] = await barCovered(page)
         await page.evaluate(() => document.querySelector('.nc-overlay.open .nc-close').click())
         await page.waitForFunction(() => !document.querySelector('.nc-overlay.open'))
       }
@@ -151,6 +167,7 @@ async function runSet(label, url) {
       await shootEl(page, vp, MGR, join(dir, '8-photo-manager.png')); r.shots.push('8-photo-manager')
       r.overflow['photo-manager'] = await overflowAudit(page, MGR)
       if (vp.touch) { await assertTouch(page); r.touch['photo-manager'] = await touchAudit(page, '.image-picker.open') }
+      if (phone) r.barCovered['photo-manager'] = await barCovered(page)
       r.photoManager = await page.evaluate((sel) => { const p = document.querySelector(sel).getBoundingClientRect(); return { w: Math.round(p.width), h: Math.round(p.height), columns: getComputedStyle(document.querySelector('.mgr-grid')).gridTemplateColumns.split(' ').length } }, MGR)
       // G7: photo 1's details, from the manager.
       await page.evaluate(() => document.querySelector('.mgr-ctrl-detail').click())
@@ -159,10 +176,15 @@ async function runSet(label, url) {
       await shootEl(page, vp, '.pd-shell', join(dir, '9-photo-detail.png')); r.shots.push('9-photo-detail')
       r.overflow['photo-detail'] = await overflowAudit(page, '.pd-shell')
       if (vp.touch) { await assertTouch(page); r.touch['photo-detail'] = await touchAudit(page, '.pd-overlay') }
+      if (phone) r.barCovered['photo-detail'] = await barCovered(page)
       await page.evaluate(() => document.querySelector('.pd-close').click())
       await page.waitForFunction(() => !document.querySelector('.pd-shell'))
       await page.evaluate(() => [...document.querySelectorAll('.mgr-footer .mgr-action-btn')].find(b => b.textContent.trim() === 'Done').click())
       await page.waitForFunction(() => !document.querySelector('.image-picker.open'))
+      if (phone) {
+        r.typing = await typingAudit(page, vp, join(dir, '10-focused-field.png'))
+        r.saveCount = await saveCountAudit(page, join(dir, '11-two-unsaved.png'))
+      }
       await page.evaluate(() => localStorage.clear())
     }
 
@@ -307,9 +329,9 @@ function touchAudit(page, root = 'body') {
       if (label) { const lr = label.getBoundingClientRect(); w = Math.max(w, lr.width); h = Math.max(h, lr.height) }
       return [w, h]
     }
-    // Agreed exceptions: the 24px side-bug tab (L6), inline links in running text
+    // Agreed exceptions: inline links in running text
     // (WCAG 2.5.8 inline exception), and editable text, which is tapped to place a caret.
-    const EXEMPT = '.bug-tab, p a, [contenteditable=true]'
+    const EXEMPT = 'p a, [contenteditable=true]'
     // Controls deferred to a later phase are reported apart rather than counted.
     // (Phase 3 cleared the tuning rows; nothing is deferred now.)
     const LATER = ':not(*)'
@@ -341,18 +363,115 @@ function touchAudit(page, root = 'body') {
   }, root)
 }
 
-// L6 — the side bug's size and how many px of it sit over any card.
-function bugAudit(page) {
-  return page.evaluate(() => {
-    const b = document.querySelector('.side-bug').getBoundingClientRect()
+// L6 — the side bug's size and how many px of it sit over any card. At phone
+// width (A1/A7) it is the bottom bar instead: inside the viewport, centred, every
+// button 44px, and clear of the tuning panel's sticky header.
+async function bugAudit(page) {
+  const phone = await page.evaluate(() => innerWidth <= 640)
+  if (phone) {
+    await page.evaluate(() => { const ta = document.querySelector('#card-1 .ta'); if (ta) window.scrollTo(0, ta.getBoundingClientRect().top + scrollY + 200) })
+    await settle(page)
+  }
+  const out = await page.evaluate((phone) => {
+    const bar = document.querySelector('.side-bug'), b = bar.getBoundingClientRect()
+    if (phone) {
+      const btns = [...bar.querySelectorAll('.bug-btn')].filter(e => e.offsetWidth).map(e => e.getBoundingClientRect())
+      let overHeader = 0
+      // The header that is stuck at the top (headers scrolling past in flow pass
+      // under the bar like any content).
+      for (const h of document.querySelectorAll('.ta-header')) {
+        const r = h.getBoundingClientRect()
+        if (r.top > 1 || r.bottom <= 0) continue
+        if (r.bottom <= b.top || r.top >= b.bottom) continue
+        overHeader = Math.max(overHeader, Math.min(r.right, b.right) - Math.max(r.left, b.left))
+      }
+      return {
+        phone, width: Math.round(b.width), height: Math.round(b.height), bottomGap: Math.round(innerHeight - b.bottom),
+        inside: b.top >= 0 && b.left >= 0 && b.bottom <= innerHeight && b.right <= innerWidth,
+        offCentre: Math.round(Math.abs((b.left + b.right) / 2 - innerWidth / 2)),
+        buttons: btns.length, minBtn: Math.round(Math.min(...btns.map(r => Math.min(r.width, r.height)))),
+        overHeaderPx: Math.max(0, Math.round(overHeader)),
+      }
+    }
     let overlap = 0
     for (const c of document.querySelectorAll('.card')) {
       const r = c.getBoundingClientRect()
       if (r.bottom <= b.top || r.top >= b.bottom) continue
       overlap = Math.max(overlap, Math.min(r.right, b.right) - Math.max(r.left, b.left))
     }
-    return { width: Math.round(b.width), height: Math.round(b.height), overCardPx: Math.max(0, Math.round(overlap)) }
+    return { phone, width: Math.round(b.width), height: Math.round(b.height), overCardPx: Math.max(0, Math.round(overlap)) }
+  }, phone)
+  if (phone) await page.evaluate(() => window.scrollTo(0, 0))
+  return out
+}
+
+// A6: is the bar under whatever overlay is open? Nothing of the bar may be on top.
+function barCovered(page) {
+  return page.evaluate(() => {
+    const bar = document.querySelector('.side-bug'), b = bar.getBoundingClientRect()
+    const pts = [[b.left + 22, b.top + b.height / 2], [(b.left + b.right) / 2, b.top + b.height / 2], [b.right - 22, b.top + b.height / 2]]
+    return pts.every(([x, y]) => { const e = document.elementFromPoint(x, y); return !e || !bar.contains(e) })
   })
+}
+
+// A3: two unsaved cards → Save All drawn filled, carrying "2". Types one letter
+// into two card titles (never saved; the context is thrown away).
+async function saveCountAudit(page, shot) {
+  for (const id of ['1', '2']) {
+    await page.evaluate((id) => {
+      const t = document.querySelector(`#card-${id} .card-title[contenteditable=true]`)
+      t.focus(); document.execCommand('insertText', false, 'x'); t.blur()
+    }, id)
+  }
+  await page.waitForTimeout(600)
+  await page.evaluate(() => window.scrollTo(0, 0))
+  await settle(page)
+  await page.screenshot({ ...SHOT, path: shot })
+  return page.evaluate(() => {
+    const b = document.querySelector('.bug-btn[aria-label="Save all unsaved cards"]')
+    return { filled: b.classList.contains('active'), background: getComputedStyle(b).backgroundColor, count: b.querySelector('.bug-sugg-dot')?.textContent ?? null, barOpacity: +getComputedStyle(document.querySelector('.side-bug')).opacity }
+  })
+}
+
+// A5: focusing a tuning value hides the bar; Enter through three rows never shows
+// it (the opacity is sampled every frame); leaving the field brings it back.
+async function typingAudit(page, vp, shot) {
+  const sel = '#card-1 .ta-val-input'
+  const found = await page.evaluate((sel) => {
+    const el = [...document.querySelectorAll(sel)].find(e => e.offsetWidth)
+    if (!el) return false
+    el.scrollIntoView({ block: 'center' }); el.focus(); return true
+  }, sel)
+  if (!found) return { skipped: 'no visible tuning value field' }
+  await page.waitForTimeout(400)
+  const op = () => page.evaluate(() => { const s = getComputedStyle(document.querySelector('.side-bug')); return { opacity: +s.opacity, pointerEvents: s.pointerEvents } })
+  const focused = await op()
+  await page.screenshot({ ...SHOT, path: shot })
+  await page.evaluate(() => {
+    window.__barMax = 0
+    const bar = document.querySelector('.side-bug')
+    const tick = () => { window.__barMax = Math.max(window.__barMax, +getComputedStyle(bar).opacity); if (window.__barSampling) requestAnimationFrame(tick) }
+    window.__barSampling = true; requestAnimationFrame(tick)
+  })
+  const hops = []
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(350)
+    hops.push(await page.evaluate(() => document.activeElement?.className || document.activeElement?.tagName))
+  }
+  const maxDuringEnter = await page.evaluate(() => { window.__barSampling = false; return window.__barMax })
+  await page.evaluate(() => document.activeElement?.blur())
+  await page.waitForTimeout(600)
+  const after = await op()
+  // An Enter onto a locked row opens a tuning prompt: a dialog the bar must sit
+  // under (A6). Check it, then cancel it (past promptReady's 400ms guard).
+  let dialog = null
+  if (await page.evaluate(() => !!document.querySelector('.ta-prompt-label'))) {
+    dialog = { label: await page.evaluate(() => document.querySelector('.ta-prompt-label').textContent.trim()), barCovered: await barCovered(page) }
+    await page.evaluate(() => [...document.querySelectorAll('.ta-prompt-btn--muted')].find(b => b.offsetWidth)?.click())
+    await page.waitForTimeout(300)
+  }
+  return { focused, hops, maxDuringEnter, after, dialog }
 }
 
 // Opens each side-bug flyout in turn: does it fit the viewport (T6/S1), and on
@@ -364,9 +483,7 @@ const FLYOUTS = [
 ]
 async function flyoutAudit(page, touch) {
   const out = {}
-  // At phone width the bug starts as a collapsed edge tab; open it the way a user would.
-  await page.evaluate(() => { const t = document.querySelector('.bug-tab'); if (t && t.offsetWidth) t.click() })
-  await page.waitForTimeout(200)
+  const phone = await page.evaluate(() => innerWidth <= 640)
   if (touch) out['side-bug'] = { fit: { inside: true }, ...(await touchAudit(page, '.side-bug')) }
   for (const f of FLYOUTS) {
     await page.evaluate((sel) => document.querySelector(sel).click(), f.btn)
@@ -374,14 +491,25 @@ async function flyoutAudit(page, touch) {
     await page.waitForTimeout(400)
     const fit = await page.evaluate((sel) => {
       const el = document.querySelector(sel), r = el.getBoundingClientRect()
+      const bar = document.querySelector('.side-bug').getBoundingClientRect()
       return {
         top: Math.round(r.top), bottom: Math.round(r.bottom), left: Math.round(r.left), right: Math.round(r.right),
         inside: r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.right <= innerWidth,
         scrollsInside: el.scrollHeight > el.clientHeight,
+        // A4: at phone width the flyout opens upward and must stay off the bar.
+        gapAboveBar: innerWidth <= 640 ? Math.round(bar.top - r.bottom) : null,
       }
     }, f.panel)
     out[f.name] = { fit, ...(touch ? await touchAudit(page, `${f.panel}.open`) : {}) }
-    await page.evaluate((sel) => document.querySelector(sel).click(), f.btn)
+    if (phone) {
+      // A4: a tap outside closes it (top-left corner of the page, above the cards).
+      await page.touchscreen.tap(4, 4)
+      await page.waitForTimeout(300)
+      fit.closesOnOutsideTap = await page.evaluate((sel) => !document.querySelector(sel).classList.contains('open'), f.panel)
+      if (!fit.closesOnOutsideTap) await page.evaluate((sel) => document.querySelector(sel).click(), f.btn)
+    } else {
+      await page.evaluate((sel) => document.querySelector(sel).click(), f.btn)
+    }
     await page.waitForTimeout(300)
   }
   return out
@@ -403,10 +531,21 @@ function formatReport(rep) {
       if (t.later?.length) L.push(`    (Phase 3, not counted: ${t.later.map(x => `${x.path.split(' > ').pop()} ×${x.count}`).join(', ')})`)
     }
     if (r.photoManager) L.push(`  photo manager: ${r.photoManager.w}×${r.photoManager.h}, ${r.photoManager.columns} grid column(s)`)
-    L.push(`  side bug: ${r.bug.width}×${r.bug.height}, ${r.bug.overCardPx ? `${r.bug.overCardPx}px over a card` : 'clear of cards'} (page top, as loaded)`)
+    const g = r.bug
+    if (g.phone) L.push(`  bottom bar: ${g.width}×${g.height}, ${g.inside ? 'inside viewport' : 'OFF SCREEN'}, ${g.bottomGap}px above the bottom, ${g.offCentre ? `${g.offCentre}px OFF CENTRE` : 'centred'}; ${g.buttons} buttons, smallest ${g.minBtn}px; ${g.overHeaderPx ? `${g.overHeaderPx}px OVER the stuck .ta-header` : 'clear of the stuck .ta-header'}`)
+    else L.push(`  side bug: ${g.width}×${g.height}, ${g.overCardPx ? `${g.overCardPx}px over a card` : 'clear of cards'} (page top, as loaded)`)
+    for (const [k, b] of [['signed in', r.bugSignedIn], ['editing', r.bugEdit]]) if (b) L.push(`  bottom bar (${k}): ${b.width}×${b.height}, ${b.inside ? 'inside viewport' : 'OFF SCREEN'}, ${b.offCentre ? `${b.offCentre}px OFF CENTRE` : 'centred'}; ${b.buttons} buttons, smallest ${b.minBtn}px; ${b.overHeaderPx ? `${b.overHeaderPx}px OVER the stuck .ta-header` : 'clear of the stuck .ta-header'}`)
+    if (r.saveCount) L.push(`  two unsaved cards: Save ${r.saveCount.filled ? 'filled' : 'NOT FILLED'} (${r.saveCount.background}), count ${r.saveCount.count}, bar opacity ${r.saveCount.barOpacity}`)
+    if (r.barCovered) L.push(`  bar under overlays: ${Object.entries(r.barCovered).map(([k, v]) => `${k} ${v ? 'yes' : 'NO — BAR SHOWS'}`).join(', ')}`)
+    if (r.typing) {
+      const t = r.typing
+      if (t.skipped) L.push(`  typing: skipped (${t.skipped})`)
+      else L.push(`  typing: focused → bar opacity ${t.focused.opacity}, pointer-events ${t.focused.pointerEvents}; Enter ×3 (${t.hops.join(' → ')}) → max opacity ${t.maxDuringEnter}; blurred → opacity ${t.after.opacity}`)
+      if (t.dialog) L.push(`  bar under the "${t.dialog.label}" prompt: ${t.dialog.barCovered ? 'yes' : 'NO — BAR SHOWS'}`)
+    }
     for (const [name, f] of Object.entries(r.flyouts)) {
       const { fit } = f
-      L.push(`  flyout ${name}: ${fit.inside ? 'inside viewport' : `OFF SCREEN (top ${fit.top}, bottom ${fit.bottom}, left ${fit.left}, right ${fit.right})`}${fit.scrollsInside ? ', scrolls inside' : ''}`)
+      L.push(`  flyout ${name}: ${fit.inside ? 'inside viewport' : `OFF SCREEN (top ${fit.top}, bottom ${fit.bottom}, left ${fit.left}, right ${fit.right})`}${fit.scrollsInside ? ', scrolls inside' : ''}${fit.gapAboveBar != null ? `, ${fit.gapAboveBar >= 0 ? `${fit.gapAboveBar}px above the bar` : `OVERLAPS THE BAR by ${-fit.gapAboveBar}px`}` : ''}${fit.closesOnOutsideTap != null ? `, ${fit.closesOnOutsideTap ? 'closes on outside tap' : 'DOES NOT CLOSE on outside tap'}` : ''}`)
       for (const s of f.smallTargets || []) L.push(`    ${s.minW}×${s.minH}  ${s.path}${s.count > 1 ? `  ×${s.count}` : ''}`)
       for (const x of f.smallFonts || []) L.push(`    font ${x.minPx}px  ${x.path}${x.count > 1 ? `  ×${x.count}` : ''}`)
     }

@@ -44,19 +44,41 @@ const sideBugEl = ref<HTMLElement | null>(null)
 const hamburgerBtn = ref<HTMLElement | null>(null)
 const flyoutStyle = ref<Record<string, string>>({})
 
-// Phone width (≤640px): the bug starts collapsed to a 24px edge tab so it covers
-// almost none of the card; a tap opens it, an outside tap folds it again. The
-// class only has rules inside the phone media query, so wider screens ignore it.
-const collapsed = ref(true)
-function expandBug() {
-  collapsed.value = false
+// Phone width (≤640px): the bug is a floating bar at the bottom of the screen
+// (A1). Its flyouts open upward from it (A4). Wider screens keep the side bug.
+const phoneQuery = window.matchMedia('(max-width: 640px)')
+const isPhone = ref(phoneQuery.matches)
+function onPhoneChange() {
+  isPhone.value = phoneQuery.matches
+  open.value = null
+  flyoutStyle.value = {}
   nextTick(positionSideBug)
 }
 
-onClickOutside(bugRef, () => {
-  open.value = null
-  if (!collapsed.value) { collapsed.value = true; nextTick(positionSideBug) }
-})
+onClickOutside(bugRef, () => { open.value = null })
+
+// A5: while a text field has focus the phone bar and its flyouts are hidden, never
+// moved. Hopping field to field (Next, the tuning focus proxy) keeps them hidden;
+// they come back a moment after focus leaves the last field. Fields inside the
+// bug's own flyouts don't count. The class has rules only at phone width.
+const TEXT_FIELD = 'input:not([type=range], [type=checkbox], [type=radio], [type=file]), textarea, [contenteditable=true]'
+const typing = ref(false)
+let typingTimer: number | undefined
+function isTextField(el: EventTarget | null): boolean {
+  return el instanceof Element && el.matches(TEXT_FIELD) && !bugRef.value?.contains(el)
+}
+function onFocusIn(e: FocusEvent) {
+  if (!isTextField(e.target)) return
+  clearTimeout(typingTimer)
+  typing.value = true
+}
+function onFocusOut(e: FocusEvent) {
+  if (!isTextField(e.target) || isTextField(e.relatedTarget)) return
+  clearTimeout(typingTimer)
+  typingTimer = window.setTimeout(() => {
+    if (!isTextField(document.activeElement)) typing.value = false
+  }, 250)
+}
 
 const themeIcon = computed(() => themeIcons[ui.theme])
 
@@ -65,9 +87,10 @@ async function toggle(name: Exclude<FlyoutName, null>, anchor: HTMLElement) {
   if (open.value === name) { open.value = null; return }
   open.value = name
   await nextTick()
-  // Place the flyout just left of the side bug, vertically aligned to the button.
   const bug = sideBugEl.value!.getBoundingClientRect()
   const a = anchor.getBoundingClientRect()
+  if (isPhone.value) { placePhoneFlyout(name, bug, a); return }
+  // Place the flyout just left of the side bug, vertically aligned to the button.
   const flyoutRight = window.innerWidth - bug.left + 8
   const top = Math.max(12, a.top)
   flyoutStyle.value = {
@@ -77,6 +100,23 @@ async function toggle(name: Exclude<FlyoutName, null>, anchor: HTMLElement) {
     // Height from the space below the anchor, not the whole viewport, so a tall
     // flyout scrolls inside instead of running off the bottom.
     maxHeight: `${window.innerHeight - top - 12}px`,
+  }
+}
+
+// A4: at phone width a flyout opens upward, 8px above the bar, centred on its
+// button and kept 8px inside the screen edges. Measured from the bar's own rect,
+// so it is right whether or not Safari's toolbar is showing.
+const flyoutEls = ref<Record<string, HTMLElement | null>>({})
+function placePhoneFlyout(name: Exclude<FlyoutName, null>, bar: DOMRect, a: DOMRect) {
+  const margin = 8
+  const maxWidth = window.innerWidth - 2 * margin
+  const width = Math.min(flyoutEls.value[name]?.offsetWidth ?? 0, maxWidth)
+  const left = Math.max(margin, Math.min(a.left + a.width / 2 - width / 2, window.innerWidth - width - margin))
+  flyoutStyle.value = {
+    bottom: `${window.innerHeight - bar.top + margin}px`,
+    left: `${left}px`,
+    maxWidth: `${maxWidth}px`,
+    maxHeight: `${bar.top - 2 * margin}px`,
   }
 }
 
@@ -90,6 +130,12 @@ function positionSideBug() {
   const catalog = document.querySelector('.catalog')
   const title = document.querySelector('.page-head h1')
   if (!bug || !ham || !catalog || !title) return
+  // Phone: the bar is placed by CSS alone; drop what a wider layout set inline.
+  if (isPhone.value) {
+    bug.style.top = ''
+    bug.style.right = ''
+    return
+  }
 
   const catRect = catalog.getBoundingClientRect()
   const bugWidth = bug.offsetWidth
@@ -117,8 +163,17 @@ function positionSideBug() {
 onMounted(() => {
   nextTick(positionSideBug)
   window.addEventListener('resize', positionSideBug)
+  phoneQuery.addEventListener('change', onPhoneChange)
+  document.addEventListener('focusin', onFocusIn)
+  document.addEventListener('focusout', onFocusOut)
 })
-onBeforeUnmount(() => window.removeEventListener('resize', positionSideBug))
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', positionSideBug)
+  phoneQuery.removeEventListener('change', onPhoneChange)
+  document.removeEventListener('focusin', onFocusIn)
+  document.removeEventListener('focusout', onFocusOut)
+  clearTimeout(typingTimer)
+})
 // Reposition once cards have loaded (catalog column width can change).
 watch(() => store.cards.length, () => nextTick(positionSideBug))
 
@@ -188,12 +243,9 @@ function onToggleAll() {
 </script>
 
 <template>
-  <div ref="bugRef">
-    <div class="side-bug" :class="{ 'side-bug--collapsed': collapsed }" ref="sideBugEl">
-      <button class="bug-tab" :class="{ 'bug-tab--unsaved': ui.isEditing && ui.hasUnsavedChanges }" :aria-label="ui.hasUnsavedChanges ? `Open side menu, ${ui.dirtyIds.size} unsaved` : 'Open side menu'" :aria-expanded="!collapsed" @click="expandBug">
-        ‹<span v-if="ui.isEditing && ui.dirtyIds.size" class="bug-tab-count">{{ ui.dirtyIds.size }}</span>
-      </button>
-      <button v-if="auth.isAuthenticated" class="bug-btn" aria-label="Account settings" v-tip="'Account settings'" @click="modal.openSettings()">
+  <div ref="bugRef" :class="{ 'bug-root--typing': typing }">
+    <div class="side-bug" :class="{ 'side-bug--editing': ui.isEditing }" ref="sideBugEl">
+      <button v-if="auth.isAuthenticated" class="bug-btn bug-btn--view-only" aria-label="Account settings" v-tip="'Account settings'" @click="modal.openSettings()">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="8" r="4"></circle>
           <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
@@ -208,10 +260,10 @@ function onToggleAll() {
           </g>
         </svg>
       </button>
-      <!-- Phone edit controls (E1): the bottom dock and pill are hidden at ≤640px and
-           their actions live here. Exit is the edit button above. -->
+      <!-- Phone edit controls (A2): the bottom dock and pill are hidden at ≤640px and
+           their actions live in the bar. Exit is the edit button above. -->
       <template v-if="ui.isEditing">
-        <button class="bug-btn bug-btn--phone-edit" aria-label="Save all unsaved cards" :disabled="!ui.hasUnsavedChanges || ui.saving" @click="ui.saveAllDirty()">
+        <button class="bug-btn bug-btn--phone-edit" :class="{ active: ui.hasUnsavedChanges }" aria-label="Save all unsaved cards" :disabled="!ui.hasUnsavedChanges || ui.saving" @click="ui.saveAllDirty()">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 3h11l3 3v15H5z"></path><path d="M8 3v5h7V3"></path><rect x="8" y="13" width="8" height="6"></rect>
           </svg>
@@ -230,10 +282,10 @@ function onToggleAll() {
         <span class="bug-lines"><span></span><span></span><span></span></span>
         <span v-if="auth.isAuthenticated && modal.pendingSuggestionCount" class="bug-sugg-dot">{{ modal.pendingSuggestionCount }}</span>
       </button>
-      <button class="bug-btn" aria-label="Theme" v-tip="() => 'Theme: ' + themeLabels[ui.theme]" @click="(e) => toggle('theme', e.currentTarget as HTMLElement)">
+      <button class="bug-btn bug-btn--view-only" aria-label="Theme" v-tip="() => 'Theme: ' + themeLabels[ui.theme]" @click="(e) => toggle('theme', e.currentTarget as HTMLElement)">
         <span class="theme-icon-slot" v-html="themeIcon"></span>
       </button>
-      <button class="bug-btn" aria-label="Text size" v-tip="'Text Size'" @click="(e) => toggle('text', e.currentTarget as HTMLElement)">
+      <button class="bug-btn bug-btn--view-only" aria-label="Text size" v-tip="'Text Size'" @click="(e) => toggle('text', e.currentTarget as HTMLElement)">
         <svg class="bug-text-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none">
           <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="2"></circle>
           <line x1="15" y1="15" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line>
@@ -246,7 +298,7 @@ function onToggleAll() {
     </div>
 
     <!-- Theme flyout -->
-    <div class="bug-flyout theme-flyout drawer_theme_panel" :class="{ open: open === 'theme' }" :style="flyoutStyle">
+    <div :ref="(el) => { flyoutEls.theme = el as HTMLElement | null }" class="bug-flyout theme-flyout drawer_theme_panel" :class="{ open: open === 'theme' }" :style="flyoutStyle">
       <button v-for="t in ui.THEMES" :key="t" class="theme-option" :class="{ active: ui.theme === t }" @click="pickTheme(t)">
         <span v-html="themeIcons[t]"></span> {{ themeLabels[t] }}
       </button>
@@ -259,66 +311,71 @@ function onToggleAll() {
     </div>
 
     <!-- Text-size flyout -->
-    <div class="bug-flyout text-size-flyout drawer_text_panel" :class="{ open: open === 'text' }" :style="flyoutStyle">
+    <div :ref="(el) => { flyoutEls.text = el as HTMLElement | null }" class="bug-flyout text-size-flyout drawer_text_panel" :class="{ open: open === 'text' }" :style="flyoutStyle">
       <button v-for="d in deltas" :key="d" class="text-size-option" :class="{ active: ui.textDelta === d }" @click="pickDelta(d)">
         {{ deltaLabel(d) }}
       </button>
     </div>
 
     <!-- Menu flyout (filters) -->
-    <div class="bug-flyout drawer_menu_panel" :class="{ open: open === 'menu' }" :style="flyoutStyle">
+    <div :ref="(el) => { flyoutEls.menu = el as HTMLElement | null }" class="bug-flyout drawer_menu_panel" :class="{ open: open === 'menu' }" :style="flyoutStyle">
       <slot name="menu" />
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Collapsed edge tab (phone only) — same tab language as DrawerPanel's .dp-tab */
-.bug-tab {
-  display: none;
-}
 .bug-btn--phone-edit {
   display: none;
   position: relative;
 }
 .bug-btn--phone-edit:disabled { opacity: 0.35; cursor: default; }
+
+/* Phones (A1–A6): a floating bar at the bottom, in the edit pill's language
+   (EditBar.vue). Viewing shows Account, Edit, Filters, Theme, Text size, Expand;
+   editing swaps Account, Theme and Text size for Save All, Next edit, New Card. */
 @media (max-width: 640px) {
-  .side-bug--collapsed > :not(.bug-tab) {
-    display: none;
+  .side-bug {
+    top: auto;
+    right: auto;
+    left: 50%;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    flex-direction: row;
+    padding: 0 6px;
+    background: color-mix(in srgb, var(--panel) 80%, transparent);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.4);
   }
-  .side-bug--collapsed .bug-tab {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 23px;   /* + the bug's 1px borders = 24×44 on screen */
-    height: 42px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    color: var(--accent);
-    font-size: 16px;
-    cursor: pointer;
+  .side-bug .bug-btn {
+    width: 44px;
+    height: 44px;
+    border-bottom: none;
+    border-radius: 999px;
   }
-  .side-bug--collapsed .bug-tab:has(.bug-tab-count) {
-    flex-direction: column;
-    gap: 1px;
-  }
-  .bug-tab-count {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 1;
-  }
-  /* Unsaved edits: the folded tab pulses so they can't be forgotten. */
-  .bug-tab--unsaved { animation: bug-tab-pulse 1.6s ease-in-out infinite; }
   .bug-btn--phone-edit { display: flex; }
-}
-@keyframes bug-tab-pulse {
-  0%, 100% { background: transparent; }
-  50% { background: color-mix(in srgb, var(--accent) 35%, transparent); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .bug-tab--unsaved { animation: none; background: color-mix(in srgb, var(--accent) 25%, transparent); }
+  .side-bug--editing .bug-btn--view-only { display: none; }
+  /* A3: Save All is drawn filled while anything is unsaved; its count inverts. */
+  .bug-btn.active .bug-sugg-dot {
+    background: var(--panel);
+    color: var(--accent);
+  }
+  .bug-flyout {
+    transform: translateY(8px);
+  }
+  .bug-flyout.open {
+    transform: translateY(0);
+  }
+  /* A5: hidden while a text field has focus; never moved. */
+  .side-bug { transition: opacity 0.15s ease; }   /* flyouts keep catalog.css's .2s */
+  .bug-root--typing .side-bug,
+  .bug-root--typing .bug-flyout.open {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 .bug-btn--filters {

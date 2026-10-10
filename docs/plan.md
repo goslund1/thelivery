@@ -12,7 +12,9 @@ First real first-party use of the OG Maker. Open a card, click the title → Sha
 ---
 
 ### 2. Mobile layout — DONE 2026-10-09
-Built from the Mobile & Touch work order, Phases 0–6 (commits 24282cd → 633b0d9, all live). The phone is a full tuning-entry and slideshow-building surface; desktop at 1440×900 is pixel-identical to the pre-work baseline. What's left is Jason's device shakedown: `docs/shakedown.md` §17 (two iPhone runs + device-only checks). Per-phase audits are tracked in `docs/mobile-pass/<phase>/audit.txt`; the after-screenshots are in the same folders locally (gitignored). Re-run with `node frontend/shot.mjs --set <label>` and `--compare before <label>`.
+Built from the Mobile & Touch work order, Phases 0–6 (commits 24282cd → 633b0d9, all live). The phone is a full tuning-entry and slideshow-building surface; desktop at 1440×900 is pixel-identical to the pre-work baseline. What's left is Jason's device shakedown: `docs/shakedown.md` §17 (two iPhone runs + device-only checks). Per-phase audits are tracked in `docs/mobile-pass/<phase>/audit.txt`; the after-screenshots are in the same folders locally (gitignored). Re-run with `node frontend/shot.mjs --set <label>` and `--compare <baseline> <label>`. The `before` set predates the license page (its 1440 shots no longer match HEAD); `partA-base` is the baseline from 2026-10-09.
+
+**Bottom bar, star and Playing pill** (work order in `Drop Offs/`, 2026-10-09): Part A built, not yet committed or live. On phones the side bug is a bottom bar (the collapsed tab is gone), flyouts open upward, and the bar hides while a text field has focus. Parts B (star + visitor memory) and C (Playing pill) next.
 
 ---
 

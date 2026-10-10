@@ -4,7 +4,7 @@ import { refreshTip } from './tooltip'
 
 // "Jump to next edit": cycles through every individually-typed field across all
 // dirty cards. Module-level state so the desktop dock (EditBar) and the phone
-// side drawer (SideBug) share one position — <script setup> state is per instance.
+// bottom bar (SideBug) share one position — <script setup> state is per instance.
 const cycleIndex = ref(0)
 const lastJumpIndex = ref(-1)
 let _highlightTimer: ReturnType<typeof setTimeout> | null = null

@@ -33,7 +33,7 @@ body {
 @media (max-width: 640px) {
   /* L1 edge-to-edge cards */
   body {
-    padding: 12px env(safe-area-inset-right) 96px env(safe-area-inset-left);
+    padding: 12px env(safe-area-inset-right) calc(96px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
   }
   .card,
   .page-head {

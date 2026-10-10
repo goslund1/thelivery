@@ -255,8 +255,8 @@ const { onCycleDirty, pillLabel } = useEditCycle()
   }
 }
 
-/* Phones (E1): the dock and pill would sit on the card; their actions are in the
-   opened side drawer instead (SideBug.vue). */
+/* Phones (A2): the dock and pill would sit on the card; their actions are in the
+   bottom bar instead (SideBug.vue). */
 @media (max-width: 640px) {
   .edit-pill,
   .tl-dock { display: none; }

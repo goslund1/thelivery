@@ -230,13 +230,16 @@ From the Mobile & Touch work order (Phases 0–6, 2026-10-09). Layout follows wi
 
 **Device-only checks** (couldn't be verified in the harness)
 - [ ] Nothing fixed sits under the home indicator or Safari's toolbar, portrait and landscape (L7).
-- [ ] One tap activates the card title, a thumbnail and each side-bug button — no "first tap only hovers" (T7).
+- [ ] One tap activates the card title, a thumbnail and each bottom-bar button — no "first tap only hovers" (T7).
 - [ ] Tapping a tuning value shows the number pad with the old value selected; Next keeps the keyboard up, including when it moves on to the next tab (U2/U3).
 - [ ] The phone doesn't dim during a five-minute entry session in edit mode (U13).
 - [ ] Focusing any field (tuning value, Low/High, tags, subtitle, alt text) doesn't zoom the page (T4).
 - [ ] Photo picker opens the library, not Files; note whether iOS hands over HEIC photos as JPEG (G1/G2). A rejected photo shows the "export as JPEG" message.
 - [ ] Reload mid-entry (with an unsaved change) offers "Unsaved Edits Found" → Restore brings it back (E4).
-- [ ] Side drawer: the folded tab shows the unsaved count and pulses; Save All / Jump / New Card work from the opened drawer (E1).
+- [ ] Bottom bar: it sits just above Safari's toolbar, and follows it down when the toolbar collapses on scroll (A1).
+- [ ] Bottom bar: nothing of it is under the home indicator (A1).
+- [ ] Bottom bar: tapping a tuning value hides it; closing the keyboard brings it back in the right place (A5). If it comes back misplaced, report it (iOS 26.0 bug, said fixed in 26.1).
+- [ ] Bottom bar: each button works on the first tap (A2).
 - [ ] iPad: OG Maker boxes drag without scrolling the page (T5); Theme Builder "Customize" isn't offered (S3).
 - [ ] iPad with a trackpad or mouse: tooltips stay off, targets stay large, nothing breaks.
 

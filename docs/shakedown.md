@@ -212,18 +212,33 @@ Mobile: `npm run dev:mobile` — use Network URL in iPhone Safari.
 
 ---
 
-## 17. Mobile (run on device via `npm run dev:mobile`)
+## 17. Mobile (iPhone + iPad, live site)
 
-- [ ] Catalog loads on iPhone Safari
-- [ ] Cards render correctly at narrow width
-- [ ] SideBug opens/closes filters
-- [ ] Slideshow autoplay works
-- [ ] Lightbox opens, touch-nav works
-- [ ] Edit mode accessible (login → key icon)
-- [ ] EditCardModal usable at narrow width
-- [ ] ThemeBuilder flyout usable at narrow width
-- [ ] TuningAdjustments tabs scroll on narrow width
-- [ ] No horizontal overflow / broken layouts
+From the Mobile & Touch work order (Phases 0–6, 2026-10-09). Layout follows width (phone ≤ 640px), interaction follows capability (no hover / coarse pointer). The harness already checked every viewport (`node frontend/shot.mjs --set <label>`, audits in `docs/mobile-pass/`); these are the checks only a real device can do.
+
+**iPhone run 1 — tune entry**
+- [ ] Sign in at `/#ignition` and open a card's tuning panel in edit mode.
+- [ ] Enter every tab of a real tune from the game using the number pad and Next, including one negative camber value (± button).
+- [ ] Nudge two values with the step buttons and undo one slider drag (Undo in the panel header).
+- [ ] Scroll the page across the sliders; no value changes.
+- [ ] Save, reload, and confirm every value persisted.
+
+**iPhone run 2 — slideshow**
+- [ ] Add three photos from the library to a card.
+- [ ] Set the lead image, exclude one photo, move one earlier.
+- [ ] Save, then swipe through the result in the lightbox.
+
+**Device-only checks** (couldn't be verified in the harness)
+- [ ] Nothing fixed sits under the home indicator or Safari's toolbar, portrait and landscape (L7).
+- [ ] One tap activates the card title, a thumbnail and each side-bug button — no "first tap only hovers" (T7).
+- [ ] Tapping a tuning value shows the number pad with the old value selected; Next keeps the keyboard up, including when it moves on to the next tab (U2/U3).
+- [ ] The phone doesn't dim during a five-minute entry session in edit mode (U13).
+- [ ] Focusing any field (tuning value, Low/High, tags, subtitle, alt text) doesn't zoom the page (T4).
+- [ ] Photo picker opens the library, not Files; note whether iOS hands over HEIC photos as JPEG (G1/G2). A rejected photo shows the "export as JPEG" message.
+- [ ] Reload mid-entry (with an unsaved change) offers "Unsaved Edits Found" → Restore brings it back (E4).
+- [ ] Side drawer: the folded tab shows the unsaved count and pulses; Save All / Jump / New Card work from the opened drawer (E1).
+- [ ] iPad: OG Maker boxes drag without scrolling the page (T5); Theme Builder "Customize" isn't offered (S3).
+- [ ] iPad with a trackpad or mouse: tooltips stay off, targets stay large, nothing breaks.
 
 ---
 

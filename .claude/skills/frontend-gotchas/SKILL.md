@@ -46,3 +46,27 @@ When a parent passes a deep-cloned reactive object as props (e.g. `RecipeSection
 ## `ui.ts` ↔ `modal.ts` circular imports are SETTLED — do not "fix"
 
 The two stores are mutually dependent (401 → open login; login success → enter edit) and use `import('./modal')` / `import('./ui')` to break the module-level cycle. The build's `INEFFECTIVE_DYNAMIC_IMPORT` warning is **expected and benign** — it complains the import won't get its own chunk, but chunking was never the goal. Reviewed twice (audit pass 4, review 2026-07-17): a signal-module extraction only fixes one direction and would force post-login flow into `LoginModal.vue`, scattering logic the stores deliberately centralize. Full rationale in `ui.ts → handleAuthError`. (`theme.ts` was never part of the cycle and imports `ui` statically.)
+
+## Touch: interaction follows capability, not width
+
+Phone/iPad behaviour hangs off `@media (hover: none), (pointer: coarse)` (CSS) or `isTouch` (`composables/isTouch.ts`), never width or user agent — iPadOS Safari reports itself as a Mac, and an iPad is desktop-width. Layout follows width (`max-width: 640px`); overrides live in `styles/responsive.css` or the component's scoped style. A tap fires `mouseenter`, so anything hover-driven sticks open on touch: `v-tip` only attaches its listeners when `matchMedia('(hover: hover)')` matches.
+
+## iOS zooms into any field under 16px
+
+Focusing an `input`/`select`/`textarea`/contenteditable with a computed font-size below 16px makes iOS Safari zoom the page. Raise the field to 16px on touch (`font-size: max(16px, 1em)` under `:where(...)` so class rules still win, or 16px in the component's touch block). Never use `maximum-scale=1` — it disables pinch zoom.
+
+## Buttons that act on `pointerdown` need `@touchstart.prevent`
+
+The tuning steppers act on `pointerdown` (for hold-to-repeat). Without `@touchstart.prevent`, the browser still synthesizes a click after the tap: it moves focus off the value box being typed in (closing the number pad) and can land on a prompt the step just opened. `touchstart.prevent` cancels the follow-up mouse events and click; pointer events still fire.
+
+## `overflow: hidden` on an ancestor kills `position: sticky`
+
+`hidden` makes the ancestor a scroll container, so a sticky child sticks to that box (which never scrolls) instead of the viewport. `.card` uses `overflow: clip` on phone/touch for the tuning panel's sticky tab bar — same clipping, no scroll container.
+
+## An invisible `::after` hit area needs a positioned host
+
+44px touch hit areas are an absolutely positioned `::after` on the control. If the control is later made `position: static` (e.g. moved into normal flow on phones), the `::after` anchors to the nearest positioned ancestor instead — it ended up over the middle of the card, intercepting taps on the tuning panel. Use `position: relative` to put such a control back in flow.
+
+## Playwright: tall element screenshots drop touch emulation
+
+`locator.screenshot()` on an element taller than the viewport (beyond-viewport capture) silently resets touch emulation: `(hover: none)` / `(pointer: coarse)` stop matching for the shot and for everything after it. `frontend/shot.mjs` grows the viewport to fit the element instead, and asserts touch media before every touch audit.

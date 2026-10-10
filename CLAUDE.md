@@ -118,6 +118,7 @@ and `/uploads` to the backend, so the app always uses same-origin relative URLs.
 
 ### CSS — important
 - **All styling is one global stylesheet, `src/styles/catalog.css`, copied verbatim from the original HTML.** Components reuse those exact class names. **Do not rename classes or convert to scoped styles** — visual parity depends on the global rules. Scoped `<style>` is only for genuinely new bits (e.g. the per-card save button, unsaved-count).
+- **Responsive/touch:** `src/styles/responsive.css` (loaded right after `catalog.css`) holds the global phone and touch overrides; components put theirs in their own scoped style. Two axes, never mixed: layout follows width (`max-width: 640px`), interaction follows capability (`(hover: none), (pointer: coarse)`). Desktop at 1440×900 must stay pixel-identical — check with `node frontend/shot.mjs --compare before <label>`. See `.claude/skills/frontend-gotchas/` for the touch pitfalls.
 - **Themes:** `data-theme` on `<html>` swaps ~35 CSS variables; 5 themes (dark/light/rainbow/clouds/stormy). Two live knobs: `--text-delta` (text scaling) and `--dissolve` (crossfade).
 
 ### Component tree

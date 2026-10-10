@@ -9,6 +9,7 @@ import EditCardModal from './EditCardModal.vue'
 import SubtitleEditor from './SubtitleEditor.vue'
 import { refreshTip } from '../composables/tooltip'
 import { formatShareCode } from '../utils/shareCode'
+import { isFavorite, toggleFavorite } from '../composables/visitorMemory'
 
 const props = defineProps<{ card: Card; activeShareCode?: string | null }>()
 const store = useCardsStore()
@@ -26,10 +27,16 @@ function onLiveryCodeInput(e: Event) {
   ui.markCardDirty(props.card.id)
 }
 
+// A star is the visitor's own (D5): kept in this browser, never on the card, so
+// starring doesn't make the card unsaved. A click shows its plain result even
+// with the cursor still on the star; the hover dressing returns only after the
+// cursor has left and come back (suppress-hover, catalog.css).
+const favorited = computed(() => isFavorite(props.card.id))
+const suppressHover = ref(false)
 function toggleFav() {
-  store.toggleFavorite(props.card.id)
-  ui.markCardDirty(props.card.id)
-  refreshTip(props.card.isFavorite ? 'Unmark as favorite' : 'Mark as favorite')
+  toggleFavorite(props.card.id)
+  suppressHover.value = true
+  refreshTip(favorited.value ? 'Unmark as favorite' : 'Mark as favorite')
 }
 function removeCollection(c: string) {
   store.removeCollection(props.card.id, c)
@@ -93,7 +100,7 @@ function setAccent(color: string | undefined) {
     </div>
     <div class="card-meta-actions">
       <button v-if="ui.isEditing" class="edit-card-btn" @click="editOpen = true">Edit Card</button>
-      <button class="fav-star" :class="{ favorited: card.isFavorite }" aria-label="Favorite this card" v-tip="() => card.isFavorite ? 'Unmark as favorite' : 'Mark as favorite'" @click="toggleFav">★</button>
+      <button class="fav-star" :class="{ favorited, 'suppress-hover': suppressHover }" aria-label="Favorite this card" :aria-pressed="favorited" v-tip="() => favorited ? 'Unmark as favorite' : 'Mark as favorite'" @click="toggleFav" @mouseleave="suppressHover = false">★</button>
     </div>
   </div>
 
@@ -192,6 +199,16 @@ function setAccent(color: string | undefined) {
   transition: color 0.15s;
 }
 .card-title--shareable:hover { color: var(--accent); }
+
+/* The star with a mouse (B2): hover invites, over the state. Off + over is yellow
+   (catalog.css); on + over is brighter, so hover and on never look the same. */
+@media (hover: hover) {
+  .fav-star.favorited:hover { color: var(--accent-bright); }
+}
+/* Just clicked, cursor still over it: the plain result. catalog.css greys a
+   suppressed star, which would also hide a star just switched on. */
+.fav-star.suppress-hover:hover { transform: none; }
+.fav-star.favorited.suppress-hover:hover { color: var(--accent); }
 
 /* Touch (phones and iPads): see the touch block in styles/responsive.css */
 @media (hover: none), (pointer: coarse) {

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useCardsStore } from './cards'
 import { useLiveriesStore } from './liveries'
 import type { Card } from '../types'
+import { isFavorite } from '../composables/visitorMemory'
 
 export const COLOR_TAXONOMY = [
   'Red', 'Blue', 'Green', 'Yellow', 'Orange', 'Purple', 'Pink',
@@ -40,7 +41,7 @@ export const useFilterStore = defineStore('filters', () => {
   }
 
   function isCardVisible(card: Card) {
-    if (favoritesOnly.value && !card.isFavorite) return false
+    if (favoritesOnly.value && !isFavorite(card.id)) return false
 
     if (card.collections.length && !card.collections.some(c => !disabledCollections.value.has(c))) return false
 

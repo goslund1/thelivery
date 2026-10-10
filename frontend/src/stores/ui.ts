@@ -4,6 +4,7 @@ import type { Theme } from '../types'
 import { useCardsStore } from './cards'
 import { useAuthStore } from './auth'
 import { ApiError } from '../api'
+import { rememberedTheme, rememberedTextDelta } from '../composables/visitorMemory'
 
 const THEMES: Theme[] = ['dark', 'light', 'rainbow', 'clouds', 'stormy']
 
@@ -11,8 +12,10 @@ const THEMES: Theme[] = ['dark', 'light', 'rainbow', 'clouds', 'stormy']
 // the edit-jump list. Modal/lightbox/picker state lives in stores/modal.ts;
 // filter/expand state lives in stores/filters.ts.
 export const useUiStore = defineStore('ui', () => {
-  const theme = ref<Theme>('dark')
-  const textDelta = ref(0) // px, applied to --text-delta
+  // A first visit opens on the defaults; after that, on what this browser picked
+  // (B4a). The theme pick is re-applied over the site theme in theme.load().
+  const theme = ref<Theme>(rememberedTheme() ?? 'dark')
+  const textDelta = ref(rememberedTextDelta() ?? 0) // px, applied to --text-delta
   const isEditing = ref(false)
 
   // --- Per-card unsaved-changes tracking --------------------------------------

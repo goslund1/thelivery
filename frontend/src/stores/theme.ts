@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { Theme } from '../types'
 import { api } from '../api'
 import { errMsg } from '../utils/errMsg'
+import { rememberedTheme } from '../composables/visitorMemory'
 // Static import is safe here: ui.ts does not import theme.ts, so there is no
 // module cycle (unlike ui.ts ↔ modal.ts, which must stay dynamic).
 import { useUiStore } from './ui'
@@ -171,6 +172,10 @@ export const useThemeStore = defineStore('theme', () => {
       current.value = deepClone(data)
       saved.value   = deepClone(data)
       applyAll(data)
+      // The visitor's own theme pick (B4a) goes over the site's, the same way a
+      // pick from the theme flyout does. Same ambiance: keep the site's colours.
+      const pick = rememberedTheme()
+      if (pick && pick !== data.ambiance) setAmbiance(pick)
     } catch (e) {
       error.value = errMsg(e)
     } finally {

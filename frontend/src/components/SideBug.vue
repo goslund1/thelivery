@@ -11,6 +11,7 @@ import { hideTip, refreshTip } from '../composables/tooltip'
 import type { Theme } from '../types'
 import ThemeBuilder from './ThemeBuilder.vue'
 import { useEditCycle } from '../composables/editCycle'
+import { rememberTheme, rememberTextDelta } from '../composables/visitorMemory'
 
 const ui = useUiStore()
 const modal = useModalStore()
@@ -183,10 +184,11 @@ function pickTheme(t: Theme) {
   // flips data-theme, which inline styles on <html> override.
   if (themeStore.current) themeStore.setAmbiance(t)
   else ui.theme = t
+  rememberTheme(t)
   open.value = null
 }
 function openThemeBuilder() { open.value = null; modal.openThemeBuilder() }
-function pickDelta(d: number) { ui.textDelta = d; open.value = null }
+function pickDelta(d: number) { ui.textDelta = d; rememberTextDelta(d); open.value = null }
 
 function nearestVisibleCard(): Element | null {
   return Array.from(document.querySelectorAll('.card')).reduce<Element | null>(

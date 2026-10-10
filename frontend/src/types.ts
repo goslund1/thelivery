@@ -173,7 +173,7 @@ export interface Card {
   name: string
   subtitle: string
   liveryShareCode?: string
-  isFavorite: boolean
+  isFavorite: boolean   // no longer read or written: stars live in the visitor memory (composables/visitorMemory.ts)
   isLegend: boolean
   collections: string[]
   tags: string[]

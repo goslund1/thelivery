@@ -1,0 +1,158 @@
+mobile-pass set "partB"  2026-10-10T04:33:10.187Z
+edit view: captured
+
+══ 360x640 touch  (hover:none=true coarse=true)  shots: 9
+  overflow [view]: document ok; 0 element(s)
+  overflow [edit]: document ok; 3 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 356 in box 324  ×2
+    .kit-cat > .kit-list > li > .up-inline-select.up-inline-set   content 296 in box 284
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 328 in box 284
+  overflow [new-card]: document ok; 0 element(s)
+  overflow [edit-card]: document ok; 1 element(s)
+    .nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set   content 356 in box 308
+  overflow [photo-manager]: document ok; 0 element(s)
+  overflow [photo-detail]: document ok; 0 element(s)
+  touch [view]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [edit]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [new-card]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [edit-card]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [photo-manager]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [photo-detail]: 0 target(s) under 44px, 0 field(s) under 16px
+  photo manager: 360×640, 2 grid column(s)
+  bottom bar: 190×46, inside viewport, 10px above the bottom, centred; 4 buttons, smallest 44px; clear of the stuck .ta-header
+  bottom bar (signed in): 278×46, inside viewport, centred; 6 buttons, smallest 44px; clear of the stuck .ta-header
+  bottom bar (editing): 278×46, inside viewport, centred; 6 buttons, smallest 44px; clear of the stuck .ta-header
+  two unsaved cards: Save filled (rgb(201, 162, 39)), count 2, bar opacity 1
+  bar under overlays: lightbox yes, new-card yes, edit-card yes, photo-manager yes, photo-detail yes
+  typing: focused → bar opacity 0, pointer-events none; Enter ×3 (ta-val-input → ta-val-input → ta-val-input) → max opacity 0; blurred → opacity 1
+  bar under the "Springs & Dampers — which tier?" prompt: yes
+  flyout side-bug: inside viewport
+  flyout filters: inside viewport, scrolls inside, 8px above the bar, closes on outside tap
+  flyout theme: inside viewport, 8px above the bar, closes on outside tap
+  flyout text-size: inside viewport, 8px above the bar, closes on outside tap
+
+══ 390x844 touch  (hover:none=true coarse=true)  shots: 9
+  overflow [view]: document ok; 0 element(s)
+  overflow [edit]: document ok; 2 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 356 in box 354  ×2
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 328 in box 314
+  overflow [new-card]: document ok; 0 element(s)
+  overflow [edit-card]: document ok; 1 element(s)
+    .nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set   content 356 in box 338
+  overflow [photo-manager]: document ok; 0 element(s)
+  overflow [photo-detail]: document ok; 0 element(s)
+  touch [view]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [edit]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [new-card]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [edit-card]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [photo-manager]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [photo-detail]: 0 target(s) under 44px, 0 field(s) under 16px
+  photo manager: 390×844, 2 grid column(s)
+  bottom bar: 190×46, inside viewport, 10px above the bottom, centred; 4 buttons, smallest 44px; clear of the stuck .ta-header
+  bottom bar (signed in): 278×46, inside viewport, centred; 6 buttons, smallest 44px; clear of the stuck .ta-header
+  bottom bar (editing): 278×46, inside viewport, centred; 6 buttons, smallest 44px; clear of the stuck .ta-header
+  two unsaved cards: Save filled (rgb(201, 162, 39)), count 2, bar opacity 1
+  bar under overlays: lightbox yes, new-card yes, edit-card yes, photo-manager yes, photo-detail yes
+  typing: focused → bar opacity 0, pointer-events none; Enter ×3 (ta-val-input → ta-val-input → ta-val-input) → max opacity 0; blurred → opacity 1
+  bar under the "Springs & Dampers — which tier?" prompt: yes
+  flyout side-bug: inside viewport
+  flyout filters: inside viewport, scrolls inside, 8px above the bar, closes on outside tap
+  flyout theme: inside viewport, 8px above the bar, closes on outside tap
+  flyout text-size: inside viewport, 8px above the bar, closes on outside tap
+
+══ 844x390 touch  (hover:none=true coarse=true)  shots: 9
+  overflow [view]: document ok; 0 element(s)
+  overflow [edit]: document ok; 7 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 110 in box 72  ×20
+    .kit-cat > .kit-list > li > .up-inline-select   content 244 in box 206  ×14
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select   content 221 in box 206  ×21
+    .kit-cat > .kit-list > li > .up-inline-select.up-inline-set   content 244 in box 206  ×7
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 221 in box 206  ×8
+    .kit-cat.up-col3-break > .kit-list > li > .up-inline-select.up-inline-set   content 221 in box 206  ×2
+    div > .sub-root > .sub-seg > .sub-select   content 83 in box 72  ×4
+  overflow [new-card]: document ok; 0 element(s)
+  overflow [edit-card]: document ok; 1 element(s)
+    .nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set   content 356 in box 155  ×2
+  overflow [photo-manager]: document ok; 0 element(s)
+  overflow [photo-detail]: document ok; 0 element(s)
+  touch [view]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [edit]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [new-card]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [edit-card]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [photo-manager]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [photo-detail]: 0 target(s) under 44px, 0 field(s) under 16px
+  photo manager: 700×312, 4 grid column(s)
+  side bug: 45×178, clear of cards (page top, as loaded)
+  flyout side-bug: inside viewport
+  flyout filters: inside viewport, scrolls inside
+  flyout theme: inside viewport
+  flyout text-size: inside viewport, scrolls inside
+
+══ 820x1180 touch  (hover:none=true coarse=true)  shots: 9
+  overflow [view]: document ok; 0 element(s)
+  overflow [edit]: document ok; 7 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 110 in box 72  ×20
+    .kit-cat > .kit-list > li > .up-inline-select   content 244 in box 198  ×14
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select   content 221 in box 198  ×28
+    .kit-cat > .kit-list > li > .up-inline-select.up-inline-set   content 244 in box 198  ×7
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 221 in box 198  ×12
+    .kit-cat.up-col3-break > .kit-list > li > .up-inline-select.up-inline-set   content 221 in box 198  ×2
+    div > .sub-root > .sub-seg > .sub-select   content 83 in box 72  ×4
+  overflow [new-card]: document ok; 0 element(s)
+  overflow [edit-card]: document ok; 1 element(s)
+    .nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set   content 356 in box 149  ×2
+  overflow [photo-manager]: document ok; 0 element(s)
+  overflow [photo-detail]: document ok; 0 element(s)
+  touch [view]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [edit]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [new-card]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [edit-card]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [photo-manager]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [photo-detail]: 0 target(s) under 44px, 0 field(s) under 16px
+  photo manager: 700×944, 4 grid column(s)
+  side bug: 45×178, clear of cards (page top, as loaded)
+  flyout side-bug: inside viewport
+  flyout filters: inside viewport
+  flyout theme: inside viewport
+  flyout text-size: inside viewport
+
+══ 1180x820 touch  (hover:none=true coarse=true)  shots: 9
+  overflow [view]: document ok; 0 element(s)
+  overflow [edit]: document ok; 4 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 110 in box 72  ×20
+    .kit-cat > .kit-list > li > .up-inline-select.up-inline-set   content 296 in box 274
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 328 in box 274
+    div > .sub-root > .sub-seg > .sub-select   content 83 in box 72  ×4
+  overflow [new-card]: document ok; 0 element(s)
+  overflow [edit-card]: document ok; 1 element(s)
+    .nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set   content 356 in box 179  ×2
+  overflow [photo-manager]: document ok; 0 element(s)
+  overflow [photo-detail]: document ok; 0 element(s)
+  touch [view]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [edit]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [new-card]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [edit-card]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [photo-manager]: 0 target(s) under 44px, 0 field(s) under 16px
+  touch [photo-detail]: 0 target(s) under 44px, 0 field(s) under 16px
+  photo manager: 700×656, 4 grid column(s)
+  side bug: 45×178, clear of cards (page top, as loaded)
+  flyout side-bug: inside viewport
+  flyout filters: inside viewport, scrolls inside
+  flyout theme: inside viewport
+  flyout text-size: inside viewport
+
+══ 1440x900 mouse  (hover:none=false coarse=false)  shots: 9
+  overflow [view]: document ok; 0 element(s)
+  overflow [edit]: document ok; 2 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 290 in box 211  ×4
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 297 in box 274
+  overflow [new-card]: document ok; 0 element(s)
+  overflow [edit-card]: document ok; 1 element(s)
+    .nc-meta-inner > .sub-root > .sub-seg > .sub-select.sub-select--set   content 290 in box 191
+  overflow [photo-manager]: document ok; 0 element(s)
+  overflow [photo-detail]: document ok; 0 element(s)
+  photo manager: 700×385, 1 grid column(s)
+  side bug: 43×170, clear of cards (page top, as loaded)
+  flyout filters: inside viewport
+  flyout theme: inside viewport
+  flyout text-size: inside viewport

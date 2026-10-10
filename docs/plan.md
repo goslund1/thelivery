@@ -14,7 +14,7 @@ First real first-party use of the OG Maker. Open a card, click the title → Sha
 ### 2. Mobile layout — DONE 2026-10-09
 Built from the Mobile & Touch work order, Phases 0–6 (commits 24282cd → 633b0d9, all live). The phone is a full tuning-entry and slideshow-building surface; desktop at 1440×900 is pixel-identical to the pre-work baseline. What's left is Jason's device shakedown: `docs/shakedown.md` §17 (two iPhone runs + device-only checks). Per-phase audits are tracked in `docs/mobile-pass/<phase>/audit.txt`; the after-screenshots are in the same folders locally (gitignored). Re-run with `node frontend/shot.mjs --set <label>` and `--compare <baseline> <label>`. The `before` set predates the license page (its 1440 shots no longer match HEAD); `partA-base` is the baseline from 2026-10-09.
 
-**Bottom bar, star and Playing pill** (work order in `Drop Offs/`, 2026-10-09): Part A built, not yet committed or live. On phones the side bug is a bottom bar (the collapsed tab is gone), flyouts open upward, and the bar hides while a text field has focus. Parts B (star + visitor memory) and C (Playing pill) next.
+**Bottom bar, star and Playing pill** (work order in `Drop Offs/`, 2026-10-09): Part A committed (`1f638b8`), not yet live: on phones the side bug is a bottom bar (the collapsed tab is gone), flyouts open upward, and the bar hides while a text field has focus. Part B built, not yet committed or live: the star toggles off on touch and follows the hover table with a mouse; stars, theme pick and text size are kept in the visitor's browser (`composables/visitorMemory.ts`). Part C (Playing pill) next.
 
 ---
 
@@ -25,6 +25,12 @@ A fresh load (signed out, no edits) marked card 1 dirty, arming the `beforeunloa
 
 ### ~~Touch step could press "Reset Stock"~~ FIXED 2026-10-09
 Found while testing the fix above. A tuning −/+ step (acts on `pointerdown`, mobile pass Phase 3) can open the Springs & Dampers or Transmission prompt under the finger; in Chromium the same tap's click then landed on the prompt's button — "Reset Stock" zeroed the tune's alignment, springs and damping. Both prompts now ignore presses for 400ms after opening (`promptReady()` in `TuningAdjustments.vue`). This was live from Phase 3 until this fix: any tune edited with the step buttons on a touch device in that window is worth a look in its card History.
+
+### Found during the bottom bar work order, 2026-10-09
+- **The app is blank when the browser blocks storage** (e.g. Safari with all cookies blocked). Confirmed in the harness, before and after Part B: `stores/auth.ts` and `api.ts` read `localStorage` at start with no guard, and the throw stops the app mounting. The visitor memory is guarded and is not the cause. Other unguarded uses: `useFactoidSchema.ts`, `ColorPicker.vue`, `ShareModal.vue`, `OgMakerModal.vue`, the write in `useAssessFailures.ts` and `RecipeSection.vue`.
+- **Hover paints the "on" look** on two admin controls (B5 sweep): `.sv-btn--like` in `SuggestionViewer.vue` and `.tb-ambiance-btn` in `ThemeBuilder.vue` show the same accent on hover as when active, so a click that switches one off shows no change while the cursor stays. Same cure as the star (suppress until mouseleave, or a distinct hover).
+- **`.fav-star.pop` is not wired**: `catalog.css` has the star's pop animation from the original; nothing in `src/` sets the class.
+- **Stars already on live cards** go grey for everyone once Part B is live: the stored `isFavorite` is ignored (D6). Locally no card has one set.
 
 ### Live data gaps (from session-36 shakedown)
 - ~~Color filters match zero cards on live~~ **RESOLVED** — the live data was fine (11/11 card-referenced liveries had colors); the real bug was the liveries store never loading outside edit flows, so the filter's liveryId→color lookup was empty for fresh visitors. Fixed by `loadAll()` on Filters mount (commit a70cce3, verified live).

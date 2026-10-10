@@ -129,7 +129,7 @@ Before building any new control, answer "is this one setting for the whole app, 
 There are already three different persistence patterns in use. Pick the one that matches, don't invent a fourth without reason:
 
 1. **Per-card, server-side** — part of the `Card` JSON body, `PUT /api/cards/:id`. Use for anything that belongs to a specific card and should survive across browsers/devices.
-2. **Global, client-side** — `localStorage`. Used for theme, text-size, upgrade presets. Use for app-wide preferences that don't need to follow a user across devices.
+2. **Global, client-side** — `localStorage`. Use for app-wide preferences that don't need to follow a user across devices. A visitor's own choices (favourite stars, theme pick, text size) go in the **visitor memory**, `composables/visitorMemory.ts`: one versioned key `livery:visitor`, every access guarded, and `load()`/`save()` the only functions touching storage so it can become a cookie for the planned guest theme adjuster. New per-visitor preferences belong there. Other keys: upgrade presets, the colour palette (`cp-palette`), drafts (`livery:draft:*`), the sign-in.
 3. **Global, server-side** — doesn't exist yet for settings (only cards and users are server-side). Only reach for this if a global setting genuinely needs to sync across devices/users — it's new infrastructure, not a free choice.
 
 ### Branding marks (Abide / Victory / Smokin') are content rules, not schema

@@ -37,7 +37,7 @@ interface Card {
   catalogNumber: number
   name: string
   subtitle: string
-  isFavorite: boolean
+  isFavorite: boolean        // no longer read or written: stars live in the visitor memory (composables/visitorMemory.ts)
   isLegend: boolean          // the "legend" template card
   collections: string[]      // e.g. FH5, FH6, Drift, Street, Photo Safari
   tags: string[]

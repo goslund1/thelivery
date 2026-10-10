@@ -207,11 +207,6 @@ export const useCardsStore = defineStore('cards', () => {
     if (section) section.figurePath = path
   }
 
-  function toggleFavorite(id: string) {
-    const c = byId(id)
-    if (c) c.isFavorite = !c.isFavorite
-  }
-
   // Make an image the lead by moving it to order 0 (lead === order 0), then
   // renumber the rest.
   function setLeadImage(id: string, imageId: number) {
@@ -431,7 +426,7 @@ export const useCardsStore = defineStore('cards', () => {
     cards, loading, error,
     byId, load, save, deleteCard, createNewCard, promoteCard,
     takeSnapshot, restoreSnapshot, baselineOf, replaceCard, setFigure,
-    toggleFavorite, setLeadImage, reorderImages, restoreImageOrders,
+    setLeadImage, reorderImages, restoreImageOrders,
     removeImage, toggleImageIncluded, addImageToPool, setImageMeta,
     setColor,
     addTag, removeTag, addCollection, removeCollection,

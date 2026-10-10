@@ -46,7 +46,7 @@ interface Card {
   catalogNumber: number       // sort key
   name: string
   subtitle: string
-  isFavorite: boolean
+  isFavorite: boolean         // no longer read or written: a star is the visitor's own, kept in their browser (composables/visitorMemory.ts)
   isLegend: boolean           // the "legend" template card
   collections: string[]       // e.g. FH5, FH6, Drift, Street
   tags: string[]
@@ -128,7 +128,7 @@ Scoped `<style>` only for genuinely new CSS not in `catalog.css`. Never rename a
 `stores/cards.ts` (`useCardsStore`) — the catalog data:
 - `cards: Card[]` — in-memory catalog; the single source of truth for all card state
 - `snapshots: Record<string, string>` — per-card JSON baselines for discard safety
-- Mutations: `save(id)`, `deleteCard`, `createNewCard`, `promoteCard`, image management (`setLeadImage`, `reorderImages`, `removeImage`, `addImageToPool`), field setters (`toggleFavorite`, `setCarId`, `setAccentOverride`), section editing (`setFigure`)
+- Mutations: `save(id)`, `deleteCard`, `createNewCard`, `promoteCard`, image management (`setLeadImage`, `reorderImages`, `removeImage`, `addImageToPool`), field setters (`setCarId`, `setAccentOverride`), section editing (`setFigure`)
 - History: `restoreCardVersion(id, version)`
 
 `stores/ui.ts` (`useUiStore`) — global UI state only:

@@ -99,6 +99,11 @@ body {
   .nc-thumb-x { display: block; }
   .nc-thumb-star { display: flex; }
 
+  /* B1 the star shows its state and nothing else: touch keeps :hover on the last
+     thing tapped, which would hold an un-starred star in the accent colour. */
+  .fav-star:hover { transform: none; }
+  .fav-star:hover:not(.favorited) { color: var(--star-grey); }
+
   /* T3 grow */
   .bug-btn { width: 44px; height: 44px; }
   .theme-option,

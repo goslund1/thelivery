@@ -41,4 +41,4 @@ backend/seed/users.json
 frontend/.shot-login.json
 
 # Mobile-pass screenshots stay local; audit.txt / audit.json are tracked
-docs/mobile-pass/**/*.png
+spec/mobile-pass/**/*.png

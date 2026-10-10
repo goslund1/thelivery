@@ -11,24 +11,24 @@ so commits are pushed only when Jason says.
 
 ## Where it stands
 
-**Live** (`de2c793`): the card catalog with edit mode, roles and the
-audit timeline, the OG Overlay Studio and share pages, the Mobile &
-Touch work order (phases 0–6, `spec/history/2026-10-09-aar.md`) and the
-`/license` page (`spec/history/2026-10-09-aar-b.md`).
-
-**Committed, not live** (pushed when Jason says), the bottom bar, star
-and Playing pill work order:
-- Part A `1f638b8`: on phones the side bug is a bottom bar; flyouts
-  open upward; it hides while a text field has focus.
-- Part B `ae3bf3e`: the star toggles off on touch and follows the
-  hover table with a mouse; stars, theme pick and text size are kept
-  in the visitor's browser (`frontend/src/composables/visitorMemory.ts`).
-  Once live, stars stored on cards are ignored (D6); locally none are set.
-- Part C `a3fe277`: the Playing pill sleeps after every start, a
-  resting mouse puts it back to sleep, and a tap or a scroll wakes it
-  on touch; paused, it stays.
-- All three checked in the harness (`spec/mobile-pass/partA…partC`):
-  1440×900 identical to `partA-base`. Nothing checked on a device.
+**Live** (deployed 2026-10-09, bundle `index-oY5TVQqk.js`, checked
+against a local build of HEAD): the card catalog with edit mode, roles
+and the audit timeline, the OG Overlay Studio and share pages, the
+Mobile & Touch work order (`spec/history/2026-10-09-aar.md`), the
+`/license` page (`spec/history/2026-10-09-aar-b.md`), and the bottom
+bar, star and Playing pill work order
+(`spec/history/2026-10-09-bottom-bar-and-standard.md`):
+- Part A: on phones the side bug is a bottom bar; flyouts open upward;
+  it hides while a text field has focus.
+- Part B: the star toggles off on touch and follows the hover table
+  with a mouse; stars, theme pick and text size are kept in the
+  visitor's browser (`frontend/src/composables/visitorMemory.ts`). No
+  live card had a stored star, so none went grey.
+- Part C: the Playing pill sleeps after every start, a resting mouse
+  puts it back to sleep, and a tap or a scroll wakes it on touch;
+  paused, it stays.
+- Checked in the harness (`spec/mobile-pass/partA…partC`), 1440×900
+  identical to `partA-base`. Not yet checked on a device.
 
 **Docs** follow the Projects standard since 2026-10-09: `docs/` is
 `spec/`, finished work is in `spec/history/`, open work in
@@ -43,7 +43,7 @@ tag (B-8) and the README (B-9) are open.
 
 ## Next
 
-1. Push Parts A–C, when Jason says; then his device shakedown (§17).
+1. Jason's device shakedown (§17), now that Parts A–C are live.
 2. B-1: Jason's first OG Maker road test.
 3. The pre-launch items B-7 to B-9.
 

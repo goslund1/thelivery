@@ -409,6 +409,27 @@ function cancelFolderImport() {
 </template>
 
 <style scoped>
+/* The Playing pill (Part C): while playing it sleeps (.settled, catalog.css).
+   Mouse: hover wakes it; resting the mouse puts it back to sleep (C2). */
+@media (hover: hover) {
+  .stage.settled.idle:hover .play-toggle {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+/* Touch: a stuck :hover must not hold it up; a touch or a scroll wakes it (C3). */
+@media (hover: none), (pointer: coarse) {
+  .stage.settled:hover .play-toggle {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .stage.settled.woken .play-toggle,
+  .stage.settled.woken:hover .play-toggle {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 .stage-empty {
   position: absolute;
   inset: 14px;

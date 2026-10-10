@@ -39,6 +39,7 @@ Legacy class names (e.g. `image-picker`, `ch-backdrop`) are kept alongside the n
 
 - **Autoplay only while the card is ≥50% visible** (IntersectionObserver): resumes on enter, suspends on exit. Manual pause is **sticky** (`userPaused`) — pausing or clicking a thumbnail/stage keeps it paused across scrolling until you press play.
 - **Reveal/dissolve choreography:** on entering view the play button shows "Autoplaying" over a grounded progress bar, then slow-fades out (`BUTTON_REVEAL` → `BUTTON_FADE`) as autoplay starts; the `.stage.settled` CSS class drives button visibility.
+- **The pill sleeps while playing; paused, it stays.** Every route into playing ends asleep (`.settled`): a manual resume shows "Playing" for `RESUME_SHOW`, then sleeps. Mouse: hovering the stage wakes it, resting the mouse for `MOUSE_IDLE` adds `.idle` and it sleeps until the mouse moves. Touch: the `:hover` hold is off (a tap leaves `:hover` stuck); a touch on the stage or a page scroll while the stage is ≥50% visible adds `.woken` for `TOUCH_WAKE`. Constants beside `BUTTON_REVEAL`; the rules are in `Gallery.vue`'s scoped style.
 - **GOTCHA — thumb rail:** keep the active thumbnail in view by setting `thumbs.scrollLeft` directly. **Do not use `scrollIntoView`** — `block:'nearest'` walks up the scroll chain and jumps the whole page (this caused a real "page won't stop jumping" bug across the multiple autoplaying galleries).
 
 ## Custom tooltips (`composables/tooltip.ts` + `CustomTip.vue`)

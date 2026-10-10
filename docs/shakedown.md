@@ -240,6 +240,7 @@ From the Mobile & Touch work order (Phases 0–6, 2026-10-09). Layout follows wi
 - [ ] Bottom bar: nothing of it is under the home indicator (A1).
 - [ ] Bottom bar: tapping a tuning value hides it; closing the keyboard brings it back in the right place (A5). If it comes back misplaced, report it (iOS 26.0 bug, said fixed in 26.1).
 - [ ] Bottom bar: each button works on the first tap (A2).
+- [ ] Playing pill: scrolling past a playing card shows it briefly, then it fades; a tap pauses and "Paused" stays; a second tap shows "Playing" and it fades (C1/C3/C4). The 1.5 s wake feels right (D4).
 - [ ] iPad: OG Maker boxes drag without scrolling the page (T5); Theme Builder "Customize" isn't offered (S3).
 - [ ] iPad with a trackpad or mouse: tooltips stay off, targets stay large, nothing breaks.
 

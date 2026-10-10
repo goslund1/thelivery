@@ -1,5 +1,6 @@
 import { ref, computed, onMounted, onBeforeUnmount, type Ref } from 'vue'
 import type { CardImage } from '../types'
+import { isTouch } from './isTouch'
 
 // Slideshow timing — mirrors the constants in the original single-file app.
 const SOLID = 2
@@ -10,6 +11,11 @@ const BUTTON_FADE = 2 // how long the button's fade-out takes
 const BRIGHT = 1
 const DIM = 0.25
 const DIM_FADE = 1
+// The pill sleeps while playing (Part C): a mouse over the stage or a touch wakes it.
+const RESUME_SHOW = 1.5 // after a manual resume, "Playing" shows this long, then sleeps
+const MOUSE_IDLE = 3 // a mouse resting on a playing stage this long puts the pill back to sleep
+const TOUCH_WAKE = 1.5 // a touch or a scroll shows the pill this long, then the normal fade
+const SCROLL_WAKE_THROTTLE = 100 // ms between scroll wakes
 
 // Drives one card's gallery: current slide, autoplay (only while the card is on
 // screen), the progress bar, and the in-frame play button's reveal→dissolve
@@ -34,6 +40,9 @@ export function useSlideshow(
   let timer: number | undefined
   let revealTimer: number | undefined
   let fadeTimer: number | undefined
+  let sleepTimer: number | undefined
+  let idleTimer: number | undefined
+  let wakeTimer: number | undefined
   let userPaused = false // explicit pause/thumb-click; don't auto-resume on scroll
   let visible = false
 
@@ -89,7 +98,8 @@ export function useSlideshow(
     if (timer) clearInterval(timer)
     if (revealTimer) clearTimeout(revealTimer)
     if (fadeTimer) clearTimeout(fadeTimer)
-    timer = revealTimer = fadeTimer = undefined
+    if (sleepTimer) clearTimeout(sleepTimer)
+    timer = revealTimer = fadeTimer = sleepTimer = undefined
   }
 
   function play() {
@@ -144,7 +154,9 @@ export function useSlideshow(
     updateToggle()
   }
 
-  // The play/pause button: an explicit user action that sticks across scrolling.
+  // The play/pause button (and a click on the stage): an explicit user action that
+  // sticks across scrolling. Paused, the pill stays up (C4). Resumed, it shows
+  // "Playing" briefly and then sleeps like after the first reveal (C1).
   function toggle() {
     clearTimers()
     setSettled(false)
@@ -154,8 +166,50 @@ export function useSlideshow(
     } else {
       userPaused = false
       play()
+      if (playing.value) sleepTimer = window.setTimeout(() => {
+        sleepTimer = undefined
+        setSettled(true)
+      }, RESUME_SHOW * 1000)
     }
     updateToggle()
+  }
+
+  // C2 mouse: hovering a playing stage wakes the pill (CSS, .stage.settled:hover);
+  // resting the mouse there for MOUSE_IDLE puts it back to sleep (.idle) until
+  // it moves again.
+  function setIdle(on: boolean) {
+    stageRef.value?.classList.toggle('idle', on)
+  }
+  function onPointerMove(e: PointerEvent) {
+    if (e.pointerType !== 'mouse') return
+    setIdle(false)
+    if (idleTimer) clearTimeout(idleTimer)
+    idleTimer = window.setTimeout(() => setIdle(true), MOUSE_IDLE * 1000)
+  }
+  function onPointerLeave() {
+    if (idleTimer) clearTimeout(idleTimer)
+    idleTimer = undefined
+    setIdle(false)
+  }
+
+  // C3 touch: no hover hold. A touch on the stage, or a page scroll while this
+  // stage is on screen, wakes the pill for TOUCH_WAKE; a new wake restarts it.
+  function wake() {
+    if (!playing.value) return // paused: the pill is up anyway
+    stageRef.value?.classList.add('woken')
+    if (wakeTimer) clearTimeout(wakeTimer)
+    wakeTimer = window.setTimeout(() => {
+      wakeTimer = undefined
+      stageRef.value?.classList.remove('woken')
+    }, TOUCH_WAKE * 1000)
+  }
+  let lastScrollWake = 0
+  function onScroll() {
+    if (!visible) return
+    const now = performance.now()
+    if (now - lastScrollWake < SCROLL_WAKE_THROTTLE) return
+    lastScrollWake = now
+    wake()
   }
   // Clicking a thumbnail is an explicit pause + jump (won't auto-resume).
   function onThumb(i: number) {
@@ -180,10 +234,25 @@ export function useSlideshow(
       },
       { threshold: 0.5 },
     )
-    if (stageRef.value) obs.observe(stageRef.value)
+    const stage = stageRef.value
+    if (stage) obs.observe(stage)
+    if (stage) {
+      stage.addEventListener('pointermove', onPointerMove)
+      stage.addEventListener('pointerleave', onPointerLeave)
+    }
+    if (isTouch) {
+      stage?.addEventListener('touchstart', wake, { passive: true })
+      window.addEventListener('scroll', onScroll, { passive: true })
+    }
     onBeforeUnmount(() => {
       obs.disconnect()
       clearTimers()
+      if (idleTimer) clearTimeout(idleTimer)
+      if (wakeTimer) clearTimeout(wakeTimer)
+      stage?.removeEventListener('pointermove', onPointerMove)
+      stage?.removeEventListener('pointerleave', onPointerLeave)
+      stage?.removeEventListener('touchstart', wake)
+      window.removeEventListener('scroll', onScroll)
     })
   })
 

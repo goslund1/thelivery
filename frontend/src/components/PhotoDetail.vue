@@ -397,4 +397,11 @@ function dismissInterrupt() {
   font: 11px/1 'Oswald', sans-serif;
   color: var(--text-muted, #666);
 }
+
+/* Touch (G7) */
+@media (hover: none), (pointer: coarse) {
+  .pd-nav { min-width: 44px; }
+  .pd-close { min-width: 44px; min-height: 44px; }
+  .pd-alt-input { min-height: 44px; font-size: 16px; }
+}
 </style>

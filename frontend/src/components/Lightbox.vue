@@ -36,13 +36,37 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 const hasMultiple = () => modal.lightboxImages.length > 1
 
+// G6: swipe left/right on touch. A mostly-horizontal move over 40px steps the
+// image; the backdrop tap-to-close ignores the click a swipe can leave behind.
+let swipeStart: { x: number; y: number } | null = null
+let justSwiped = false
+function onPointerDown(e: PointerEvent) {
+  swipeStart = e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY }
+}
+function onPointerUp(e: PointerEvent) {
+  if (!swipeStart) return
+  const dx = e.clientX - swipeStart.x
+  const dy = e.clientY - swipeStart.y
+  swipeStart = null
+  if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) && hasMultiple()) {
+    modal.navigateLightbox(dx < 0 ? 1 : -1)
+    justSwiped = true
+    setTimeout(() => { justSwiped = false }, 400)
+  }
+}
+function onBackdropClick() {
+  if (justSwiped) return
+  modal.closeLightbox()
+}
+
 function downloadFilename(src: string) {
   return src.split('/').pop() ?? 'download.jpg'
 }
 </script>
 
 <template>
-  <div class="lightbox" :class="{ open: !!modal.lightboxSrc }" @click.self="modal.closeLightbox()">
+  <div class="lightbox" :class="{ open: !!modal.lightboxSrc }" @click.self="onBackdropClick"
+    @pointerdown="onPointerDown" @pointerup="onPointerUp" @pointercancel="swipeStart = null">
     <button class="lightbox-close" aria-label="Close" @click="modal.closeLightbox()">×</button>
 
     <!-- Left ear -->
@@ -151,5 +175,21 @@ function downloadFilename(src: string) {
 @keyframes lb-upgrade {
   from { opacity: 0.7; }
   to   { opacity: 1; }
+}
+
+/* Touch: our pointer events get horizontal swipes; pinch-zoom still works. */
+@media (hover: none), (pointer: coarse) {
+  .lightbox { touch-action: pinch-zoom; }
+}
+/* Phones (G6): the arrows sit on the image at this width; move them to a bar
+   below it, above the download link. */
+@media (max-width: 640px) {
+  .lightbox-ear {
+    top: auto;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    transform: none;
+    width: 52px;
+    height: 52px;
+  }
 }
 </style>

@@ -8,6 +8,7 @@ import { useCarsStore } from '../stores/cars'
 import { api } from '../api'
 import PhotoDetail from './PhotoDetail.vue'
 import CarPicker from './CarPicker.vue'
+import { isTouch } from '../composables/isTouch'
 
 const ui = useUiStore()
 const modal = useModalStore()
@@ -198,7 +199,11 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-watch(isManage, (on) => {
+// Keyed on "open in manage mode", not isManage alone: while closed, isManage
+// falls back to lastWasManage (true after a manage session, for the close fade),
+// so on the next open it never changed and the order snapshot behind "Undo
+// Order" was never taken.
+watch(() => !!ctx.value && isManage.value, (on) => {
   if (on) {
     document.addEventListener('keydown', onKeydown)
     orderSnapshot.value = (card.value?.images ?? []).map(img => ({ id: img.id, order: img.order }))
@@ -333,6 +338,15 @@ function onMgrDrop(i: number) {
   dropIdx.value = -1
 }
 
+// Same move as a drop, one place at a time; "Undo Order" covers it too.
+function moveImage(i: number, dir: -1 | 1) {
+  const c = ctx.value
+  const to = i + dir
+  if (!c?.cardId || to < 0 || to >= gallery.value.length) return
+  store.reorderImages(c.cardId, i, to)
+  ui.markCardDirty(c.cardId)
+}
+
 function onMgrDragEnd() {
   dragFromIdx.value = -1
   dropIdx.value = -1
@@ -347,6 +361,10 @@ async function onManageUpload(e: Event) {
   const all = Array.from((e.target as HTMLInputElement).files ?? [])
   if (manageUploadRef.value) manageUploadRef.value.value = ''
   const files = all.filter(f => SUPPORTED.has(f.type) || (!f.name.match(/\.(heic|heif|avif)$/i) && f.type.startsWith('image/')))
+  // G2: rejected photos go in the upload log, where the person is looking.
+  for (const f of all) {
+    if (!files.includes(f) && (f.type.startsWith('image/') || /\.(heic|heif|avif)$/i.test(f.name))) uploadLog.value.push({ label: `${f.name} — HEIC/HEIF/AVIF isn't supported; export as JPEG from Photos`, progress: 0, status: 'error' })
+  }
   if (!files.length) return
 
   const cardId = await resolveCardId()
@@ -516,6 +534,11 @@ async function onManageUpload(e: Event) {
                   @click="pendingDeleteId = img.id"
                 >✕</button>
               </div>
+              <!-- G3: reorder by tap on touch, where drag-and-drop doesn't work -->
+              <template v-if="isTouch">
+                <button class="mgr-ctrl mgr-ctrl-earlier" title="Move earlier" aria-label="Move earlier" :disabled="i === 0" @click="moveImage(i, -1)">◀</button>
+                <button class="mgr-ctrl mgr-ctrl-later" title="Move later" aria-label="Move later" :disabled="i === gallery.length - 1" @click="moveImage(i, 1)">▶</button>
+              </template>
             </div>
             <div v-if="pendingDeleteId === img.id" class="mgr-delete-confirm" @click.stop>
               <span>Remove?</span>
@@ -558,7 +581,7 @@ async function onManageUpload(e: Event) {
                   ref="manageUploadRef"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  webkitdirectory
+                  :webkitdirectory="!isTouch"
                   multiple
                   style="display:none"
                   @change="onManageUpload"
@@ -921,4 +944,68 @@ async function onManageUpload(e: Event) {
 .pm-log-row--done .pm-log-status { color: var(--accent); }
 .pm-log-row--error .pm-log-label,
 .pm-log-row--error .pm-log-status { color: #c94444; }
+
+/* ── Touch (G3/G4): each photo gets a strip of 44px buttons under it, always
+   visible — ★ lead · ● in slideshow · ✕ delete / ◀ earlier · ⤢ details · ▶ later.
+   The hover overlay becomes that strip; the two wrapper divs dissolve into it. */
+@media (hover: none), (pointer: coarse) {
+  .mgr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    align-content: start;
+  }
+  .mgr-thumb {
+    width: auto;
+    height: auto;
+    overflow: visible;
+  }
+  .mgr-thumb img { aspect-ratio: 16 / 10; height: auto; }
+  .mgr-drop-indicator { display: none; }
+  .mgr-controls {
+    position: static;
+    opacity: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-top: 2px;
+  }
+  .mgr-ctrl-left,
+  .mgr-ctrl-right { display: contents; }
+  .mgr-ctrl {
+    width: auto;
+    height: 44px;
+    font-size: 16px;
+  }
+  .mgr-ctrl:disabled { opacity: 0.3; }
+  .mgr-ctrl-lead { order: 1; }
+  .mgr-ctrl-pool { order: 2; }
+  .mgr-ctrl-del { order: 3; }
+  .mgr-ctrl-earlier { order: 4; }
+  .mgr-ctrl-detail { order: 5; }
+  .mgr-ctrl-later { order: 6; }
+  .mgr-delete-confirm button { min-width: 44px; min-height: 44px; }
+  .pm-car-change { min-height: 44px; padding: 0 6px; }
+  .mgr-footer { flex-wrap: wrap; }
+  .mgr-action-btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+/* Phones (G4): the manager takes the whole screen, two photos per row. */
+@media (max-width: 640px) {
+  .float_imagepicker_panel {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+    box-sizing: border-box;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+  .mgr-grid { grid-template-columns: repeat(2, 1fr); }
+}
 </style>

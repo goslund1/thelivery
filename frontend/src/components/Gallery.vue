@@ -7,6 +7,7 @@ import { useModalStore } from '../stores/modal'
 import { useSlideshow } from '../composables/useSlideshow'
 import { useNetworkQuality } from '../composables/useNetworkQuality'
 import { api } from '../api'
+import { isTouch } from '../composables/isTouch'
 
 const props = defineProps<{ card: Card; activeCarId?: string | null }>()
 const store = useCardsStore()
@@ -139,6 +140,14 @@ const folderInputRef = ref<HTMLInputElement | null>(null)
 const SUPPORTED_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'])
 const HEIC_EXTS = /\.(heic|heif|avif)$/i
 
+// G2: say which photos were skipped, where the upload happened (the console
+// alone is invisible on a phone).
+const skipNotice = ref('')
+function skippedMessage(files: File[]) {
+  const names = files.slice(0, 3).map(f => f.name).join(', ') + (files.length > 3 ? ` and ${files.length - 3} more` : '')
+  return `Skipped ${names}: HEIC/HEIF/AVIF isn't supported — export as JPEG from Photos first.`
+}
+
 function onFolderSelected(e: Event) {
   const all = Array.from((e.target as HTMLInputElement).files ?? [])
   if (folderInputRef.value) folderInputRef.value.value = ''
@@ -147,7 +156,10 @@ function onFolderSelected(e: Event) {
     .filter(f => SUPPORTED_TYPES.has(f.type) || (!HEIC_EXTS.test(f.name) && f.type.startsWith('image/')))
     .sort((a, b) => (a.webkitRelativePath || a.name).localeCompare(b.webkitRelativePath || b.name))
   const skipped = all.filter(f => !files.includes(f) && (f.type.startsWith('image/') || /\.(heic|heif|avif)$/i.test(f.name)))
-  if (skipped.length) console.warn(`[gallery] skipped ${skipped.length} unsupported file(s) (HEIC/HEIF/AVIF). Export as JPEG from Photos first.`)
+  if (skipped.length) {
+    console.warn(`[gallery] skipped ${skipped.length} unsupported file(s) (HEIC/HEIF/AVIF). Export as JPEG from Photos first.`)
+    skipNotice.value = skippedMessage(skipped)
+  }
   if (!files.length) return
 
   // webkitRelativePath is only populated when a whole folder is selected.
@@ -302,6 +314,10 @@ function cancelFolderImport() {
 
   <div class="thumb-rail" :class="{ 'thumb-rail-editing': ui.isEditing }">
     <div class="edge-arrow edge-arrow-left" :class="{ visible: canLeft }"><div class="tri"></div></div>
+    <p v-if="skipNotice" class="skip-notice" role="alert">
+      {{ skipNotice }}
+      <button type="button" class="skip-notice-x" aria-label="Dismiss" @click="skipNotice = ''">×</button>
+    </p>
     <div class="thumbs" :class="{ 'thumbs-editing': ui.isEditing }" ref="thumbsRef" @scroll="updateArrows" @touchstart.passive="onRailTouch" @wheel.passive="onRailTouch">
 
       <!-- Edit mode: image pool only (add button overlays right side) -->
@@ -387,7 +403,7 @@ function cancelFolderImport() {
           <line x1="331.631" y1="49.381"  x2="430.393" y2="49.381"   stroke-width="25"/>
         </svg>
       </span>
-      <input ref="folderInputRef" type="file" accept="image/jpeg,image/png,image/webp" webkitdirectory multiple style="display:none" @change="onFolderSelected" />
+      <input ref="folderInputRef" type="file" accept="image/jpeg,image/png,image/webp" :webkitdirectory="!isTouch" multiple style="display:none" @change="onFolderSelected" />
     </div>
   </div>
 </template>
@@ -728,5 +744,36 @@ function cancelFolderImport() {
   .thumb-ctrl {
     position: relative;
   }
+}
+
+.skip-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 24px 0;
+  padding: 8px 10px;
+  border: 1px solid #c94444;
+  border-radius: 4px;
+  color: #e07070;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.skip-notice-x {
+  margin-left: auto;
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+/* Phones (G5): a 96×60 thumbnail can't hold three 44px controls, so on the
+   rail a thumb only selects; the photo manager does the editing. Overrides
+   the touch rule above at phone width only (iPad keeps them). */
+@media (max-width: 640px) {
+  .thumb-controls { display: none; }
 }
 </style>

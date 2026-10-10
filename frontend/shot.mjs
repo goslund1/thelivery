@@ -142,6 +142,27 @@ async function runSet(label, url) {
         await page.evaluate(() => document.querySelector('.nc-overlay.open .nc-close').click())
         await page.waitForFunction(() => !document.querySelector('.nc-overlay.open'))
       }
+
+      // G4: card 1's photo manager, opened from the rail's add/manage panel.
+      const MGR = '.image-picker.open .float_imagepicker_panel'
+      await page.evaluate(() => document.querySelector('#card-1 .thumb-add-panel').click())
+      await page.waitForSelector(MGR)
+      await settle(page)
+      await shootEl(page, vp, MGR, join(dir, '8-photo-manager.png')); r.shots.push('8-photo-manager')
+      r.overflow['photo-manager'] = await overflowAudit(page, MGR)
+      if (vp.touch) { await assertTouch(page); r.touch['photo-manager'] = await touchAudit(page, '.image-picker.open') }
+      r.photoManager = await page.evaluate((sel) => { const p = document.querySelector(sel).getBoundingClientRect(); return { w: Math.round(p.width), h: Math.round(p.height), columns: getComputedStyle(document.querySelector('.mgr-grid')).gridTemplateColumns.split(' ').length } }, MGR)
+      // G7: photo 1's details, from the manager.
+      await page.evaluate(() => document.querySelector('.mgr-ctrl-detail').click())
+      await page.waitForSelector('.pd-shell')
+      await settle(page)
+      await shootEl(page, vp, '.pd-shell', join(dir, '9-photo-detail.png')); r.shots.push('9-photo-detail')
+      r.overflow['photo-detail'] = await overflowAudit(page, '.pd-shell')
+      if (vp.touch) { await assertTouch(page); r.touch['photo-detail'] = await touchAudit(page, '.pd-overlay') }
+      await page.evaluate(() => document.querySelector('.pd-close').click())
+      await page.waitForFunction(() => !document.querySelector('.pd-shell'))
+      await page.evaluate(() => [...document.querySelectorAll('.mgr-footer .mgr-action-btn')].find(b => b.textContent.trim() === 'Done').click())
+      await page.waitForFunction(() => !document.querySelector('.image-picker.open'))
       await page.evaluate(() => localStorage.clear())
     }
 
@@ -381,6 +402,7 @@ function formatReport(rep) {
       for (const f of t.smallFonts) L.push(`    font ${f.minPx}px  ${f.path}${f.count > 1 ? `  ×${f.count}` : ''}`)
       if (t.later?.length) L.push(`    (Phase 3, not counted: ${t.later.map(x => `${x.path.split(' > ').pop()} ×${x.count}`).join(', ')})`)
     }
+    if (r.photoManager) L.push(`  photo manager: ${r.photoManager.w}×${r.photoManager.h}, ${r.photoManager.columns} grid column(s)`)
     L.push(`  side bug: ${r.bug.width}×${r.bug.height}, ${r.bug.overCardPx ? `${r.bug.overCardPx}px over a card` : 'clear of cards'} (page top, as loaded)`)
     for (const [name, f] of Object.entries(r.flyouts)) {
       const { fit } = f

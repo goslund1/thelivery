@@ -293,4 +293,9 @@ async function save() {
   font: 11px/1 'Oswald', sans-serif;
   color: #e03030;
 }
+
+/* Touch: the chip's × gets a 44px zone */
+@media (hover: none), (pointer: coarse) {
+  .lp-clear { min-width: 44px; min-height: 44px; }
+}
 </style>

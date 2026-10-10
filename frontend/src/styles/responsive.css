@@ -130,7 +130,9 @@ body {
     vertical-align: middle;
   }
 
-  /* T3 hit areas for the lone close buttons */
+  /* T3 hit areas for the lone close buttons. The picker's × sits at the panel
+     edge, so it is drawn at 44px rather than reaching past the edge with ::after. */
+  .image-picker-close { min-width: 44px; min-height: 44px; }
   .image-picker-close,
   .conf-close { position: relative; }
   .lightbox-close::after,

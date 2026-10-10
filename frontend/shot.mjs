@@ -4,8 +4,9 @@
 //   node shot.mjs --set <label> [url]           viewport set + audits → docs/mobile-pass/<label>/
 //   node shot.mjs --compare <labelA> <labelB>   pixel-diff the 1440×900 sets of two labels
 //
-// --set signs in for the edit-mode view when LIVERY_USER / LIVERY_PASS are in the
-// environment; without them that view is skipped and reported as unverified.
+// --set signs in for the edit-mode view with LIVERY_USER / LIVERY_PASS, or else
+// frontend/.shot-login.json (gitignored); without either that view is skipped
+// and reported as unverified.
 // Needs the backend (:8787) and the dev server (:5173) running. Never saves.
 import { chromium } from 'playwright'
 import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs'
@@ -56,7 +57,10 @@ const SHOT = { animations: 'disabled', caret: 'hide' }
 async function runSet(label, url) {
   if (!label) throw new Error('usage: node shot.mjs --set <label> [url]')
   const outDir = join(ROOT, label)
-  const user = process.env.LIVERY_USER, pass = process.env.LIVERY_PASS
+  // Edit-mode login: env vars, else the gitignored .shot-login.json (a local-only account).
+  let user = process.env.LIVERY_USER, pass = process.env.LIVERY_PASS
+  const loginFile = join(dirname(fileURLToPath(import.meta.url)), '.shot-login.json')
+  if (!(user && pass) && existsSync(loginFile)) ({ user, pass } = JSON.parse(readFileSync(loginFile, 'utf8')))
   let token = null
   if (user && pass) {
     const res = await fetch(new URL('/api/login', url), {
@@ -68,7 +72,7 @@ async function runSet(label, url) {
   }
 
   const browser = await chromium.launch()
-  const report = { label, url, when: new Date().toISOString(), editView: token ? 'captured' : 'SKIPPED — LIVERY_USER/LIVERY_PASS not set (unverified)', viewports: {} }
+  const report = { label, url, when: new Date().toISOString(), editView: token ? 'captured' : 'SKIPPED — no LIVERY_USER/LIVERY_PASS or .shot-login.json (unverified)', viewports: {} }
 
   for (const vp of VIEWPORTS) {
     const name = `${vp.w}x${vp.h}`
@@ -94,14 +98,14 @@ async function runSet(label, url) {
     await page.evaluate(() => window.scrollTo(0, 0))
     await settle(page)
     await page.screenshot({ ...SHOT, path: join(dir, '1-page-top.png') }); r.shots.push('1-page-top')
-    await page.locator(CARD).screenshot({ ...SHOT, path: join(dir, '2-card-collapsed.png') }); r.shots.push('2-card-collapsed')
+    await shootEl(page, vp, CARD, join(dir, '2-card-collapsed.png')); r.shots.push('2-card-collapsed')
 
     await expandAll(page)
-    await page.locator(CARD).screenshot({ ...SHOT, path: join(dir, '3-card-expanded.png') }); r.shots.push('3-card-expanded')
-    await page.locator(`${CARD} .ta`).first().screenshot({ ...SHOT, path: join(dir, '4-tuning.png') }); r.shots.push('4-tuning')
+    await shootEl(page, vp, CARD, join(dir, '3-card-expanded.png')); r.shots.push('3-card-expanded')
+    await shootEl(page, vp, `${CARD} .ta`, join(dir, '4-tuning.png')); r.shots.push('4-tuning')
 
     r.overflow = { view: await overflowAudit(page) }
-    if (vp.touch) r.touch = { view: await touchAudit(page) }
+    if (vp.touch) { await assertTouch(page); r.touch = { view: await touchAudit(page) } }
     await page.evaluate(() => window.scrollTo(0, 0))
     r.bug = await bugAudit(page)
     r.flyouts = await flyoutAudit(page, vp.touch)
@@ -118,9 +122,9 @@ async function runSet(label, url) {
       await page.evaluate(() => document.querySelector('.bug-btn[aria-label="Edit mode"]').click())
       await page.waitForSelector('body.editing-mode')
       await expandAll(page)
-      await page.locator(CARD).screenshot({ ...SHOT, path: join(dir, '5-card-edit.png') }); r.shots.push('5-card-edit')
+      await shootEl(page, vp, CARD, join(dir, '5-card-edit.png')); r.shots.push('5-card-edit')
       r.overflow.edit = await overflowAudit(page)
-      if (vp.touch) r.touch.edit = await touchAudit(page)
+      if (vp.touch) { await assertTouch(page); r.touch.edit = await touchAudit(page) }
       await page.evaluate(() => localStorage.clear())
     }
 
@@ -134,6 +138,29 @@ async function runSet(label, url) {
   const text = formatReport(report)
   writeFileSync(join(outDir, 'audit.txt'), text)
   console.log(text)
+}
+
+// Element shot. On a touch viewport an element taller than the screen can't go
+// through Playwright's beyond-viewport capture: that drops the touch emulation,
+// so (hover: none)/(pointer: coarse) stop matching mid-run and the shot is drawn
+// with mouse styling. Grow the viewport to fit the element instead, then restore.
+// The mouse viewport keeps the default capture so it stays comparable with before/.
+async function shootEl(page, vp, sel, path) {
+  const el = page.locator(sel).first()
+  const h = await el.evaluate((e) => Math.ceil(e.getBoundingClientRect().height))
+  if (!vp.touch || h <= vp.h) return el.screenshot({ ...SHOT, path })
+  await page.setViewportSize({ width: vp.w, height: h + 40 })
+  await el.evaluate((e) => e.scrollIntoView())
+  await settle(page)
+  await el.screenshot({ ...SHOT, path })
+  await page.setViewportSize({ width: vp.w, height: vp.h })
+  await settle(page)
+}
+
+// Guard: a touch audit run without touch media would silently pass mouse styling.
+async function assertTouch(page) {
+  const ok = await page.evaluate(() => matchMedia('(hover: none)').matches && matchMedia('(pointer: coarse)').matches)
+  if (!ok) throw new Error('touch emulation lost before a touch audit')
 }
 
 async function settle(page) {
@@ -176,7 +203,10 @@ function overflowAudit(page) {
         if (el.closest('.thumbs, .ta-tabbar') || !visible(el)) continue
         if (el.closest('details:not([open])') && !el.matches('summary, summary *')) continue
         const r = el.getBoundingClientRect()
-        const wide = el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0
+        // An invisible ::after hit area (T3) may reach past its own box on purpose.
+        const a = getComputedStyle(el, '::after')
+        const hitArea = a.content !== 'none' && a.position === 'absolute' && parseFloat(a.width) >= 44
+        const wide = !hitArea && el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0
         const past = r.right > cr.right + 1
         if (!wide && !past) continue
         const key = path(el, card)
@@ -202,7 +232,7 @@ function overflowAudit(page) {
 // Out-of-scope surfaces (Theme Builder, OG Maker, admin) are excluded.
 function touchAudit(page, root = 'body') {
   return page.evaluate((root) => {
-    const OUT = '.theme-customize-btn, .bug-flyout--builder, [class*="ogm"], [class*="admin"], [class*="og-maker"]'
+    const OUT = '.theme-customize-btn, .bug-flyout--builder, [class*="ogm"], [class*="admin"], [class*="og-maker"], .fp-panel'
     const CONTROLS = 'button, a[href], input:not([type=hidden]), select, textarea, summary, [role=button], [contenteditable=true], [tabindex]:not([tabindex="-1"])'
     const FIELDS = 'input:not([type=hidden]):not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea, [contenteditable=true]'
     const path = (el) => {
@@ -226,13 +256,33 @@ function touchAudit(page, root = 'body') {
       if (r.left >= innerWidth || r.right <= 0) return false
       return r.width > 0 && r.height > 0
     }
-    const small = new Map(), fonts = new Map()
+    // What a finger hits: the box, an absolutely positioned ::after/::before hit
+    // area, or for a checkbox/radio the <label> around it.
+    const hitSize = (el) => {
+      let { width: w, height: h } = el.getBoundingClientRect()
+      for (const pseudo of ['::after', '::before']) {
+        const ps = getComputedStyle(el, pseudo)
+        if (ps.content === 'none' || ps.position !== 'absolute') continue
+        w = Math.max(w, parseFloat(ps.width) || 0); h = Math.max(h, parseFloat(ps.height) || 0)
+      }
+      const label = el.matches('input[type=checkbox], input[type=radio]') && el.closest('label')
+      if (label) { const lr = label.getBoundingClientRect(); w = Math.max(w, lr.width); h = Math.max(h, lr.height) }
+      return [w, h]
+    }
+    // Agreed exceptions: the 24px side-bug tab (L6), inline links in running text
+    // (WCAG 2.5.8 inline exception), and editable text, which is tapped to place a caret.
+    const EXEMPT = '.bug-tab, p a, [contenteditable=true]'
+    // Rebuilt for touch in Phase 3 (U1 rows, U6 slider, U10 tweaks list): reported apart.
+    const LATER = 'input[type=range], .ta-val-input, .ta-end-field, .ta-nonstock-line'
+    const small = new Map(), fonts = new Map(), later = new Map()
     const scope = document.querySelector(root)
     for (const el of scope.querySelectorAll(CONTROLS)) {
-      if (el.closest(OUT) || el.disabled || !shown(el)) continue
+      if (el.closest(OUT) || el.disabled || !shown(el) || el.matches(EXEMPT)) continue
+      const [hw, hh] = hitSize(el)
+      if (hw >= 44 && hh >= 44) continue
       const r = el.getBoundingClientRect()
-      if (r.width >= 44 && r.height >= 44) continue
       const key = path(el)
+      if (el.matches(LATER)) { later.set(key, (later.get(key) || 0) + 1); continue }
       const w = Math.round(r.width), h = Math.round(r.height)
       const op = +getComputedStyle(el).opacity
       const prev = small.get(key)
@@ -244,10 +294,11 @@ function touchAudit(page, root = 'body') {
       const px = parseFloat(getComputedStyle(el).fontSize)
       if (px >= 16) continue
       const key = path(el)
+      if (el.matches(LATER)) { later.set(key + ' (font)', (later.get(key + ' (font)') || 0) + 1); continue }
       const prev = fonts.get(key)
       if (prev) { prev.count++; prev.minPx = Math.min(prev.minPx, px) } else fonts.set(key, { path: key, minPx: px, count: 1 })
     }
-    return { smallTargets: [...small.values()], smallFonts: [...fonts.values()] }
+    return { smallTargets: [...small.values()], smallFonts: [...fonts.values()], later: [...later].map(([path, count]) => ({ path, count })) }
   }, root)
 }
 
@@ -277,6 +328,7 @@ async function flyoutAudit(page, touch) {
   // At phone width the bug starts as a collapsed edge tab; open it the way a user would.
   await page.evaluate(() => { const t = document.querySelector('.bug-tab'); if (t && t.offsetWidth) t.click() })
   await page.waitForTimeout(200)
+  if (touch) out['side-bug'] = { fit: { inside: true }, ...(await touchAudit(page, '.side-bug')) }
   for (const f of FLYOUTS) {
     await page.evaluate((sel) => document.querySelector(sel).click(), f.btn)
     await page.waitForSelector(`${f.panel}.open`)
@@ -309,6 +361,7 @@ function formatReport(rep) {
       L.push(`  touch [${view}]: ${t.smallTargets.length} target(s) under 44px, ${t.smallFonts.length} field(s) under 16px`)
       for (const s of t.smallTargets) L.push(`    ${s.minW}×${s.minH}  ${s.path}${s.opacity < 1 ? `  (opacity ${s.opacity})` : ''}${s.count > 1 ? `  ×${s.count}` : ''}`)
       for (const f of t.smallFonts) L.push(`    font ${f.minPx}px  ${f.path}${f.count > 1 ? `  ×${f.count}` : ''}`)
+      if (t.later?.length) L.push(`    (Phase 3, not counted: ${t.later.map(x => `${x.path.split(' > ').pop()} ×${x.count}`).join(', ')})`)
     }
     L.push(`  side bug: ${r.bug.width}×${r.bug.height}, ${r.bug.overCardPx ? `${r.bug.overCardPx}px over a card` : 'clear of cards'} (page top, as loaded)`)
     for (const [name, f] of Object.entries(r.flyouts)) {

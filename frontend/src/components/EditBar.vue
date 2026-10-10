@@ -319,4 +319,12 @@ const pillLabel = computed(() => {
   0%, 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0.7); }
   50%       { box-shadow: 0 0 0 7px rgba(201,162,39,0); }
 }
+
+/* Touch (phones and iPads): see the touch block in styles/responsive.css */
+@media (hover: none), (pointer: coarse) {
+  .tl-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
 </style>

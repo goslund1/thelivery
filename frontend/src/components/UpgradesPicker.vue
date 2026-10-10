@@ -290,4 +290,17 @@ function steppedLabel(partName: string): string {
   line-height: 1;
 }
 .up-implied-badge:hover { opacity: 0.9; }
+
+/* Touch (phones and iPads): see the touch block in styles/responsive.css */
+@media (hover: none), (pointer: coarse) {
+  /* Each upgrade is a 44px row, like an iOS table row. */
+  .up-inline-select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .up-step-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
 </style>

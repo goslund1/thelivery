@@ -276,4 +276,20 @@ function addSlot() {
   transition: opacity 0.12s, color 0.12s;
 }
 .sub-gear:hover { color: var(--accent); opacity: 0.8; }
+
+/* Touch (phones and iPads): see the touch block in styles/responsive.css */
+@media (hover: none), (pointer: coarse) {
+  /* width 0 + flex 1: at 16px the longest option would otherwise set the row's
+     minimum width and push the card header past the screen edge. */
+  .sub-select {
+    width: 0;
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .sub-add,
+  .sub-gear {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
 </style>

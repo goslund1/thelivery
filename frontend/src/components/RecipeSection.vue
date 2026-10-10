@@ -1496,6 +1496,24 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onPresetDocClick
   padding: 3px 10px; cursor: pointer;
 }
 .rs-remove-no:hover { border-color: var(--fg); color: var(--fg); }
+
+/* Touch (phones and iPads): see the touch block in styles/responsive.css */
+@media (hover: none), (pointer: coarse) {
+  .rs-variant-tab,
+  .kit-stock-btn,
+  .kit-preset-trigger {
+    min-height: 44px;
+  }
+  .rs-variant-remove {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .share-code-input,
+  .spec-select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
 </style>
 
 <style>

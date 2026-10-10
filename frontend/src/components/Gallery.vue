@@ -706,4 +706,27 @@ function cancelFolderImport() {
   letter-spacing: 0.05em;
   text-align: center;
 }
+
+/* Touch (phones and iPads): see the touch block in styles/responsive.css */
+@media (hover: none), (pointer: coarse) {
+  /* T2 no hover to reveal them */
+  .stage-expand,
+  .thumb-controls {
+    opacity: 1;
+  }
+  /* T3 lone corner button: hit area */
+  .stage-expand::after,
+  .thumb-ctrl::after {
+  content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+  .thumb-ctrl {
+    position: relative;
+  }
+}
 </style>

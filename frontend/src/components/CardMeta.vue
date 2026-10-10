@@ -192,4 +192,33 @@ function setAccent(color: string | undefined) {
   transition: color 0.15s;
 }
 .card-title--shareable:hover { color: var(--accent); }
+
+/* Touch (phones and iPads): see the touch block in styles/responsive.css */
+@media (hover: none), (pointer: coarse) {
+  /* Swatches spread to a 44px pitch (28px drawn + 8px margin each side). */
+  .accent-picker {
+    flex-wrap: wrap;
+    gap: 0;
+  }
+  .accent-chip {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    margin: 8px;
+  }
+  .accent-chip::after,
+  .edit-card-btn::after {
+  content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+  .livery-code-input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
 </style>

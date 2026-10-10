@@ -67,10 +67,14 @@ async function toggle(name: Exclude<FlyoutName, null>, anchor: HTMLElement) {
   const bug = sideBugEl.value!.getBoundingClientRect()
   const a = anchor.getBoundingClientRect()
   const flyoutRight = window.innerWidth - bug.left + 8
+  const top = Math.max(12, a.top)
   flyoutStyle.value = {
-    top: `${Math.max(12, a.top)}px`,
+    top: `${top}px`,
     right: `${flyoutRight}px`,
     maxWidth: `${window.innerWidth - flyoutRight - 8}px`,
+    // Height from the space below the anchor, not the whole viewport, so a tall
+    // flyout scrolls inside instead of running off the bottom.
+    maxHeight: `${window.innerHeight - top - 12}px`,
   }
 }
 
@@ -97,6 +101,7 @@ function positionSideBug() {
       ...flyoutStyle.value,
       right: `${flyoutRight}px`,
       maxWidth: `${window.innerWidth - flyoutRight - 8}px`,
+      maxHeight: `${window.innerHeight - parseFloat(flyoutStyle.value.top ?? '12') - 12}px`,
     }
   }
 

@@ -36,3 +36,6 @@ backend/seed/users.json
 
 # Note: backend/uploads/ is intentionally tracked (seed images decoded from the
 # original HTML, so the app works on a fresh clone).
+
+# Local-only harness login for frontend/shot.mjs (account exists only in the local data.db)
+frontend/.shot-login.json

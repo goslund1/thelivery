@@ -154,4 +154,12 @@ function toggleTuneType(name: string) {
   flex-shrink: 0;
   font-family: 'JetBrains Mono', monospace;
 }
+
+/* Touch (phones and iPads): see the touch block in styles/responsive.css */
+@media (hover: none), (pointer: coarse) {
+  .filter-color-chip {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
 </style>

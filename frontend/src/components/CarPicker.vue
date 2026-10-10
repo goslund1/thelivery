@@ -340,4 +340,16 @@ watch(() => props.carId, () => {
   opacity: 0.7;
   white-space: nowrap;
 }
+
+/* Touch (phones and iPads): see the touch block in styles/responsive.css */
+@media (hover: none), (pointer: coarse) {
+  .cp-add-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .cp-clear {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
 </style>

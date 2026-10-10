@@ -89,6 +89,10 @@ if (typeof window !== 'undefined') {
 
 // v-tip="'text'" or v-tip="() => dynamicText" — the function form is evaluated
 // on each hover so it reflects current state (e.g. favorited, theme, open).
+// Tips are a hover affordance: on a touch device a tap fires mouseenter and the
+// tip would stick open over whatever the tap opened, so only devices that can
+// hover get the listeners.
+const canHover = () => typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
 type TipValue = string | (() => string)
 interface TipEl extends HTMLElement {
   _tipRaw?: TipValue
@@ -104,6 +108,7 @@ export const vTip: Directive<TipEl, TipValue> = {
       showTip(el, typeof v === 'function' ? v() : (v ?? ''))
     }
     el._tipLeave = () => hideTip()
+    if (!canHover()) return
     el.addEventListener('mouseenter', el._tipEnter)
     el.addEventListener('mouseleave', el._tipLeave)
   },
@@ -126,6 +131,7 @@ export const vTipUp: Directive<TipEl, TipValue> = {
       showTipRight(el, typeof v === 'function' ? v() : (v ?? ''))
     }
     el._tipLeave = () => hideTip()
+    if (!canHover()) return
     el.addEventListener('mouseenter', el._tipEnter)
     el.addEventListener('mouseleave', el._tipLeave)
   },

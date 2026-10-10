@@ -1,0 +1,122 @@
+mobile-pass set "phase2"  2026-10-10T00:40:40.800Z
+edit view: captured
+
+══ 360x640 touch  (hover:none=true coarse=true)  shots: 5
+  overflow [view]: document ok; 6 element(s)
+    .section-body > .ta-nonstock > .ta-nonstock-summary > .ta-nonstock-actions   content 170 in box 155  ← .ta-nonstock-chev
+    .ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line > .ta-nonstock-loc   content 73 in box 61  ×4
+    .ta > .ta-content > .ta-tab--tires > .ta-group   content 330 in box 306  ×8
+    .ta-content > .ta-tab--tires > .ta-group > .ta-group-header   content 330 in box 306  ← .ta-right-section  ×8
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row.changed   content 330 in box 306  ← .ta-right-section  ×2
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row   content 330 in box 306  ← .ta-right-section  ×14
+  overflow [edit]: document ok; 10 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 110 in box 75  ×19
+    .section-body > .ta > .ta-preset-bar > .ta-preset-select   content 156 in box 140  ×10
+    .ta > .ta-content > .ta-tab--tires > .ta-group   content 330 in box 306  ×10
+    .ta-content > .ta-tab--tires > .ta-group > .ta-group-header   content 330 in box 306  ← .ta-right-section  ×10
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row   content 330 in box 306  ← .ta-right-section  ×18
+    .ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line > .ta-nonstock-loc   content 73 in box 61  ×4
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row.changed   content 330 in box 306  ← .ta-right-section  ×2
+    .kit-cat > .kit-list > li > .up-inline-select.up-inline-set   content 296 in box 284
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 328 in box 284
+    div > .sub-root > .sub-seg > .sub-select   content 83 in box 75  ×4
+  touch [view]: 0 target(s) under 44px, 0 field(s) under 16px
+    (Phase 3, not counted: .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-nonstock-line ×2, .ta-nonstock-line ×3, .ta-nonstock-line ×4, .ta-nonstock-line ×2, .ta-nonstock-line ×5, .ta-slider ×2, .ta-slider.ta-slider--stock ×14)
+  touch [edit]: 0 target(s) under 44px, 0 field(s) under 16px
+    (Phase 3, not counted: .ta-val-input ×20, .ta-end-field.ta-end-field--static ×4, .ta-slider.ta-slider--stock ×18, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-nonstock-line ×2, .ta-nonstock-line ×3, .ta-nonstock-line ×4, .ta-nonstock-line ×2, .ta-nonstock-line ×5, .ta-end-field ×4, .ta-slider ×2, .ta-end-field ×32, .ta-val-input (font) ×20, .ta-end-field.ta-end-field--static (font) ×4, .ta-end-field (font) ×4, .ta-end-field (font) ×32)
+  side bug: 24×44, clear of cards (page top, as loaded)
+  flyout side-bug: inside viewport
+  flyout filters: inside viewport, scrolls inside
+  flyout theme: inside viewport
+  flyout text-size: inside viewport
+
+══ 390x844 touch  (hover:none=true coarse=true)  shots: 5
+  overflow [view]: document ok; 4 element(s)
+    .ta > .ta-content > .ta-tab--tires > .ta-group   content 342 in box 336  ×8
+    .ta-content > .ta-tab--tires > .ta-group > .ta-group-header   content 342 in box 336  ← .ta-right-section  ×8
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row.changed   content 342 in box 336  ← .ta-right-section  ×2
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row   content 342 in box 336  ← .ta-right-section  ×14
+  overflow [edit]: document ok; 7 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 110 in box 83  ×18
+    .ta > .ta-content > .ta-tab--tires > .ta-group   content 342 in box 336  ×10
+    .ta-content > .ta-tab--tires > .ta-group > .ta-group-header   content 342 in box 336  ← .ta-right-section  ×10
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row   content 342 in box 336  ← .ta-right-section  ×18
+    .ta-content > .ta-tab--tires > .ta-group > .ta-row.changed   content 342 in box 336  ← .ta-right-section  ×2
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 328 in box 314
+    div > .sub-root > .sub-seg > .sub-select   content 110 in box 83
+  touch [view]: 0 target(s) under 44px, 0 field(s) under 16px
+    (Phase 3, not counted: .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-nonstock-line ×2, .ta-nonstock-line ×3, .ta-nonstock-line ×4, .ta-nonstock-line ×2, .ta-nonstock-line ×5, .ta-slider ×2, .ta-slider.ta-slider--stock ×14)
+  touch [edit]: 0 target(s) under 44px, 0 field(s) under 16px
+    (Phase 3, not counted: .ta-val-input ×20, .ta-end-field.ta-end-field--static ×4, .ta-slider.ta-slider--stock ×18, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-nonstock-line ×2, .ta-nonstock-line ×3, .ta-nonstock-line ×4, .ta-nonstock-line ×2, .ta-nonstock-line ×5, .ta-end-field ×4, .ta-slider ×2, .ta-end-field ×32, .ta-val-input (font) ×20, .ta-end-field.ta-end-field--static (font) ×4, .ta-end-field (font) ×4, .ta-end-field (font) ×32)
+  side bug: 24×44, clear of cards (page top, as loaded)
+  flyout side-bug: inside viewport
+  flyout filters: inside viewport, scrolls inside
+  flyout theme: inside viewport
+  flyout text-size: inside viewport
+
+══ 844x390 touch  (hover:none=true coarse=true)  shots: 5
+  overflow [view]: document ok; 0 element(s)
+  overflow [edit]: document ok; 7 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 110 in box 72  ×20
+    .kit-cat > .kit-list > li > .up-inline-select   content 244 in box 206  ×14
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select   content 221 in box 206  ×21
+    .kit-cat > .kit-list > li > .up-inline-select.up-inline-set   content 244 in box 206  ×7
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 221 in box 206  ×8
+    .kit-cat.up-col3-break > .kit-list > li > .up-inline-select.up-inline-set   content 221 in box 206  ×2
+    div > .sub-root > .sub-seg > .sub-select   content 83 in box 72  ×4
+  touch [view]: 0 target(s) under 44px, 0 field(s) under 16px
+    (Phase 3, not counted: .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-nonstock-line ×3, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×5, .ta-nonstock-line ×4, .ta-slider ×2, .ta-slider.ta-slider--stock ×14)
+  touch [edit]: 0 target(s) under 44px, 0 field(s) under 16px
+    (Phase 3, not counted: .ta-val-input ×20, .ta-end-field.ta-end-field--static ×4, .ta-slider.ta-slider--stock ×18, .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-nonstock-line ×3, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×5, .ta-nonstock-line ×4, .ta-end-field ×4, .ta-slider ×2, .ta-end-field ×32, .ta-val-input (font) ×20, .ta-end-field.ta-end-field--static (font) ×4, .ta-end-field (font) ×4, .ta-end-field (font) ×32)
+  side bug: 45×178, clear of cards (page top, as loaded)
+  flyout side-bug: inside viewport
+  flyout filters: inside viewport, scrolls inside
+  flyout theme: inside viewport
+  flyout text-size: inside viewport, scrolls inside
+
+══ 820x1180 touch  (hover:none=true coarse=true)  shots: 5
+  overflow [view]: document ok; 0 element(s)
+  overflow [edit]: document ok; 7 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 110 in box 72  ×20
+    .kit-cat > .kit-list > li > .up-inline-select   content 244 in box 198  ×14
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select   content 221 in box 198  ×28
+    .kit-cat > .kit-list > li > .up-inline-select.up-inline-set   content 244 in box 198  ×7
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 221 in box 198  ×12
+    .kit-cat.up-col3-break > .kit-list > li > .up-inline-select.up-inline-set   content 221 in box 198  ×2
+    div > .sub-root > .sub-seg > .sub-select   content 83 in box 72  ×4
+  touch [view]: 0 target(s) under 44px, 0 field(s) under 16px
+    (Phase 3, not counted: .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-nonstock-line ×5, .ta-nonstock-line ×3, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-slider ×2, .ta-slider.ta-slider--stock ×14)
+  touch [edit]: 0 target(s) under 44px, 0 field(s) under 16px
+    (Phase 3, not counted: .ta-val-input ×20, .ta-end-field.ta-end-field--static ×4, .ta-slider.ta-slider--stock ×18, .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-nonstock-line ×5, .ta-nonstock-line ×3, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-end-field ×4, .ta-slider ×2, .ta-end-field ×32, .ta-val-input (font) ×20, .ta-end-field.ta-end-field--static (font) ×4, .ta-end-field (font) ×4, .ta-end-field (font) ×32)
+  side bug: 45×178, clear of cards (page top, as loaded)
+  flyout side-bug: inside viewport
+  flyout filters: inside viewport
+  flyout theme: inside viewport
+  flyout text-size: inside viewport
+
+══ 1180x820 touch  (hover:none=true coarse=true)  shots: 5
+  overflow [view]: document ok; 0 element(s)
+  overflow [edit]: document ok; 4 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 110 in box 72  ×20
+    .kit-cat > .kit-list > li > .up-inline-select.up-inline-set   content 296 in box 274
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 328 in box 274
+    div > .sub-root > .sub-seg > .sub-select   content 83 in box 72  ×4
+  touch [view]: 0 target(s) under 44px, 0 field(s) under 16px
+    (Phase 3, not counted: .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×3, .ta-nonstock-line ×5, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-nonstock-line ×4, .ta-slider ×2, .ta-slider.ta-slider--stock ×14)
+  touch [edit]: 0 target(s) under 44px, 0 field(s) under 16px
+    (Phase 3, not counted: .ta-val-input ×20, .ta-end-field.ta-end-field--static ×4, .ta-slider.ta-slider--stock ×18, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×3, .ta-nonstock-line ×5, .ta-nonstock-line ×2, .ta-nonstock-line ×2, .ta-nonstock-line ×4, .ta-nonstock-line ×4, .ta-end-field ×4, .ta-slider ×2, .ta-end-field ×32, .ta-val-input (font) ×20, .ta-end-field.ta-end-field--static (font) ×4, .ta-end-field (font) ×4, .ta-end-field (font) ×32)
+  side bug: 45×178, clear of cards (page top, as loaded)
+  flyout side-bug: inside viewport
+  flyout filters: inside viewport, scrolls inside
+  flyout theme: inside viewport
+  flyout text-size: inside viewport
+
+══ 1440x900 mouse  (hover:none=false coarse=false)  shots: 5
+  overflow [view]: document ok; 0 element(s)
+  overflow [edit]: document ok; 2 element(s)
+    div > .sub-root > .sub-seg > .sub-select.sub-select--set   content 290 in box 211  ×4
+    .kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set   content 297 in box 274
+  side bug: 43×170, clear of cards (page top, as loaded)
+  flyout filters: inside viewport
+  flyout theme: inside viewport
+  flyout text-size: inside viewport

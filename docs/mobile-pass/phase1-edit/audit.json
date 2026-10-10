@@ -1,0 +1,4891 @@
+{
+  "label": "phase1-edit",
+  "url": "http://localhost:5173/",
+  "when": "2026-10-10T00:21:27.703Z",
+  "editView": "captured",
+  "viewports": {
+    "360x640": {
+      "touch": {
+        "view": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-tab",
+              "minW": 23,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 360,
+              "minH": 35,
+              "opacity": 1,
+              "count": 26
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 330,
+              "minH": 39,
+              "opacity": 1,
+              "count": 7
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 14
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": []
+        },
+        "edit": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-tab",
+              "minW": 23,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-red",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-yellow",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-green",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card-number > .collection-badge.chip > .chip-remove",
+              "minW": 7,
+              "minH": 12,
+              "opacity": 0.7,
+              "count": 17
+            },
+            {
+              "path": "div > .card-number > .chip-add",
+              "minW": 23,
+              "minH": 22,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": "div > .plate.livery-code-plate > .livery-code-input",
+              "minW": 108,
+              "minH": 17,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select.sub-select--set",
+              "minW": 79,
+              "minH": 17,
+              "opacity": 1,
+              "count": 25
+            },
+            {
+              "path": ".sub-root > .sub-seg.sub-seg--add > .sub-add",
+              "minW": 22,
+              "minH": 20,
+              "opacity": 0.45,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg.sub-seg--gear > .sub-gear",
+              "minW": 18,
+              "minH": 20,
+              "opacity": 0.3,
+              "count": 10
+            },
+            {
+              "path": "div > .accent-picker > .accent-chip",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 30
+            },
+            {
+              "path": ".card-meta > .card-meta-actions > .edit-card-btn",
+              "minW": 83,
+              "minH": 24,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".card.legend-card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 1
+            },
+            {
+              "path": ".tag-cloud > .tag.chip > .chip-remove",
+              "minW": 7,
+              "minH": 12,
+              "opacity": 0.7,
+              "count": 22
+            },
+            {
+              "path": ".card.legend-card > .tag-cloud > .chip-add",
+              "minW": 58,
+              "minH": 22,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card.legend-card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card.legend-card > .section > summary",
+              "minW": 360,
+              "minH": 35,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".section-body.gutter-layout > .gutter-figure > .change-image-btn",
+              "minW": 320,
+              "minH": 25,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-add-variant-wrap > .rs-variant-tab.rs-variant-tab--add",
+              "minW": 91,
+              "minH": 25,
+              "opacity": 0.65,
+              "count": 10
+            },
+            {
+              "path": ".rs-variant-tabs.rs-tune-tabs > .rs-variant-tab-wrap > .rs-variant-tab.rs-variant-tab--add",
+              "minW": 99,
+              "minH": 25,
+              "opacity": 0.65,
+              "count": 10
+            },
+            {
+              "path": ".tune-header > .plate > .share-code-input",
+              "minW": 108,
+              "minH": 17,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".rs-car-row > .cp-wrap > .cp-add-btn",
+              "minW": 43,
+              "minH": 19,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": "tr > td > .spec-select",
+              "minW": 210,
+              "minH": 22,
+              "opacity": 1,
+              "count": 50
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 0.55,
+              "count": 10
+            },
+            {
+              "path": ".kit-toggle.is-open > .kit-preset-bar > .kit-preset-trigger",
+              "minW": 310,
+              "minH": 14,
+              "opacity": 0.5,
+              "count": 10
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select",
+              "minW": 284,
+              "minH": 19,
+              "opacity": 0.65,
+              "count": 191
+            },
+            {
+              "path": ".kit-list > .up-step-row > .up-step-btn",
+              "minW": 20,
+              "minH": 20,
+              "opacity": 1,
+              "count": 120
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 330,
+              "minH": 39,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-preset-bar > .ta-preset-select",
+              "minW": 140,
+              "minH": 23,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta-left-section > .ta-val-box > .ta-val-input",
+              "minW": 26,
+              "minH": 14,
+              "opacity": 1,
+              "count": 20
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field.ta-end-field--static",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 0.35,
+              "count": 4
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select",
+              "minW": 79,
+              "minH": 17,
+              "opacity": 0.65,
+              "count": 15
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .chip-add",
+              "minW": 58,
+              "minH": 22,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 360,
+              "minH": 35,
+              "opacity": 1,
+              "count": 27
+            },
+            {
+              "path": ".section-body.gutter-layout > .gutter-figure.has-image > .change-image-btn",
+              "minW": 318,
+              "minH": 25,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-remove",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 0.35,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-remove",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 0.35,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs.rs-tune-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 120,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".tune-header > .tune-name-group > .editable.tune-name",
+              "minW": 88,
+              "minH": 30,
+              "opacity": 1,
+              "count": 7
+            },
+            {
+              "path": ".cp-wrap > .cp-chip > .cp-clear",
+              "minW": 12,
+              "minH": 14,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select.up-inline-set",
+              "minW": 269,
+              "minH": 19,
+              "opacity": 1,
+              "count": 119
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 141,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta-row.changed > .ta-right-section > .ta-end-field",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 1,
+              "count": 32
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.anecdote-text",
+              "minW": 332,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.gutter-text",
+              "minW": 332,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": [
+            {
+              "path": "div > .plate.livery-code-plate > .livery-code-input",
+              "minPx": 12,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select.sub-select--set",
+              "minPx": 13,
+              "count": 25
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.anecdote-text",
+              "minPx": 15.5,
+              "count": 10
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.gutter-text",
+              "minPx": 15.5,
+              "count": 10
+            },
+            {
+              "path": ".tune-header > .plate > .share-code-input",
+              "minPx": 12,
+              "count": 10
+            },
+            {
+              "path": "tr > td > .spec-select",
+              "minPx": 13.5,
+              "count": 50
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select",
+              "minPx": 14.5,
+              "count": 191
+            },
+            {
+              "path": ".ta > .ta-preset-bar > .ta-preset-select",
+              "minPx": 10,
+              "count": 10
+            },
+            {
+              "path": ".ta-left-section > .ta-val-box > .ta-val-input",
+              "minPx": 11,
+              "count": 20
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field.ta-end-field--static",
+              "minPx": 11,
+              "count": 4
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select",
+              "minPx": 13,
+              "count": 15
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select.up-inline-set",
+              "minPx": 14.5,
+              "count": 119
+            },
+            {
+              "path": ".ta-row.changed > .ta-right-section > .ta-end-field",
+              "minPx": 11,
+              "count": 4
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field",
+              "minPx": 11,
+              "count": 32
+            }
+          ]
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 360,
+          "innerWidth": 360,
+          "items": [
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary > .ta-nonstock-actions",
+              "content": 170,
+              "box": 155,
+              "pastEdgeBy": -29,
+              "culprit": ".ta-nonstock-chev",
+              "count": 1
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line > .ta-nonstock-loc",
+              "content": 73,
+              "box": 61,
+              "pastEdgeBy": -101,
+              "culprit": null,
+              "count": 4
+            },
+            {
+              "path": ".ta > .ta-content > .ta-tab--tires > .ta-group",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": null,
+              "count": 8
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-group-header",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 8
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row.changed",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 2
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 14
+            }
+          ]
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 360,
+          "innerWidth": 360,
+          "items": [
+            {
+              "path": ".card-meta",
+              "content": 362,
+              "box": 360,
+              "pastEdgeBy": 0,
+              "culprit": "div",
+              "count": 10
+            },
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 90,
+              "box": 79,
+              "pastEdgeBy": -6,
+              "culprit": null,
+              "count": 18
+            },
+            {
+              "path": ".ta > .ta-content > .ta-tab--tires > .ta-group",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": null,
+              "count": 10
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-group-header",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 10
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 18
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line > .ta-nonstock-loc",
+              "content": 73,
+              "box": 61,
+              "pastEdgeBy": -101,
+              "culprit": null,
+              "count": 4
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row.changed",
+              "content": 330,
+              "box": 306,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 2
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 297,
+              "box": 284,
+              "pastEdgeBy": -31,
+              "culprit": null,
+              "count": 1
+            },
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select",
+              "content": 90,
+              "box": 79,
+              "pastEdgeBy": -267,
+              "culprit": null,
+              "count": 1
+            }
+          ]
+        }
+      },
+      "bug": {
+        "width": 24,
+        "height": 44,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 86,
+            "bottom": 702,
+            "left": 117,
+            "right": 309,
+            "inside": false,
+            "scrollsInside": true
+          },
+          "smallTargets": [
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .bug-check > input",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip",
+              "minW": 34,
+              "minH": 18,
+              "opacity": 1,
+              "count": 15
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip",
+              "minW": 40,
+              "minH": 18,
+              "opacity": 1,
+              "count": 8
+            }
+          ],
+          "smallFonts": []
+        },
+        "theme": {
+          "fit": {
+            "top": 128,
+            "bottom": 371,
+            "left": 185,
+            "right": 309,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.theme-flyout > .theme-option",
+              "minW": 107,
+              "minH": 36,
+              "opacity": 1,
+              "count": 5
+            }
+          ],
+          "smallFonts": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 170,
+            "bottom": 483,
+            "left": 239,
+            "right": 309,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.text-size-flyout > .text-size-option",
+              "minW": 52,
+              "minH": 31,
+              "opacity": 1,
+              "count": 9
+            }
+          ],
+          "smallFonts": []
+        }
+      }
+    },
+    "390x844": {
+      "touch": {
+        "view": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-tab",
+              "minW": 23,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 390,
+              "minH": 35,
+              "opacity": 1,
+              "count": 26
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 360,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 14
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": []
+        },
+        "edit": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-tab",
+              "minW": 23,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-red",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-yellow",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-green",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card-number > .collection-badge.chip > .chip-remove",
+              "minW": 7,
+              "minH": 12,
+              "opacity": 0.7,
+              "count": 17
+            },
+            {
+              "path": "div > .card-number > .chip-add",
+              "minW": 23,
+              "minH": 22,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": "div > .plate.livery-code-plate > .livery-code-input",
+              "minW": 108,
+              "minH": 17,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select.sub-select--set",
+              "minW": 75,
+              "minH": 17,
+              "opacity": 1,
+              "count": 25
+            },
+            {
+              "path": ".sub-root > .sub-seg.sub-seg--add > .sub-add",
+              "minW": 22,
+              "minH": 20,
+              "opacity": 0.45,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg.sub-seg--gear > .sub-gear",
+              "minW": 18,
+              "minH": 20,
+              "opacity": 0.3,
+              "count": 10
+            },
+            {
+              "path": "div > .accent-picker > .accent-chip",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 30
+            },
+            {
+              "path": ".card-meta > .card-meta-actions > .edit-card-btn",
+              "minW": 83,
+              "minH": 24,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".card.legend-card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 1
+            },
+            {
+              "path": ".tag-cloud > .tag.chip > .chip-remove",
+              "minW": 7,
+              "minH": 12,
+              "opacity": 0.7,
+              "count": 22
+            },
+            {
+              "path": ".card.legend-card > .tag-cloud > .chip-add",
+              "minW": 58,
+              "minH": 22,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card.legend-card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card.legend-card > .section > summary",
+              "minW": 390,
+              "minH": 35,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".section-body.gutter-layout > .gutter-figure > .change-image-btn",
+              "minW": 350,
+              "minH": 25,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-add-variant-wrap > .rs-variant-tab.rs-variant-tab--add",
+              "minW": 91,
+              "minH": 25,
+              "opacity": 0.65,
+              "count": 10
+            },
+            {
+              "path": ".rs-variant-tabs.rs-tune-tabs > .rs-variant-tab-wrap > .rs-variant-tab.rs-variant-tab--add",
+              "minW": 99,
+              "minH": 25,
+              "opacity": 0.65,
+              "count": 10
+            },
+            {
+              "path": ".tune-header > .plate > .share-code-input",
+              "minW": 108,
+              "minH": 17,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".rs-car-row > .cp-wrap > .cp-add-btn",
+              "minW": 43,
+              "minH": 19,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": "tr > td > .spec-select",
+              "minW": 240,
+              "minH": 22,
+              "opacity": 1,
+              "count": 50
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 0.55,
+              "count": 10
+            },
+            {
+              "path": ".kit-toggle.is-open > .kit-preset-bar > .kit-preset-trigger",
+              "minW": 340,
+              "minH": 14,
+              "opacity": 0.5,
+              "count": 10
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select",
+              "minW": 314,
+              "minH": 19,
+              "opacity": 0.65,
+              "count": 191
+            },
+            {
+              "path": ".kit-list > .up-step-row > .up-step-btn",
+              "minW": 20,
+              "minH": 20,
+              "opacity": 1,
+              "count": 120
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 360,
+              "minH": 39,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-preset-bar > .ta-preset-select",
+              "minW": 140,
+              "minH": 23,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta-preset-bar > .ta-preset-save > .ta-btn-lwb.ta-preset-btn",
+              "minW": 117,
+              "minH": 32,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta-left-section > .ta-val-box > .ta-val-input",
+              "minW": 36,
+              "minH": 14,
+              "opacity": 1,
+              "count": 20
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field.ta-end-field--static",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 0.35,
+              "count": 4
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select",
+              "minW": 75,
+              "minH": 17,
+              "opacity": 0.65,
+              "count": 15
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .chip-add",
+              "minW": 58,
+              "minH": 22,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 390,
+              "minH": 35,
+              "opacity": 1,
+              "count": 27
+            },
+            {
+              "path": ".section-body.gutter-layout > .gutter-figure.has-image > .change-image-btn",
+              "minW": 348,
+              "minH": 25,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-remove",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 0.35,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-remove",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 0.35,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs.rs-tune-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 120,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".tune-header > .tune-name-group > .editable.tune-name",
+              "minW": 88,
+              "minH": 30,
+              "opacity": 1,
+              "count": 7
+            },
+            {
+              "path": ".cp-wrap > .cp-chip > .cp-clear",
+              "minW": 12,
+              "minH": 14,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select.up-inline-set",
+              "minW": 299,
+              "minH": 19,
+              "opacity": 1,
+              "count": 119
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 156,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta-row.changed > .ta-right-section > .ta-end-field",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 80,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 1,
+              "count": 32
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.anecdote-text",
+              "minW": 362,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.gutter-text",
+              "minW": 362,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": [
+            {
+              "path": "div > .plate.livery-code-plate > .livery-code-input",
+              "minPx": 12,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select.sub-select--set",
+              "minPx": 13,
+              "count": 25
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.anecdote-text",
+              "minPx": 15.5,
+              "count": 10
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.gutter-text",
+              "minPx": 15.5,
+              "count": 10
+            },
+            {
+              "path": ".tune-header > .plate > .share-code-input",
+              "minPx": 12,
+              "count": 10
+            },
+            {
+              "path": "tr > td > .spec-select",
+              "minPx": 13.5,
+              "count": 50
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select",
+              "minPx": 14.5,
+              "count": 191
+            },
+            {
+              "path": ".ta > .ta-preset-bar > .ta-preset-select",
+              "minPx": 10,
+              "count": 10
+            },
+            {
+              "path": ".ta-left-section > .ta-val-box > .ta-val-input",
+              "minPx": 11,
+              "count": 20
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field.ta-end-field--static",
+              "minPx": 11,
+              "count": 4
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select",
+              "minPx": 13,
+              "count": 15
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select.up-inline-set",
+              "minPx": 14.5,
+              "count": 119
+            },
+            {
+              "path": ".ta-row.changed > .ta-right-section > .ta-end-field",
+              "minPx": 11,
+              "count": 4
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field",
+              "minPx": 11,
+              "count": 32
+            }
+          ]
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "items": [
+            {
+              "path": ".ta > .ta-content > .ta-tab--tires > .ta-group",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": null,
+              "count": 8
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-group-header",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 8
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row.changed",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 2
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 14
+            }
+          ]
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 390,
+          "innerWidth": 390,
+          "items": [
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 90,
+              "box": 75,
+              "pastEdgeBy": -52,
+              "culprit": null,
+              "count": 18
+            },
+            {
+              "path": ".ta > .ta-content > .ta-tab--tires > .ta-group",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": null,
+              "count": 10
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-group-header",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 10
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 18
+            },
+            {
+              "path": ".ta-content > .ta-tab--tires > .ta-group > .ta-row.changed",
+              "content": 342,
+              "box": 336,
+              "pastEdgeBy": -27,
+              "culprit": ".ta-right-section",
+              "count": 2
+            },
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select",
+              "content": 90,
+              "box": 75,
+              "pastEdgeBy": -301,
+              "culprit": null,
+              "count": 1
+            }
+          ]
+        }
+      },
+      "bug": {
+        "width": 24,
+        "height": 44,
+        "overCardPx": 24
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 86,
+            "bottom": 764,
+            "left": 147,
+            "right": 339,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .bug-check > input",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip",
+              "minW": 34,
+              "minH": 18,
+              "opacity": 1,
+              "count": 15
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip",
+              "minW": 40,
+              "minH": 18,
+              "opacity": 1,
+              "count": 8
+            }
+          ],
+          "smallFonts": []
+        },
+        "theme": {
+          "fit": {
+            "top": 128,
+            "bottom": 371,
+            "left": 215,
+            "right": 339,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.theme-flyout > .theme-option",
+              "minW": 107,
+              "minH": 36,
+              "opacity": 1,
+              "count": 5
+            }
+          ],
+          "smallFonts": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 170,
+            "bottom": 483,
+            "left": 269,
+            "right": 339,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.text-size-flyout > .text-size-option",
+              "minW": 52,
+              "minH": 31,
+              "opacity": 1,
+              "count": 9
+            }
+          ],
+          "smallFonts": []
+        }
+      }
+    },
+    "844x390": {
+      "touch": {
+        "view": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-btn--filters",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-toggle-all",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 775,
+              "minH": 35,
+              "opacity": 1,
+              "count": 26
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".section-body > .kit-toggle.is-open > summary",
+              "minW": 725,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 725,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero",
+              "minW": 45,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes",
+              "minW": 51,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential",
+              "minW": 74,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack",
+              "minW": 75,
+              "minH": 28,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 342,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 342,
+              "minH": 20,
+              "opacity": 1,
+              "count": 14
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": []
+        },
+        "edit": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-btn--filters",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-toggle-all",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-red",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-yellow",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-green",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card-number > .collection-badge.chip > .chip-remove",
+              "minW": 7,
+              "minH": 12,
+              "opacity": 0.7,
+              "count": 17
+            },
+            {
+              "path": "div > .card-number > .chip-add",
+              "minW": 23,
+              "minH": 22,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": "div > .plate.livery-code-plate > .livery-code-input",
+              "minW": 108,
+              "minH": 17,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select.sub-select--set",
+              "minW": 160,
+              "minH": 17,
+              "opacity": 1,
+              "count": 25
+            },
+            {
+              "path": ".sub-root > .sub-seg.sub-seg--add > .sub-add",
+              "minW": 22,
+              "minH": 20,
+              "opacity": 0.45,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg.sub-seg--gear > .sub-gear",
+              "minW": 18,
+              "minH": 20,
+              "opacity": 0.3,
+              "count": 10
+            },
+            {
+              "path": "div > .accent-picker > .accent-chip",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 30
+            },
+            {
+              "path": ".card-meta > .card-meta-actions > .edit-card-btn",
+              "minW": 83,
+              "minH": 24,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".card.legend-card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 1
+            },
+            {
+              "path": ".tag-cloud > .tag.chip > .chip-remove",
+              "minW": 7,
+              "minH": 12,
+              "opacity": 0.7,
+              "count": 22
+            },
+            {
+              "path": ".card.legend-card > .tag-cloud > .chip-add",
+              "minW": 58,
+              "minH": 22,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card.legend-card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card.legend-card > .section > summary",
+              "minW": 775,
+              "minH": 35,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".section-body.gutter-layout > .gutter-figure > .change-image-btn",
+              "minW": 284,
+              "minH": 25,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-add-variant-wrap > .rs-variant-tab.rs-variant-tab--add",
+              "minW": 91,
+              "minH": 25,
+              "opacity": 0.65,
+              "count": 10
+            },
+            {
+              "path": ".rs-variant-tabs.rs-tune-tabs > .rs-variant-tab-wrap > .rs-variant-tab.rs-variant-tab--add",
+              "minW": 99,
+              "minH": 25,
+              "opacity": 0.65,
+              "count": 10
+            },
+            {
+              "path": ".tune-header > .tune-name-group > .editable.tune-name",
+              "minW": 103,
+              "minH": 35,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".tune-header > .plate > .share-code-input",
+              "minW": 108,
+              "minH": 17,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".rs-car-row > .cp-wrap > .cp-add-btn",
+              "minW": 43,
+              "minH": 19,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": "tr > td > .spec-select",
+              "minW": 128,
+              "minH": 22,
+              "opacity": 1,
+              "count": 50
+            },
+            {
+              "path": ".section-body > .kit-toggle.is-open > summary",
+              "minW": 725,
+              "minH": 39,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 0.55,
+              "count": 10
+            },
+            {
+              "path": ".kit-toggle.is-open > .kit-preset-bar > .kit-preset-trigger",
+              "minW": 705,
+              "minH": 14,
+              "opacity": 0.5,
+              "count": 10
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select",
+              "minW": 206,
+              "minH": 19,
+              "opacity": 0.65,
+              "count": 191
+            },
+            {
+              "path": ".kit-list > .up-step-row > .up-step-btn",
+              "minW": 20,
+              "minH": 20,
+              "opacity": 1,
+              "count": 120
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 725,
+              "minH": 39,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-preset-bar > .ta-preset-select",
+              "minW": 164,
+              "minH": 23,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta-preset-bar > .ta-preset-save > .ta-btn-lwb.ta-preset-btn",
+              "minW": 153,
+              "minH": 20,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero",
+              "minW": 45,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes",
+              "minW": 51,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential",
+              "minW": 74,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack",
+              "minW": 75,
+              "minH": 28,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta-left-section > .ta-val-box > .ta-val-input",
+              "minW": 50,
+              "minH": 14,
+              "opacity": 1,
+              "count": 20
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field.ta-end-field--static",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 0.35,
+              "count": 4
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 342,
+              "minH": 20,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select",
+              "minW": 160,
+              "minH": 17,
+              "opacity": 0.65,
+              "count": 15
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .chip-add",
+              "minW": 58,
+              "minH": 22,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 775,
+              "minH": 35,
+              "opacity": 1,
+              "count": 27
+            },
+            {
+              "path": ".section-body.gutter-layout > .gutter-figure.has-image > .change-image-btn",
+              "minW": 282,
+              "minH": 25,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-remove",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 0.35,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-remove",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 0.35,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs.rs-tune-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 120,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".cp-wrap > .cp-chip > .cp-clear",
+              "minW": 12,
+              "minH": 14,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select.up-inline-set",
+              "minW": 191,
+              "minH": 19,
+              "opacity": 1,
+              "count": 119
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 160,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-row.changed > .ta-right-section > .ta-end-field",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 342,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 1,
+              "count": 32
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": [
+            {
+              "path": "div > .plate.livery-code-plate > .livery-code-input",
+              "minPx": 12,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select.sub-select--set",
+              "minPx": 13,
+              "count": 25
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.anecdote-text",
+              "minPx": 15.5,
+              "count": 10
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.gutter-text",
+              "minPx": 15.5,
+              "count": 10
+            },
+            {
+              "path": ".tune-header > .plate > .share-code-input",
+              "minPx": 12,
+              "count": 10
+            },
+            {
+              "path": "tr > td > .spec-select",
+              "minPx": 13.5,
+              "count": 50
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select",
+              "minPx": 14.5,
+              "count": 191
+            },
+            {
+              "path": ".ta > .ta-preset-bar > .ta-preset-select",
+              "minPx": 10,
+              "count": 10
+            },
+            {
+              "path": ".ta-left-section > .ta-val-box > .ta-val-input",
+              "minPx": 11,
+              "count": 20
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field.ta-end-field--static",
+              "minPx": 11,
+              "count": 4
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select",
+              "minPx": 13,
+              "count": 15
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select.up-inline-set",
+              "minPx": 14.5,
+              "count": 119
+            },
+            {
+              "path": ".ta-row.changed > .ta-right-section > .ta-end-field",
+              "minPx": 11,
+              "count": 4
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field",
+              "minPx": 11,
+              "count": 32
+            }
+          ]
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 844,
+          "innerWidth": 844,
+          "items": []
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 844,
+          "innerWidth": 844,
+          "items": [
+            {
+              "path": ".kit-cat > .kit-list > li > .up-inline-select",
+              "content": 221,
+              "box": 206,
+              "pastEdgeBy": -515,
+              "culprit": null,
+              "count": 14
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select",
+              "content": 235,
+              "box": 206,
+              "pastEdgeBy": -278,
+              "culprit": null,
+              "count": 7
+            },
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 290,
+              "box": 160,
+              "pastEdgeBy": -89,
+              "culprit": null,
+              "count": 6
+            },
+            {
+              "path": ".kit-cat > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 221,
+              "box": 206,
+              "pastEdgeBy": -515,
+              "culprit": null,
+              "count": 6
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 235,
+              "box": 206,
+              "pastEdgeBy": -278,
+              "culprit": null,
+              "count": 3
+            },
+            {
+              "path": ".kit-cat.up-col3-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 210,
+              "box": 206,
+              "pastEdgeBy": -42,
+              "culprit": null,
+              "count": 1
+            }
+          ]
+        }
+      },
+      "bug": {
+        "width": 43,
+        "height": 170,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 379,
+            "left": 601,
+            "right": 793,
+            "inside": true,
+            "scrollsInside": true
+          },
+          "smallTargets": [
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .bug-check > input",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip",
+              "minW": 34,
+              "minH": 18,
+              "opacity": 1,
+              "count": 15
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip",
+              "minW": 40,
+              "minH": 18,
+              "opacity": 1,
+              "count": 8
+            }
+          ],
+          "smallFonts": []
+        },
+        "theme": {
+          "fit": {
+            "top": 55,
+            "bottom": 298,
+            "left": 669,
+            "right": 793,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.theme-flyout > .theme-option",
+              "minW": 107,
+              "minH": 36,
+              "opacity": 1,
+              "count": 5
+            }
+          ],
+          "smallFonts": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 97,
+            "bottom": 410,
+            "left": 723,
+            "right": 793,
+            "inside": false,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.text-size-flyout > .text-size-option",
+              "minW": 52,
+              "minH": 31,
+              "opacity": 1,
+              "count": 9
+            }
+          ],
+          "smallFonts": []
+        }
+      }
+    },
+    "820x1180": {
+      "touch": {
+        "view": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-btn--filters",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-toggle-all",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 751,
+              "minH": 35,
+              "opacity": 1,
+              "count": 26
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".section-body > .kit-toggle.is-open > summary",
+              "minW": 701,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 701,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero",
+              "minW": 45,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes",
+              "minW": 51,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential",
+              "minW": 74,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack",
+              "minW": 75,
+              "minH": 28,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 318,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 318,
+              "minH": 20,
+              "opacity": 1,
+              "count": 14
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": []
+        },
+        "edit": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-btn--filters",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-toggle-all",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-red",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-yellow",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-green",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card-number > .collection-badge.chip > .chip-remove",
+              "minW": 7,
+              "minH": 12,
+              "opacity": 0.7,
+              "count": 17
+            },
+            {
+              "path": "div > .card-number > .chip-add",
+              "minW": 23,
+              "minH": 22,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": "div > .plate.livery-code-plate > .livery-code-input",
+              "minW": 108,
+              "minH": 17,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select.sub-select--set",
+              "minW": 154,
+              "minH": 17,
+              "opacity": 1,
+              "count": 25
+            },
+            {
+              "path": ".sub-root > .sub-seg.sub-seg--add > .sub-add",
+              "minW": 22,
+              "minH": 20,
+              "opacity": 0.45,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg.sub-seg--gear > .sub-gear",
+              "minW": 18,
+              "minH": 20,
+              "opacity": 0.3,
+              "count": 10
+            },
+            {
+              "path": "div > .accent-picker > .accent-chip",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 30
+            },
+            {
+              "path": ".card-meta > .card-meta-actions > .edit-card-btn",
+              "minW": 83,
+              "minH": 24,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".card.legend-card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 1
+            },
+            {
+              "path": ".tag-cloud > .tag.chip > .chip-remove",
+              "minW": 7,
+              "minH": 12,
+              "opacity": 0.7,
+              "count": 22
+            },
+            {
+              "path": ".card.legend-card > .tag-cloud > .chip-add",
+              "minW": 58,
+              "minH": 22,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card.legend-card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card.legend-card > .section > summary",
+              "minW": 751,
+              "minH": 35,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".section-body.gutter-layout > .gutter-figure > .change-image-btn",
+              "minW": 284,
+              "minH": 25,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-add-variant-wrap > .rs-variant-tab.rs-variant-tab--add",
+              "minW": 91,
+              "minH": 25,
+              "opacity": 0.65,
+              "count": 10
+            },
+            {
+              "path": ".rs-variant-tabs.rs-tune-tabs > .rs-variant-tab-wrap > .rs-variant-tab.rs-variant-tab--add",
+              "minW": 99,
+              "minH": 25,
+              "opacity": 0.65,
+              "count": 10
+            },
+            {
+              "path": ".tune-header > .tune-name-group > .editable.tune-name",
+              "minW": 103,
+              "minH": 35,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".tune-header > .plate > .share-code-input",
+              "minW": 108,
+              "minH": 17,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".rs-car-row > .cp-wrap > .cp-add-btn",
+              "minW": 43,
+              "minH": 19,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": "tr > td > .spec-select",
+              "minW": 123,
+              "minH": 22,
+              "opacity": 1,
+              "count": 50
+            },
+            {
+              "path": ".section-body > .kit-toggle.is-open > summary",
+              "minW": 701,
+              "minH": 39,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 0.55,
+              "count": 10
+            },
+            {
+              "path": ".kit-toggle.is-open > .kit-preset-bar > .kit-preset-trigger",
+              "minW": 681,
+              "minH": 14,
+              "opacity": 0.5,
+              "count": 10
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select",
+              "minW": 198,
+              "minH": 19,
+              "opacity": 0.65,
+              "count": 191
+            },
+            {
+              "path": ".kit-list > .up-step-row > .up-step-btn",
+              "minW": 20,
+              "minH": 20,
+              "opacity": 1,
+              "count": 120
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 701,
+              "minH": 39,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-preset-bar > .ta-preset-select",
+              "minW": 164,
+              "minH": 23,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta-preset-bar > .ta-preset-save > .ta-btn-lwb.ta-preset-btn",
+              "minW": 153,
+              "minH": 20,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero",
+              "minW": 45,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes",
+              "minW": 51,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential",
+              "minW": 74,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack",
+              "minW": 75,
+              "minH": 28,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta-left-section > .ta-val-box > .ta-val-input",
+              "minW": 50,
+              "minH": 14,
+              "opacity": 1,
+              "count": 20
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field.ta-end-field--static",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 0.35,
+              "count": 4
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 318,
+              "minH": 20,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select",
+              "minW": 154,
+              "minH": 17,
+              "opacity": 0.65,
+              "count": 15
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .chip-add",
+              "minW": 58,
+              "minH": 22,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 751,
+              "minH": 35,
+              "opacity": 1,
+              "count": 27
+            },
+            {
+              "path": ".section-body.gutter-layout > .gutter-figure.has-image > .change-image-btn",
+              "minW": 282,
+              "minH": 25,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-remove",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 0.35,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-remove",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 0.35,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs.rs-tune-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 120,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".cp-wrap > .cp-chip > .cp-clear",
+              "minW": 12,
+              "minH": 14,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select.up-inline-set",
+              "minW": 183,
+              "minH": 19,
+              "opacity": 1,
+              "count": 119
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 154,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-row.changed > .ta-right-section > .ta-end-field",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 318,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 1,
+              "count": 32
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": [
+            {
+              "path": "div > .plate.livery-code-plate > .livery-code-input",
+              "minPx": 12,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select.sub-select--set",
+              "minPx": 13,
+              "count": 25
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.anecdote-text",
+              "minPx": 15.5,
+              "count": 10
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.gutter-text",
+              "minPx": 15.5,
+              "count": 10
+            },
+            {
+              "path": ".tune-header > .plate > .share-code-input",
+              "minPx": 12,
+              "count": 10
+            },
+            {
+              "path": "tr > td > .spec-select",
+              "minPx": 13.5,
+              "count": 50
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select",
+              "minPx": 14.5,
+              "count": 191
+            },
+            {
+              "path": ".ta > .ta-preset-bar > .ta-preset-select",
+              "minPx": 10,
+              "count": 10
+            },
+            {
+              "path": ".ta-left-section > .ta-val-box > .ta-val-input",
+              "minPx": 11,
+              "count": 20
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field.ta-end-field--static",
+              "minPx": 11,
+              "count": 4
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select",
+              "minPx": 13,
+              "count": 15
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select.up-inline-set",
+              "minPx": 14.5,
+              "count": 119
+            },
+            {
+              "path": ".ta-row.changed > .ta-right-section > .ta-end-field",
+              "minPx": 11,
+              "count": 4
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field",
+              "minPx": 11,
+              "count": 32
+            }
+          ]
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 820,
+          "innerWidth": 820,
+          "items": []
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 820,
+          "innerWidth": 820,
+          "items": [
+            {
+              "path": ".kit-cat > .kit-list > li > .up-inline-select",
+              "content": 221,
+              "box": 198,
+              "pastEdgeBy": -499,
+              "culprit": null,
+              "count": 14
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select",
+              "content": 201,
+              "box": 198,
+              "pastEdgeBy": -270,
+              "culprit": null,
+              "count": 14
+            },
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 290,
+              "box": 154,
+              "pastEdgeBy": -89,
+              "culprit": null,
+              "count": 6
+            },
+            {
+              "path": ".kit-cat > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 221,
+              "box": 198,
+              "pastEdgeBy": -499,
+              "culprit": null,
+              "count": 7
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 201,
+              "box": 198,
+              "pastEdgeBy": -270,
+              "culprit": null,
+              "count": 5
+            },
+            {
+              "path": ".kit-cat.up-col3-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 201,
+              "box": 198,
+              "pastEdgeBy": -42,
+              "culprit": null,
+              "count": 2
+            }
+          ]
+        }
+      },
+      "bug": {
+        "width": 43,
+        "height": 170,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 691,
+            "left": 577,
+            "right": 769,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .bug-check > input",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip",
+              "minW": 34,
+              "minH": 18,
+              "opacity": 1,
+              "count": 15
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip",
+              "minW": 40,
+              "minH": 18,
+              "opacity": 1,
+              "count": 8
+            }
+          ],
+          "smallFonts": []
+        },
+        "theme": {
+          "fit": {
+            "top": 55,
+            "bottom": 298,
+            "left": 645,
+            "right": 769,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.theme-flyout > .theme-option",
+              "minW": 107,
+              "minH": 36,
+              "opacity": 1,
+              "count": 5
+            }
+          ],
+          "smallFonts": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 97,
+            "bottom": 410,
+            "left": 699,
+            "right": 769,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.text-size-flyout > .text-size-option",
+              "minW": 52,
+              "minH": 31,
+              "opacity": 1,
+              "count": 9
+            }
+          ],
+          "smallFonts": []
+        }
+      }
+    },
+    "1180x820": {
+      "touch": {
+        "view": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-btn--filters",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-toggle-all",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 978,
+              "minH": 35,
+              "opacity": 1,
+              "count": 26
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".section-body > .kit-toggle.is-open > summary",
+              "minW": 928,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 928,
+              "minH": 39,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero",
+              "minW": 45,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes",
+              "minW": 51,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential",
+              "minW": 74,
+              "minH": 27,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack",
+              "minW": 75,
+              "minH": 28,
+              "opacity": 1,
+              "count": 8
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 545,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 545,
+              "minH": 20,
+              "opacity": 1,
+              "count": 14
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": []
+        },
+        "edit": {
+          "smallTargets": [
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-btn--filters",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .side-bug.side-bug--collapsed > .bug-btn.bug-toggle-all",
+              "minW": 42,
+              "minH": 42,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-red",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-yellow",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": "div > .tl-dock > .tl-btn.tl-green",
+              "minW": 38,
+              "minH": 38,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card-number > .collection-badge.chip > .chip-remove",
+              "minW": 7,
+              "minH": 12,
+              "opacity": 0.7,
+              "count": 17
+            },
+            {
+              "path": "div > .card-number > .chip-add",
+              "minW": 23,
+              "minH": 22,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": "div > .plate.livery-code-plate > .livery-code-input",
+              "minW": 108,
+              "minH": 17,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select.sub-select--set",
+              "minW": 211,
+              "minH": 17,
+              "opacity": 1,
+              "count": 25
+            },
+            {
+              "path": ".sub-root > .sub-seg.sub-seg--add > .sub-add",
+              "minW": 22,
+              "minH": 20,
+              "opacity": 0.45,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg.sub-seg--gear > .sub-gear",
+              "minW": 18,
+              "minH": 20,
+              "opacity": 0.3,
+              "count": 10
+            },
+            {
+              "path": "div > .accent-picker > .accent-chip",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 30
+            },
+            {
+              "path": ".card-meta > .card-meta-actions > .edit-card-btn",
+              "minW": 83,
+              "minH": 24,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".stage > .stage-controls > .play-toggle",
+              "minW": 86,
+              "minH": 30,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".card.legend-card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 1
+            },
+            {
+              "path": ".tag-cloud > .tag.chip > .chip-remove",
+              "minW": 7,
+              "minH": 12,
+              "opacity": 0.7,
+              "count": 22
+            },
+            {
+              "path": ".card.legend-card > .tag-cloud > .chip-add",
+              "minW": 58,
+              "minH": 22,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card.legend-card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".card.legend-card > .section > summary",
+              "minW": 978,
+              "minH": 35,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".section-body.gutter-layout > .gutter-figure > .change-image-btn",
+              "minW": 284,
+              "minH": 25,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-add-variant-wrap > .rs-variant-tab.rs-variant-tab--add",
+              "minW": 91,
+              "minH": 25,
+              "opacity": 0.65,
+              "count": 10
+            },
+            {
+              "path": ".rs-variant-tabs.rs-tune-tabs > .rs-variant-tab-wrap > .rs-variant-tab.rs-variant-tab--add",
+              "minW": 99,
+              "minH": 25,
+              "opacity": 0.65,
+              "count": 10
+            },
+            {
+              "path": ".tune-header > .tune-name-group > .editable.tune-name",
+              "minW": 103,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".tune-header > .plate > .share-code-input",
+              "minW": 108,
+              "minH": 17,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".rs-car-row > .cp-wrap > .cp-add-btn",
+              "minW": 43,
+              "minH": 19,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": "tr > td > .spec-select",
+              "minW": 169,
+              "minH": 22,
+              "opacity": 1,
+              "count": 50
+            },
+            {
+              "path": ".section-body > .kit-toggle.is-open > summary",
+              "minW": 928,
+              "minH": 39,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".kit-toggle.is-open > summary > .kit-stock-btn",
+              "minW": 81,
+              "minH": 19,
+              "opacity": 0.55,
+              "count": 10
+            },
+            {
+              "path": ".kit-toggle.is-open > .kit-preset-bar > .kit-preset-trigger",
+              "minW": 908,
+              "minH": 14,
+              "opacity": 0.5,
+              "count": 10
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select",
+              "minW": 274,
+              "minH": 19,
+              "opacity": 0.65,
+              "count": 191
+            },
+            {
+              "path": ".kit-list > .up-step-row > .up-step-btn",
+              "minW": 20,
+              "minH": 20,
+              "opacity": 1,
+              "count": 120
+            },
+            {
+              "path": ".section-body > .ta-nonstock > .ta-nonstock-summary",
+              "minW": 928,
+              "minH": 39,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-preset-bar > .ta-preset-select",
+              "minW": 164,
+              "minH": 23,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta-preset-bar > .ta-preset-save > .ta-btn-lwb.ta-preset-btn",
+              "minW": 153,
+              "minH": 20,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--tires",
+              "minW": 48,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--gearing",
+              "minW": 61,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--alignment",
+              "minW": 71,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--arb",
+              "minW": 81,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--springs",
+              "minW": 59,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--damping",
+              "minW": 66,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--aero",
+              "minW": 45,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--brakes",
+              "minW": 51,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab--differential",
+              "minW": 74,
+              "minH": 27,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta > .ta-tabbar > .ta-tab-btn.ta-tab-btn--stack",
+              "minW": 75,
+              "minH": 28,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".ta-left-section > .ta-val-box > .ta-val-input",
+              "minW": 50,
+              "minH": 14,
+              "opacity": 1,
+              "count": 20
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field.ta-end-field--static",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 0.35,
+              "count": 4
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider.ta-slider--stock",
+              "minW": 545,
+              "minH": 20,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select",
+              "minW": 211,
+              "minH": 17,
+              "opacity": 0.65,
+              "count": 15
+            },
+            {
+              "path": ".card > .stage > .stage-expand",
+              "minW": 28,
+              "minH": 28,
+              "opacity": 0,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .chip-add",
+              "minW": 58,
+              "minH": 22,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .tag-cloud > .build-it",
+              "minW": 111,
+              "minH": 35,
+              "opacity": 1,
+              "count": 9
+            },
+            {
+              "path": ".card > .section > summary",
+              "minW": 978,
+              "minH": 35,
+              "opacity": 1,
+              "count": 27
+            },
+            {
+              "path": ".section-body.gutter-layout > .gutter-figure.has-image > .change-image-btn",
+              "minW": 282,
+              "minH": 25,
+              "opacity": 1,
+              "count": 18
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 178,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-remove",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 0.35,
+              "count": 1
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-tab",
+              "minW": 99,
+              "minH": 26,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs > .rs-variant-tab-wrap > .rs-variant-remove",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 0.35,
+              "count": 2
+            },
+            {
+              "path": ".rs-variant-tabs.rs-tune-tabs > .rs-variant-tab-wrap.rs-variant-tab-wrap--active > .rs-variant-tab.rs-variant-tab--active",
+              "minW": 120,
+              "minH": 26,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".cp-wrap > .cp-chip > .cp-clear",
+              "minW": 12,
+              "minH": 14,
+              "opacity": 1,
+              "count": 1
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select.up-inline-set",
+              "minW": 259,
+              "minH": 19,
+              "opacity": 1,
+              "count": 119
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--tires > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--aero > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--alignment > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 3
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--differential > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 5
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--arb > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--brakes > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--springs > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-nonstock-tab-block.ta-tab--damping > .ta-nonstock-subgroup > .ta-nonstock-line",
+              "minW": 165,
+              "minH": 21,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-row.changed > .ta-right-section > .ta-end-field",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 1,
+              "count": 4
+            },
+            {
+              "path": ".ta-right-section > .ta-track-wrap > .ta-slider",
+              "minW": 545,
+              "minH": 20,
+              "opacity": 1,
+              "count": 2
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field",
+              "minW": 48,
+              "minH": 22,
+              "opacity": 1,
+              "count": 32
+            },
+            {
+              "path": ".catalog-credits > p > a",
+              "minW": 60,
+              "minH": 13,
+              "opacity": 1,
+              "count": 2
+            }
+          ],
+          "smallFonts": [
+            {
+              "path": "div > .plate.livery-code-plate > .livery-code-input",
+              "minPx": 12,
+              "count": 10
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select.sub-select--set",
+              "minPx": 13,
+              "count": 25
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.anecdote-text",
+              "minPx": 15.5,
+              "count": 10
+            },
+            {
+              "path": ".section > .section-body.gutter-layout > .editable.gutter-text",
+              "minPx": 15.5,
+              "count": 10
+            },
+            {
+              "path": ".tune-header > .plate > .share-code-input",
+              "minPx": 12,
+              "count": 10
+            },
+            {
+              "path": "tr > td > .spec-select",
+              "minPx": 13.5,
+              "count": 50
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select",
+              "minPx": 14.5,
+              "count": 191
+            },
+            {
+              "path": ".ta > .ta-preset-bar > .ta-preset-select",
+              "minPx": 10,
+              "count": 10
+            },
+            {
+              "path": ".ta-left-section > .ta-val-box > .ta-val-input",
+              "minPx": 11,
+              "count": 20
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field.ta-end-field--static",
+              "minPx": 11,
+              "count": 4
+            },
+            {
+              "path": ".sub-root > .sub-seg > .sub-select",
+              "minPx": 13,
+              "count": 15
+            },
+            {
+              "path": ".kit-list > li > .up-inline-select.up-inline-set",
+              "minPx": 14.5,
+              "count": 119
+            },
+            {
+              "path": ".ta-row.changed > .ta-right-section > .ta-end-field",
+              "minPx": 11,
+              "count": 4
+            },
+            {
+              "path": ".ta-row > .ta-right-section > .ta-end-field",
+              "minPx": 11,
+              "count": 32
+            }
+          ]
+        }
+      },
+      "media": {
+        "hoverNone": true,
+        "coarse": true
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 1180,
+          "innerWidth": 1180,
+          "items": []
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 1180,
+          "innerWidth": 1180,
+          "items": [
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 290,
+              "box": 211,
+              "pastEdgeBy": -89,
+              "culprit": null,
+              "count": 4
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 297,
+              "box": 274,
+              "pastEdgeBy": -346,
+              "culprit": null,
+              "count": 1
+            }
+          ]
+        }
+      },
+      "bug": {
+        "width": 43,
+        "height": 170,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 691,
+            "left": 880,
+            "right": 1072,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .bug-check > input",
+              "minW": 14,
+              "minH": 14,
+              "opacity": 1,
+              "count": 10
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-color-grid > .filter-color-chip",
+              "minW": 34,
+              "minH": 18,
+              "opacity": 1,
+              "count": 15
+            },
+            {
+              "path": ".bug-flyout.drawer_menu_panel > .filter-tune-grid > .filter-color-chip",
+              "minW": 40,
+              "minH": 18,
+              "opacity": 1,
+              "count": 8
+            }
+          ],
+          "smallFonts": []
+        },
+        "theme": {
+          "fit": {
+            "top": 55,
+            "bottom": 298,
+            "left": 948,
+            "right": 1072,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.theme-flyout > .theme-option",
+              "minW": 107,
+              "minH": 36,
+              "opacity": 1,
+              "count": 5
+            }
+          ],
+          "smallFonts": []
+        },
+        "text-size": {
+          "fit": {
+            "top": 97,
+            "bottom": 410,
+            "left": 1002,
+            "right": 1072,
+            "inside": true,
+            "scrollsInside": false
+          },
+          "smallTargets": [
+            {
+              "path": "div > .bug-flyout.text-size-flyout > .text-size-option",
+              "minW": 52,
+              "minH": 31,
+              "opacity": 1,
+              "count": 9
+            }
+          ],
+          "smallFonts": []
+        }
+      }
+    },
+    "1440x900": {
+      "touch": false,
+      "media": {
+        "hoverNone": false,
+        "coarse": false
+      },
+      "shots": [
+        "1-page-top",
+        "2-card-collapsed",
+        "3-card-expanded",
+        "4-tuning",
+        "5-card-edit"
+      ],
+      "errors": [],
+      "overflow": {
+        "view": {
+          "sideways": false,
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "items": []
+        },
+        "edit": {
+          "sideways": false,
+          "scrollWidth": 1440,
+          "innerWidth": 1440,
+          "items": [
+            {
+              "path": "div > .sub-root > .sub-seg > .sub-select.sub-select--set",
+              "content": 290,
+              "box": 211,
+              "pastEdgeBy": -89,
+              "culprit": null,
+              "count": 4
+            },
+            {
+              "path": ".kit-cat.up-col2-break > .kit-list > li > .up-inline-select.up-inline-set",
+              "content": 297,
+              "box": 274,
+              "pastEdgeBy": -346,
+              "culprit": null,
+              "count": 1
+            }
+          ]
+        }
+      },
+      "bug": {
+        "width": 43,
+        "height": 170,
+        "overCardPx": 0
+      },
+      "flyouts": {
+        "filters": {
+          "fit": {
+            "top": 13,
+            "bottom": 691,
+            "left": 1010,
+            "right": 1202,
+            "inside": true,
+            "scrollsInside": false
+          }
+        },
+        "theme": {
+          "fit": {
+            "top": 55,
+            "bottom": 298,
+            "left": 1078,
+            "right": 1202,
+            "inside": true,
+            "scrollsInside": false
+          }
+        },
+        "text-size": {
+          "fit": {
+            "top": 97,
+            "bottom": 410,
+            "left": 1132,
+            "right": 1202,
+            "inside": true,
+            "scrollsInside": false
+          }
+        }
+      }
+    }
+  }
+}

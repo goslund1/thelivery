@@ -650,4 +650,14 @@ function rotHandleStyle(box: TextBox) {
 .ogm-btn--add  { border-color: var(--accent, #e8c84a); color: var(--accent, #e8c84a); }
 .ogm-btn--delete { border-color: var(--highlight, #e8748a); color: var(--highlight, #e8748a); }
 .ogm-btn--close { margin-left: auto; font-size: 1rem; }
+
+/* Touch (phones and iPads): see the touch block in styles/responsive.css */
+@media (hover: none), (pointer: coarse) {
+  /* T5 dragging a box or handle moves it instead of scrolling the page */
+  .ogm-box,
+  .ogm-handle,
+  .ogm-rot-handle {
+    touch-action: none;
+  }
+}
 </style>

@@ -24,9 +24,10 @@ body {
 @media (min-width: 641px) and (max-width: 1066px) {
   body {
     padding-left: max(24px, calc((100vw - 980px) / 2), env(safe-area-inset-left));
-    padding-right: max(43px, env(safe-area-inset-right));
+    padding-right: max(var(--bug-w), env(safe-area-inset-right));
   }
 }
+:root { --bug-w: 43px; }   /* side bug width; 45px on touch (44px buttons + border) */
 
 /* ── Phone layout ── */
 @media (max-width: 640px) {
@@ -79,4 +80,82 @@ body {
   /* L5 type scale */
   .card-title { font-size: clamp(28px, 8.5vw, 42px); }
   .tune-name { font-size: 18px; }
+}
+
+/* ── Touch (phones and iPads alike) ──────────────────────────────────────
+   Capability, not width: a desktop mouse never matches. Component-owned
+   classes get their touch rules in their own scoped <style>; this block
+   covers catalog.css classes. Two standard patterns:
+   • grow the control to a 44px minimum where it has room (rows, tabs, chips);
+   • an invisible 44×44 hit area (inset ::after) for a lone control whose
+     drawn size matters and that has nothing else within reach. */
+@media (hover: none), (pointer: coarse) {
+  :root { --bug-w: 45px; }
+
+  /* T2 hover-only controls are always visible */
+  .nc-thumb-x { display: block; }
+  .nc-thumb-star { display: flex; }
+
+  /* T3 grow */
+  .bug-btn { width: 44px; height: 44px; }
+  .theme-option,
+  .text-size-option,
+  .bug-check,
+  .play-toggle,
+  .build-it,
+  .change-image-btn,
+  .section summary,
+  .kit-toggle > summary { min-height: 44px; }
+  .play-toggle,
+  .build-it { display: inline-flex; align-items: center; }
+  body.editing-mode .chip-add {
+    display: inline-flex;
+    align-items: center;
+    min-width: 44px;
+    height: 44px;
+  }
+  /* The × gets a 44px zone at the chip's end, so the chip itself grows to fit
+     and centres its label against it. */
+  body.editing-mode .chip {
+    display: inline-flex;
+    align-items: center;
+  }
+  body.editing-mode .chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    margin-left: 2px;
+    vertical-align: middle;
+  }
+
+  /* T3 hit areas for the lone close buttons */
+  .image-picker-close,
+  .conf-close { position: relative; }
+  .lightbox-close::after,
+  .image-picker-close::after,
+  .conf-close::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+
+  /* T4 no field under 16px, or iOS Safari zooms the page on focus. :where keeps
+     this at element specificity so any class that sets a size wins; the classes
+     under 16px are raised one by one (here or in their component). An editable
+     span inherits its font, so 1em keeps a big field big. */
+  :where(input:not([type=range], [type=checkbox], [type=radio], [type=file]), select, textarea) {
+    font-size: max(16px, 1em);
+  }
+  :where([contenteditable=true]) { font-size: max(16px, 1em); }
+  .gutter-text[contenteditable=true],
+  .anecdote-text[contenteditable=true] { font-size: max(16px, 1em); }
+
+  /* T5 a vertical swipe that starts on a slider scrolls the page */
+  input[type=range] { touch-action: pan-y; }
 }

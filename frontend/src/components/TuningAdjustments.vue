@@ -2602,4 +2602,19 @@ async function submitSuggestion() {
   align-items: center;
   gap: 10px;
 }
+
+/* Touch (phones and iPads): see the touch block in styles/responsive.css */
+@media (hover: none), (pointer: coarse) {
+  /* Tab bar and header controls. The row internals (value box, Low/High
+     fields, slider) are rebuilt for touch with the two-line rows in Phase 3. */
+  .ta-tab-btn,
+  .ta-nonstock-summary,
+  .ta-preset-btn {
+    min-height: 44px;
+  }
+  .ta-preset-select {
+    min-height: 44px;
+    font-size: 16px;
+  }
+}
 </style>

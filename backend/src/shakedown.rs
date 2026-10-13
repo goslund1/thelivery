@@ -627,7 +627,7 @@ fn check_change(c: &ChangeIn, now: i64) -> Result<Vec<FieldIn>, ApiError> {
         return Err(bad("a change needs a cid (and a device) of at most 64 characters"));
     }
     let allowed: &[&str] = match c.kind.as_str() {
-        "row" if row_id_ok(&c.id) => &["verdict", "skipped", "note", "wish", "date"],
+        "row" if row_id_ok(&c.id) => &["verdict", "skipped", "addressed", "note", "wish", "date"],
         "pane" if pane_id_ok(&c.id) => &["note", "date"],
         "row" | "pane" => return Err(bad(format!("\"{}\" isn't a {} id", c.id, c.kind))),
         _ => return Err(bad("a change is to a row or a pane")),
@@ -644,7 +644,7 @@ fn check_change(c: &ChangeIn, now: i64) -> Result<Vec<FieldIn>, ApiError> {
         let at = f.get("at").and_then(Value::as_i64).filter(|a| *a > 0).ok_or_else(|| bad(format!("{name} has no time")))?;
         let ok = match name.as_str() {
             "verdict" => matches!(v.as_str(), Some("" | "passed" | "failed" | "partly")),
-            "skipped" => v.is_boolean(),
+            "skipped" | "addressed" => v.is_boolean(),
             "note" | "wish" => v.as_str().is_some_and(|s| text_ok(s, MAX_FIELD)),
             "date" => v.as_str().is_some_and(|s| text_ok(s, 32)),
             _ => false,
@@ -759,10 +759,19 @@ struct SendReq {
     label: String,
     #[serde(default)]
     device: String,
+    /// Which screen it's for: "phone" (Send to Phone) or "laptop" (the
+    /// phone's Show on Laptop). Missing: the phone, as before.
+    #[serde(default)]
+    to: Option<String>,
+    /// The filter the sending screen had on, for the other to take.
+    #[serde(default)]
+    show: Option<String>,
 }
 
-/// The laptop sends a section, pane, window or row to the phone. The run
-/// keeps the last send, so a phone that wasn't open goes there next time.
+/// One screen sends a section, pane, window or row to the other: the laptop
+/// to the phone, or the phone to the laptop. The run keeps the last send to
+/// the phone, so a phone that wasn't open goes there next time; a send to the
+/// laptop is only announced (the laptop goes there if it's open).
 async fn send_to_phone(
     Admin(username): Admin,
     State(st): State<AppState>,
@@ -774,12 +783,16 @@ async fn send_to_phone(
         || !text_ok(&s.label, 300)
         || !text_ok(&s.device, 64)
         || s.current.as_deref().is_some_and(|c| !row_id_ok(c))
+        || !matches!(s.to.as_deref(), None | Some("phone" | "laptop"))
+        || s.show.as_deref().is_some_and(|f| !name_ok(f, 32))
     {
         return Err(bad("a send names a way through, a group, and maybe a row"));
     }
     summary(&st, &run_id).await?;
     let mut tx = st.pool.begin().await.map_err(db)?;
-    let body = json!({ "mode": s.mode, "group": s.group, "current": s.current, "label": s.label, "device": s.device });
+    let to = s.to.unwrap_or_else(|| "phone".into());
+    let body = json!({ "mode": s.mode, "group": s.group, "current": s.current, "label": s.label, "device": s.device,
+                       "to": to, "show": s.show });
     let seq: i64 = sqlx::query_scalar(
         "INSERT INTO shakedown_changes (run_id, cid, kind, fields, device, username) VALUES (?, ?, 'send', ?, ?, ?) RETURNING seq",
     )
@@ -791,15 +804,17 @@ async fn send_to_phone(
     .fetch_one(&mut *tx)
     .await
     .map_err(db)?;
-    let mut kept = body.clone();
-    kept["seq"] = json!(seq);
-    kept["at"] = json!(iso_utc(now_secs()));
-    sqlx::query("UPDATE shakedown_runs SET send_json = ? WHERE id = ?")
-        .bind(kept.to_string())
-        .bind(&run_id)
-        .execute(&mut *tx)
-        .await
-        .map_err(db)?;
+    if to == "phone" {
+        let mut kept = body.clone();
+        kept["seq"] = json!(seq);
+        kept["at"] = json!(iso_utc(now_secs()));
+        sqlx::query("UPDATE shakedown_runs SET send_json = ? WHERE id = ?")
+            .bind(kept.to_string())
+            .bind(&run_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(db)?;
+    }
     tx.commit().await.map_err(db)?;
     let mut event = body;
     event["runId"] = json!(run_id);
@@ -1087,6 +1102,8 @@ mod tests {
             ("a verdict on a pane", change("x4", "pane", "P-01", json!({ "verdict": { "v": "passed", "at": 1 } }), "")),
             ("no time", change("x5", "row", "UP-001", json!({ "note": { "v": "n" } }), "")),
             ("a note too long", change("x6", "row", "UP-001", json!({ "note": { "v": "n".repeat(MAX_FIELD + 1), "at": 1 } }), "")),
+            ("addressed that isn't true or false", change("x8", "row", "UP-001", json!({ "addressed": { "v": "yes", "at": 1 } }), "")),
+            ("addressed on a pane", change("x9", "pane", "P-01", json!({ "addressed": { "v": true, "at": 1 } }), "")),
         ] {
             let (s, _) = call(&app, "POST", &url, &[bearer(&t)], Some(json!({ "changes": [c] }))).await;
             assert_eq!(s, StatusCode::BAD_REQUEST, "{why}");
@@ -1094,6 +1111,12 @@ mod tests {
         let (s, _) = call(&app, "POST", "/api/shakedown/runs/no-such-run/changes", &[bearer(&t)],
             Some(json!({ "changes": [change("x7", "row", "UP-001", json!({ "note": { "v": "n", "at": 1 } }), "")] }))).await;
         assert_eq!(s, StatusCode::NOT_FOUND);
+        // Addressed (the box, beside the dot) is kept with the verdict.
+        let (s, r) = call(&app, "POST", &url, &[bearer(&t)], Some(json!({ "changes": [change("ok1", "row", "UP-001",
+            json!({ "verdict": { "v": "failed", "at": 5 }, "addressed": { "v": true, "at": 5 } }), "phone")] }))).await;
+        assert_eq!(s, StatusCode::OK, "{r}");
+        let (_, whole) = call(&app, "GET", &format!("/api/shakedown/runs/{}", run["id"].as_str().unwrap()), &[bearer(&t)], None).await;
+        assert_eq!(whole["answers"]["UP-001"], json!({ "verdict": "failed", "addressed": true }));
     }
 
     #[tokio::test]
@@ -1127,6 +1150,21 @@ mod tests {
         let bad = call(&app, "POST", &format!("/api/shakedown/runs/{id}/send"), &[bearer(&t)],
             Some(json!({ "mode": "everything", "group": "s:Viewer" }))).await;
         assert_eq!(bad.0, StatusCode::BAD_REQUEST);
+        assert_eq!(run["send"]["to"], "phone", "a send with no direction is the phone's, as before");
+
+        // The phone's Show on Laptop: announced, never kept as the phone's next place.
+        let (s, back) = call(&app, "POST", &format!("/api/shakedown/runs/{id}/send"), &[bearer(&t)],
+            Some(json!({ "mode": "sections", "group": "s:Viewer", "current": "UP-001", "label": "UP-001",
+                         "device": "phone", "to": "laptop", "show": "red" }))).await;
+        assert_eq!(s, StatusCode::OK, "{back}");
+        let (_, run) = call(&app, "GET", &format!("/api/shakedown/runs/{id}"), &[bearer(&t)], None).await;
+        assert_eq!(run["send"]["seq"], sent["seq"], "the phone's next place is still the laptop's last send");
+        assert_eq!(run["seq"], back["seq"]);
+        for wrong in [json!({ "mode": "sections", "group": "s:Viewer", "to": "tablet" }),
+                      json!({ "mode": "sections", "group": "s:Viewer", "show": "x".repeat(33) })] {
+            let r = call(&app, "POST", &format!("/api/shakedown/runs/{id}/send"), &[bearer(&t)], Some(wrong)).await;
+            assert_eq!(r.0, StatusCode::BAD_REQUEST);
+        }
     }
 
     #[tokio::test]

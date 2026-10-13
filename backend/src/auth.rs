@@ -26,13 +26,18 @@ use crate::state::{err, ApiError, AppState};
 pub struct Claims {
     sub: String, // username
     exp: usize,  // expiry (unix seconds)
+    /// Absent on The Livery's own tokens. Another sign-in that shares the
+    /// secret marks its tokens with a kind (Shakedown's: "shakedown",
+    /// src/shakedown.rs), and AuthUser refuses any token that has one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    kind: Option<String>,
 }
 
 pub const TOKEN_TTL_SECS: u64 = 7 * 24 * 3600; // 7 days
 
 pub fn make_token(username: &str, secret: &[u8]) -> anyhow::Result<String> {
     let exp = (SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + TOKEN_TTL_SECS) as usize;
-    let claims = Claims { sub: username.to_string(), exp };
+    let claims = Claims { sub: username.to_string(), exp, kind: None };
     Ok(encode(&Header::default(), &claims, &EncodingKey::from_secret(secret))?)
 }
 
@@ -85,6 +90,10 @@ impl FromRequestParts<AppState> for AuthUser {
             &Validation::default(),
         )
         .map_err(|_| err(StatusCode::UNAUTHORIZED, "invalid or expired token"))?;
+        // A Shakedown sign-in (90 days) never edits The Livery.
+        if data.claims.kind.is_some() {
+            return Err(err(StatusCode::UNAUTHORIZED, "not a Livery sign-in"));
+        }
         let username = data.claims.sub;
         let row = sqlx::query("SELECT role, must_change_password FROM users WHERE username = ?")
             .bind(&username)
@@ -151,7 +160,28 @@ pub async fn login(
     headers: axum::http::HeaderMap,
     Json(req): Json<LoginReq>,
 ) -> Result<Json<Value>, ApiError> {
-    let ip_hash = crate::suggestions::anonymize_ip(&crate::suggestions::client_ip(&headers, &addr));
+    let (role, must_change) = check_credentials(&st, &addr, &headers, &req.username, &req.password).await?;
+    let token = make_token(&req.username, &st.jwt_secret)
+        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    Ok(Json(json!({
+        "token": token,
+        "username": req.username,
+        "role": role,
+        "mustChangePassword": must_change,
+    })))
+}
+
+/// The password check behind every sign-in (The Livery's and Shakedown's):
+/// the rate limit, Argon2 verification, equal work for unknown users, and
+/// the failure log. Returns the user's role and must-change flag.
+pub async fn check_credentials(
+    st: &AppState,
+    addr: &std::net::SocketAddr,
+    headers: &axum::http::HeaderMap,
+    username: &str,
+    password: &str,
+) -> Result<(String, bool), ApiError> {
+    let ip_hash = crate::suggestions::anonymize_ip(&crate::suggestions::client_ip(headers, addr));
 
     let burst = failed_logins_since(&st.pool, &ip_hash, "-5 minutes")
         .await
@@ -164,7 +194,7 @@ pub async fn login(
     }
 
     let row = sqlx::query("SELECT password_hash, role, must_change_password FROM users WHERE username = ?")
-        .bind(&req.username)
+        .bind(username)
         .fetch_optional(&st.pool)
         .await
         .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
@@ -174,18 +204,18 @@ pub async fn login(
         let must_change: bool = r.get::<i64, _>("must_change_password") != 0;
         PasswordHash::new(&r.get::<String, _>("password_hash")).ok().and_then(|ph| {
             Argon2::default()
-                .verify_password(req.password.as_bytes(), &ph)
+                .verify_password(password.as_bytes(), &ph)
                 .is_ok()
                 .then_some((role, must_change))
         })
     });
-    let Some((role, must_change)) = verified else {
+    let Some(found) = verified else {
         if !user_known {
             // Burn the same Argon2 work an unknown username skipped, so
             // response timing can't distinguish "no such user" from
             // "wrong password" (username enumeration).
             let salt = SaltString::generate(&mut OsRng);
-            let _ = Argon2::default().hash_password(req.password.as_bytes(), &salt);
+            let _ = Argon2::default().hash_password(password.as_bytes(), &salt);
         }
         let _ = sqlx::query("INSERT INTO login_rate_log (ip_hash) VALUES (?)")
             .bind(&ip_hash)
@@ -198,14 +228,7 @@ pub async fn login(
             .await;
         return Err(err(StatusCode::UNAUTHORIZED, "invalid credentials"));
     };
-    let token = make_token(&req.username, &st.jwt_secret)
-        .map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))?;
-    Ok(Json(json!({
-        "token": token,
-        "username": req.username,
-        "role": role,
-        "mustChangePassword": must_change,
-    })))
+    Ok(found)
 }
 
 #[derive(Deserialize)]
@@ -453,6 +476,7 @@ mod tests {
             db_path: std::env::temp_dir().join("unused.db"),
             jwt_secret: Arc::new(b"test-secret".to_vec()),
             site_url: String::new(),
+            shakedown: crate::shakedown::live(),
         };
         let auth = AuthUser { username: "geoff".into(), role: "editor".into() };
         change_password(

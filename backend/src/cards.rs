@@ -916,6 +916,7 @@ mod tests {
             db_path: std::env::temp_dir().join("unused.db"),
             jwt_secret: std::sync::Arc::new(b"test-secret".to_vec()),
             site_url: String::new(),
+            shakedown: crate::shakedown::live(),
         }
     }
 

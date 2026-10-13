@@ -82,6 +82,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/shakedown/runs/:id", get(get_run).patch(rename_run))
         .route("/api/shakedown/runs/:id/changes", post(post_changes))
         .route("/api/shakedown/runs/:id/send", post(send_to_phone))
+        .route("/api/shakedown/runs/:id/look", post(look))
         .route("/api/shakedown/runs/:id/counts", put(put_counts))
         .route("/api/shakedown/events", get(events))
 }
@@ -1035,9 +1036,68 @@ async fn send_to_phone(
     Ok(Json(json!({ "seq": seq })))
 }
 
+#[derive(Deserialize)]
+struct LookReq {
+    /// "moving" (under the moving loupe), "selected" (let go on it),
+    /// "clicked" (a ⌘⌥-click) or "off" (the loupe put away).
+    state: String,
+    /// The control's name; missing for an unnamed view.
+    #[serde(default)]
+    control: Option<String>,
+    #[serde(default)]
+    kind: String,
+    #[serde(default, rename = "className")]
+    class_name: String,
+    /// The check map's pane, and its name.
+    #[serde(default)]
+    pane: Option<String>,
+    #[serde(default, rename = "paneName")]
+    pane_name: String,
+    /// The app's own pane around it.
+    #[serde(default, rename = "appPane")]
+    app_pane: String,
+    /// The rows and parts it answers, in checklist order.
+    #[serde(default)]
+    rows: Vec<String>,
+    #[serde(default)]
+    device: String,
+}
+
+/// What a test build's loupe is on (Shakedown's B-20, stage B): announced
+/// for a phone in Inspector to follow, never kept, like a send to the
+/// laptop. The test build posts once the loupe settles, not on every move.
+async fn look(
+    Answerer(_): Answerer,
+    State(st): State<AppState>,
+    Path(run_id): Path<String>,
+    Json(l): Json<LookReq>,
+) -> Result<Json<Value>, ApiError> {
+    if !matches!(l.state.as_str(), "moving" | "selected" | "clicked" | "off")
+        || l.control.as_deref().is_some_and(|c| !name_ok(c, 200))
+        || !text_ok(&l.kind, 200)
+        || !text_ok(&l.class_name, 200)
+        || !text_ok(&l.app_pane, 200)
+        || !text_ok(&l.pane_name, 300)
+        || l.pane.as_deref().is_some_and(|p| !pane_id_ok(p))
+        || l.rows.len() > 200
+        || l.rows.iter().any(|r| !row_id_ok(r))
+        || !text_ok(&l.device, 64)
+    {
+        return Err(bad("a look names a state, and maybe a control, its pane and its rows"));
+    }
+    summary(&st, &run_id).await?;
+    announce(
+        &st,
+        "look",
+        json!({ "runId": run_id, "state": l.state, "control": l.control, "kind": l.kind, "className": l.class_name,
+                "pane": l.pane, "paneName": l.pane_name, "appPane": l.app_pane, "rows": l.rows, "device": l.device }),
+    );
+    Ok(Json(json!({})))
+}
+
 // --- The live channel -----------------------------------------------------------
 
-/// Server-sent events for every open run: hello, change, run, send (and
+/// Server-sent events for every open run: hello, change, run, send, look (and
 /// lagged, when a slow page missed some: it fetches its run again).
 async fn events(
     _: Answerer,
@@ -1141,6 +1201,48 @@ mod tests {
 
     fn change(cid: &str, kind: &str, id: &str, fields: Value, device: &str) -> Value {
         json!({ "cid": cid, "kind": kind, "id": id, "fields": fields, "device": device })
+    }
+
+    #[tokio::test]
+    async fn a_look_is_announced_and_never_kept() {
+        let (app, st) = setup().await;
+        add_user(&st, "jason", "admin", None, false).await;
+        let t = token("jason");
+        let (_, made) = call(&app, "POST", "/api/shakedown/keys", &[bearer(&t)], Some(json!({ "label": "UP", "kind": "test" }))).await;
+        let key = ("x-shakedown-key", made["key"].as_str().unwrap().to_string());
+        let (_, upload) = call(&app, "POST", "/api/shakedown/keys", &[bearer(&t)], Some(json!({ "label": "Mac" }))).await;
+        let upload = ("x-shakedown-key", upload["key"].as_str().unwrap().to_string());
+        let run = new_run(&app, &t, "UP scaler").await;
+        let id = run["id"].as_str().unwrap();
+        let seq_before = run_seq(&st, id).await.unwrap();
+        let mut rx = st.shakedown.subscribe();
+
+        let look = json!({ "state": "selected", "control": "upPlay", "kind": "AXButton", "className": "NSButton",
+                           "pane": "P-05", "paneName": "The preview", "appPane": "preview", "rows": ["UP-001", "UP-001.1"], "device": "test build" });
+        let (s, r) = call(&app, "POST", &format!("/api/shakedown/runs/{id}/look"), &[key.clone()], Some(look)).await;
+        assert_eq!(s, StatusCode::OK, "{r}");
+        let ev = rx.try_recv().unwrap();
+        assert_eq!(ev.name, "look");
+        assert_eq!(ev.data["runId"], id);
+        assert_eq!(ev.data["control"], "upPlay");
+        assert_eq!(ev.data["rows"], json!(["UP-001", "UP-001.1"]));
+        // Not kept: no change, no seq.
+        assert_eq!(run_seq(&st, id).await.unwrap(), seq_before);
+
+        // An unnamed view, and the loupe put away.
+        let (s, _) = call(&app, "POST", &format!("/api/shakedown/runs/{id}/look"), &[bearer(&t)],
+            Some(json!({ "state": "moving", "className": "NSView", "appPane": "list" }))).await;
+        assert_eq!(s, StatusCode::OK);
+        let (s, _) = call(&app, "POST", &format!("/api/shakedown/runs/{id}/look"), &[key.clone()], Some(json!({ "state": "off" }))).await;
+        assert_eq!(s, StatusCode::OK);
+
+        // Checked; an upload key never looks; an unknown run is said.
+        for bad_look in [json!({ "state": "hover" }), json!({ "state": "selected", "rows": ["not a row"] }),
+                         json!({ "state": "selected", "pane": "pane five" }), json!({ "state": "selected", "control": "" })] {
+            assert_eq!(call(&app, "POST", &format!("/api/shakedown/runs/{id}/look"), &[key.clone()], Some(bad_look)).await.0, StatusCode::BAD_REQUEST);
+        }
+        assert_eq!(call(&app, "POST", &format!("/api/shakedown/runs/{id}/look"), &[upload], Some(json!({ "state": "off" }))).await.0, StatusCode::UNAUTHORIZED);
+        assert_eq!(call(&app, "POST", "/api/shakedown/runs/nope/look", &[key], Some(json!({ "state": "off" }))).await.0, StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]

@@ -67,6 +67,7 @@ the file, or else its last content change.
 | `2026-10-09-bottom-bar-and-standard.md` | The bottom bar, star and Playing pill work order (Parts A–C), and thelivery brought to the Projects standard | `spec/status.md` |
 | `2026-10-09-aar.md` | AAR: Mobile & Touch work order, phases 0–6 | — |
 | `2026-10-09-plan-completed.md` | Finished items from `docs/plan.md` dated 2026-10-09, moved word for word at the split | `spec/status.md`, `spec/backlog.md` |
+| `2026-10-12-shakedown-store.md` | Shakedown's store (`/api/shakedown/`, admin only, its own 90-day sign-in) built and deployed, after Geoff's backup | `spec/status.md` |
 
 ## Verbatim copies
 

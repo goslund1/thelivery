@@ -30,6 +30,13 @@ bar, star and Playing pill work order
 - Checked in the harness (`spec/mobile-pass/partA…partC`), 1440×900
   identical to `partA-base`. Not yet checked on a device.
 
+**Shakedown's store** (deployed 2026-10-12, `main` at `4730809`):
+`/api/shakedown/`, admin only, with its own 90-day sign-in that The
+Livery's routes refuse; Shakedown's page at `/shakedown/` is served by
+Geoff's Caddy (`spec/history/2026-10-12-shakedown-store.md`). The deploy
+keeps no copy of `data.db` (B-18): ask Geoff for a backup before any
+deploy that brings a migration.
+
 **Docs** follow the Projects standard since 2026-10-09: `docs/` is
 `spec/`, finished work is in `spec/history/`, open work in
 `spec/backlog.md`.

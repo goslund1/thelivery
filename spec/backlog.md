@@ -4,7 +4,7 @@ Open items only, one line each. A finished item leaves this file: its
 story goes to the day's file in `spec/history/`. Split out of
 `docs/plan.md` on 2026-10-09 (frozen: `spec/history/verbatim/2026-10-09-plan.md`).
 
-Next free ID: B-18
+Next free ID: B-19
 
 ## Next
 
@@ -35,6 +35,7 @@ Next free ID: B-18
 ## From the Shakedown hosting order, 2026-10-12
 
 - **B-17** **`deploy/setup-caddy.sh` would wipe Shakedown's path if rerun.** It writes the whole Caddyfile (The Livery's site only), so running it again on the droplet would overwrite Geoff's hand-set `/shakedown/` setup (Shakedown's page, served from `/srv/shakedown`, live since 2026-10-12). Caddy on the droplet is Geoff's, set by hand; nothing of ours writes it. Updating the script to match is Geoff's (Jason, 2026-10-12). Until then, don't rerun it.
+- **B-18** **The deploy keeps no copy of `data.db`** (found 2026-10-12, before Shakedown's migration). `remote-deploy.sh` restarts the service, whose start runs new migrations on the live database; `rollback.sh` only repoints the binary. After a migration the older binary would likely refuse the database (sqlx won't run against a migration it doesn't know: Conjecture, not tried), so a rollback needs the old database too. A `.backup` before the restart in `remote-deploy.sh` would make one each deploy. For Geoff and Jason.
 
 ## Deferred
 

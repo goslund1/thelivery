@@ -741,8 +741,17 @@ async fn post_changes(
         applied.push(c.cid.clone());
     }
     tx.commit().await.map_err(db)?;
-    for e in events {
-        announce(&st, "change", e);
+    // Several changes in one post go as one event: WebKit hands a page only
+    // the first of several events that arrive together, and holds the rest
+    // until the next ping, 15 s on (measured 2026-10-13, Shakedown's
+    // e2e-hosted, a batch of two). One change goes as it always has.
+    if events.len() > 1 {
+        let device = events[0]["device"].clone();
+        announce(&st, "changes", json!({ "runId": run_id, "device": device, "changes": events }));
+    } else {
+        for e in events {
+            announce(&st, "change", e);
+        }
     }
     Ok(Json(json!({ "seq": run_seq(&st, &run_id).await?, "applied": applied, "ignored": ignored })))
 }
@@ -1206,5 +1215,16 @@ mod tests {
         call(&app, "POST", &format!("/api/shakedown/runs/{id}/send"), &[bearer(&t)],
             Some(json!({ "mode": "panes", "group": "p:P-05", "label": "P-05" }))).await;
         more(&mut body, &mut seen, "event: send").await;
+
+        // Several in one post: one event holding them all.
+        call(&app, "POST", &format!("/api/shakedown/runs/{id}/changes"), &[bearer(&t)],
+            Some(json!({ "changes": [
+                change("e2", "row", "UP-001", json!({ "addressed": { "v": true, "at": 20 } }), "phone"),
+                change("e3", "row", "UP-002", json!({ "verdict": { "v": "failed", "at": 20 } }), "phone"),
+            ] }))).await;
+        more(&mut body, &mut seen, "event: changes").await;
+        more(&mut body, &mut seen, "\"UP-002\"").await;
+        let tail = &seen[seen.find("event: changes").unwrap()..];
+        assert!(tail.contains("\"UP-001\"") && !tail.contains("event: change\n"), "{tail}");
     }
 }

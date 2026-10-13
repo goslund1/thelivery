@@ -30,10 +30,13 @@ bar, star and Playing pill work order
 - Checked in the harness (`spec/mobile-pass/partA…partC`), 1440×900
   identical to `partA-base`. Not yet checked on a device.
 
-**Shakedown's store** (deployed 2026-10-12, `main` at `4730809`):
+**Shakedown's store** (`main` at `5a93dfd`, deployed 2026-10-13):
 `/api/shakedown/`, admin only, with its own 90-day sign-in that The
-Livery's routes refuse; Shakedown's page at `/shakedown/` is served by
-Geoff's Caddy (`spec/history/2026-10-12-shakedown-store.md`). The deploy
+Livery's routes refuse, plus test-build keys (`sda_…`) that answer into a
+run and put counts beside it; parts, carry over, counts in their own table
+(migration 0023). Shakedown's page at `/shakedown/` is served by Geoff's
+Caddy (`spec/history/2026-10-12-shakedown-store.md`,
+`spec/history/2026-10-13-shakedown-store-additions.md`). The deploy
 keeps no copy of `data.db` (B-18): ask Geoff for a backup before any
 deploy that brings a migration.
 

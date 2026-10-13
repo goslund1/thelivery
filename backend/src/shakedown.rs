@@ -43,6 +43,7 @@ const KIND: &str = "shakedown";
 const MAX_TEXT: usize = 2 * 1024 * 1024;
 /// A note, a wish.
 const MAX_FIELD: usize = 10_000;
+const MAX_COUNTS: usize = 200_000;
 /// A change "given" further ahead than this, by the server's clock, is taken
 /// as given now: a page with a wrong clock can't win every merge after it.
 const FUTURE_SLACK_MS: i64 = 5_000;
@@ -74,12 +75,14 @@ pub fn routes() -> Router<AppState> {
         .route("/api/shakedown/me", get(me))
         .route("/api/shakedown/apps", get(apps))
         .route("/api/shakedown/apps/:name", put(upload))
+        .route("/api/shakedown/apps/:name/run", get(app_run))
         .route("/api/shakedown/keys", get(list_keys).post(make_key))
         .route("/api/shakedown/keys/:id", delete(revoke_key))
         .route("/api/shakedown/runs", get(list_runs).post(create_run))
         .route("/api/shakedown/runs/:id", get(get_run).patch(rename_run))
         .route("/api/shakedown/runs/:id/changes", post(post_changes))
         .route("/api/shakedown/runs/:id/send", post(send_to_phone))
+        .route("/api/shakedown/runs/:id/counts", put(put_counts))
         .route("/api/shakedown/events", get(events))
 }
 
@@ -231,6 +234,41 @@ impl FromRequestParts<AppState> for Admin {
     }
 }
 
+/// Who answers: the admin signed in (a page), or a test build by its own key
+/// (`sda_…`, Shakedown's stage 3, B-7), on behalf of the admin who made it.
+/// A test-build key reads the runs and answers into them; an upload key
+/// (`sdk_…`) never does.
+pub struct Answerer(pub String);
+
+#[async_trait]
+impl FromRequestParts<AppState> for Answerer {
+    type Rejection = ApiError;
+    async fn from_request_parts(parts: &mut Parts, st: &AppState) -> Result<Self, Self::Rejection> {
+        let Some(key) = parts.headers.get("x-shakedown-key").and_then(|v| v.to_str().ok()).map(str::to_owned) else {
+            return Admin::from_request_parts(parts, st).await.map(|Admin(u)| Answerer(u));
+        };
+        if !key.starts_with(TEST_KEY_PREFIX) {
+            return Err(err(StatusCode::UNAUTHORIZED, "an upload key only uploads"));
+        }
+        let made_by: String = sqlx::query_scalar("SELECT created_by FROM shakedown_keys WHERE key_hash = ? AND revoked_at IS NULL")
+            .bind(hash_key(&key))
+            .fetch_optional(&st.pool)
+            .await
+            .map_err(db)?
+            .ok_or_else(|| err(StatusCode::UNAUTHORIZED, "that test-build key isn't good"))?;
+        check_admin(st, &made_by).await?;
+        sqlx::query("UPDATE shakedown_keys SET last_used_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE key_hash = ?")
+            .bind(hash_key(&key))
+            .execute(&st.pool)
+            .await
+            .map_err(db)?;
+        Ok(Answerer(made_by))
+    }
+}
+
+const UPLOAD_KEY_PREFIX: &str = "sdk_";
+const TEST_KEY_PREFIX: &str = "sda_";
+
 async fn check_admin(st: &AppState, username: &str) -> Result<(), ApiError> {
     let row = sqlx::query("SELECT role, must_change_password FROM users WHERE username = ?")
         .bind(username)
@@ -303,17 +341,27 @@ async fn list_keys(_: Admin, State(st): State<AppState>) -> Result<Json<Value>, 
 #[derive(Deserialize)]
 struct KeyReq {
     label: String,
+    /// "upload" (the default: an install's step) or "test" (a test build's
+    /// key for answers and counts, B-7). The kind is the key's prefix.
+    #[serde(default)]
+    kind: Option<String>,
 }
 
-/// A new upload key, shown this once; only its SHA-256 is kept.
+/// A new key, shown this once; only its SHA-256 is kept.
 async fn make_key(Admin(username): Admin, State(st): State<AppState>, Json(req): Json<KeyReq>) -> Result<Json<Value>, ApiError> {
     let label = req.label.trim();
     if !name_ok(label, 80) {
         return Err(bad("a key needs a label of at most 80 characters"));
     }
+    let (prefix, label) = match req.kind.as_deref() {
+        None | Some("upload") => (UPLOAD_KEY_PREFIX, label.to_string()),
+        Some("test") => (TEST_KEY_PREFIX, format!("Test build · {label}")),
+        Some(_) => return Err(bad("a key is an upload key or a test-build key")),
+    };
+    let label = label.as_str();
     let mut bytes = [0u8; 32];
     OsRng.fill_bytes(&mut bytes);
-    let key = format!("sdk_{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes));
+    let key = format!("{prefix}{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes));
     let id: i64 = sqlx::query_scalar(
         "INSERT INTO shakedown_keys (label, key_hash, created_by) VALUES (?, ?, ?) RETURNING id",
     )
@@ -363,6 +411,9 @@ async fn upload(
         .get("x-shakedown-key")
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| err(StatusCode::UNAUTHORIZED, "an upload key is needed"))?;
+    if !key.starts_with(UPLOAD_KEY_PREFIX) {
+        return Err(err(StatusCode::UNAUTHORIZED, "a test-build key doesn't upload"));
+    }
     let key_id: i64 = sqlx::query_scalar("SELECT id FROM shakedown_keys WHERE key_hash = ? AND revoked_at IS NULL")
         .bind(hash_key(key))
         .fetch_optional(&st.pool)
@@ -504,6 +555,13 @@ async fn whole(st: &AppState, run_id: &str) -> Result<Value, ApiError> {
     o.insert("mapText".into(), Value::String(r.get("map_text")));
     o.insert("answers".into(), Value::Object(answers));
     o.insert("paneNotes".into(), Value::Object(panes));
+    // The latest counts a test build put beside the run (B-7), if any.
+    let counts: Option<String> = sqlx::query_scalar("SELECT text FROM shakedown_counts WHERE run_id = ? ORDER BY seq DESC LIMIT 1")
+        .bind(run_id)
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(db)?;
+    o.insert("countsText".into(), counts.map(Value::String).unwrap_or(Value::Null));
     Ok(out)
 }
 
@@ -605,8 +663,57 @@ async fn create_run(Admin(username): Admin, State(st): State<AppState>, Json(r):
     Ok(Json(whole(&st, &id).await?))
 }
 
-async fn get_run(_: Admin, State(st): State<AppState>, Path(id): Path<String>) -> Result<Json<Value>, ApiError> {
+async fn get_run(_: Answerer, State(st): State<AppState>, Path(id): Path<String>) -> Result<Json<Value>, ApiError> {
     Ok(Json(whole(&st, &id).await?))
+}
+
+/// An app's open run, whole (a test build asks for its own app's), or 404.
+async fn app_run(_: Answerer, State(st): State<AppState>, Path(name): Path<String>) -> Result<Json<Value>, ApiError> {
+    let id: String = sqlx::query_scalar("SELECT id FROM shakedown_runs WHERE app = ? AND closed_at IS NULL ORDER BY rowid DESC LIMIT 1")
+        .bind(name.trim())
+        .fetch_optional(&st.pool)
+        .await
+        .map_err(db)?
+        .ok_or_else(|| err(StatusCode::NOT_FOUND, "no run of that app is open: start one on the page"))?;
+    Ok(Json(whole(&st, &id).await?))
+}
+
+#[derive(Deserialize)]
+struct CountsReq {
+    text: String,
+    #[serde(default)]
+    device: String,
+}
+
+/// A test build's counts beside its run (B-7): the counts file, totals only;
+/// the raw record never leaves the Mac (D-H6). Each is kept
+/// (`shakedown_counts`); the latest is the run's, and announced, so a page
+/// shows Tried without a file.
+async fn put_counts(
+    Answerer(username): Answerer,
+    State(st): State<AppState>,
+    Path(run_id): Path<String>,
+    Json(c): Json<CountsReq>,
+) -> Result<Json<Value>, ApiError> {
+    if !c.text.starts_with("# Shakedown counts, version ") {
+        return Err(bad("that isn't a counts file"));
+    }
+    if c.text.len() > MAX_COUNTS || !text_ok(&c.device, 64) {
+        return Err(err(StatusCode::PAYLOAD_TOO_LARGE, "a counts file is at most 200 KB"));
+    }
+    summary(&st, &run_id).await?;
+    let seq: i64 = sqlx::query_scalar(
+        "INSERT INTO shakedown_counts (run_id, text, device, username) VALUES (?, ?, ?, ?) RETURNING seq",
+    )
+    .bind(&run_id)
+    .bind(&c.text)
+    .bind(&c.device)
+    .bind(&username)
+    .fetch_one(&st.pool)
+    .await
+    .map_err(db)?;
+    announce(&st, "counts", json!({ "runId": run_id, "seq": seq, "device": c.device }));
+    Ok(Json(json!({ "seq": seq })))
 }
 
 #[derive(Deserialize)]
@@ -709,7 +816,7 @@ fn check_change(c: &ChangeIn, now: i64) -> Result<Vec<FieldIn>, ApiError> {
 /// Answers from a page (D-P7). Each field takes the change given latest; on
 /// the same time, the later to arrive. A cid seen before is ignored.
 async fn post_changes(
-    Admin(username): Admin,
+    Answerer(username): Answerer,
     State(st): State<AppState>,
     Path(run_id): Path<String>,
     Json(req): Json<ChangesReq>,
@@ -886,7 +993,7 @@ async fn send_to_phone(
 /// Server-sent events for every open run: hello, change, run, send (and
 /// lagged, when a slow page missed some: it fetches its run again).
 async fn events(
-    _: Admin,
+    _: Answerer,
     State(st): State<AppState>,
 ) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, ApiError> {
     // Subscribed before reading seq, so nothing falls between the two.
@@ -987,6 +1094,63 @@ mod tests {
 
     fn change(cid: &str, kind: &str, id: &str, fields: Value, device: &str) -> Value {
         json!({ "cid": cid, "kind": kind, "id": id, "fields": fields, "device": device })
+    }
+
+    #[tokio::test]
+    async fn a_test_build_key_answers_and_puts_counts_and_nothing_more() {
+        let (app, st) = setup().await;
+        add_user(&st, "jason", "admin", None, false).await;
+        let t = token("jason");
+        let (s, made) = call(&app, "POST", "/api/shakedown/keys", &[bearer(&t)], Some(json!({ "label": "UP's test build", "kind": "test" }))).await;
+        assert_eq!(s, StatusCode::OK, "{made}");
+        let key = made["key"].as_str().unwrap().to_string();
+        assert!(key.starts_with("sda_") && key.len() == 47, "{key}");
+        assert_eq!(made["label"], "Test build · UP's test build");
+        let (_, upload_key) = call(&app, "POST", "/api/shakedown/keys", &[bearer(&t)], Some(json!({ "label": "Mac" }))).await;
+        let upload_key = upload_key["key"].as_str().unwrap().to_string();
+        assert!(upload_key.starts_with("sdk_"));
+        let k = |v: &str| ("x-shakedown-key", v.to_string());
+
+        // No open run yet: said so; then the page starts one and the test build finds it.
+        let (s, _) = call(&app, "GET", "/api/shakedown/apps/UP%20scaler/run", &[k(&key)], None).await;
+        assert_eq!(s, StatusCode::NOT_FOUND);
+        let run = new_run(&app, &t, "UP scaler").await;
+        let id = run["id"].as_str().unwrap();
+        let (s, found) = call(&app, "GET", "/api/shakedown/apps/UP%20scaler/run", &[k(&key)], None).await;
+        assert_eq!(s, StatusCode::OK);
+        assert_eq!(found["id"], id);
+        assert_eq!(found["countsText"], Value::Null);
+
+        // An answer from the test build merges as the phone's do, on the maker's name.
+        let (s, r) = call(&app, "POST", &format!("/api/shakedown/runs/{id}/changes"), &[k(&key)],
+            Some(json!({ "changes": [change("tb1", "row", "UP-001", json!({ "verdict": { "v": "partly", "at": 9 }, "addressed": { "v": true, "at": 9 } }), "test build")] }))).await;
+        assert_eq!(s, StatusCode::OK, "{r}");
+        let who: String = sqlx::query_scalar("SELECT username FROM shakedown_changes WHERE cid = 'tb1'").fetch_one(&st.pool).await.unwrap();
+        assert_eq!(who, "jason");
+
+        // Counts beside the run, the latest kept; anything that isn't a counts file refused.
+        let counts = "# Shakedown counts, version 1\n# app\tUP scaler\nkind\tkey\tcount\tms\tdetail\nelement\tupPlay\t2\t0\tAXButton\n";
+        let (s, _) = call(&app, "PUT", &format!("/api/shakedown/runs/{id}/counts"), &[k(&key)], Some(json!({ "text": counts, "device": "test build" }))).await;
+        assert_eq!(s, StatusCode::OK);
+        let (s, _) = call(&app, "PUT", &format!("/api/shakedown/runs/{id}/counts"), &[k(&key)], Some(json!({ "text": "a raw record" }))).await;
+        assert_eq!(s, StatusCode::BAD_REQUEST);
+        let (_, whole) = call(&app, "GET", &format!("/api/shakedown/runs/{id}"), &[k(&key)], None).await;
+        assert_eq!(whole["countsText"], counts);
+        assert_eq!(whole["answers"]["UP-001"]["verdict"], "partly");
+
+        // An upload key never answers; a test-build key never uploads, never lists keys or starts runs.
+        let (s, _) = call(&app, "POST", &format!("/api/shakedown/runs/{id}/changes"), &[k(&upload_key)],
+            Some(json!({ "changes": [change("u1", "row", "UP-001", json!({ "verdict": { "v": "failed", "at": 10 } }), "")] }))).await;
+        assert_eq!(s, StatusCode::UNAUTHORIZED);
+        let (s, _) = call(&app, "PUT", "/api/shakedown/apps/UP%20scaler", &[k(&key)],
+            Some(json!({ "checklist": LIST, "map": "", "commit": "abc", "date": "2026-10-13" }))).await;
+        assert_eq!(s, StatusCode::UNAUTHORIZED);
+        assert_eq!(call(&app, "GET", "/api/shakedown/keys", &[k(&key)], None).await.0, StatusCode::UNAUTHORIZED);
+        assert_eq!(call(&app, "POST", "/api/shakedown/runs", &[k(&key)], Some(json!({ "app": "UP scaler", "build": "x", "checklistText": LIST }))).await.0, StatusCode::UNAUTHORIZED);
+
+        // Revoked: refused.
+        sqlx::query("UPDATE shakedown_keys SET revoked_at = 'now' WHERE label LIKE 'Test build%'").execute(&st.pool).await.unwrap();
+        assert_eq!(call(&app, "GET", &format!("/api/shakedown/runs/{id}"), &[k(&key)], None).await.0, StatusCode::UNAUTHORIZED);
     }
 
     #[test]

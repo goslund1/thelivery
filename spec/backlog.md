@@ -4,7 +4,7 @@ Open items only, one line each. A finished item leaves this file: its
 story goes to the day's file in `spec/history/`. Split out of
 `docs/plan.md` on 2026-10-09 (frozen: `spec/history/verbatim/2026-10-09-plan.md`).
 
-Next free ID: B-17
+Next free ID: B-18
 
 ## Next
 
@@ -31,6 +31,10 @@ Next free ID: B-17
 
 - **B-10** **Backfill pass (another round coming)** — Cars→Tunes hierarchy refactor is complete (migration 0017, normalize_bodies step). Data model is now stable. Ready for a backfill pass via EditCardModal when content work resumes.
 - **B-11** **AI billing notification (deferred — wait until credits actually run out)** — When `assess-color` hits a 429 or quota error, the toast already surfaces it in-app. That's enough for now. If a proactive alert becomes needed: `NOTIFY_WEBHOOK` env var in the systemd unit; backend POSTs on quota error; check if Anthropic API exposes a balance endpoint to poll. No frontend changes needed.
+
+## From the Shakedown hosting order, 2026-10-12
+
+- **B-17** **`deploy/setup-caddy.sh` would wipe Shakedown's path if rerun.** It writes the whole Caddyfile (The Livery's site only), so running it again on the droplet would overwrite Geoff's hand-set `/shakedown/` setup (Shakedown's page, served from `/srv/shakedown`, live since 2026-10-12). Caddy on the droplet is Geoff's, set by hand; nothing of ours writes it. Updating the script to match is Geoff's (Jason, 2026-10-12). Until then, don't rerun it.
 
 ## Deferred
 

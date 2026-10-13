@@ -719,9 +719,22 @@ async fn put_counts(
 #[derive(Deserialize)]
 struct Rename {
     build: String,
+    /// A newer checklist and map for the open run (an install mid-sitting,
+    /// Jason 2026-10-13: "carry over would be great"): the answers stay, by
+    /// row id. All four or none.
+    #[serde(default, rename = "checklistText")]
+    checklist_text: Option<String>,
+    #[serde(default, rename = "mapText")]
+    map_text: Option<String>,
+    #[serde(default, rename = "checklistName")]
+    checklist_name: Option<String>,
+    #[serde(default, rename = "mapName")]
+    map_name: Option<String>,
 }
 
-/// The build renamed (the laptop's Build box). Takes a seq like any change.
+/// The build renamed (the laptop's Build box), and with it, when given, the
+/// run's checklist and map: the open run carried over to a newer install,
+/// every answer kept. Takes a seq like any change.
 async fn rename_run(
     Admin(username): Admin,
     State(st): State<AppState>,
@@ -732,24 +745,58 @@ async fn rename_run(
     if !name_ok(build, 200) {
         return Err(bad("a build is 1 to 200 characters"));
     }
-    summary(&st, &id).await?;
+    let texts = req.checklist_text.is_some();
+    if texts {
+        let list = req.checklist_text.as_deref().unwrap_or("");
+        let map = req.map_text.as_deref().unwrap_or("");
+        if list.trim().is_empty() {
+            return Err(bad("the checklist is empty"));
+        }
+        if list.len() > MAX_TEXT || map.len() > MAX_TEXT {
+            return Err(err(StatusCode::PAYLOAD_TOO_LARGE, "a checklist or map is at most 2 MB"));
+        }
+        if !text_ok(req.checklist_name.as_deref().unwrap_or(""), 200) || !text_ok(req.map_name.as_deref().unwrap_or(""), 200) {
+            return Err(bad("a file's name is at most 200 characters"));
+        }
+    }
+    let run = summary(&st, &id).await?;
+    if texts && run["closed"].is_string() {
+        return Err(bad("a closed run keeps its checklist"));
+    }
     let mut tx = st.pool.begin().await.map_err(db)?;
     sqlx::query("INSERT INTO shakedown_changes (run_id, cid, kind, fields, username) VALUES (?, ?, 'build', ?, ?)")
         .bind(&id)
         .bind(uuid::Uuid::new_v4().to_string())
-        .bind(json!({ "build": { "v": build } }).to_string())
+        .bind(json!({ "build": { "v": build }, "texts": texts }).to_string())
         .bind(&username)
         .execute(&mut *tx)
         .await
         .map_err(db)?;
-    sqlx::query("UPDATE shakedown_runs SET build = ? WHERE id = ?")
+    if texts {
+        sqlx::query(
+            "UPDATE shakedown_runs SET build = ?, checklist_text = ?, map_text = ?, checklist_name = ?, map_name = ? WHERE id = ?",
+        )
         .bind(build)
+        .bind(req.checklist_text.as_deref().unwrap_or(""))
+        .bind(req.map_text.as_deref().unwrap_or(""))
+        .bind(req.checklist_name.as_deref().unwrap_or(""))
+        .bind(req.map_name.as_deref().unwrap_or(""))
         .bind(&id)
         .execute(&mut *tx)
         .await
         .map_err(db)?;
+    } else {
+        sqlx::query("UPDATE shakedown_runs SET build = ? WHERE id = ?")
+            .bind(build)
+            .bind(&id)
+            .execute(&mut *tx)
+            .await
+            .map_err(db)?;
+    }
     tx.commit().await.map_err(db)?;
-    let s = summary(&st, &id).await?;
+    let mut s = summary(&st, &id).await?;
+    // Pages holding the run fetch it again for its new texts.
+    s["texts"] = json!(texts);
     announce(&st, "run", s.clone());
     Ok(Json(s))
 }
@@ -1389,6 +1436,21 @@ mod tests {
         let (s, renamed) = call(&app, "PATCH", &format!("/api/shakedown/runs/{id}"), &[bearer(&t)], Some(json!({ "build": "def5678" }))).await;
         assert_eq!(s, StatusCode::OK);
         assert_eq!(renamed["build"], "def5678");
+        // Carried over to a newer install: the texts change, the answers stay (by row id).
+        call(&app, "POST", &format!("/api/shakedown/runs/{id}/changes"), &[bearer(&t)],
+            Some(json!({ "changes": [change("k1", "row", "UP-001", json!({ "verdict": { "v": "passed", "at": 1 } }), "phone")] }))).await;
+        let newer = format!("{LIST}- [ ] **UP-002 · A new row** — new · Jason: —\n");
+        let (s, moved) = call(&app, "PATCH", &format!("/api/shakedown/runs/{id}"), &[bearer(&t)],
+            Some(json!({ "build": "ghi9012", "checklistText": newer, "mapText": "", "checklistName": "shakedown.md", "mapName": "" }))).await;
+        assert_eq!(s, StatusCode::OK, "{moved}");
+        assert_eq!(moved["texts"], true);
+        let (_, whole) = call(&app, "GET", &format!("/api/shakedown/runs/{id}"), &[bearer(&t)], None).await;
+        assert_eq!(whole["checklistText"], newer);
+        assert_eq!(whole["build"], "ghi9012");
+        assert_eq!(whole["answers"]["UP-001"]["verdict"], "passed", "the answers carried over");
+        let empty = call(&app, "PATCH", &format!("/api/shakedown/runs/{id}"), &[bearer(&t)],
+            Some(json!({ "build": "x", "checklistText": "  " }))).await;
+        assert_eq!(empty.0, StatusCode::BAD_REQUEST);
         let (s, sent) = call(&app, "POST", &format!("/api/shakedown/runs/{id}/send"), &[bearer(&t)],
             Some(json!({ "mode": "sections", "group": "s:Viewer", "current": "UP-001", "label": "Viewer", "device": "laptop" }))).await;
         assert_eq!(s, StatusCode::OK, "{sent}");
@@ -1396,7 +1458,7 @@ mod tests {
         assert_eq!(run["send"]["group"], "s:Viewer");
         assert_eq!(run["send"]["seq"], sent["seq"]);
         assert_eq!(run["seq"], sent["seq"], "a send takes the run's next seq");
-        assert_eq!(run["checklistText"], LIST);
+        assert_eq!(run["checklistText"], newer, "the carried-over checklist");
         let bad = call(&app, "POST", &format!("/api/shakedown/runs/{id}/send"), &[bearer(&t)],
             Some(json!({ "mode": "everything", "group": "s:Viewer" }))).await;
         assert_eq!(bad.0, StatusCode::BAD_REQUEST);

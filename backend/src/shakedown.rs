@@ -122,13 +122,66 @@ fn hash_key(key: &str) -> String {
 }
 
 /// A checklist row's id, as the results file has it: "UP-012", "IO-226".
+/// A checklist row's id, "UP-001", or one of its parts', "UP-001.2"
+/// (Shakedown's B-18, nested parts).
 fn row_id_ok(s: &str) -> bool {
     let Some((head, num)) = s.rsplit_once('-') else { return false };
+    let digits = |x: &str| !x.is_empty() && x.chars().all(|c| c.is_ascii_digit());
+    let num_ok = match num.split_once('.') {
+        Some((row, part)) => digits(row) && digits(part),
+        None => digits(num),
+    };
     s.len() <= 32
         && head.starts_with(|c: char| c.is_ascii_uppercase())
         && head.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
-        && !num.is_empty()
-        && num.chars().all(|c| c.is_ascii_digit())
+        && num_ok
+}
+
+/// The parts the checklist gives each row: an indented row-shaped line,
+/// "  - [ ] **UP-001.1 · …". Row id → its part ids.
+fn parts_of(checklist: &str) -> std::collections::HashMap<String, Vec<String>> {
+    let mut out: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+    for line in checklist.lines() {
+        if !line.starts_with(char::is_whitespace) || !line.trim_start().starts_with("- [") {
+            continue;
+        }
+        let Some(a) = line.find("**") else { continue };
+        let rest = &line[a + 2..];
+        let Some(b) = rest.find(" · ") else { continue };
+        let id = &rest[..b];
+        if let Some((row, _)) = id.split_once('.') {
+            if row_id_ok(id) {
+                out.entry(row.to_string()).or_default().push(id.to_string());
+            }
+        }
+    }
+    out
+}
+
+/// An app card's counts (D, Jason 2026-10-13): a row is answered when it has
+/// its own verdict, or every one of its parts has one; skipped when it was
+/// skipped and isn't answered. Parts aren't counted on their own.
+fn count_rows(answers: &std::collections::HashMap<String, Value>, checklist: &str) -> (i64, i64) {
+    let has_verdict = |id: &str| {
+        answers.get(id).and_then(|v| v.get("verdict")).and_then(Value::as_str).is_some_and(|x| !x.is_empty())
+    };
+    let parts = parts_of(checklist);
+    let mut answered = std::collections::HashSet::new();
+    for id in answers.keys().filter(|id| !id.contains('.')) {
+        if has_verdict(id) {
+            answered.insert(id.clone());
+        }
+    }
+    for (row, ps) in &parts {
+        if !ps.is_empty() && ps.iter().all(|p| has_verdict(p)) {
+            answered.insert(row.clone());
+        }
+    }
+    let skipped = answers
+        .iter()
+        .filter(|(id, v)| !id.contains('.') && !answered.contains(*id) && v.get("skipped").and_then(Value::as_bool) == Some(true))
+        .count();
+    (answered.len() as i64, skipped as i64)
 }
 
 /// A check map's pane id: "P-05".
@@ -392,26 +445,22 @@ async fn run_seq(st: &AppState, run_id: &str) -> Result<i64, ApiError> {
 }
 
 async fn summary(st: &AppState, run_id: &str) -> Result<Value, ApiError> {
-    let r = sqlx::query("SELECT id, app, build, started, created_at, closed_at, send_json FROM shakedown_runs WHERE id = ?")
+    let r = sqlx::query("SELECT id, app, build, started, created_at, closed_at, send_json, checklist_text FROM shakedown_runs WHERE id = ?")
         .bind(run_id)
         .fetch_optional(&st.pool)
         .await
         .map_err(db)?
         .ok_or_else(|| err(StatusCode::NOT_FOUND, "no such run"))?;
-    let states: Vec<String> = sqlx::query_scalar("SELECT state FROM shakedown_answers WHERE run_id = ? AND kind = 'row'")
+    let rows: Vec<(String, String)> = sqlx::query_as("SELECT target, state FROM shakedown_answers WHERE run_id = ? AND kind = 'row'")
         .bind(run_id)
         .fetch_all(&st.pool)
         .await
         .map_err(db)?;
-    let (mut answered, mut skipped) = (0, 0);
-    for s in &states {
-        let v = flatten(&serde_json::from_str::<Map<String, Value>>(s).unwrap_or_default());
-        if v.get("verdict").and_then(Value::as_str).is_some_and(|x| !x.is_empty()) {
-            answered += 1;
-        } else if v.get("skipped").and_then(Value::as_bool) == Some(true) {
-            skipped += 1;
-        }
-    }
+    let answers = rows
+        .into_iter()
+        .map(|(id, s)| (id, flatten(&serde_json::from_str::<Map<String, Value>>(&s).unwrap_or_default())))
+        .collect();
+    let (answered, skipped) = count_rows(&answers, &r.get::<String, _>("checklist_text"));
     let send = r
         .get::<Option<String>, _>("send_json")
         .and_then(|s| serde_json::from_str::<Value>(&s).ok())
@@ -941,6 +990,27 @@ mod tests {
     }
 
     #[test]
+    fn part_ids_and_the_cards_count() {
+        assert!(row_id_ok("UP-001") && row_id_ok("UP-001.2") && row_id_ok("IO-120.10"));
+        for bad in ["UP-001.", "UP-.1", "UP-001.2.3", "UP-001.x", "up-001.1"] {
+            assert!(!row_id_ok(bad), "{bad}");
+        }
+        let list = "## Viewer\n\n- [ ] **UP-001 · Adding** — four · Jason: —\n  - [ ] **UP-001.1 · Window** — w · Jason: —\n  - [ ] **UP-001.2 · Dock** — d · Jason: —\n- [ ] **UP-002 · Import** — i · Jason: —\n- [ ] **UP-003 · Large** — l · Jason: —\n  - [ ] **UP-003.1 · A** — a · Jason: —\n  - [ ] **UP-003.2 · B** — b · Jason: —\n";
+        assert_eq!(parts_of(list)["UP-001"], vec!["UP-001.1", "UP-001.2"]);
+        let a = |pairs: &[(&str, Value)]| pairs.iter().map(|(k, v)| (k.to_string(), v.clone())).collect();
+        // UP-001 by both parts; UP-002 by its own verdict; UP-003 has one part of two: not yet.
+        let answers = a(&[
+            ("UP-001.1", json!({ "verdict": "passed" })), ("UP-001.2", json!({ "verdict": "failed" })),
+            ("UP-002", json!({ "verdict": "partly" })),
+            ("UP-003.1", json!({ "verdict": "passed" })),
+        ]);
+        assert_eq!(count_rows(&answers, list), (2, 0));
+        // A row's own answer counts as before, parts or not; a skip only when not answered.
+        let answers = a(&[("UP-003", json!({ "verdict": "passed" })), ("UP-002", json!({ "skipped": true })), ("UP-001.1", json!({ "skipped": true }))]);
+        assert_eq!(count_rows(&answers, list), (1, 1));
+    }
+
+    #[test]
     fn iso_utc_writes_utc() {
         assert_eq!(iso_utc(0), "1970-01-01T00:00:00Z");
         assert_eq!(iso_utc(1_760_000_000), "2025-10-09T08:53:20Z");
@@ -1126,6 +1196,13 @@ mod tests {
         assert_eq!(s, StatusCode::OK, "{r}");
         let (_, whole) = call(&app, "GET", &format!("/api/shakedown/runs/{}", run["id"].as_str().unwrap()), &[bearer(&t)], None).await;
         assert_eq!(whole["answers"]["UP-001"], json!({ "verdict": "failed", "addressed": true }));
+        // A part's answer (B-18) is taken like a row's.
+        let (s, r) = call(&app, "POST", &url, &[bearer(&t)], Some(json!({ "changes": [change("ok2", "row", "UP-001.1",
+            json!({ "verdict": { "v": "passed", "at": 6 } }), "phone")] }))).await;
+        assert_eq!(s, StatusCode::OK, "{r}");
+        let (_, whole) = call(&app, "GET", &format!("/api/shakedown/runs/{}", run["id"].as_str().unwrap()), &[bearer(&t)], None).await;
+        assert_eq!(whole["answers"]["UP-001.1"]["verdict"], "passed");
+        assert_eq!(whole["answered"], 1, "UP-001 once, by its own answer; the part isn't counted on its own");
     }
 
     #[tokio::test]

@@ -159,7 +159,7 @@ and `/uploads` to the backend, so the app always uses same-origin relative URLs.
 ## Conventions & rules
 
 - **Git:** commit, and push only when asked: a push to `main` deploys the live site, which works and is tested (this repo's branch is `main`). End commit messages with the `Co-Authored-By` trailer.
-- **Shakedown's server code here** (`backend/src/shakedown.rs`, its `shakedown_*` tables) follows the same rule until it moves out to a service of its own; after that it is no longer this repo's.
+- **Shakedown's server code here** (`backend/src/shakedown.rs`, its `shakedown_*` tables and tests) is the exception: commit and push it each step without being asked, `cargo test` first, until it moves out to a service of its own. A change that touches anything else in the app waits for Jason's say.
 - **The droplet and the web server belong to someone else**: the droplet itself (its system, users, packages and other services) and Caddy in front of it are not touched without Jason's say. Don't make work for their owner.
 - **Staging before committing:** always run `git status` before any commit to see the full picture of modified and untracked files. The codebase often has inter-dependent files in flight (types, api, components, backend) — committing only the files you touched and leaving the rest behind will break CI. Stage everything that's part of the same feature together.
 - **Migrations:** new migration files only; never edit applied ones.

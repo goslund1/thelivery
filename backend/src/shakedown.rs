@@ -85,6 +85,74 @@ pub fn routes() -> Router<AppState> {
         .route("/api/shakedown/runs/:id/look", post(look))
         .route("/api/shakedown/runs/:id/counts", put(put_counts))
         .route("/api/shakedown/events", get(events))
+        .route("/api/shakedown/backup", get(backup))
+}
+
+// --- The backup (SharkAttack's silo, B-31 step 1) --------------------------
+
+/// Admin only: a SQLite file holding Shakedown's own tables and nothing
+/// else (`shakedown_*`: their schema, indexes and rows, read in one
+/// transaction, so the copy is consistent). Never `users` or anything of
+/// The Livery's. Shakedown's `tools/backup-db.sh` keeps it on the Mac.
+async fn backup(_: Admin, State(st): State<AppState>) -> Result<(HeaderMap, Vec<u8>), ApiError> {
+    let bytes = backup_bytes(&st.pool).await?;
+    let mut h = HeaderMap::new();
+    h.insert(axum::http::header::CONTENT_TYPE, "application/vnd.sqlite3".parse().unwrap());
+    h.insert(axum::http::header::CACHE_CONTROL, "no-store".parse().unwrap());
+    Ok((h, bytes))
+}
+
+pub(crate) async fn backup_bytes(pool: &sqlx::SqlitePool) -> Result<Vec<u8>, ApiError> {
+    let mut nonce = [0u8; 8];
+    OsRng.fill_bytes(&mut nonce);
+    let file = std::env::temp_dir().join(format!("shakedown-backup-{}.db", nonce.iter().map(|b| format!("{b:02x}")).collect::<String>()));
+    let path = file.to_string_lossy().to_string();
+    let result = async {
+        let mut conn = pool.acquire().await.map_err(db)?;
+        sqlx::query("ATTACH DATABASE ? AS bk").bind(&path).execute(&mut *conn).await.map_err(db)?;
+        let copied = async {
+            sqlx::query("BEGIN").execute(&mut *conn).await.map_err(db)?;
+            let schema: Vec<(String, String, String)> = sqlx::query_as(
+                "SELECT type, name, sql FROM main.sqlite_master \
+                 WHERE name LIKE 'shakedown\\_%' ESCAPE '\\' AND sql IS NOT NULL ORDER BY type DESC, name",
+            )
+            .fetch_all(&mut *conn)
+            .await
+            .map_err(db)?;
+            for (kind, name, sql) in &schema {
+                // "CREATE TABLE x" / "CREATE [UNIQUE] INDEX i ON x": made in the copy.
+                let made = match kind.as_str() {
+                    "table" => sql.replacen("CREATE TABLE ", "CREATE TABLE bk.", 1),
+                    "index" => sql.replacen(&format!("INDEX {name}"), &format!("INDEX bk.{name}"), 1)
+                        .replacen(&format!("INDEX \"{name}\""), &format!("INDEX bk.\"{name}\""), 1),
+                    _ => continue,
+                };
+                sqlx::query(&made).execute(&mut *conn).await.map_err(db)?;
+            }
+            // Tables that reference none first (shakedown_runs), then those
+            // referencing them, so every row finds its parent as it goes in.
+            let mut tables: Vec<&(String, String, String)> = schema.iter().filter(|(k, _, _)| k == "table").collect();
+            tables.sort_by_key(|(_, _, sql)| sql.contains("REFERENCES"));
+            for (_, name, _) in tables {
+                sqlx::query(&format!("INSERT INTO bk.\"{name}\" SELECT * FROM main.\"{name}\""))
+                    .execute(&mut *conn)
+                    .await
+                    .map_err(db)?;
+            }
+            sqlx::query("COMMIT").execute(&mut *conn).await.map_err(db)?;
+            Ok::<(), ApiError>(())
+        }
+        .await;
+        if copied.is_err() {
+            let _ = sqlx::query("ROLLBACK").execute(&mut *conn).await;
+        }
+        let _ = sqlx::query("DETACH DATABASE bk").execute(&mut *conn).await;
+        copied?;
+        std::fs::read(&file).map_err(|e| err(StatusCode::INTERNAL_SERVER_ERROR, e))
+    }
+    .await;
+    let _ = std::fs::remove_file(&file);
+    result
 }
 
 // --- Small helpers ----------------------------------------------------------
@@ -1300,6 +1368,63 @@ mod tests {
         // Revoked: refused.
         sqlx::query("UPDATE shakedown_keys SET revoked_at = 'now' WHERE label LIKE 'Test build%'").execute(&st.pool).await.unwrap();
         assert_eq!(call(&app, "GET", &format!("/api/shakedown/runs/{id}"), &[k(&key)], None).await.0, StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn the_backup_holds_shakedowns_tables_and_nothing_of_the_liverys() {
+        // A file-backed database, as The Livery's data.db is: an in-memory one
+        // opens what it attaches in memory too, so the copy never reaches disk.
+        let dir = std::env::temp_dir().join(format!("backup-test-{}", now_ms()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let pool = sqlx::sqlite::SqlitePoolOptions::new().max_connections(1)
+            .connect_with(sqlx::sqlite::SqliteConnectOptions::new().filename(dir.join("data.db")).create_if_missing(true))
+            .await.unwrap();
+        sqlx::migrate!("./migrations").run(&pool).await.unwrap();
+        sqlx::query("INSERT INTO users (username, password_hash) VALUES ('jason', 'x')").execute(&pool).await.unwrap();
+        sqlx::query("INSERT INTO shakedown_runs (id, app, build, started, checklist_text, created_by) VALUES ('r1', 'UP scaler', '1', 'now', 'list', 'jason')")
+            .execute(&pool).await.unwrap();
+        sqlx::query("INSERT INTO shakedown_answers (run_id, kind, target, state, updated_seq, server_at) VALUES ('r1', 'row', 'UP-001', '{}', 1, 'now')")
+            .execute(&pool).await.unwrap();
+
+        let bytes = backup_bytes(&pool).await.unwrap();
+        assert!(bytes.starts_with(b"SQLite format 3"));
+        std::fs::write(dir.join("copy.db"), &bytes).unwrap();
+        let copy = sqlx::sqlite::SqlitePoolOptions::new().max_connections(1)
+            .connect_with(sqlx::sqlite::SqliteConnectOptions::new().filename(dir.join("copy.db"))).await.unwrap();
+        let tables = "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name";
+        let names: Vec<String> = sqlx::query_scalar(tables).fetch_all(&copy).await.unwrap();
+        let live: Vec<String> = sqlx::query_scalar(tables).fetch_all(&pool).await.unwrap();
+        assert_eq!(names, live.iter().filter(|n| n.starts_with("shakedown_")).cloned().collect::<Vec<_>>(),
+            "every one of Shakedown's tables, and only those");
+        assert!(!names.contains(&"users".to_string()));
+        for n in &names {
+            let a: i64 = sqlx::query_scalar(&format!("SELECT COUNT(*) FROM \"{n}\"")).fetch_one(&copy).await.unwrap();
+            let b: i64 = sqlx::query_scalar(&format!("SELECT COUNT(*) FROM \"{n}\"")).fetch_one(&pool).await.unwrap();
+            assert_eq!(a, b, "{n}");
+        }
+        let indexes: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name LIKE 'shakedown%'")
+            .fetch_one(&copy).await.unwrap();
+        assert!(indexes >= 4, "the indexes come too: {indexes}");
+        copy.close().await;
+        pool.close().await;
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[tokio::test]
+    async fn only_shakedowns_admin_sign_in_takes_a_backup() {
+        let (app, st) = setup().await;
+        add_user(&st, "jason", "admin", Some("pw"), false).await;
+        add_user(&st, "geoff", "editor", Some("pw2"), false).await;
+        let req = |auth: Option<String>| {
+            let mut r = axum::http::Request::builder().uri("/api/shakedown/backup");
+            if let Some(a) = auth { r = r.header(AUTHORIZATION, format!("Bearer {a}")); }
+            r.body(axum::body::Body::empty()).unwrap()
+        };
+        use tower::ServiceExt;
+        assert_eq!(app.clone().oneshot(req(None)).await.unwrap().status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(app.clone().oneshot(req(Some(token("geoff")))).await.unwrap().status(), StatusCode::FORBIDDEN);
+        assert_eq!(app.clone().oneshot(req(Some(crate::auth::make_token("jason", b"test-secret").unwrap()))).await.unwrap().status(),
+            StatusCode::UNAUTHORIZED, "The Livery's own sign-in can't take a backup");
     }
 
     #[test]

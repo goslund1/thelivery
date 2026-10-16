@@ -23,11 +23,3 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 base64 = "0.22"
 dotenvy = "0.15"
 fontdue = "0.9"
-# Shakedown (src/shakedown.rs): the live channel's stream, the upload key's hash.
-futures-util = { version = "0.3", default-features = false }
-sha2 = "0.10"
-
-[dev-dependencies]
-# Route-level tests (src/shakedown.rs): oneshot requests, reading bodies.
-tower = { version = "0.5", features = ["util"] }
-http-body-util = "0.1"

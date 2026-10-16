@@ -70,6 +70,7 @@ the file, or else its last content change.
 | `2026-10-12-shakedown-store.md` | Shakedown's store (`/api/shakedown/`, admin only, its own 90-day sign-in) built and deployed, after Geoff's backup | `spec/status.md` |
 | `2026-10-13-shakedown-store-additions.md` | Shakedown's store: the box, one event per post, part ids, test-build keys and counts (migration 0023), carry over; all deployed | `spec/status.md` |
 | `2026-10-14-push-rule.md` | The Git rule written down (protected app; Shakedown's code the exception); pushed and deployed | `CLAUDE.md` |
+| `2026-10-16-shakedown-leaves.md` | Shakedown's store removed from `main` (tables kept, no migration), its branches named and deleted; the deploy waits for Jason | `spec/status.md` |
 
 ## Verbatim copies
 
@@ -85,3 +86,4 @@ carried out. Never edited.
 | `verbatim/2026-10-09-work-order-projects-standard.md` | App Claude's work order to bring thelivery to the Projects standard | `2026-10-09-bottom-bar-and-standard.md` |
 | `verbatim/2026-10-09-license-page-draft.md` | Jason's license page draft, the page's work order | `2026-10-09-aar-b.md` |
 | `verbatim/2026-10-09-fix-ignition-blank-download.patch` | The patch for blank downloads on repeat visits to `/ignition`, committed as `1aaf3dc` | The code (`backend/src/main.rs`) |
+| `verbatim/2026-10-16-shakedown.rs` | `backend/src/shakedown.rs` as it was removed (at `b1f0e88`) | SharkAttack (`~/Projects/Shakedown/server/`) |

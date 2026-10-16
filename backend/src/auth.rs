@@ -26,9 +26,9 @@ use crate::state::{err, ApiError, AppState};
 pub struct Claims {
     sub: String, // username
     exp: usize,  // expiry (unix seconds)
-    /// Absent on The Livery's own tokens. Another sign-in that shares the
-    /// secret marks its tokens with a kind (Shakedown's: "shakedown",
-    /// src/shakedown.rs), and AuthUser refuses any token that has one.
+    /// Absent on The Livery's own tokens. Another sign-in that shared the
+    /// secret marked its tokens with a kind (the hands-on checker's, hosted
+    /// here until 2026-10-16), and AuthUser refuses any token that has one.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     kind: Option<String>,
 }
@@ -90,7 +90,7 @@ impl FromRequestParts<AppState> for AuthUser {
             &Validation::default(),
         )
         .map_err(|_| err(StatusCode::UNAUTHORIZED, "invalid or expired token"))?;
-        // A Shakedown sign-in (90 days) never edits The Livery.
+        // Another sign-in's token (the checker's were 90 days) never edits The Livery.
         if data.claims.kind.is_some() {
             return Err(err(StatusCode::UNAUTHORIZED, "not a Livery sign-in"));
         }
@@ -171,7 +171,7 @@ pub async fn login(
     })))
 }
 
-/// The password check behind every sign-in (The Livery's and Shakedown's):
+/// The password check behind every sign-in:
 /// the rate limit, Argon2 verification, equal work for unknown users, and
 /// the failure log. Returns the user's role and must-change flag.
 pub async fn check_credentials(
@@ -476,7 +476,6 @@ mod tests {
             db_path: std::env::temp_dir().join("unused.db"),
             jwt_secret: Arc::new(b"test-secret".to_vec()),
             site_url: String::new(),
-            shakedown: crate::shakedown::live(),
         };
         let auth = AuthUser { username: "geoff".into(), role: "editor".into() };
         change_password(

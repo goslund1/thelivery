@@ -17,9 +17,6 @@ pub struct AppState {
     /// Set via SITE_URL env var; used for sitemap, robots.txt, and attribution.
     /// Falls back to request Host header when empty.
     pub site_url: String,
-    /// Shakedown's live channel: every change, send and run, to every page
-    /// following (src/shakedown.rs).
-    pub shakedown: crate::shakedown::Live,
 }
 
 pub type ApiError = (StatusCode, String);

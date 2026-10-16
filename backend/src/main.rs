@@ -23,7 +23,6 @@ mod identity;
 mod images;
 mod presets;
 mod share;
-mod shakedown;
 mod state;
 mod suggestions;
 #[cfg(test)]
@@ -136,7 +135,6 @@ async fn main() -> anyhow::Result<()> {
         db_path: PathBuf::from(&db_path),
         jwt_secret: auth::load_jwt_secret(),
         site_url,
-        shakedown: shakedown::live(),
     };
 
     // Serve the built SPA: real files (index.html at "/", hashed assets) are
@@ -210,7 +208,6 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/og-presets/:id", put(share::update_og_preset).delete(share::delete_og_preset))
         .nest_service("/uploads", ServeDir::new(uploads_dir))
         .route_service("/license", license_page)
-        .merge(shakedown::routes())
         .fallback_service(spa)
         .layer(DefaultBodyLimit::max(40 * 1024 * 1024)) // 40 MB per file
         // Stop browsers from MIME-sniffing a response into something executable.

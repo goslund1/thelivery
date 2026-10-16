@@ -1,0 +1,4 @@
+#!/bin/bash
+# Runs the order gate before every commit (standards/STANDARD.md, D16).
+# Switched on once in each clone:  git config core.hooksPath tools/hooks
+exec "$(git rev-parse --show-toplevel)/tools/order-gate.sh"

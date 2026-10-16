@@ -34,8 +34,11 @@ Live at **https://thelivery.silverleaf.services** (Caddy terminates TLS, reverse
 | `.claude/skills/frontend-gotchas/` | Known Vue/CSS/TypeScript pitfalls. Load before debugging unexpected frontend behavior or writing new interactive components. |
 
 `Drop Offs/` is Jason's inbox: look there first, read what is new,
-then move each file where it belongs. At every clear, follow the steps
-in `~/Projects/CLAUDE.md` and run `tools/docs-check.sh`.
+then move each file where it belongs; its README stays, local only, as
+the inbox is ignored here (a public repo, D12). `tools/order-gate.sh`
+checks the inboxes before every commit; in a new clone, switch it on
+with `git config core.hooksPath tools/hooks`. At every clear, follow the
+steps in `~/Projects/CLAUDE.md` and run `tools/docs-check.sh`.
 
 ## The data model is the center of everything
 

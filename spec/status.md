@@ -33,9 +33,10 @@ bar, star and Playing pill work order
 **Shakedown's store is gone from `main`** (2026-10-16,
 `spec/history/2026-10-16-shakedown-leaves.md`): the code, its routes and
 its branches are out; its tables stay in the database (no migration).
-**Not deployed yet:** the live site still serves `/api/shakedown/` and
-Geoff's Caddy still serves `/shakedown/` until Jason's push, with the
-Caddy route removed beside it (with Geoff). The deploy keeps no copy of
+**Deployed** 2026-10-16 06:25 (Jason's push, run 38907706744, passed);
+its two branches deleted on GitHub by Jason. Left: the old `/shakedown/`
+page is served by nothing but Geoff's Caddy block, which stays until Jason
+has talked to him. The deploy keeps no copy of
 `data.db` (B-18): ask Geoff for a backup before any deploy that brings a
 migration.
 

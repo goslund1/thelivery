@@ -60,3 +60,12 @@ Deleted on this Mac. Deleting `shakedown-run-history` and
 Push `main` (deploys the live site), remove `/shakedown/` from Caddy
 (Jason with Geoff), delete the two branches on GitHub, then
 `curl -I …/shakedown/` should be 404 and the car show's home page 200.
+
+## Deployed (same morning)
+
+Jason pushed `main` at about 06:25 (the Deploy run 38907706744 passed,
+3 min 18 s) and deleted `shakedown-run-history` and
+`sharkattack/backup-route` on GitHub; `git branch -a` shows `main` only.
+The old `/shakedown/` page is now served by nothing but Geoff's Caddy
+block, which stays until Jason has talked to him. Not checked from here:
+`curl` of the live site was refused by this session's permissions.
